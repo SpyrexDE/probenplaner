@@ -1,0 +1,39 @@
+# IDE folders
+.idea/
+.vscode/
+nbproject/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Vendor directories
+vendor/
+node_modules/
+
+# Composer
+composer.phar
+composer.lock
+
+# PHPUnit
+phpunit.xml
+.phpunit.result.cache
+
+# Build files
+/build/
+
+# Logs
+/logs/
+*.log
+
+# Docker volumes
+/docker/volumes/
+
+assets/php/database.php

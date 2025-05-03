@@ -1,0 +1,26 @@
+{
+    "short_name": "JSO-APP",
+    "name": "Offical JSO-APP",
+    "icons": [
+      {
+        "src": "assets/img/Logo.png",
+        "type": "image/png",
+        "sizes": "300x300"
+      }
+    ],
+    "start_url": "/index.php",
+    "background_color": "#007bff",
+    "display": "minimal-ui",
+    "scope": "/",
+    "theme_color": "#007bff",
+    "description": "App zum Probenmanagement des JSO Bremen",
+    "shortcuts": [
+      {
+        "name": "Probenplan einsehen",
+        "short_name": "Probenplan",
+        "description": "Zeigt den Probenplan",
+        "url": "/Probenplan",
+        "icons": [{ "src": "/images/tabIcon.png", "sizes": "300x300" }]
+      }
+    ]
+  }

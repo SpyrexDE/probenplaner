@@ -1,0 +1,22 @@
+.tree span, .tree .tree-item-span {
+    cursor: pointer;
+    display: block;
+    position: relative;
+}
+
+.tree span a[data-toggle="collapse"], .tree .tree-item-span a[data-toggle="collapse"] {
+    pointer-events: none; /* Disable the anchor click so the span click handles it */
+}
+
+.tree span .rightfloatet, .tree .tree-item-span .rightfloatet {
+    pointer-events: auto; /* Keep the counter elements clickable */
+}
+
+.tree span .treeIcon, .tree .tree-item-span .treeIcon {
+    pointer-events: auto; /* Keep the icons clickable */
+}
+
+/* Style for visual feedback on hover */
+.tree span:hover, .tree .tree-item-span:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+} 

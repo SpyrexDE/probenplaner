@@ -1,0 +1,38 @@
+# Enable URL rewriting
+RewriteEngine On
+
+# Redirect old /debug URL to the new dashboard
+RewriteRule ^debug$ debug/dashboard.php [L,R=302]
+# Preserve query string when redirecting
+RewriteRule ^debug\?(.*)$ debug/dashboard.php?$1 [L,R=302]
+
+# Set the base directory
+RewriteBase /
+
+# Redirect to index.php if the requested file or directory doesn't exist
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]
+
+# Prevent directory listing
+Options -Indexes
+
+# Set default character set
+AddDefaultCharset UTF-8
+
+# Enable compression for better performance
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/x-javascript application/json
+</IfModule>
+
+# Set security headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# Set cache control for assets
+<FilesMatch "\.(jpg|jpeg|png|gif|ico|css|js)$">
+    Header set Cache-Control "max-age=2592000, public"
+</FilesMatch> 

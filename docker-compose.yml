@@ -1,0 +1,63 @@
+version: '3'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8080:80"
+    volumes:
+      - ./src:/var/www/html
+    depends_on:
+      - db
+    environment:
+      - APP_ENV=development
+      - DB_HOST=172.28.0.2
+      - DB_USER=probenplaner
+      - DB_PASSWORD=kDo1#a43
+      - DB_NAME=probenplaner
+    networks:
+      app_net:
+        ipv4_address: 172.28.0.3
+
+  db:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=probenplaner
+      - MYSQL_USER=probenplaner
+      - MYSQL_PASSWORD=kDo1#a43
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      app_net:
+        ipv4_address: 172.28.0.2
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      - PMA_HOST=172.28.0.2
+      - PMA_USER=root
+      - PMA_PASSWORD=root
+    depends_on:
+      - db
+    networks:
+      app_net:
+        ipv4_address: 172.28.0.4
+
+networks:
+  app_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
+
+volumes:
+  db_data: 

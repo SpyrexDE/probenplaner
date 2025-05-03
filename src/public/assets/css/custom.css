@@ -1,0 +1,31 @@
+/* Custom CSS */
+
+/* For rehearsal response buttons */
+.greenOut {
+    border-color: #50dc36 !important;
+}
+.redOut {
+    border-color: #dc3836 !important;
+}
+.grayOut {
+    border-color: #73818f !important;
+}
+
+/* For note icons */
+.showIcon {
+    visibility: visible;
+}
+.hideIcon {
+    visibility: hidden;
+}
+
+/* Button appearance */
+.crossBtn.deselected, .checkBtn.deselected {
+    opacity: 0.5;
+}
+
+/* Make note button bigger */
+.addNoteBtn {
+    transform: scale(2) !important;
+    top: 15px !important;
+}
