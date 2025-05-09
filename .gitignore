@@ -36,4 +36,4 @@ phpunit.xml
 # Docker volumes
 /docker/volumes/
 
-assets/php/database.php
+/OLD-ASSETS/**

@@ -29,4 +29,4 @@ if (APP_ENV !== 'development') {
 }
 
 // Application-specific constants
-define('ADMIN_PW', 'Bremen-Mitte'); // Password for creating new orchestras 
+define('ADMIN_PW', 'Y4y6N2h'); // Password for creating new orchestras 

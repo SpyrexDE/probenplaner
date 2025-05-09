@@ -1,13 +1,16 @@
 -- JSO-Planer sample data
 
 -- Create default orchestra
-INSERT INTO orchestras (name, token, leader_pw, conductor_username) VALUES
-('Jugendsinfonieorchester Bremen', 'jso', 'duces', 'Martin');
+INSERT INTO orchestras (name, token, leader_pw) VALUES
+('Jugendsinfonieorchester Bremen', 'jso', 'duces');
 
 -- Add admin user for testing (do not use in production)
 -- Password: Bremen-Mitte
 INSERT INTO users (username, password, type, orchestra_id, role) VALUES
 ('Martin', '$2y$10$Dj2xBGEUSERMDOTwfm9hnOZEjXlqG/auIfQYJ9vjFbN9Q5Xg8bLDu', 'Dirigent', 1, 'conductor');
+
+-- Update orchestra with conductor
+UPDATE orchestras SET conductor_id = 1 WHERE id = 1;
 
 -- Add sample users for testing (do not use in production)
 -- Password: test1234

@@ -63,11 +63,11 @@
                     <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'leader'): ?>
                         <a class="<?= $currentPage === 'leader' ? 'activeTab' : '' ?>" href="/promises/leader" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Rückmeldungen</a>
                     <?php endif; ?>
-                    <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'conductor'): ?>
+                    <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'conductor' || isset($_SESSION['type']) && $_SESSION['type'] === 'Dirigent'): ?>
                         <a class="<?= $currentPage === 'admin' ? 'activeTab' : '' ?>" href="/promises/admin" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Alle Rückmeldungen</a>
                         <a class="<?= $currentPage === 'rehearsals' ? 'activeTab' : '' ?>" href="/rehearsals" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Proben verwalten</a>
-                        <a class="<?= $currentPage === 'orchestra_settings' ? 'activeTab' : '' ?>" href="/orchestras/settings" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Orchester-Einstellungen</a>
                         <a class="<?= $currentPage === 'conductor_profile' ? 'activeTab' : '' ?>" href="/conductor/profile" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Profil bearbeiten</a>
+                        <a class="<?= $currentPage === 'orchestra_settings' ? 'activeTab' : '' ?>" href="/orchestras/settings" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Orchester bearbeiten</a>
                     <?php else: ?>
                         <a class="<?= $currentPage === 'rehearsals' ? 'activeTab' : '' ?>" href="/rehearsals" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Probenplan</a>
                         <a class="<?= $currentPage === 'profile' ? 'activeTab' : '' ?>" href="/profile" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Profil bearbeiten</a>
@@ -129,6 +129,11 @@
     </div>
   </div>
 </nav>
+<?php endif; ?>
+
+<?php // DEBUG: Remove after testing ?>
+<?php if (isset($_SESSION['role']) || isset($_SESSION['type'])): ?>
+    <div style="color:red; font-size:10px;">role: <?= $_SESSION['role'] ?? 'unset' ?>, type: <?= $_SESSION['type'] ?? 'unset' ?></div>
 <?php endif; ?>
 
 <!-- Add scripts at the end of the body -->

@@ -1,52 +1,71 @@
-<?php $this->layout('layouts/default', ['title' => 'Orchester-Einstellungen', 'currentPage' => $currentPage]) ?>
+<?php $this->layout('layouts/default', ['title' => 'Orchester bearbeiten', 'currentPage' => $currentPage]) ?>
 
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Orchester-Einstellungen</h5>
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="shadow-sm">
+                <div style="white-space: pre;display: block;margin: 0 0 10px;font-size: 13px;line-height: 1.42857143;word-break: break-all;word-wrap: break-word;overflow: hidden;">
+                    <span class="float-none" href="#" style="color: #525861;font-size: 31px;padding-top: 0;font-family: Roboto, sans-serif;font-weight: 1000;padding-bottom: 0px;margin-right: 0;">Orchester bearbeiten</span>
+                    <i id="editInfoTip" class="fa fa-exclamation-circle" style="transform: scale(2); transform-origin: 0; position: absolute; cursor: pointer;"></i>
                 </div>
-                <div class="card-body">
-                    <form action="/orchestras/update" method="post">
-                        <div class="mb-3">
-                            <label for="name" class="form-label">Orchestername</label>
-                            <input type="text" class="form-control" id="name" name="name" value="<?= $this->e($orchestra['name']) ?>" required>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="token" class="form-label">Token</label>
-                            <input type="text" class="form-control" id="token" name="token" value="<?= $this->e($orchestra['token']) ?>" required>
-                            <div class="form-text">Dieser Token wird für die Registrierung neuer Mitglieder verwendet.</div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="leader_pw" class="form-label">Stimmführer-Passwort</label>
-                            <input type="text" class="form-control" id="leader_pw" name="leader_pw" value="<?= $this->e($orchestra['leader_pw']) ?>" required>
-                            <div class="form-text">Dieses Passwort ermöglicht Stimmführer-Berechtigungen bei der Registrierung.</div>
-                        </div>
-                        
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Einstellungen speichern</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-header bg-danger text-white">
-                    <h5 class="mb-0">Orchester löschen</h5>
-                </div>
-                <div class="card-body">
-                    <p class="card-text">
-                        <strong>Achtung:</strong> Das Löschen eines Orchesters kann nicht rückgängig gemacht werden. 
-                        Alle Daten, einschließlich Proben, Nutzer und Zusagen werden unwiderruflich gelöscht.
-                    </p>
-                    <div class="d-grid">
-                        <a href="/orchestras/delete-confirm" class="btn btn-danger">Orchester löschen</a>
+                
+                <form action="/orchestras/update" method="post">
+                    <div class="form-group">
+                        <label for="name">Orchestername</label>
+                        <input type="text" class="form-control" id="name" name="name" placeholder="Orchestername" style="font-family: Roboto, sans-serif;margin-bottom: 15px;" value="<?php echo htmlspecialchars($orchestra['name']); ?>" required>
                     </div>
+                    
+                    <div class="form-group">
+                        <label for="token">Token</label>
+                        <input type="text" class="form-control" id="token" name="token" placeholder="Token" style="font-family: Roboto, sans-serif;margin-bottom: 15px;" value="<?php echo htmlspecialchars($orchestra['token']); ?>" required>
+                        <small class="form-text text-muted">Dieser Token wird für die Registrierung neuer Mitglieder verwendet.</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="leader_pw">Stimmführer-Passwort</label>
+                        <input type="text" class="form-control" id="leader_pw" name="leader_pw" placeholder="Stimmführer-Passwort" style="font-family: Roboto, sans-serif;margin-bottom: 15px;" value="<?php echo htmlspecialchars($orchestra['leader_pw']); ?>" required>
+                        <small class="form-text text-muted">Dieses Passwort ermöglicht Stimmführer-Berechtigungen bei der Registrierung.</small>
+                    </div>
+                    
+                    <div class="form-group mt-4">
+                        <button type="submit" class="btn btn-block" style="background-color: rgb(71,140,244); color: white; font-family: Roboto, sans-serif;">
+                            <i class="fas fa-save mr-2" style="color: white;"></i>Speichern
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="shadow-sm mt-4">
+                <div style="white-space: pre;display: block;margin: 0 0 10px;font-size: 13px;line-height: 1.42857143;word-break: break-all;word-wrap: break-word;overflow: hidden;">
+                    <span class="float-none" href="#" style="color: #525861;font-size: 31px;padding-top: 0;font-family: Roboto, sans-serif;font-weight: 1000;padding-bottom: 0px;margin-right: 0;">Orchester löschen</span>
+                    <i id="deleteInfoTip" class="fa fa-exclamation-circle" style="transform: scale(2); transform-origin: 0; position: absolute; cursor: pointer;"></i>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <p><strong>Achtung:</strong> Das Löschen eines Orchesters kann nicht rückgängig gemacht werden. Alle Daten, einschließlich Proben, Nutzer und Zusagen werden unwiderruflich gelöscht.</p>
+                </div>
+                
+                <div class="form-group mt-4">
+                    <a href="/orchestras/delete-confirm" class="btn btn-block" style="background-color: #dc3545; color: white; font-family: Roboto, sans-serif;">
+                        <i class="fas fa-trash-alt mr-2" style="color: white;"></i>Orchester löschen
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+$(document).ready(function(){
+    // Set up tooltips
+    tippy('#editInfoTip', {
+        content: 'Es müssen nur die Felder ausgefüllt werden, die auch bearbeitet werden sollen.',
+        arrow: true
+    });
+    
+    tippy('#deleteInfoTip', {
+        content: 'Diese Aktion kann nicht rückgängig gemacht werden. Alle Daten werden unwiderruflich gelöscht.',
+        arrow: true
+    });
+});
+</script> 

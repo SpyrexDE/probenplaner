@@ -47,27 +47,38 @@
                     </div>
                 </li>
                 <li>
-                    <?php if (isset($_SESSION['type']) && $_SESSION['type'] === 'Dirigent'): ?>
-                        <!-- Admin menu -->
-                        <a class="<?= $currentPage === 'rehearsals' ? 'activeTab' : '' ?>" href="/rehearsals" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Termine</a>
-                        <a class="<?= $currentPage === 'probenplan' ? 'activeTab' : '' ?>" href="/probenplan" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Probenplan</a>
-                        <a class="<?= $currentPage === 'admin' ? 'activeTab' : '' ?>" href="/promises/admin" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Rückmeldungen</a>
-                        <a class="<?= $currentPage === 'conductor_profile' ? 'activeTab' : '' ?>" href="/conductor/profile" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Profil bearbeiten</a>
-                        <a href="/logout" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Logout</a>
-                    <?php elseif (isset($_SESSION['username']) && strpos($_SESSION['username'], '♚') !== false): ?>
-                        <!-- Section leader menu -->
-                        <a class="<?= $currentPage === 'promises' ? 'activeTab' : '' ?>" href="/promises" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Meine Meldungen</a>
-                        <a class="<?= $currentPage === 'leader' ? 'activeTab' : '' ?>" href="/promises/leader" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Rückmeldungen</a>
-                        <a class="<?= $currentPage === 'rehearsals' ? 'activeTab' : '' ?>" href="/rehearsals" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Probenplan</a>
-                        <a class="<?= $currentPage === 'profile' ? 'activeTab' : '' ?>" href="/profile" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Profil bearbeiten</a>
-                        <a href="/logout" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Logout</a>
-                    <?php else: ?>
-                        <!-- Regular user menu -->
-                        <a class="<?= $currentPage === 'promises' ? 'activeTab' : '' ?>" href="/promises" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Meine Meldungen</a>
-                        <a class="<?= $currentPage === 'rehearsals' ? 'activeTab' : '' ?>" href="/rehearsals" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Probenplan</a>
-                        <a class="<?= $currentPage === 'profile' ? 'activeTab' : '' ?>" href="/profile" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Profil bearbeiten</a>
-                        <a href="/logout" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Logout</a>
-                    <?php endif; ?>
+                    <?php
+                    $menu = [];
+                    if (isset($_SESSION['type']) && $_SESSION['type'] === 'Dirigent') {
+                        $menu = [
+                            ['label' => 'Termine', 'href' => '/rehearsals', 'page' => 'rehearsals'],
+                            ['label' => 'Probenplan', 'href' => '/probenplan', 'page' => 'probenplan'],
+                            ['label' => 'Rückmeldungen', 'href' => '/promises/admin', 'page' => 'admin'],
+                            ['label' => 'Profil bearbeiten', 'href' => '/conductor/profile', 'page' => 'conductor_profile'],
+                            ['label' => 'Orchester bearbeiten', 'href' => '/orchestras/settings', 'page' => 'orchestra_settings'],
+                            ['label' => 'Logout', 'href' => '/logout', 'page' => null],
+                        ];
+                    } elseif (isset($_SESSION['username']) && strpos($_SESSION['username'], '♚') !== false) {
+                        $menu = [
+                            ['label' => 'Meine Meldungen', 'href' => '/promises', 'page' => 'promises'],
+                            ['label' => 'Rückmeldungen', 'href' => '/promises/leader', 'page' => 'leader'],
+                            ['label' => 'Probenplan', 'href' => '/rehearsals', 'page' => 'rehearsals'],
+                            ['label' => 'Profil bearbeiten', 'href' => '/profile', 'page' => 'profile'],
+                            ['label' => 'Logout', 'href' => '/logout', 'page' => null],
+                        ];
+                    } else {
+                        $menu = [
+                            ['label' => 'Meine Meldungen', 'href' => '/promises', 'page' => 'promises'],
+                            ['label' => 'Probenplan', 'href' => '/rehearsals', 'page' => 'rehearsals'],
+                            ['label' => 'Profil bearbeiten', 'href' => '/profile', 'page' => 'profile'],
+                            ['label' => 'Logout', 'href' => '/logout', 'page' => null],
+                        ];
+                    }
+                    foreach ($menu as $item) {
+                        $active = isset($item['page']) && $currentPage === $item['page'] ? 'activeTab' : '';
+                        echo '<a class="' . $active . '" href="' . $item['href'] . '" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">' . $item['label'] . '</a>';
+                    }
+                    ?>
                 </li>
             </ul>
         </div>
