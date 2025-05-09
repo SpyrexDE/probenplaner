@@ -103,15 +103,16 @@ class Controller
      * @param string $title Alert title
      * @param string $message Alert message
      * @param string $type Alert type (success, error, info)
+     * @param string|null $details Optional detailed information
      * @return void
      */
-    protected function addAlert($title, $message, $type)
+    protected function addAlert($title, $message, $type, $details = null)
     {
         if (!isset($_SESSION['alerts']) || !is_array($_SESSION['alerts'])) {
             $_SESSION['alerts'] = [];
         }
         
-        $_SESSION['alerts'][] = [$title, $message, $type];
+        $_SESSION['alerts'][] = [$title, $message, $type, $details];
     }
     
     /**

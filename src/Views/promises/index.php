@@ -408,62 +408,88 @@ $(document).ready(function() {
                             status: attending,
                             note: note
                         });
-                    } else {
-                        // Re-enable the buttons after a short delay
-                        setTimeout(function() {
-                            enableRehearsalButtons(id);
-                        }, 200);
                     }
-                } else {
-                    // Re-enable the buttons if there was an error
-                    enableRehearsalButtons(id);
-                }
-                
-                // Show brief success message
-                if (window.updateQueue.length === 0) {
-                    // Use toast notification instead of modal for success
-                    const Toast = Swal.mixin({
-                        toast: true,
-                        position: 'bottom-end',
-                        showConfirmButton: false,
-                        timer: 2000,
-                        timerProgressBar: true
-                    });
                     
-                    Toast.fire({
-                        icon: 'success',
-                        title: 'Antwort gespeichert'
+                    // Process the next update in the queue
+                    setTimeout(function() {
+                        processNextUpdate();
+                    }, 300);
+                } else {
+                    // Show error to user with details
+                    Swal.fire({
+                        title: response.message || 'Fehler beim Speichern',
+                        html: response.details ? `${response.message}<br><br><button id="showDetailsBtn" class="swal2-styled">Details anzeigen</button><div id="errorDetails" style="display:none; margin-top:10px; text-align:left; font-size:12px; color:#a94442; background:#f9f2f4; border:1px solid #ebccd1; padding:10px; border-radius:4px; white-space:pre-wrap;">${response.details}</div>` : response.message,
+                        icon: 'error',
+                        didOpen: () => {
+                            const btn = document.getElementById('showDetailsBtn');
+                            if (btn) {
+                                btn.onclick = function() {
+                                    const details = document.getElementById('errorDetails');
+                                    if (details.style.display === 'none') {
+                                        details.style.display = 'block';
+                                        btn.textContent = 'Details ausblenden';
+                                    } else {
+                                        details.style.display = 'none';
+                                        btn.textContent = 'Details anzeigen';
+                                    }
+                                };
+                            }
+                        }
                     });
                 }
                 
-                // Process the next update in the queue
-                setTimeout(function() {
-                    processNextUpdate();
-                }, 300);
-            },
-            error: function(xhr, status, error) {
-                console.error('Error updating promise:', error);
-                // Show error to user with auto-dismiss
-                const Toast = Swal.mixin({
-                    toast: true,
-                    position: 'bottom-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true
-                });
-                
-                Toast.fire({
-                    icon: 'error',
-                    title: 'Fehler beim Speichern der Antwort'
-                });
+                // Hide save indicator
+                $('#save-indicator').fadeOut(200);
                 
                 // Re-enable the buttons
                 enableRehearsalButtons(id);
+            },
+            error: function(xhr, status, error) {
+                console.error('Error updating promise:', error);
                 
-                // Process the next update in the queue
-                setTimeout(function() {
-                    processNextUpdate();
-                }, 300);
+                // Try to parse the error response
+                let errorMessage = 'Fehler beim Speichern der Antwort';
+                let errorDetails = 'Ein unerwarteter Fehler ist aufgetreten.';
+                
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.message) {
+                        errorMessage = response.message;
+                    }
+                    if (response.details) {
+                        errorDetails = response.details;
+                    }
+                } catch (e) {
+                    console.error('Error parsing error response:', e);
+                }
+                
+                // Show error to user with details
+                Swal.fire({
+                    title: errorMessage,
+                    html: `${errorMessage}<br><br><button id="showDetailsBtn" class="swal2-styled">Details anzeigen</button><div id="errorDetails" style="display:none; margin-top:10px; text-align:left; font-size:12px; color:#a94442; background:#f9f2f4; border:1px solid #ebccd1; padding:10px; border-radius:4px; white-space:pre-wrap;">${errorDetails}</div>`,
+                    icon: 'error',
+                    didOpen: () => {
+                        const btn = document.getElementById('showDetailsBtn');
+                        if (btn) {
+                            btn.onclick = function() {
+                                const details = document.getElementById('errorDetails');
+                                if (details.style.display === 'none') {
+                                    details.style.display = 'block';
+                                    btn.textContent = 'Details ausblenden';
+                                } else {
+                                    details.style.display = 'none';
+                                    btn.textContent = 'Details anzeigen';
+                                }
+                            };
+                        }
+                    }
+                });
+                
+                // Hide save indicator
+                $('#save-indicator').fadeOut(200);
+                
+                // Re-enable the buttons
+                enableRehearsalButtons(id);
             }
         });
     }
@@ -519,27 +545,50 @@ $(document).ready(function() {
             },
             error: function(xhr, status, error) {
                 console.error('Error updating note:', error);
-                // Show error to user with auto-dismiss
-                const Toast = Swal.mixin({
-                    toast: true,
-                    position: 'bottom-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true
+                
+                // Try to parse the error response
+                let errorMessage = 'Fehler beim Speichern der Anmerkung';
+                let errorDetails = 'Ein unerwarteter Fehler ist aufgetreten.';
+                
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.message) {
+                        errorMessage = response.message;
+                    }
+                    if (response.details) {
+                        errorDetails = response.details;
+                    }
+                } catch (e) {
+                    console.error('Error parsing error response:', e);
+                }
+                
+                // Show error to user with details
+                Swal.fire({
+                    title: errorMessage,
+                    html: `${errorMessage}<br><br><button id="showDetailsBtn" class="swal2-styled">Details anzeigen</button><div id="errorDetails" style="display:none; margin-top:10px; text-align:left; font-size:12px; color:#a94442; background:#f9f2f4; border:1px solid #ebccd1; padding:10px; border-radius:4px; white-space:pre-wrap;">${errorDetails}</div>`,
+                    icon: 'error',
+                    didOpen: () => {
+                        const btn = document.getElementById('showDetailsBtn');
+                        if (btn) {
+                            btn.onclick = function() {
+                                const details = document.getElementById('errorDetails');
+                                if (details.style.display === 'none') {
+                                    details.style.display = 'block';
+                                    btn.textContent = 'Details ausblenden';
+                                } else {
+                                    details.style.display = 'none';
+                                    btn.textContent = 'Details anzeigen';
+                                }
+                            };
+                        }
+                    }
                 });
                 
-                Toast.fire({
-                    icon: 'error',
-                    title: 'Fehler beim Speichern der Anmerkung'
-                });
+                // Hide save indicator
+                $('#save-indicator').fadeOut(200);
                 
                 // Re-enable the buttons
                 enableRehearsalButtons(id);
-                
-                // Process the next update in the queue
-                setTimeout(function() {
-                    processNextUpdate();
-                }, 300);
             }
         });
     }

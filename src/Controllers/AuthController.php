@@ -73,7 +73,16 @@ class AuthController extends Controller
         $password = isset($_POST['password']) ? trim($_POST['password']) : '';
         
         if (empty($username) || empty($password)) {
-            $this->addAlert('Fehler!', 'Bitte geben Sie sowohl Benutzername als auch Passwort ein.', 'error');
+            $missingFields = array_filter([
+                empty($username) ? 'Benutzername' : null,
+                empty($password) ? 'Passwort' : null
+            ]);
+            $this->addAlert(
+                'Fehler!', 
+                'Bitte füllen Sie alle erforderlichen Felder aus.', 
+                'error',
+                'Fehlende Felder: ' . implode(', ', $missingFields)
+            );
             $this->redirect('/login');
             return;
         }
@@ -87,8 +96,25 @@ class AuthController extends Controller
             return;
         }
         
-        // Login failed
-        $this->addAlert('Fehler!', 'Ungültiger Benutzername oder Passwort.', 'error');
+        // Check if user exists to provide more specific error message
+        $userExists = $this->userModel->findByUsername($username);
+        if ($userExists) {
+            $this->addAlert(
+                'Fehler!', 
+                'Das eingegebene Passwort ist falsch.', 
+                'error',
+                'Bitte überprüfen Sie Ihr Passwort. Falls Sie Ihr Passwort vergessen haben, kontaktieren Sie bitte Ihren Dirigenten.'
+            );
+            error_log("Login failed - Wrong password for user: $username");
+        } else {
+            $this->addAlert(
+                'Fehler!', 
+                'Der Benutzername wurde nicht gefunden.', 
+                'error',
+                'Bitte überprüfen Sie Ihren Benutzernamen oder registrieren Sie sich, falls Sie noch kein Konto haben.'
+            );
+            error_log("Login failed - Username not found: $username");
+        }
         $this->redirect('/login');
     }
     
@@ -100,13 +126,6 @@ class AuthController extends Controller
      */
     private function processSuccessfulLogin($user)
     {
-        // Ensure user has promises field
-        if (!isset($user['promises'])) {
-            $user['promises'] = '';
-            $this->userModel->update($user['id'], ['promises' => '']);
-            error_log("LOGIN WARNING: User {$user['username']} (ID: {$user['id']}) had no promises field, initialized to empty");
-        }
-        
         // Get orchestra
         $orchestra = $this->orchestraModel->findById($user['orchestra_id']);
         
@@ -117,10 +136,6 @@ class AuthController extends Controller
         $_SESSION['role'] = $user['role'];
         $_SESSION['orchestra_id'] = $user['orchestra_id'];
         $_SESSION['orchestra_name'] = $orchestra['name'];
-        $_SESSION['promises'] = $user['promises'];
-        
-        // Log session data
-        error_log("LOGIN: Session initialized with user_id: {$user['id']}, promises: " . ($user['promises'] ?? 'empty'));
         
         // Set cookies for 7 days
         setcookie("username", $user['username'], time() + 604800);
@@ -185,22 +200,59 @@ class AuthController extends Controller
         
         // Validate inputs
         if (empty($username) || empty($password) || empty($passwordConfirm) || empty($type) || empty($token)) {
-            $this->addAlert('Fehler!', 'Alle Felder müssen ausgefüllt werden.', 'error');
-            error_log("Registration failed - Empty fields");
+            $missingFields = array_filter([
+                empty($username) ? 'Benutzername' : null,
+                empty($password) ? 'Passwort' : null,
+                empty($passwordConfirm) ? 'Passwort bestätigen' : null,
+                empty($type) ? 'Instrument/Rolle' : null,
+                empty($token) ? 'Orchester-Token' : null
+            ]);
+            $this->addAlert(
+                'Fehler!', 
+                'Bitte füllen Sie alle erforderlichen Felder aus.', 
+                'error',
+                'Fehlende Felder: ' . implode(', ', $missingFields)
+            );
+            error_log("Registration failed - Empty fields: " . implode(', ', $missingFields));
             $this->redirect('/register');
             return;
         }
         
         if ($password !== $passwordConfirm) {
-            $this->addAlert('Fehler!', 'Die Passwörter stimmen nicht überein.', 'error');
+            $this->addAlert(
+                'Fehler!', 
+                'Die Passwörter stimmen nicht überein.', 
+                'error',
+                'Die eingegebenen Passwörter sind unterschiedlich. Bitte stellen Sie sicher, dass Sie das gleiche Passwort zweimal eingeben.'
+            );
             error_log("Registration failed - Passwords don't match");
             $this->redirect('/register');
             return;
         }
         
-        if (strlen($password) < 4) {
-            $this->addAlert('Fehler!', 'Das Passwort muss mindestens 4 Zeichen lang sein.', 'error');
-            error_log("Registration failed - Password too short");
+        // Password requirements
+        $passwordErrors = [];
+        if (strlen($password) < 8) {
+            $passwordErrors[] = 'mindestens 8 Zeichen';
+        }
+        if (!preg_match('/[A-Z]/', $password)) {
+            $passwordErrors[] = 'mindestens ein Großbuchstabe';
+        }
+        if (!preg_match('/[a-z]/', $password)) {
+            $passwordErrors[] = 'mindestens ein Kleinbuchstabe';
+        }
+        if (!preg_match('/[0-9]/', $password)) {
+            $passwordErrors[] = 'mindestens eine Zahl';
+        }
+        
+        if (!empty($passwordErrors)) {
+            $this->addAlert(
+                'Fehler!', 
+                'Das Passwort muss mindestens 8 Zeichen lang sein und mindestens einen Großbuchstaben, einen Kleinbuchstaben und eine Zahl enthalten.', 
+                'error',
+                'Das Passwort muss folgende Anforderungen erfüllen: ' . implode(', ', $passwordErrors)
+            );
+            error_log("Registration failed - Password requirements not met: " . implode(', ', $passwordErrors));
             $this->redirect('/register');
             return;
         }
@@ -209,7 +261,12 @@ class AuthController extends Controller
         $orchestra = $this->orchestraModel->findByToken($token);
         
         if (!$orchestra) {
-            $this->addAlert('Fehler!', 'Der eingegebene Token ist ungültig.', 'error');
+            $this->addAlert(
+                'Fehler!', 
+                'Der eingegebene Orchester-Token ist ungültig.', 
+                'error',
+                'Der Token wurde nicht gefunden. Bitte überprüfen Sie den Token oder kontaktieren Sie Ihren Dirigenten für den korrekten Token.'
+            );
             error_log("Registration failed - Invalid token: $token");
             $this->redirect('/register');
             return;
@@ -221,13 +278,30 @@ class AuthController extends Controller
         // Register the user
         $result = $this->userModel->register($username, $password, $type, $orchestraId);
         
+        if (is_array($result) && isset($result['error'])) {
+            $this->addAlert(
+                'Fehler!', 
+                $result['message'], 
+                'error',
+                $result['details']
+            );
+            error_log("Registration failed: " . $result['message'] . " - " . $result['details']);
+            $this->redirect('/register');
+            return;
+        }
+        
         if ($result) {
             $this->addAlert('Erfolg!', 'Ihr Konto wurde erfolgreich erstellt. Sie können sich jetzt anmelden.', 'success');
             error_log("Registration successful - User ID: $result");
             $this->redirect('/login?token=' . urlencode($token));
         } else {
-            $this->addAlert('Fehler!', 'Der Benutzername ist bereits vergeben oder ein Systemfehler ist aufgetreten.', 'error');
-            error_log("Registration failed - Username exists or system error");
+            $this->addAlert(
+                'Fehler!', 
+                'Bei der Registrierung ist ein Fehler aufgetreten.', 
+                'error',
+                'Es gab ein unerwartetes technisches Problem bei der Registrierung. Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.'
+            );
+            error_log("Registration failed - Unexpected error");
             $this->redirect('/register');
         }
     }

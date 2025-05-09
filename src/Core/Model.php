@@ -59,7 +59,7 @@ abstract class Model
     /**
      * Find record by ID
      * 
-     * @param int $id ID to find
+     * @param int $id Record ID
      * @return array|null
      */
     public function findById($id)
@@ -72,16 +72,7 @@ abstract class Model
         $result = $stmt->get_result();
         
         if ($result->num_rows > 0) {
-            $record = $result->fetch_assoc();
-            
-            // Special case for users table - ensure promises field exists
-            if ($this->table === 'users' && !isset($record['promises'])) {
-                $record['promises'] = '';
-                // Update the record in the database
-                $this->update($id, ['promises' => '']);
-            }
-            
-            return $record;
+            return $result->fetch_assoc();
         }
         
         return null;

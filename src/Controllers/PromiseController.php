@@ -4,6 +4,7 @@ namespace App\Controllers;
 use App\Core\Controller;
 use App\Models\User;
 use App\Models\Rehearsal;
+use App\Models\UserPromise;
 
 /**
  * Promise Controller
@@ -57,88 +58,18 @@ class PromiseController extends Controller
         $userType = $_SESSION['type'];
         $rehearsals = $this->rehearsalModel->getForUser($userType, $_SESSION['orchestra_id'], $showOld);
         
-        // Get user's promises
+        // Get user's promises from the user_promises table
         $promises = [];
+        $user = $this->userModel->findByUsername($_SESSION['username']);
         
-        // First try to get promises from session
-        $promisesStr = $_SESSION['promises'] ?? '';
-        
-        // If session promises empty, get user from database
-        if (empty($promisesStr) && isset($_SESSION['user_id'])) {
-            $user = $this->userModel->findById($_SESSION['user_id']);
-            if ($user && isset($user['promises'])) {
-                $promisesStr = $user['promises'];
-                // Update session
-                $_SESSION['promises'] = $promisesStr;
-            }
-        }
-        
-        // Log the promises string from session for debugging
-        error_log("Promises from session for user {$_SESSION['username']}: $promisesStr");
-        
-        if (!empty($promisesStr)) {
-            $promisesArr = explode('|', $promisesStr);
-            
-            foreach ($promisesArr as $promise) {
-                if (empty($promise)) {
-                    continue;
-                }
-                
-                $attending = true;
-                $rehearsalId = $promise;
-                $note = '';
-                
-                // Check if not attending
-                if (strpos($promise, '!') === 0) {
-                    $attending = false;
-                    $rehearsalId = substr($promise, 1);
-                }
-                
-                // Extract note if exists
-                if (preg_match('/\((.*?)\)/', $promise, $matches)) {
-                    $note = $matches[1];
-                    $rehearsalId = preg_replace('/\((.*?)\)/', '', $rehearsalId);
-                }
-                
-                $promises[$rehearsalId] = [
-                    'attending' => $attending,
-                    'note' => $note
+        if ($user) {
+            $userPromises = $this->userModel->getPromises($user['id']);
+            foreach ($userPromises as $promise) {
+                $promises[$promise['rehearsal_id']] = [
+                    'attending' => (bool)$promise['attending'],
+                    'note' => $promise['note']
                 ];
             }
-        }
-        
-        // As a backup, also get promises directly from database
-        if (empty($promises)) {
-            error_log("No promises found in session, fetching from database");
-            $user = $this->userModel->findByUsername($_SESSION['username']);
-            if ($user) {
-                $userPromises = $this->userModel->getPromises($user['id']);
-                foreach ($userPromises as $promise) {
-                    $promises[$promise['rehearsal_id']] = [
-                        'attending' => (bool)$promise['attending'],
-                        'note' => $promise['note']
-                    ];
-                }
-                
-                // Update session with the latest promises
-                $this->userModel->refreshPromises($user['id']);
-                $updatedUser = $this->userModel->findById($user['id']);
-                // Ensure updatedUser has promises field
-                if ($updatedUser) {
-                    $updatedUser = $this->userModel->ensurePromisesField($updatedUser);
-                    $_SESSION['promises'] = $updatedUser['promises'];
-                    error_log("Updated session promises: {$_SESSION['promises']}");
-                }
-            }
-        }
-        
-        // Log the promises array for debugging
-        error_log("Parsed promises array: " . json_encode($promises));
-        
-        // Final safety check - ensure session has promises
-        if (!isset($_SESSION['promises'])) {
-            $_SESSION['promises'] = '';
-            error_log("WARNING: Set empty promises in session as final safety check");
         }
         
         // Determine current page based on URL
@@ -246,14 +177,14 @@ class PromiseController extends Controller
         // Check if user is logged in
         if (!$this->isLoggedIn()) {
             header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'message' => 'Nicht eingeloggt']);
+            echo json_encode(['success' => false, 'message' => 'Nicht eingeloggt', 'details' => 'Bitte melden Sie sich erneut an.']);
             return;
         }
         
         // Check if Ajax request
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'message' => 'Ungültige Anfrage']);
+            echo json_encode(['success' => false, 'message' => 'Ungültige Anfrage', 'details' => 'Diese Aktion ist nur über AJAX erlaubt.']);
             return;
         }
         
@@ -263,7 +194,7 @@ class PromiseController extends Controller
         
         if ($rehearsalId <= 0) {
             header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'message' => 'Ungültige Proben-ID']);
+            echo json_encode(['success' => false, 'message' => 'Ungültige Proben-ID', 'details' => 'Die angegebene Proben-ID ist ungültig.']);
             return;
         }
         
@@ -273,50 +204,33 @@ class PromiseController extends Controller
         
         if (!$user) {
             header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'message' => 'Benutzer nicht gefunden']);
+            echo json_encode(['success' => false, 'message' => 'Benutzer nicht gefunden', 'details' => 'Ihr Benutzerkonto wurde nicht gefunden. Bitte melden Sie sich erneut an.']);
             return;
         }
         
-        // Ensure user has promises field initialized
-        $user = $this->userModel->ensurePromisesField($user);
-        
-        // Get existing note if any
-        $note = '';
-        $promises = explode('|', $user['promises']);
-        
-        foreach ($promises as $promise) {
-            if (empty($promise)) {
-                continue;
-            }
-            
-            $attending = strpos($promise, '!') !== 0;
-            $promiseId = $attending ? $promise : substr($promise, 1);
-            
-            // Extract note if exists
-            if (preg_match('/\((.*?)\)/', $promiseId, $matches)) {
-                $noteCandidate = $matches[1];
-                $promiseIdClean = preg_replace('/\((.*?)\)/', '', $promiseId);
-                
-                if ($promiseIdClean == $rehearsalId) {
-                    $note = $noteCandidate;
-                    break;
-                }
-            }
-        }
+        // Get existing note if any from user_promises table
+        $promiseModel = new UserPromise();
+        $existingPromise = $promiseModel->findByUserAndRehearsal($user['id'], $rehearsalId);
+        $note = $existingPromise ? $existingPromise['note'] : '';
         
         // Update promise
         $result = $this->userModel->updatePromise($user['id'], $rehearsalId, $status, $note);
         
-        // Update session
-        if ($result) {
-            $updatedUser = $this->userModel->findById($user['id']);
-            $_SESSION['promises'] = $updatedUser['promises'];
-            
-            header('Content-Type: application/json');
+        header('Content-Type: application/json');
+        if ($result === true) {
             echo json_encode(['success' => true]);
+        } elseif (is_array($result) && isset($result['error'])) {
+            echo json_encode([
+                'success' => false,
+                'message' => $result['message'],
+                'details' => $result['details']
+            ]);
         } else {
-            header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'message' => 'Fehler beim Speichern']);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Fehler beim Speichern',
+                'details' => 'Es ist ein unerwarteter Fehler aufgetreten. Bitte versuchen Sie es später erneut.'
+            ]);
         }
     }
     
@@ -330,14 +244,14 @@ class PromiseController extends Controller
         // Check if user is logged in
         if (!$this->isLoggedIn()) {
             header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'message' => 'Nicht eingeloggt']);
+            echo json_encode(['success' => false, 'message' => 'Nicht eingeloggt', 'details' => 'Bitte melden Sie sich erneut an.']);
             return;
         }
         
         // Check if Ajax request
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'message' => 'Ungültige Anfrage']);
+            echo json_encode(['success' => false, 'message' => 'Ungültige Anfrage', 'details' => 'Diese Aktion ist nur über AJAX erlaubt.']);
             return;
         }
         
@@ -347,7 +261,7 @@ class PromiseController extends Controller
         
         if ($rehearsalId <= 0) {
             header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'message' => 'Ungültige Proben-ID']);
+            echo json_encode(['success' => false, 'message' => 'Ungültige Proben-ID', 'details' => 'Die angegebene Proben-ID ist ungültig.']);
             return;
         }
         
@@ -357,47 +271,33 @@ class PromiseController extends Controller
         
         if (!$user) {
             header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'message' => 'Benutzer nicht gefunden']);
+            echo json_encode(['success' => false, 'message' => 'Benutzer nicht gefunden', 'details' => 'Ihr Benutzerkonto wurde nicht gefunden. Bitte melden Sie sich erneut an.']);
             return;
         }
         
-        // Ensure user has promises field initialized
-        $user = $this->userModel->ensurePromisesField($user);
-        
-        // Get current promise status
-        $status = false; // Default: not attending
-        $promises = explode('|', $user['promises']);
-        
-        foreach ($promises as $promise) {
-            if (empty($promise)) {
-                continue;
-            }
-            
-            $attending = strpos($promise, '!') !== 0;
-            $promiseId = $attending ? $promise : substr($promise, 1);
-            
-            // Remove note if exists
-            $promiseIdClean = preg_replace('/\((.*?)\)/', '', $promiseId);
-            
-            if ($promiseIdClean == $rehearsalId) {
-                $status = $attending;
-                break;
-            }
-        }
+        // Get current promise status from user_promises table
+        $promiseModel = new UserPromise();
+        $existingPromise = $promiseModel->findByUserAndRehearsal($user['id'], $rehearsalId);
+        $status = $existingPromise ? (bool)$existingPromise['attending'] : false;
         
         // Update promise with note
         $result = $this->userModel->updatePromise($user['id'], $rehearsalId, $status, $note);
         
-        // Update session
-        if ($result) {
-            $updatedUser = $this->userModel->findById($user['id']);
-            $_SESSION['promises'] = $updatedUser['promises'];
-            
-            header('Content-Type: application/json');
+        header('Content-Type: application/json');
+        if ($result === true) {
             echo json_encode(['success' => true]);
+        } elseif (is_array($result) && isset($result['error'])) {
+            echo json_encode([
+                'success' => false,
+                'message' => $result['message'],
+                'details' => $result['details']
+            ]);
         } else {
-            header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'message' => 'Fehler beim Speichern']);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Fehler beim Speichern der Anmerkung',
+                'details' => 'Es ist ein unerwarteter Fehler aufgetreten. Bitte versuchen Sie es später erneut.'
+            ]);
         }
     }
     

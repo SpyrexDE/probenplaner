@@ -118,25 +118,25 @@ class User extends Model
      * @param string $type
      * @param int $orchestraId
      * @param string $role
-     * @return int|bool
+     * @return array|bool Array with error info or true on success
      */
     public function register($username, $password, $type, $orchestraId, $role = 'member')
     {
         // Check if username exists in the same orchestra
         if ($this->findByUsername($username, $orchestraId)) {
             error_log("Registration failed: Username already exists in this orchestra");
-            return false;
+            return ['error' => true, 'message' => 'Der Benutzername ist bereits vergeben.', 'details' => 'Ein Benutzer mit diesem Namen existiert bereits in diesem Orchester.'];
         }
         
         // Validate orchestraId exists
         $orchestraModel = new Orchestra();
         if (!$orchestraModel->findById($orchestraId)) {
             error_log("Registration failed: Orchestra ID $orchestraId does not exist");
-            return false;
+            return ['error' => true, 'message' => 'Das Orchester wurde nicht gefunden.', 'details' => 'Das angegebene Orchester existiert nicht mehr. Bitte kontaktieren Sie Ihren Dirigenten.'];
         }
         
         // Explicitly convert types to ensure proper database insertion
-        $orchestraId = (int)$orchestraId; // Make sure it's an integer
+        $orchestraId = (int)$orchestraId;
         
         // Hash password
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
@@ -147,14 +147,29 @@ class User extends Model
             'password' => $hashedPassword,
             'type' => $type,
             'orchestra_id' => $orchestraId,
-            'role' => $role,
-            'promises' => '' // Initialize with empty promises
+            'role' => $role
         ];
         
         error_log("Registering user: " . json_encode($userData));
         
         // Insert and return the result
-        return $this->insert($userData);
+        $result = $this->insert($userData);
+        
+        if ($result === false) {
+            $error = $this->db->getLastError();
+            error_log("Registration failed - Database error: " . $error);
+            
+            // Check for specific error types
+            if (strpos($error, '1062') !== false) { // Duplicate entry
+                return ['error' => true, 'message' => 'Der Benutzername ist bereits vergeben.', 'details' => 'Ein Benutzer mit diesem Namen existiert bereits.'];
+            } elseif (strpos($error, '1452') !== false) { // Foreign key constraint
+                return ['error' => true, 'message' => 'Das Orchester wurde nicht gefunden.', 'details' => 'Das angegebene Orchester existiert nicht mehr. Bitte kontaktieren Sie Ihren Dirigenten.'];
+            } else {
+                return ['error' => true, 'message' => 'Bei der Registrierung ist ein Fehler aufgetreten.', 'details' => 'Technischer Fehler: ' . $error];
+            }
+        }
+        
+        return $result;
     }
     
     /**
@@ -181,104 +196,62 @@ class User extends Model
      * @param int $rehearsalId
      * @param bool $attending
      * @param string $note
-     * @return bool
+     * @return array|bool Array with error info or true on success
      */
     public function updatePromise($userId, $rehearsalId, $attending, $note = '')
     {
-        $promiseModel = new UserPromise();
-        
-        // Check if promise exists
-        $existingPromise = $promiseModel->findByUserAndRehearsal($userId, $rehearsalId);
-        
-        $result = false;
-        if ($existingPromise) {
-            // Update existing promise
-            $result = $promiseModel->update($existingPromise['id'], [
-                'attending' => $attending ? 1 : 0,
-                'note' => $note
-            ]);
-        } else {
-            // Insert new promise
-            $result = $promiseModel->insert([
-                'user_id' => $userId,
-                'rehearsal_id' => $rehearsalId,
-                'attending' => $attending ? 1 : 0,
-                'note' => $note
-            ]);
-        }
-        
-        // If successful, refresh the promises string in the user table
-        if ($result) {
-            $this->refreshPromises($userId);
-        }
-        
-        return $result;
-    }
-    
-    /**
-     * Refresh the promises string in the user table
-     * 
-     * @param int $userId
-     * @return bool
-     */
-    public function refreshPromises($userId)
-    {
-        // Get all promises for the user
-        $promises = $this->getPromises($userId);
-        $promisesStr = '';
-        
-        foreach ($promises as $promise) {
-            $prefix = $promise['attending'] ? '' : '!';
-            $rehearsalId = $promise['rehearsal_id'];
+        try {
+            $promiseModel = new UserPromise();
             
-            // Add note if exists
-            $noteStr = '';
-            if (!empty($promise['note'])) {
-                $noteStr = '(' . $promise['note'] . ')';
+            // Check if promise exists
+            $existingPromise = $promiseModel->findByUserAndRehearsal($userId, $rehearsalId);
+            
+            // Check if rehearsal exists
+            $rehearsalModel = new \App\Models\Rehearsal();
+            $rehearsal = $rehearsalModel->findById($rehearsalId);
+            if (!$rehearsal) {
+                error_log("Failed to update promise: Rehearsal not found (ID: $rehearsalId)");
+                return ['error' => true, 'message' => 'Die Probe wurde nicht gefunden.', 'details' => 'Die angegebene Probe existiert nicht mehr.'];
             }
             
-            // Add to promises string
-            if (!empty($promisesStr)) {
-                $promisesStr .= '|';
+            if ($existingPromise) {
+                // Update existing promise
+                $result = $promiseModel->update($existingPromise['id'], [
+                    'attending' => $attending ? 1 : 0,
+                    'note' => $note,
+                    'updated_at' => date('Y-m-d H:i:s')
+                ]);
+            } else {
+                // Insert new promise
+                $result = $promiseModel->insert([
+                    'user_id' => $userId,
+                    'rehearsal_id' => $rehearsalId,
+                    'attending' => $attending ? 1 : 0,
+                    'note' => $note,
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s')
+                ]);
             }
             
-            $promisesStr .= $prefix . $rehearsalId . $noteStr;
-        }
-        
-        // Update the user record
-        $result = $this->update($userId, ['promises' => $promisesStr]);
-        
-        // Small delay to ensure database transaction completes
-        usleep(100000); // 100ms delay
-        
-        // Log for debugging
-        error_log("Refreshed promises for user $userId: $promisesStr (result: " . ($result ? 'success' : 'failure') . ")");
-        
-        // Also update session if this is the current user
-        if (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $userId) {
-            $_SESSION['promises'] = $promisesStr;
-            error_log("Updated session promises for current user: $promisesStr");
-        }
-        
-        return $result;
-    }
-    
-    /**
-     * Ensure user has an initialized promises field
-     *
-     * @param array $user User data
-     * @return array Updated user data
-     */
-    public function ensurePromisesField($user)
-    {
-        if (!isset($user['promises'])) {
-            $user['promises'] = '';
-            // Also try to update the database record
-            if (isset($user['id'])) {
-                $this->update($user['id'], ['promises' => '']);
+            if ($result === false) {
+                $error = $this->db->getLastError();
+                error_log("Failed to update promise - Database error: " . $error);
+                
+                // Check for specific error types
+                if (strpos($error, '1062') !== false) { // Duplicate entry
+                    return ['error' => true, 'message' => 'Doppelter Eintrag.', 'details' => 'Es existiert bereits eine Zusage für diese Probe.'];
+                } elseif (strpos($error, '1452') !== false) { // Foreign key constraint
+                    return ['error' => true, 'message' => 'Ungültige Referenz.', 'details' => 'Die Probe oder der Benutzer existiert nicht mehr.'];
+                } else {
+                    return ['error' => true, 'message' => 'Bei der Aktualisierung ist ein Fehler aufgetreten.', 'details' => 'Technischer Fehler: ' . $error];
+                }
             }
+            
+            return true;
+        } catch (\Exception $e) {
+            error_log("Exception in updatePromise: " . $e->getMessage());
+            return ['error' => true, 'message' => 'Bei der Aktualisierung ist ein Fehler aufgetreten.', 'details' => 'Technischer Fehler: ' . $e->getMessage()];
         }
-        return $user;
     }
     
     /**
