@@ -5,6 +5,25 @@
                 <div style="white-space: pre;display: block;margin: 0 0 10px;font-size: 13px;line-height: 1.42857143;word-break: break-all;word-wrap: break-word;overflow: hidden;"><span class="float-none" href="#" style="color: #525861;font-size: 31px;padding-top: 0;font-family: Roboto, sans-serif;font-weight: 1000;padding-bottom: 0px;margin-right: 0;">Profil bearbeiten</span><i id="editInfoTip" class="fa fa-exclamation-circle" style="transform: scale(2); transform-origin: 0; position: absolute; cursor: pointer;"></i>
                 </div>
                 
+                <style>
+                    /* Custom styles for select dropdown */
+                    #group_type option[disabled] {
+                        font-weight: bold !important;
+                        color: #333 !important;
+                    }
+                    
+                    /* Fix display in Firefox and other browsers */
+                    #group_type option {
+                        padding: 5px;
+                    }
+                    
+                    /* Make sure selected option is visible */
+                    #group_type option:checked {
+                        background-color: #478cf4;
+                        color: white;
+                    }
+                </style>
+                
                 <form action="/profile" method="post">
                     <div class="form-group">
                         <label for="username">Nutzername</label>
@@ -29,27 +48,35 @@
                     
                     <div class="form-group">
                         <label for="group_type">Stimmgruppe</label>
-                        <select class="form-control" id="group_type" name="group_type" style="font-family: Roboto, sans-serif;">
-                            <option value="" disabled>Instrument / Stimmgruppe</option>
+                        <?php
+                        // Ensure type is correctly retrieved, falling back to empty string
+                        $currentType = '';
+                        if (isset($user['type']) && !empty($user['type'])) {
+                            $currentType = str_replace('*', '', $user['type']);
+                        }
+                        
+                        // Add hidden field with current type for debugging (outside the recursive function)
+                        echo '<input type="hidden" id="debug_current_type" value="' . htmlspecialchars($currentType) . '">';
+                        ?>
+                        <select class="form-control" id="group_type" name="group_type" style="font-family: Roboto, sans-serif;" required>
+                            <option value="">Bitte Instrument / Stimmgruppe wählen</option>
                             <?php 
-                            function renderTypeOptions($structure, $level = 0) {
-                                global $user;
-                                $currentType = str_replace('*', '', $user['type']);
-                                
+                            function renderTypeOptions($structure, $level = 0, $currentType = '') {
                                 foreach ($structure as $key => $value) {
                                     if (is_array($value)) {
                                         // Group header
                                         echo '<option value="" disabled style="font-weight: bold; background-color: ' . ($level === 0 ? '#e1e1e1' : '#f3f3f3') . '">' . str_replace('_', ' ', $key) . '</option>';
-                                        renderTypeOptions($value, $level + 1);
+                                        renderTypeOptions($value, $level + 1, $currentType);
                                     } else {
                                         // Selectable option
+                                        // Compare exact string values for more reliable matching
                                         $selected = ($value === $currentType) ? ' selected' : '';
                                         echo '<option value="' . $value . '"' . $selected . '>' . str_repeat('&nbsp;&nbsp;', $level) . str_replace('_', ' ', $value) . '</option>';
                                     }
                                 }
                             }
                             
-                            renderTypeOptions($typeStructure);
+                            renderTypeOptions($typeStructure, 0, $currentType);
                             ?>
                         </select>
                     </div>
@@ -98,6 +125,18 @@ $(document).ready(function(){
         arrow: true
     });
     
+    // Ensure the correct option is selected
+    const currentType = $('#debug_current_type').val();
+    if (currentType) {
+        // Find the option that matches the current type
+        $('#group_type option').each(function() {
+            if ($(this).val() === currentType) {
+                $(this).prop('selected', true);
+                return false; // break the loop
+            }
+        });
+    }
+    
     // Handle Stimmführer checkbox
     $('#group_leader').click(function(){
         if($(this).is(':checked')){
@@ -135,6 +174,21 @@ $(document).ready(function(){
                 }
             });
         }
+    });
+    
+    // Handle form submission
+    $('form').submit(function() {
+        // Log type selection for debugging
+        console.log('Selected type:', $('#group_type').val());
+        console.log('Current type (debug):', $('#debug_current_type').val());
+        
+        // Make sure a type is selected
+        if (!$('#group_type').val()) {
+            alert('Bitte wählen Sie eine Stimmgruppe aus.');
+            return false;
+        }
+        
+        return true;
     });
     
     // Handle account deletion

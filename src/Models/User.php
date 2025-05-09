@@ -238,10 +238,13 @@ class User extends Model
                 return ['error' => true, 'message' => 'Die Probe wurde nicht gefunden.', 'details' => 'Die angegebene Probe existiert nicht mehr.'];
             }
             
+            // Convert boolean attending to status enum
+            $status = $attending ? 'yes' : 'no';
+            
             if ($existingPromise) {
                 // Update existing promise
                 $result = $promiseModel->update($existingPromise['id'], [
-                    'attending' => $attending ? 1 : 0,
+                    'status' => $status,
                     'note' => $note,
                     'updated_at' => date('Y-m-d H:i:s')
                 ]);
@@ -250,7 +253,7 @@ class User extends Model
                 $result = $promiseModel->insert([
                     'user_id' => $userId,
                     'rehearsal_id' => $rehearsalId,
-                    'attending' => $attending ? 1 : 0,
+                    'status' => $status,
                     'note' => $note,
                     'created_at' => date('Y-m-d H:i:s'),
                     'updated_at' => date('Y-m-d H:i:s')
@@ -286,13 +289,18 @@ class User extends Model
      */
     public function getPromises($userId)
     {
-        $sql = "SELECT up.*, r.date, r.time, r.location, r.description
+        $sql = "SELECT up.*, r.date, r.time, r.location
                 FROM user_promises up
                 JOIN rehearsals r ON up.rehearsal_id = r.id
                 WHERE up.user_id = ?
                 ORDER BY r.date, r.time";
         
         $stmt = $this->db->prepare($sql);
+        if (!$stmt) {
+            error_log("Failed to prepare statement in getPromises: " . $this->db->getConnection()->error);
+            return [];
+        }
+        
         $stmt->bind_param('i', $userId);
         $stmt->execute();
         
@@ -300,6 +308,8 @@ class User extends Model
         
         $promises = [];
         while ($row = $result->fetch_assoc()) {
+            // Convert status to attending boolean for backward compatibility
+            $row['attending'] = ($row['status'] === 'yes');
             $promises[] = $row;
         }
         

@@ -351,7 +351,8 @@ class PromiseController extends Controller
             ];
             
             // Determine which users apply to this rehearsal
-            $groups = json_decode($rehearsal['groups_data'] ?? '{}', true);
+            $groups = $this->rehearsalModel->getGroupsAsAssoc($rehearsal['id']);
+            $rehearsalIsSmallGroup = isset($rehearsal['is_small_group']) && $rehearsal['is_small_group'] == 1;
             
             foreach ($users as $user) {
                 // Skip conductors - they shouldn't be displayed in the attendance list
@@ -360,7 +361,7 @@ class PromiseController extends Controller
                 }
                 
                 $isSmallGroup = isset($user['is_small_group']) && $user['is_small_group'];
-                if ($this->rehearsalModel->isUserInRehearsalGroup($user['type'], $isSmallGroup, $groups)) {
+                if ($this->rehearsalModel->isUserInRehearsalGroup($user['type'], $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
                     $userPromises = $this->userModel->getPromises($user['id']);
                     $found = false;
                     $status = 'no_response';

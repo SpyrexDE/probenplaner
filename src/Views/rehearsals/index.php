@@ -38,8 +38,17 @@
                 $location = $rehearsal['location'] ?? 'TBA';
                 
                 // Determine rehearsal groups
-                $groups = json_decode($rehearsal['groups_data'] ?? '{}', true);
-                $groupKeys = array_keys($groups);
+                $groupKeys = $rehearsal['groups'] ?? [];
+                
+                // Check if it's a small group
+                $isSmallGroup = isset($rehearsal['is_small_group']) && $rehearsal['is_small_group'] == 1;
+                
+                // Add * suffix to group names if it's a small group
+                if ($isSmallGroup) {
+                    foreach ($groupKeys as &$group) {
+                        $group .= '*';
+                    }
+                }
                 
                 // Convert group keys to formatted display
                 $groupsDisplay = str_replace("_", " ", implode("<br>", $groupKeys));

@@ -18,9 +18,9 @@ function sortGroups($groups) {
             return 1;
         } elseif ($b == "Generalprobe" && $a != "Konzert") {
             return 1;
-        } elseif ($b == "Stimmprobe" && $a != "Generalprobe" && $a != "Konzert") {
+        } elseif ($b == "Registerprobe" && $a != "Generalprobe" && $a != "Konzert") {
             return 1;
-        } elseif ($b == $userType && $a != "Stimmprobe" && $a != "Generalprobe" && $a != "Konzert") {
+        } elseif ($b == $userType && $a != "Registerprobe" && $a != "Generalprobe" && $a != "Konzert") {
             return 1;
         } else {
             return -1;
@@ -117,8 +117,18 @@ input, textarea {
         }
         
         // Get group information
-        $groups = json_decode($rehearsal['groups_data'] ?? '{}', true);
-        $groupArray = sortGroups($groups);
+        $groupArray = $rehearsal['groups'] ?? [];
+        
+        // Check if it's a small group
+        $isSmallGroup = isset($rehearsal['is_small_group']) && $rehearsal['is_small_group'] == 1;
+        
+        // Add * suffix to group names if it's a small group
+        if ($isSmallGroup) {
+            foreach ($groupArray as &$group) {
+                $group .= '*';
+            }
+        }
+        
         $groupsText = str_replace("_", " ", implode("<br>", $groupArray));
         
         // Determine color class

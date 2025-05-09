@@ -62,7 +62,7 @@ class Rehearsal extends Model
      */
     public function getGroups($rehearsalId)
     {
-        $sql = "SELECT group_name FROM rehearsal_groups WHERE rehearsal_id = ?";
+        $sql = "SELECT name FROM rehearsal_groups WHERE rehearsal_id = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param('i', $rehearsalId);
         $stmt->execute();
@@ -71,7 +71,7 @@ class Rehearsal extends Model
         
         $groups = [];
         while ($row = $result->fetch_assoc()) {
-            $groups[] = $row['group_name'];
+            $groups[] = $row['name'];
         }
         
         return $groups;
@@ -102,7 +102,7 @@ class Rehearsal extends Model
             
             // Add new groups
             foreach ($groups as $group) {
-                $sql = "INSERT INTO rehearsal_groups (rehearsal_id, group_name) VALUES (?, ?)";
+                $sql = "INSERT INTO rehearsal_groups (rehearsal_id, name) VALUES (?, ?)";
                 $stmt = $this->db->prepare($sql);
                 $stmt->bind_param('is', $rehearsalId, $group);
                 $result = $stmt->execute();
@@ -150,8 +150,10 @@ class Rehearsal extends Model
         $rehearsals = [];
         if ($result) {
             while ($row = $result->fetch_assoc()) {
-                $groups = json_decode($row['groups_data'] ?? '{}', true);
-                if ($this->isUserInRehearsalGroup($userType, $isSmallGroup, $groups)) {
+                $groups = $this->getGroupsAsAssoc($row['id']);
+                $rehearsalIsSmallGroup = isset($row['is_small_group']) && $row['is_small_group'] == 1;
+                
+                if ($this->isUserInRehearsalGroup($userType, $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
                     $row['date_formatted'] = Helpers::formatDate($row['date']);
                     $row['groups'] = $this->getGroups($row['id']);
                     $rehearsals[] = $row;
@@ -163,83 +165,78 @@ class Rehearsal extends Model
     }
     
     /**
+     * Get groups for a rehearsal as associative array
+     * 
+     * @param int $rehearsalId Rehearsal ID
+     * @return array Group names as keys with dummy values
+     */
+    public function getGroupsAsAssoc($rehearsalId)
+    {
+        $sql = "SELECT name FROM rehearsal_groups WHERE rehearsal_id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param('i', $rehearsalId);
+        $stmt->execute();
+        
+        $result = $stmt->get_result();
+        
+        $groups = [];
+        while ($row = $result->fetch_assoc()) {
+            $groups[$row['name']] = 0; // Using 0 as dummy value as in previous groups_data
+        }
+        
+        return $groups;
+    }
+    
+    /**
      * Check if user type is in the specified groups
      * 
      * @param string $userType User type/instrument
      * @param bool $isSmallGroup Whether the user is in small group
      * @param array $groups Groups to check
+     * @param bool $rehearsalIsSmallGroup Whether the rehearsal is a small group rehearsal
      * @return bool
      */
-    public function isUserInRehearsalGroup($userType, $isSmallGroup, $groups)
+    public function isUserInRehearsalGroup($userType, $isSmallGroup, $groups, $rehearsalIsSmallGroup = false)
     {
         // Special types that apply to everyone
         if (isset($groups['Tutti']) || isset($groups['Konzert']) || isset($groups['Konzertreise']) || isset($groups['Generalprobe'])) {
             return true;
         }
         
-        // Check for exact match - checking if the group has a * suffix for small groups
-        $smallGroupGroups = array_filter(array_keys($groups), function($group) {
-            return strpos($group, '*') !== false;
-        });
-        
-        $regularGroups = array_filter(array_keys($groups), function($group) {
-            return strpos($group, '*') === false && 
-                   $group !== 'Tutti' && 
-                   $group !== 'Konzert' && 
-                   $group !== 'Konzertreise' && 
-                   $group !== 'Generalprobe';
-        });
-        
         // If it's a small group rehearsal, only users with is_small_group should attend
-        if (!empty($smallGroupGroups) && !$isSmallGroup) {
+        if ($rehearsalIsSmallGroup && !$isSmallGroup) {
             return false;
         }
         
         // Check if user type matches a group
-        foreach ($regularGroups as $group) {
+        foreach (array_keys($groups) as $group) {
             if ($group === $userType) {
                 return true;
             }
-        }
-        
-        // Check for small group match
-        foreach ($smallGroupGroups as $group) {
-            $baseGroup = str_replace('*', '', $group);
-            if ($baseGroup === $userType && $isSmallGroup) {
-                return true;
-            }
-        }
-        
-        // Check if in Streicher group
-        if ($userType === 'Violine_1' || $userType === 'Violine_2' || $userType === 'Bratsche' || $userType === 'Cello' || $userType === 'Kontrabass') {
-            if (isset($groups['Streicher'])) {
-                return true;
-            }
             
-            if (isset($groups['Streicher*']) && $isSmallGroup) {
-                return true;
-            }
-        }
-        
-        // Check if in Blechbläser group
-        if ($userType === 'Trompete' || $userType === 'Posaune' || $userType === 'Tuba' || $userType === 'Horn') {
-            if (isset($groups['Blechbläser']) || isset($groups['Bläser'])) {
-                return true;
-            }
-            
-            if ((isset($groups['Blechbläser*']) || isset($groups['Bläser*'])) && $isSmallGroup) {
-                return true;
-            }
-        }
-        
-        // Check if in Holzbläser group
-        if ($userType === 'Flöte' || $userType === 'Oboe' || $userType === 'Klarinette' || $userType === 'Fagott') {
-            if (isset($groups['Holzbläser']) || isset($groups['Bläser'])) {
-                return true;
-            }
-            
-            if ((isset($groups['Holzbläser*']) || isset($groups['Bläser*'])) && $isSmallGroup) {
-                return true;
+            // Check parent groups
+            // Strings like "Streicher", "Bläser", "Blechbläser", "Holzbläser" contain multiple instrument groups
+            switch ($group) {
+                case 'Streicher':
+                    if (in_array($userType, ['Violine_1', 'Violine_2', 'Bratsche', 'Cello', 'Kontrabass'])) {
+                        return true;
+                    }
+                    break;
+                case 'Bläser':
+                    if (in_array($userType, ['Flöte', 'Oboe', 'Klarinette', 'Fagott', 'Trompete', 'Posaune', 'Tuba', 'Horn'])) {
+                        return true;
+                    }
+                    break;
+                case 'Blechbläser':
+                    if (in_array($userType, ['Trompete', 'Posaune', 'Tuba', 'Horn'])) {
+                        return true;
+                    }
+                    break;
+                case 'Holzbläser':
+                    if (in_array($userType, ['Flöte', 'Oboe', 'Klarinette', 'Fagott'])) {
+                        return true;
+                    }
+                    break;
             }
         }
         
@@ -259,15 +256,6 @@ class Rehearsal extends Model
         $this->db->getConnection()->begin_transaction();
         
         try {
-            // Validate JSON in groups_data
-            if (isset($data['groups_data'])) {
-                $decoded = json_decode($data['groups_data']);
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    error_log("Invalid JSON in groups_data: " . json_last_error_msg());
-                    throw new \Exception("Invalid JSON data: " . json_last_error_msg());
-                }
-            }
-            
             // Set explicit timestamp values in MySQL format - this is confirmed to work
             $data['created_at'] = date('Y-m-d H:i:s');
             $data['updated_at'] = date('Y-m-d H:i:s');
@@ -282,21 +270,44 @@ class Rehearsal extends Model
                 $error = $this->db->getConnection()->error;
                 $errno = $this->db->getConnection()->errno;
                 error_log("Failed to insert rehearsal: Error #" . $errno . ": " . $error);
-                throw new \Exception($error ? $error : "Failed to create rehearsal record");
+                
+                // Get more detailed error information
+                $details = "MySQL Error #" . $errno . ": " . $error;
+                if ($errno == 1054) { // Unknown column
+                    $details .= "\nBitte führen Sie die Migrationen aus, um die Datenbankstruktur zu aktualisieren.";
+                } elseif ($errno == 1062) { // Duplicate entry
+                    $details .= "\nEin Eintrag mit diesen Daten existiert bereits.";
+                } elseif ($errno == 1452) { // Foreign key constraint fails
+                    $details .= "\nUngültige Referenz auf einen anderen Datensatz.";
+                }
+                
+                throw new \Exception($error ? $error : "Failed to create rehearsal record", $errno);
             }
             
             // Add groups
             error_log("Creating rehearsal groups for rehearsal ID: " . $rehearsalId);
             foreach ($groups as $group) {
-                $sql = "INSERT INTO rehearsal_groups (rehearsal_id, group_name) VALUES (?, ?)";
+                $sql = "INSERT INTO rehearsal_groups (rehearsal_id, name) VALUES (?, ?)";
                 $stmt = $this->db->prepare($sql);
                 $stmt->bind_param('is', $rehearsalId, $group);
                 $result = $stmt->execute();
                 
                 if (!$result) {
                     $error = $stmt->error;
+                    $errno = $stmt->errno;
                     error_log("Failed to insert rehearsal group [$group]: " . $error);
-                    throw new \Exception($error);
+                    
+                    // Get more detailed error information
+                    $details = "MySQL Error #" . $errno . ": " . $error;
+                    if ($errno == 1054) { // Unknown column
+                        $details .= "\nBitte führen Sie die Migrationen aus, um die Datenbankstruktur zu aktualisieren.";
+                    } elseif ($errno == 1062) { // Duplicate entry
+                        $details .= "\nEin Eintrag mit diesen Daten existiert bereits.";
+                    } elseif ($errno == 1452) { // Foreign key constraint fails
+                        $details .= "\nUngültige Referenz auf einen anderen Datensatz.";
+                    }
+                    
+                    throw new \Exception($error, $errno);
                 }
             }
             
@@ -309,7 +320,22 @@ class Rehearsal extends Model
             // Rollback on error
             $this->db->getConnection()->rollback();
             error_log("Exception during rehearsal creation: " . $e->getMessage());
-            return ['error' => true, 'message' => $e->getMessage()];
+            
+            // Get detailed error information
+            $details = $e->getMessage();
+            if ($e->getCode() == 1054) { // Unknown column
+                $details .= "\nBitte führen Sie die Migrationen aus, um die Datenbankstruktur zu aktualisieren.";
+            } elseif ($e->getCode() == 1062) { // Duplicate entry
+                $details .= "\nEin Eintrag mit diesen Daten existiert bereits.";
+            } elseif ($e->getCode() == 1452) { // Foreign key constraint fails
+                $details .= "\nUngültige Referenz auf einen anderen Datensatz.";
+            }
+            
+            return [
+                'error' => true, 
+                'message' => $e->getMessage(),
+                'details' => $details
+            ];
         }
     }
     
@@ -350,7 +376,7 @@ class Rehearsal extends Model
             
             // Add new groups
             foreach ($groups as $group) {
-                $sql = "INSERT INTO rehearsal_groups (rehearsal_id, group_name) VALUES (?, ?)";
+                $sql = "INSERT INTO rehearsal_groups (rehearsal_id, name) VALUES (?, ?)";
                 $stmt = $this->db->prepare($sql);
                 $stmt->bind_param('is', $id, $group);
                 $result = $stmt->execute();

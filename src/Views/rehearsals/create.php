@@ -67,8 +67,8 @@
                     </div>
                     
                     <div class="form-check custom-control custom-checkbox mb-3" style="margin-bottom: 10px !important;">
-                        <input class="form-check-input custom-control-input" type="checkbox" id="Stimmprobe" name="rehearsal_type" value="Stimmprobe" <?= ($formData['rehearsal_type'] ?? '') === 'Stimmprobe' ? 'checked' : '' ?>>
-                        <label class="form-check-label custom-control-label" for="Stimmprobe">Stimmprobe</label>
+                        <input class="form-check-input custom-control-input" type="checkbox" id="Registerprobe" name="rehearsal_type" value="Registerprobe" <?= ($formData['rehearsal_type'] ?? '') === 'Registerprobe' ? 'checked' : '' ?>>
+                        <label class="form-check-label custom-control-label" for="Registerprobe">Registerprobe</label>
                     </div>
                     
                     <div class="form-check custom-control custom-checkbox mb-3" style="margin-bottom: 10px !important; font-weight: 700; font-size: 1.1em;">
@@ -172,11 +172,6 @@
                         <input class="form-check-input custom-control-input" type="checkbox" id="Andere" name="groups[]" value="Andere" <?= in_array('Andere', $formData['groups'] ?? []) ? 'checked' : '' ?>>
                         <label class="form-check-label custom-control-label" for="Andere">Andere</label>
                     </div>
-                </div>
-                
-                <div class="form-group mt-4">
-                    <label for="description" style="text-align: left; display: block;">Notizen (optional)</label>
-                    <textarea class="form-control" id="description" name="description" rows="3"><?= htmlspecialchars($formData['description'] ?? '') ?></textarea>
                 </div>
                 
                 <div class="form-group">

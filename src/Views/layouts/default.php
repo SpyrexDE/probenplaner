@@ -31,7 +31,9 @@
     <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/animations/scale.css"/>
 </head>
 <body style="width: 100%; height: 100%;">
-<?php if (isset($_SESSION['username'])): ?>
+<?php 
+use App\Core\Utilities;
+if (isset($_SESSION['username'])): ?>
     <div id="wrapper">
         <div class="shadow-lg topBar" id="sidebar-wrapper" style="background-color: #ffffff;">
             <ul class="sidebar-nav">
@@ -41,8 +43,10 @@
                             <i class="icon ion-ios-contact" style="color: #478cf4; font-size: 64px; margin: -18px; margin-left: -28px;"></i>
                         </div>
                         <div class="text-nowrap" style="width: 70%; background: green; overflow: hidden; height: 100%; background-color: rgba(255,255,255,0);">
-                            <label style="margin: 0; width: 100%; height: 50%; float: left; margin-left: -10px; margin-top: -7px;"><?= $_SESSION['username'] ?? '' ?></label>
-                            <label id="groupLabel" style="margin: 0; width: 100%; height: 50%; float: left; margin-top: -12px; margin-left: -10px;"><?= $_SESSION['type'] ?? '' ?></label>
+                            <label style="margin: 0; width: 100%; height: 50%; float: left; margin-left: -10px; margin-top: -7px;">
+                                <?= Utilities::formatUsername($_SESSION['username'], $_SESSION['role'] ?? 'member', $_SESSION['is_small_group'] ?? false) ?>
+                            </label>
+                            <label id="groupLabel" style="margin: 0; width: 100%; height: 50%; float: left; margin-top: -12px; margin-left: -10px;"><?= isset($_SESSION['type']) ? str_replace('_', ' ', $_SESSION['type']) : '' ?></label>
                         </div>
                     </div>
                 </li>
@@ -231,19 +235,34 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
         <?php
         $hasDetails = isset($alert[3]) && $alert[3];
         $details = $hasDetails ? htmlspecialchars($alert[3]) : '';
-        
-        $config = [
-            'title' => htmlspecialchars($alert[0]),
-            'html' => nl2br(htmlspecialchars($alert[1])) . ($hasDetails ? '<br><button id="showDetailsBtn" style="margin-top:10px;" class="swal2-styled">Details anzeigen</button><div id="errorDetails" style="display:none; margin-top:10px; text-align:left; font-size:12px; color:#a94442; background:#f9f2f4; border:1px solid #ebccd1; padding:10px; border-radius:4px; white-space:pre-wrap;">' . $details . '</div>' : ''),
-            'icon' => $alert[2] === 'error' ? 'error' : ($alert[2] === 'success' ? 'success' : 'info'),
-            'confirmButtonColor' => '#478cf4'
-        ];
-        
-        if ($hasDetails) {
-            $config['didOpen'] = 'function() { const btn = document.getElementById("showDetailsBtn"); if (btn) { btn.onclick = function() { const details = document.getElementById("errorDetails"); if (details.style.display === "none") { details.style.display = "block"; btn.textContent = "Details ausblenden"; } else { details.style.display = "none"; btn.textContent = "Details anzeigen"; } }; } }';
-        }
         ?>
-        Swal.fire(<?= json_encode($config) ?>);
+        Swal.fire({
+            title: '<?= htmlspecialchars($alert[0]) ?>',
+            html: `<?= nl2br(htmlspecialchars($alert[1])) ?><?php if ($hasDetails): ?>
+                <br><button id="showDetailsBtn_<?= $key ?>" style="margin-top:10px;" class="swal2-styled">Details anzeigen</button>
+                <div id="errorDetails_<?= $key ?>" style="display:none; margin-top:10px; text-align:left; font-size:12px; color:#a94442; background:#f9f2f4; border:1px solid #ebccd1; padding:10px; border-radius:4px; white-space:pre-wrap;"><?= $details ?></div>
+            <?php endif; ?>`,
+            icon: '<?= $alert[2] === 'error' ? 'error' : ($alert[2] === 'success' ? 'success' : 'info') ?>',
+            confirmButtonColor: '#478cf4',
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                const btn = document.getElementById('showDetailsBtn_<?= $key ?>');
+                const details = document.getElementById('errorDetails_<?= $key ?>');
+                if (btn && details) {
+                    btn.onclick = function() {
+                        if (details.style.display === 'none') {
+                            details.style.display = 'block';
+                            btn.textContent = 'Details ausblenden';
+                        } else {
+                            details.style.display = 'none';
+                            btn.textContent = 'Details anzeigen';
+                        }
+                    };
+                }
+            }
+        });
     <?php unset($_SESSION['alerts'][$key]); endforeach; ?>
 </script>
 <?php endif; ?>

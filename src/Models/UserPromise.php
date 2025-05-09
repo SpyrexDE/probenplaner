@@ -115,7 +115,8 @@ class UserPromise extends Model
             
             // Check if user is relevant for this rehearsal
             $isSmallGroup = isset($user['is_small_group']) && $user['is_small_group'];
-            if ($rehearsalModel->isUserInRehearsalGroup($user['type'], $isSmallGroup, $groups)) {
+            $rehearsalIsSmallGroup = isset($rehearsal['is_small_group']) && $rehearsal['is_small_group'] == 1;
+            if ($rehearsalModel->isUserInRehearsalGroup($user['type'], $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
                 $stats['total']++;
                 
                 // Check user's promise
@@ -154,13 +155,14 @@ class UserPromise extends Model
      * Check if user type is in the specified groups
      * 
      * @param string $userType User type/instrument
+     * @param bool $isSmallGroup Whether the user is in small group
      * @param array $groups Groups to check
+     * @param bool $rehearsalIsSmallGroup Whether the rehearsal is a small group
      * @return bool
      */
-    private function isUserInRehearsalGroup($userType, $groups)
+    private function isUserInRehearsalGroup($userType, $isSmallGroup, $groups, $rehearsalIsSmallGroup = false)
     {
         $rehearsalModel = new Rehearsal();
-        // Assuming all users without is_small_group flag are not in small group
-        return $rehearsalModel->isUserInRehearsalGroup($userType, false, $groups);
+        return $rehearsalModel->isUserInRehearsalGroup($userType, $isSmallGroup, $groups, $rehearsalIsSmallGroup);
     }
 } 

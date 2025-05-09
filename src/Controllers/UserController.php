@@ -47,11 +47,29 @@ class UserController extends Controller
             return;
         }
         
+        // Ensure we have the latest data from the session as well
+        if (isset($_SESSION['type'])) {
+            $user['type'] = $_SESSION['type'];
+        }
+        if (isset($_SESSION['is_small_group'])) {
+            $user['is_small_group'] = $_SESSION['is_small_group'];
+        }
+        if (isset($_SESSION['role'])) {
+            $user['role'] = $_SESSION['role'];
+        }
+        
         // Handle form submission
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->processProfileEdit($user);
             return;
         }
+        
+        // Add debugging info for troubleshooting
+        error_log("User data for profile: " . json_encode([
+            'type' => $user['type'] ?? null,
+            'is_small_group' => $user['is_small_group'] ?? null,
+            'role' => $user['role'] ?? null
+        ]));
         
         // Render profile view
         $this->render('user/profile', [
@@ -320,6 +338,17 @@ class UserController extends Controller
                 $this->addAlert('Erfolg!', 'Profil aktualisiert. Bitte melden Sie sich erneut an.', 'success');
                 $this->logout();
             } else {
+                // Update session variables to reflect changes
+                if (isset($updateData['type'])) {
+                    $_SESSION['type'] = $updateData['type'];
+                }
+                if (isset($updateData['is_small_group'])) {
+                    $_SESSION['is_small_group'] = $updateData['is_small_group'] ? true : false;
+                }
+                if (isset($updateData['role'])) {
+                    $_SESSION['role'] = $updateData['role'];
+                }
+                
                 $this->addAlert('Erfolg!', 'Profil erfolgreich aktualisiert.', 'success');
                 $this->redirect('/profile');
             }

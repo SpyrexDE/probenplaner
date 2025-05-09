@@ -1,0 +1,5 @@
+---
+description: If you need to do a schema change on the db create a corresponding migration file in database/migrations and tell the user to apply it. Dont edit existing migration files.
+globs: 
+alwaysApply: false
+---

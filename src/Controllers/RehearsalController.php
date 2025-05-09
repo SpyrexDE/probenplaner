@@ -81,7 +81,6 @@ class RehearsalController extends Controller
             $date = $_POST['date'] ?? '';
             $time = $_POST['time'] ?? '';
             $location = $_POST['location'] ?? '';
-            $description = $_POST['description'] ?? '';
             $color = $_POST['color'] ?? '';
             
             // Date is already in Y-m-d format from the date input field
@@ -103,23 +102,6 @@ class RehearsalController extends Controller
             
             // Check if it's a small group rehearsal
             $isSmallGroup = isset($_POST['is_small_group']) && $_POST['is_small_group'] === '1';
-            
-            if ($isSmallGroup) {
-                // Convert regular groups to small group format with asterisk
-                $smallGroups = [];
-                foreach ($groups as $group => $value) {
-                    if ($group !== $rehearsalType) {
-                        $smallGroups[$group . '*'] = $value;
-                    }
-                }
-                
-                // Add the rehearsal type with asterisk if it's not Tutti
-                if ($rehearsalType !== 'Tutti') {
-                    $smallGroups[$rehearsalType . '*'] = 0;
-                }
-                
-                $groups = $smallGroups;
-            }
             
             // Validate input
             $errors = [];
@@ -146,9 +128,8 @@ class RehearsalController extends Controller
                     'date' => $date,
                     'time' => $time,
                     'location' => $location,
-                    'description' => $description,
-                    'groups_data' => json_encode($groups),
-                    'orchestra_id' => (int)$_SESSION['orchestra_id']
+                    'orchestra_id' => (int)$_SESSION['orchestra_id'],
+                    'is_small_group' => $isSmallGroup ? 1 : 0
                 ];
                 
                 // Only add color if it was submitted and if the field exists in the database
@@ -166,6 +147,11 @@ class RehearsalController extends Controller
                     $errorMessage = is_array($result) && isset($result['message']) 
                         ? 'Failed to create rehearsal: ' . $result['message']
                         : 'Failed to create rehearsal';
+                    
+                    // Add detailed error information
+                    $this->addAlert('Fehler!', $errorMessage, 'error', 
+                        is_array($result) && isset($result['details']) ? $result['details'] : null);
+                    
                     $errors[] = $errorMessage;
                 }
             }
@@ -178,7 +164,6 @@ class RehearsalController extends Controller
                     'date' => $date, // HTML date input expects Y-m-d format
                     'time' => $time,
                     'location' => $location,
-                    'description' => $description,
                     'color' => $color,
                     'rehearsal_type' => $rehearsalType,
                     'groups' => $groupsSelected,
@@ -194,7 +179,6 @@ class RehearsalController extends Controller
                     'date' => '',
                     'time' => '',
                     'location' => '',
-                    'description' => '',
                     'color' => 'white',
                     'rehearsal_type' => '',
                     'groups' => [],
@@ -246,7 +230,6 @@ class RehearsalController extends Controller
             $date = $_POST['date'] ?? '';
             $time = $_POST['time'] ?? '';
             $location = $_POST['location'] ?? '';
-            $description = $_POST['description'] ?? '';
             $color = $_POST['color'] ?? '';
             
             // Date is already in Y-m-d format from the date input field
@@ -269,23 +252,6 @@ class RehearsalController extends Controller
             // Check if it's a small group rehearsal
             $isSmallGroup = isset($_POST['is_small_group']) && $_POST['is_small_group'] === '1';
             
-            if ($isSmallGroup) {
-                // Convert regular groups to small group format with asterisk
-                $smallGroups = [];
-                foreach ($groups as $group => $value) {
-                    if ($group !== $rehearsalType) {
-                        $smallGroups[$group . '*'] = $value;
-                    }
-                }
-                
-                // Add the rehearsal type with asterisk if it's not Tutti
-                if ($rehearsalType !== 'Tutti') {
-                    $smallGroups[$rehearsalType . '*'] = 0;
-                }
-                
-                $groups = $smallGroups;
-            }
-            
             // Validate input
             $errors = [];
             
@@ -307,21 +273,18 @@ class RehearsalController extends Controller
             
             if (empty($errors)) {
                 // Update rehearsal
-                $rehearsalData = [
+                $updateData = [
                     'date' => $date,
                     'time' => $time,
                     'location' => $location,
-                    'description' => $description,
-                    'groups_data' => json_encode($groups),
-                    'orchestra_id' => (int)$_SESSION['orchestra_id']
+                    'is_small_group' => $isSmallGroup ? 1 : 0
                 ];
                 
-                // Only add color if it was submitted and if the field exists in the database
                 if (!empty($color)) {
-                    $rehearsalData['color'] = $color;
+                    $updateData['color'] = $color;
                 }
                 
-                $result = $this->rehearsalModel->updateRehearsal($rehearsalId, $rehearsalData, array_keys($groups));
+                $result = $this->rehearsalModel->updateRehearsal($rehearsalId, $updateData, array_keys($groups));
                 
                 if ($result === true) {
                     $this->setFlash('success', 'Rehearsal updated successfully');
@@ -344,7 +307,6 @@ class RehearsalController extends Controller
                     'date' => $date,
                     'time' => $time,
                     'location' => $location,
-                    'description' => $description,
                     'color' => $color,
                     'rehearsal_type' => $rehearsalType,
                     'groups' => $groupsSelected,
@@ -352,46 +314,6 @@ class RehearsalController extends Controller
                 ]
             ]);
         } else {
-            // Parse groups data
-            $groups = json_decode($rehearsal['groups_data'] ?? '{}', true);
-            $groupKeys = array_keys($groups);
-            
-            // Determine rehearsal type and groups
-            $rehearsalType = '';
-            $selectedGroups = [];
-            $isSmallGroup = false;
-            
-            // Check for rehearsal type
-            if (in_array('Stimmprobe', $groupKeys)) {
-                $rehearsalType = 'Stimmprobe';
-            } elseif (in_array('Konzert', $groupKeys)) {
-                $rehearsalType = 'Konzert';
-            } elseif (in_array('Generalprobe', $groupKeys)) {
-                $rehearsalType = 'Generalprobe';
-            } elseif (in_array('Konzertreise', $groupKeys)) {
-                $rehearsalType = 'Konzertreise';
-            } elseif (in_array('Tutti', $groupKeys)) {
-                $rehearsalType = 'Tutti';
-            }
-            
-            // Check if it's a small group
-            $isSmallGroup = strpos(implode(',', $groupKeys), '*') !== false;
-            
-            // Process groups
-            foreach ($groupKeys as $group) {
-                if ($group !== $rehearsalType) {
-                    // If small group, remove asterisk for form
-                    if ($isSmallGroup) {
-                        $group = str_replace('*', '', $group);
-                    }
-                    
-                    // Skip if it's the rehearsal type with asterisk
-                    if ($group !== $rehearsalType) {
-                        $selectedGroups[] = $group;
-                    }
-                }
-            }
-            
             // Convert date from Y-m-d to dd.mm.yyyy format for display
             $displayDate = '';
             if (!empty($rehearsal['date'])) {
@@ -399,6 +321,18 @@ class RehearsalController extends Controller
                 // The date from the database is likely in Y-m-d format already
                 // But if it's been formatted to dd.mm.yyyy by the model, convert it back
                 $displayDate = Helpers::formatDateForDb($rehearsal['date']);
+            }
+            
+            // Check if any of the rehearsal types is in the groups
+            $rehearsalType = '';
+            $rehearsalTypes = ['Konzertreise', 'Konzert', 'Generalprobe', 'Registerprobe', 'Tutti'];
+            $groups = $rehearsal['groups'] ?? [];
+            
+            foreach ($rehearsalTypes as $type) {
+                if (in_array($type, $groups)) {
+                    $rehearsalType = $type;
+                    break;
+                }
             }
             
             // Display the form
@@ -410,11 +344,10 @@ class RehearsalController extends Controller
                     'date' => $displayDate,
                     'time' => $rehearsal['time'],
                     'location' => $rehearsal['location'],
-                    'description' => $rehearsal['description'] ?? '',
                     'color' => $rehearsal['color'] ?? '',
                     'rehearsal_type' => $rehearsalType,
-                    'groups' => $selectedGroups,
-                    'is_small_group' => $isSmallGroup
+                    'groups' => $rehearsal['groups'] ?? [],
+                    'is_small_group' => $rehearsal['is_small_group'] ?? false
                 ]
             ]);
         }
