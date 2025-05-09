@@ -8,7 +8,7 @@
                 <form action="/profile" method="post">
                     <div class="form-group">
                         <label for="username">Nutzername</label>
-                        <input type="text" class="form-control" id="username" name="username" placeholder="Nutzername" minlength="3" maxlength="20" style="font-family: Roboto, sans-serif;margin-bottom: 15px;" value="<?php echo htmlspecialchars(str_replace('♚', '', $user['username'])); ?>">
+                        <input type="text" class="form-control" id="username" name="username" placeholder="Nutzername" minlength="3" maxlength="20" style="font-family: Roboto, sans-serif;margin-bottom: 15px;" value="<?php echo htmlspecialchars($user['username']); ?>">
                     </div>
                     
                     <div class="form-group">
@@ -56,7 +56,7 @@
                     
                     <div class="form-group">
                         <div class="custom-control custom-checkbox mb-3 zoomed" style="position: relative;">
-                            <input type="checkbox" class="custom-control-input" id="small_group" name="small_group" <?php echo (strpos($user['type'], '*') !== false) ? 'checked' : ''; ?>>
+                            <input type="checkbox" class="custom-control-input" id="small_group" name="small_group" <?php echo (isset($user['is_small_group']) && $user['is_small_group']) ? 'checked' : ''; ?>>
                             <label class="custom-control-label" for="small_group">Kleingruppe</label>
                             <i class="fa fa-question-circle ml-2" id="smallGroupTip" style="cursor: pointer;"></i>
                         </div>
@@ -64,7 +64,7 @@
                     
                     <div class="form-group">
                         <div class="custom-control custom-checkbox mb-3 zoomed" style="position: relative;">
-                            <input type="checkbox" class="custom-control-input" id="group_leader" name="group_leader" <?php echo (strpos($user['username'], '♚') !== false) ? 'checked' : ''; ?>>
+                            <input type="checkbox" class="custom-control-input" id="group_leader" name="group_leader" <?php echo ($user['role'] === 'leader') ? 'checked' : ''; ?>>
                             <label class="custom-control-label" for="group_leader">Stimmführer</label>
                             <input type="hidden" id="group_leader_pw" name="group_leader_pw">
                         </div>

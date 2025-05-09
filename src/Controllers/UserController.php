@@ -277,38 +277,17 @@ class UserController extends Controller
         
         // Process group type changes if provided
         if (!empty($groupType)) {
-            $type = $groupType;
-            
-            // Add small group marker if selected
-            if ($smallGroup) {
-                if (strpos($type, '*') === false) {
-                    $type .= '*';
-                }
-            } else {
-                $type = str_replace('*', '', $type);
-            }
-            
-            $updateData['type'] = $type;
-        } else if ($smallGroup !== (strpos($user['type'], '*') !== false)) {
+            $updateData['type'] = $groupType;
+            $updateData['is_small_group'] = $smallGroup ? 1 : 0;
+        } else if (isset($_POST['small_group'])) {
             // Only small group status changed
-            $type = $user['type'];
-            
-            if ($smallGroup) {
-                if (strpos($type, '*') === false) {
-                    $type .= '*';
-                }
-            } else {
-                $type = str_replace('*', '', $type);
-            }
-            
-            $updateData['type'] = $type;
+            $updateData['is_small_group'] = $smallGroup ? 1 : 0;
         }
         
         // Process group leader status
-        $leaderSymbol = '♚';
-        $hasLeaderSymbol = strpos($user['username'], $leaderSymbol) !== false;
+        $isCurrentlyLeader = ($user['role'] === 'leader');
         
-        if ($groupLeader && !$hasLeaderSymbol) {
+        if ($groupLeader && !$isCurrentlyLeader) {
             // Check leader password
             $leaderPassword = $this->getLeaderPassword();
             // Use case-insensitive comparison
@@ -318,15 +297,11 @@ class UserController extends Controller
                 return;
             }
             
-            // Add leader symbol to username
-            $username = $updateData['username'] ?? $user['username'];
-            $updateData['username'] = $username . $leaderSymbol;
-            $usernameChanged = true;
-        } else if (!$groupLeader && $hasLeaderSymbol) {
-            // Remove leader symbol from username
-            $username = $updateData['username'] ?? $user['username'];
-            $updateData['username'] = str_replace($leaderSymbol, '', $username);
-            $usernameChanged = true;
+            // Set user role to leader
+            $updateData['role'] = 'leader';
+        } else if (!$groupLeader && $isCurrentlyLeader) {
+            // Remove leader role
+            $updateData['role'] = 'member';
         }
         
         // If no changes were made
@@ -339,7 +314,7 @@ class UserController extends Controller
         // Update user profile
         $result = $this->userModel->updateProfile($user['id'], $updateData);
         
-        if ($result) {
+        if ($result === true) {
             if ($usernameChanged) {
                 // If username changed, need to log out and back in
                 $this->addAlert('Erfolg!', 'Profil aktualisiert. Bitte melden Sie sich erneut an.', 'success');
@@ -349,7 +324,26 @@ class UserController extends Controller
                 $this->redirect('/profile');
             }
         } else {
-            $this->addAlert('Fehler!', 'Fehler beim Aktualisieren des Profils.', 'error');
+            // Log the error for debugging
+            error_log("Profile update failed: " . json_encode($updateData));
+            
+            // Check if it's an array with error details
+            if (is_array($result) && isset($result['error']) && isset($result['message'])) {
+                $errorDetails = isset($result['details']) ? $result['details'] : '';
+                $this->addAlert('Fehler!', $result['message'], 'error', $errorDetails);
+            } else {
+                // Try to get a better error message from the database
+                $db = new \App\Core\Database();
+                $errorMsg = $db->getLastError();
+                
+                if (strpos($errorMsg, 'Unknown column') !== false) {
+                    throw new \Exception(
+                        'Es fehlt eine Spalte in der Datenbank. Bitte führen Sie die Migrationen aus, um die Datenbankstruktur zu aktualisieren.'
+                    );
+                } else {
+                    $this->addAlert('Fehler!', 'Fehler beim Aktualisieren des Profils.', 'error', $errorMsg);
+                }
+            }
             $this->redirect('/profile');
         }
     }
@@ -504,7 +498,7 @@ class UserController extends Controller
     {
         // Check if user is authorized (either conductor or group leader)
         if (!$this->isLoggedIn() || 
-            ($_SESSION['type'] != 'Dirigent' && strpos($_SESSION['username'], '♚') === false)) {
+            ($_SESSION['role'] !== 'conductor' && $_SESSION['role'] !== 'leader')) {
             http_response_code(403);
             echo json_encode(['error' => 'No permission']);
             return;
@@ -548,7 +542,7 @@ class UserController extends Controller
     {
         // Check if user is authorized (either conductor or group leader)
         if (!$this->isLoggedIn() || 
-            ($_SESSION['type'] != 'Dirigent' && strpos($_SESSION['username'], '♚') === false)) {
+            ($_SESSION['role'] !== 'conductor' && $_SESSION['role'] !== 'leader')) {
             http_response_code(403);
             echo json_encode(['error' => 'No permission']);
             return;
@@ -596,7 +590,7 @@ class UserController extends Controller
     {
         // Check if user is authorized (either conductor or group leader)
         if (!$this->isLoggedIn() || 
-            ($_SESSION['type'] != 'Dirigent' && strpos($_SESSION['username'], '♚') === false)) {
+            ($_SESSION['role'] !== 'conductor' && $_SESSION['role'] !== 'leader')) {
             http_response_code(403);
             echo json_encode(['error' => 'No permission']);
             return;

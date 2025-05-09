@@ -1,11 +1,6 @@
 # Enable URL rewriting
 RewriteEngine On
 
-# Redirect old /debug URL to the new dashboard
-RewriteRule ^debug$ debug/dashboard.php [L,R=302]
-# Preserve query string when redirecting
-RewriteRule ^debug\?(.*)$ debug/dashboard.php?$1 [L,R=302]
-
 # Set the base directory
 RewriteBase /
 

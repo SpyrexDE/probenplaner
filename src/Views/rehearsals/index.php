@@ -2,21 +2,33 @@
 
 <div class="container-fluid mt-4">
     <?php if (isset($_SESSION['flash_messages']) && !empty($_SESSION['flash_messages'])): ?>
+    <script>
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'bottom-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true
+        });
+        
         <?php foreach ($_SESSION['flash_messages'] as $key => $message): ?>
-            <div class="alert alert-<?= $message['type'] ?> alert-dismissible fade show" role="alert">
-                <?= $message['message'] ?>
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <?php unset($_SESSION['flash_messages'][$key]); ?>
-        <?php endforeach; ?>
+            Toast.fire({
+                icon: '<?= $message['type'] === 'error' ? 'error' : ($message['type'] === 'success' ? 'success' : 'info') ?>',
+                title: '<?= htmlspecialchars($message['message']) ?>'
+            });
+        <?php unset($_SESSION['flash_messages'][$key]); endforeach; ?>
+    </script>
     <?php endif; ?>
 
     <?php if (empty($rehearsals)): ?>
-        <div class="alert alert-info">
-            Keine Termine gefunden.
-        </div>
+    <script>
+        Swal.fire({
+            title: 'Information',
+            text: 'Keine Termine gefunden.',
+            icon: 'info',
+            confirmButtonColor: '#478cf4'
+        });
+    </script>
     <?php else: ?>
         <?php foreach ($rehearsals as $rehearsal): ?>
             <?php 

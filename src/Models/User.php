@@ -177,16 +177,40 @@ class User extends Model
      * 
      * @param int $id
      * @param array $data
-     * @return bool
+     * @return bool|array True on success, error details array on failure
      */
     public function updateProfile($id, $data)
     {
-        // If updating password, hash it
-        if (isset($data['password'])) {
-            $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+        try {
+            // If updating password, hash it
+            if (isset($data['password'])) {
+                $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+            }
+            
+            // Debug log
+            error_log("Updating user profile. ID: $id, Data: " . json_encode($data));
+            
+            $result = $this->update($id, $data);
+            
+            if ($result === false) {
+                $error = $this->db->getLastError();
+                error_log("User profile update failed - Database error: " . $error);
+                
+                // Check for specific error types
+                if (strpos($error, '1062') !== false) { // Duplicate entry
+                    return ['error' => true, 'message' => 'Der Benutzername ist bereits vergeben.', 'details' => 'Ein Benutzer mit diesem Namen existiert bereits.'];
+                } elseif (strpos($error, '1054') !== false) { // Unknown column
+                    return ['error' => true, 'message' => 'Datenbank-Schema-Fehler', 'details' => 'Eine Spalte in der Datenbank fehlt. Bitte führen Sie alle Migrationen aus.'];
+                } else {
+                    return ['error' => true, 'message' => 'Bei der Aktualisierung ist ein Fehler aufgetreten.', 'details' => 'Technischer Fehler: ' . $error];
+                }
+            }
+            
+            return $result;
+        } catch (\Exception $e) {
+            error_log("Exception in updateProfile: " . $e->getMessage());
+            return ['error' => true, 'message' => 'Bei der Aktualisierung ist ein Fehler aufgetreten.', 'details' => 'Exception: ' . $e->getMessage()];
         }
-        
-        return $this->update($id, $data);
     }
     
     /**

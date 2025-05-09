@@ -124,58 +124,99 @@ class Rehearsal extends Model
     }
     
     /**
-     * Get rehearsals relevant for a specific user by type
+     * Get rehearsals for a specific user
      * 
-     * @param string $userType The user type (instrument/section)
+     * @param string $userType User type/instrument
      * @param int $orchestraId Orchestra ID
-     * @param bool $includeOld Include past rehearsals
+     * @param bool $includeOld Whether to include past rehearsals
+     * @param bool $isSmallGroup Whether user is in small group
      * @return array
      */
-    public function getForUser($userType, $orchestraId, $includeOld = false)
+    public function getForUser($userType, $orchestraId, $includeOld = false, $isSmallGroup = false)
     {
-        $allRehearsals = $this->getUpcoming($orchestraId, $includeOld);
+        $orchestraId = (int)$orchestraId;
+        $today = date('Y-m-d');
         
-        // If no rehearsals, return empty array
-        if (empty($allRehearsals)) {
-            return [];
+        $sql = "SELECT * FROM {$this->table} WHERE orchestra_id = {$orchestraId} ";
+        
+        if (!$includeOld) {
+            $sql .= "AND date >= '{$today}' ";
         }
         
-        // Filter rehearsals relevant for the user type
-        $filtered = [];
+        $sql .= "ORDER BY date, time";
         
-        foreach ($allRehearsals as $rehearsal) {
-            $groups = array_flip($rehearsal['groups']); // Flip for easier lookup
-            
-            if ($this->isUserInRehearsalGroup($userType, $groups)) {
-                $filtered[] = $rehearsal;
+        $result = $this->db->query($sql);
+        
+        $rehearsals = [];
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $groups = json_decode($row['groups_data'] ?? '{}', true);
+                if ($this->isUserInRehearsalGroup($userType, $isSmallGroup, $groups)) {
+                    $row['date_formatted'] = Helpers::formatDate($row['date']);
+                    $row['groups'] = $this->getGroups($row['id']);
+                    $rehearsals[] = $row;
+                }
             }
         }
         
-        return $filtered;
+        return $rehearsals;
     }
     
     /**
      * Check if user type is in the specified groups
      * 
      * @param string $userType User type/instrument
+     * @param bool $isSmallGroup Whether the user is in small group
      * @param array $groups Groups to check
      * @return bool
      */
-    public function isUserInRehearsalGroup($userType, $groups)
+    public function isUserInRehearsalGroup($userType, $isSmallGroup, $groups)
     {
         // Special types that apply to everyone
         if (isset($groups['Tutti']) || isset($groups['Konzert']) || isset($groups['Konzertreise']) || isset($groups['Generalprobe'])) {
             return true;
         }
         
-        // Check for exact match
-        if (isset($groups[$userType])) {
-            return true;
+        // Check for exact match - checking if the group has a * suffix for small groups
+        $smallGroupGroups = array_filter(array_keys($groups), function($group) {
+            return strpos($group, '*') !== false;
+        });
+        
+        $regularGroups = array_filter(array_keys($groups), function($group) {
+            return strpos($group, '*') === false && 
+                   $group !== 'Tutti' && 
+                   $group !== 'Konzert' && 
+                   $group !== 'Konzertreise' && 
+                   $group !== 'Generalprobe';
+        });
+        
+        // If it's a small group rehearsal, only users with is_small_group should attend
+        if (!empty($smallGroupGroups) && !$isSmallGroup) {
+            return false;
+        }
+        
+        // Check if user type matches a group
+        foreach ($regularGroups as $group) {
+            if ($group === $userType) {
+                return true;
+            }
+        }
+        
+        // Check for small group match
+        foreach ($smallGroupGroups as $group) {
+            $baseGroup = str_replace('*', '', $group);
+            if ($baseGroup === $userType && $isSmallGroup) {
+                return true;
+            }
         }
         
         // Check if in Streicher group
         if ($userType === 'Violine_1' || $userType === 'Violine_2' || $userType === 'Bratsche' || $userType === 'Cello' || $userType === 'Kontrabass') {
             if (isset($groups['Streicher'])) {
+                return true;
+            }
+            
+            if (isset($groups['Streicher*']) && $isSmallGroup) {
                 return true;
             }
         }
@@ -185,11 +226,19 @@ class Rehearsal extends Model
             if (isset($groups['Blechbläser']) || isset($groups['Bläser'])) {
                 return true;
             }
+            
+            if ((isset($groups['Blechbläser*']) || isset($groups['Bläser*'])) && $isSmallGroup) {
+                return true;
+            }
         }
         
         // Check if in Holzbläser group
         if ($userType === 'Flöte' || $userType === 'Oboe' || $userType === 'Klarinette' || $userType === 'Fagott') {
             if (isset($groups['Holzbläser']) || isset($groups['Bläser'])) {
+                return true;
+            }
+            
+            if ((isset($groups['Holzbläser*']) || isset($groups['Bläser*'])) && $isSmallGroup) {
                 return true;
             }
         }

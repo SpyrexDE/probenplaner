@@ -41,12 +41,8 @@
                     <i id="deleteInfoTip" class="fa fa-exclamation-circle" style="transform: scale(2); transform-origin: 0; position: absolute; cursor: pointer;"></i>
                 </div>
                 
-                <div class="alert alert-warning">
-                    <p><strong>Achtung:</strong> Das Löschen eines Orchesters kann nicht rückgängig gemacht werden. Alle Daten, einschließlich Proben, Nutzer und Zusagen werden unwiderruflich gelöscht.</p>
-                </div>
-                
                 <div class="form-group mt-4">
-                    <a href="/orchestras/delete-confirm" class="btn btn-block" style="background-color: #dc3545; color: white; font-family: Roboto, sans-serif;">
+                    <a href="#" onclick="confirmDelete(event)" class="btn btn-block" style="background-color: #dc3545; color: white; font-family: Roboto, sans-serif;">
                         <i class="fas fa-trash-alt mr-2" style="color: white;"></i>Orchester löschen
                     </a>
                 </div>
@@ -67,5 +63,38 @@ $(document).ready(function(){
         content: 'Diese Aktion kann nicht rückgängig gemacht werden. Alle Daten werden unwiderruflich gelöscht.',
         arrow: true
     });
+    
+    // Show warning toast on page load
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'bottom-end',
+        showConfirmButton: false,
+        timer: 5000,
+        timerProgressBar: true
+    });
+    
+    Toast.fire({
+        icon: 'warning',
+        title: 'Achtung',
+        text: 'Das Löschen eines Orchesters kann nicht rückgängig gemacht werden. Alle Daten, einschließlich Proben, Nutzer und Zusagen werden unwiderruflich gelöscht.'
+    });
 });
+
+function confirmDelete(event) {
+    event.preventDefault();
+    Swal.fire({
+        title: 'Orchester löschen',
+        html: '<div class="text-left"><p><strong>Achtung:</strong> Das Löschen eines Orchesters kann nicht rückgängig gemacht werden.</p><p>Alle Daten, einschließlich Proben, Nutzer und Zusagen werden unwiderruflich gelöscht.</p></div>',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Löschen',
+        cancelButtonText: 'Abbrechen',
+        confirmButtonColor: '#dc3545',
+        focusCancel: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = '/orchestras/delete-confirm';
+        }
+    });
+}
 </script> 

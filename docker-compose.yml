@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'
 
 services:
   web:
@@ -9,6 +9,7 @@ services:
       - "8080:80"
     volumes:
       - ./src:/var/www/html
+      - ./database:/var/www/html/database
     depends_on:
       - db
     environment:
@@ -26,10 +27,10 @@ services:
     ports:
       - "3306:3306"
     environment:
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_DATABASE=probenplaner
-      - MYSQL_USER=probenplaner
-      - MYSQL_PASSWORD=kDo1#a43
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: probenplaner
+      MYSQL_USER: probenplaner
+      MYSQL_PASSWORD: kDo1#a43
     volumes:
       - db_data:/var/lib/mysql
       - ./database/init:/docker-entrypoint-initdb.d
@@ -41,17 +42,16 @@ services:
     ports:
       - "8081:80"
     environment:
-      - PMA_HOST=db
-      - PMA_USER=root
-      - PMA_PASSWORD=root
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: root
     depends_on:
       - db
     networks:
       - app_net
 
+volumes:
+  db_data:
+
 networks:
   app_net:
-    driver: bridge
-
-volumes:
-  db_data: 
+    driver: bridge 

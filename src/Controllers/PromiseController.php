@@ -56,7 +56,8 @@ class PromiseController extends Controller
         
         // Get rehearsals for the user's type
         $userType = $_SESSION['type'];
-        $rehearsals = $this->rehearsalModel->getForUser($userType, $_SESSION['orchestra_id'], $showOld);
+        $isSmallGroup = isset($_SESSION['is_small_group']) && $_SESSION['is_small_group'];
+        $rehearsals = $this->rehearsalModel->getForUser($userType, $_SESSION['orchestra_id'], $showOld, $isSmallGroup);
         
         // Get user's promises from the user_promises table
         $promises = [];
@@ -102,7 +103,7 @@ class PromiseController extends Controller
 
         // Check if user is a section leader
         $username = $_SESSION['username'];
-        if (strpos($username, '♚') === false) {
+        if ($_SESSION['role'] !== 'leader') {
             $this->redirect('/promises');
             return;
         }
@@ -114,11 +115,11 @@ class PromiseController extends Controller
         $userType = $_SESSION['type'];
 
         // Clean up section name for database queries
-        $sectionName = str_replace('♚', '', $userType);
-        $sectionName = str_replace(' ', '_', $sectionName);
+        $sectionName = str_replace(' ', '_', $userType);
         
         // Get rehearsals for the section
-        $rehearsals = $this->rehearsalModel->getForUser($sectionName, $_SESSION['orchestra_id'], $showOld);
+        $isSmallGroup = isset($_SESSION['is_small_group']) && $_SESSION['is_small_group'];
+        $rehearsals = $this->rehearsalModel->getForUser($sectionName, $_SESSION['orchestra_id'], $showOld, $isSmallGroup);
         
         // Get all members of this section
         $members = $this->userModel->findByType($sectionName, $_SESSION['orchestra_id']);
@@ -358,7 +359,8 @@ class PromiseController extends Controller
                     continue;
                 }
                 
-                if ($this->rehearsalModel->isUserInRehearsalGroup($user['type'], $groups)) {
+                $isSmallGroup = isset($user['is_small_group']) && $user['is_small_group'];
+                if ($this->rehearsalModel->isUserInRehearsalGroup($user['type'], $isSmallGroup, $groups)) {
                     $userPromises = $this->userModel->getPromises($user['id']);
                     $found = false;
                     $status = 'no_response';

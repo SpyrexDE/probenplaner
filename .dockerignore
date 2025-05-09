@@ -1,0 +1,14 @@
+# Ignore everything
+*
+
+# Allow specific directories and files
+!src/
+!database/
+!docker/
+!docker-compose.yml
+
+# Ignore unnecessary files in allowed directories
+**/.git
+**/.gitignore
+**/node_modules
+**/*.log 

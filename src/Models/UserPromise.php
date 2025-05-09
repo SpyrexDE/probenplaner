@@ -114,7 +114,8 @@ class UserPromise extends Model
             }
             
             // Check if user is relevant for this rehearsal
-            if ($this->isUserInRehearsalGroup($user['type'], $groups)) {
+            $isSmallGroup = isset($user['is_small_group']) && $user['is_small_group'];
+            if ($rehearsalModel->isUserInRehearsalGroup($user['type'], $isSmallGroup, $groups)) {
                 $stats['total']++;
                 
                 // Check user's promise
@@ -158,37 +159,8 @@ class UserPromise extends Model
      */
     private function isUserInRehearsalGroup($userType, $groups)
     {
-        // Special types that apply to everyone
-        if (isset($groups['Tutti']) || isset($groups['Konzert']) || isset($groups['Konzertreise']) || isset($groups['Generalprobe'])) {
-            return true;
-        }
-        
-        // Check for exact match
-        if (isset($groups[$userType])) {
-            return true;
-        }
-        
-        // Check if in Streicher group
-        if ($userType === 'Violine_1' || $userType === 'Violine_2' || $userType === 'Bratsche' || $userType === 'Cello' || $userType === 'Kontrabass') {
-            if (isset($groups['Streicher'])) {
-                return true;
-            }
-        }
-        
-        // Check if in Blechbläser group
-        if ($userType === 'Trompete' || $userType === 'Posaune' || $userType === 'Tuba' || $userType === 'Horn') {
-            if (isset($groups['Blechbläser']) || isset($groups['Bläser'])) {
-                return true;
-            }
-        }
-        
-        // Check if in Holzbläser group
-        if ($userType === 'Flöte' || $userType === 'Oboe' || $userType === 'Klarinette' || $userType === 'Fagott') {
-            if (isset($groups['Holzbläser']) || isset($groups['Bläser'])) {
-                return true;
-            }
-        }
-        
-        return false;
+        $rehearsalModel = new Rehearsal();
+        // Assuming all users without is_small_group flag are not in small group
+        return $rehearsalModel->isUserInRehearsalGroup($userType, false, $groups);
     }
 } 

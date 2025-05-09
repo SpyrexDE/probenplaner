@@ -94,7 +94,7 @@ class Controller
      */
     protected function isLeader()
     {
-        return isset($_SESSION['username']) && strpos($_SESSION['username'], '♚') !== false;
+        return isset($_SESSION['role']) && $_SESSION['role'] === 'leader';
     }
     
     /**
@@ -116,21 +116,26 @@ class Controller
     }
     
     /**
-     * Set flash message
+     * Set flash message using SweetAlert toast
      * 
      * @param string $type Message type (success, error, info, warning)
      * @param string $message Message text
+     * @param string|null $details Optional detailed information
      * @return void
      */
-    protected function setFlash($type, $message)
+    protected function setFlash($type, $message, $details = null)
     {
         if (!isset($_SESSION['flash_messages'])) {
             $_SESSION['flash_messages'] = [];
         }
         
+        // Convert type to match SweetAlert types
+        $swalType = $type === 'warning' ? 'warning' : ($type === 'error' ? 'error' : ($type === 'success' ? 'success' : 'info'));
+        
         $_SESSION['flash_messages'][] = [
-            'type' => $type,
-            'message' => $message
+            'type' => $swalType,
+            'message' => $message,
+            'details' => $details
         ];
     }
 } 

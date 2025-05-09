@@ -136,6 +136,7 @@ class AuthController extends Controller
         $_SESSION['role'] = $user['role'];
         $_SESSION['orchestra_id'] = $user['orchestra_id'];
         $_SESSION['orchestra_name'] = $orchestra['name'];
+        $_SESSION['is_small_group'] = isset($user['is_small_group']) && $user['is_small_group'] ? true : false;
         
         // Set cookies for 7 days
         setcookie("username", $user['username'], time() + 604800);

@@ -8,11 +8,6 @@
                     <h4 class="mb-0">Delete Rehearsal</h4>
                 </div>
                 <div class="card-body">
-                    <p class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i> 
-                        Are you sure you want to delete this rehearsal? This action cannot be undone.
-                    </p>
-                    
                     <div class="mb-4">
                         <h5>Rehearsal Details:</h5>
                         <ul class="list-group">
@@ -25,18 +20,38 @@
                         </ul>
                     </div>
                     
-                    <form method="post" action="/rehearsals/delete/<?= $rehearsal['id'] ?>">
-                        <div class="d-flex justify-content-between">
-                            <a href="/rehearsals" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left"></i> Cancel
-                            </a>
-                            <button type="submit" class="btn btn-danger">
-                                <i class="fas fa-trash-alt"></i> Yes, Delete Rehearsal
+                    <form action="/rehearsals/delete" method="post">
+                        <input type="hidden" name="id" value="<?= htmlspecialchars($rehearsal['id']) ?>">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger" onclick="return confirmDelete(event)">
+                                <i class="fas fa-trash-alt me-2"></i>Delete Rehearsal
                             </button>
+                            <a href="/rehearsals" class="btn btn-secondary">Cancel</a>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
     </div>
-</div> 
+</div>
+
+<script>
+function confirmDelete(event) {
+    event.preventDefault();
+    Swal.fire({
+        title: 'Delete Rehearsal?',
+        html: '<div class="text-left"><p><i class="fas fa-exclamation-triangle text-warning"></i> <strong>Warning:</strong> This action cannot be undone.</p><p>All associated data, including member responses and notes, will be permanently deleted.</p></div>',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#dc3545',
+        focusCancel: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            event.target.closest('form').submit();
+        }
+    });
+    return false;
+}
+</script> 

@@ -2,13 +2,22 @@
 
 <div class="container-fluid mt-4">
     <?php if (!empty($errors)): ?>
-        <div class="alert alert-danger mt-3">
-            <ul class="mb-0">
-                <?php foreach ($errors as $error): ?>
-                    <li><?= htmlspecialchars($error) ?></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
+    <script>
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'bottom-end',
+            showConfirmButton: false,
+            timer: 5000,
+            timerProgressBar: true
+        });
+        
+        <?php foreach ($errors as $error): ?>
+            Toast.fire({
+                icon: 'error',
+                title: '<?= htmlspecialchars($error) ?>'
+            });
+        <?php endforeach; ?>
+    </script>
     <?php endif; ?>
     
     <div class="float-none text-center">
