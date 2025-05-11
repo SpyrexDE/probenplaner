@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8090:80"
+    volumes:
+      - ./src:/var/www/html
+      - ./database:/var/www/html/database
+    depends_on:
+      - db
+    environment:
+      - APP_ENV=test
+      - DB_HOST=db
+      - DB_USER=${DB_USER:-probenplaner}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=probenplaner_test
+    restart: always
+    networks:
+      - app_net
+
+  db:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    expose:
+      - "3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: probenplaner_test
+      MYSQL_USER: ${DB_USER:-probenplaner}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_test_data:/var/lib/mysql
+      - ./database/init:/docker-entrypoint-initdb.d
+    restart: always
+    networks:
+      - app_net
+
+volumes:
+  db_test_data:
+
+networks:
+  app_net:
+    driver: bridge 

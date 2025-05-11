@@ -6,7 +6,10 @@ mkdir -p /var/www/html/database/migrations
 # Function to test MySQL connection
 wait_for_mysql() {
     echo "Waiting for MySQL to be ready..."
-    while ! mysqladmin ping -h"db" -u"probenplaner" -p"kDo1#a43" --silent; do
+    DB_USER=${DB_USER:-probenplaner}
+    DB_PASSWORD=${DB_PASSWORD:-kDo1#a43}
+    
+    while ! mysqladmin ping -h"db" -u"$DB_USER" -p"$DB_PASSWORD" --silent; do
         sleep 1
     done
     echo "MySQL is ready!"

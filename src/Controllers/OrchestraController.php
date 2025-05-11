@@ -170,7 +170,7 @@ class OrchestraController extends Controller
                     error_log("Orchestra creation failed with error: $errorMsg");
                     
                     // If we're in development environment and have a debug log, show its path
-                    if (defined('APP_ENV') && APP_ENV === 'development' && isset($_SESSION['debug_log_file'])) {
+                    if (defined('APP_ENV') && (APP_ENV === 'development' || APP_ENV === 'test') && isset($_SESSION['debug_log_file'])) {
                         $this->addAlert('Debug Info', 'Debug log: ' . $_SESSION['debug_log_file'], 'info');
                     }
                 }

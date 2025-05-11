@@ -39,7 +39,7 @@ spl_autoload_register(function ($class) {
 session_start();
 
 // Set error reporting based on environment
-if (APP_ENV === 'development') {
+if (APP_ENV === 'development' || APP_ENV === 'test') {
     error_reporting(E_ALL);
     ini_set('display_errors', 1);
 } else {

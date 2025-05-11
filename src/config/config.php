@@ -24,7 +24,7 @@ date_default_timezone_set(DEFAULT_TIMEZONE);
 // Session settings
 ini_set('session.cookie_httponly', 1);
 ini_set('session.use_only_cookies', 1);
-if (APP_ENV !== 'development') {
+if (APP_ENV !== 'development' && APP_ENV !== 'test') {
     ini_set('session.cookie_secure', 1);
 }
 

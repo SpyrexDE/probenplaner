@@ -42,6 +42,10 @@ h1 .env-indicator.development {
   background-color: #0066cc;
 }
 
+h1 .env-indicator.test {
+  background-color: #8400cc;
+}
+
 h1 .env-indicator.production {
   background-color: #cc0000;
 }

@@ -8,7 +8,7 @@
 require_once '../../bootstrap.php';
 
 // Security check - only allow in development environment
-$devEnvironments = ['development', 'local', 'dev'];
+$devEnvironments = ['development', 'local', 'dev', 'test'];
 $isDevEnvironment = isset($_ENV['APP_ENV']) && in_array(strtolower($_ENV['APP_ENV']), $devEnvironments);
 
 // Also allow local access regardless of environment setting
