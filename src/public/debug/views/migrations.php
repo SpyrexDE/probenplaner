@@ -152,7 +152,7 @@ function loadScript(src) {
 </script>
 
 <h2>📦 Database Migrations</h2>
-<p>Manage database migrations to update the schema as the application evolves</p>
+<p>Manage database migrations to update the schema as the application evolves. Usually applied automatically when the application is updated.</p>
 
 <?php if ($moduleData['error']): ?>
     <div class="message error">

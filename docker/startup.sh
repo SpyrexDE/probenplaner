@@ -20,7 +20,18 @@ wait_for_mysql
 
 # Run migrations
 echo "Running database migrations..."
-cd /var/www/html/database && php run_migrations.php
+cd /var/www/html/database
+
+# Show current migration status
+php cli-migrate.php status
+
+# Run pending migrations
+if ! php cli-migrate.php up; then
+    echo "Migration failed! Please check the logs and fix any issues."
+    exit 1
+fi
+
+echo "Migrations completed successfully!"
 
 # Start Apache
 echo "Starting Apache..."
