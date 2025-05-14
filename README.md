@@ -25,4 +25,23 @@ Quick reference for development commands (use `probenplaner.sh` on Unix/Mac or `
 ./probenplaner.sh migrate:create <name>  # Create new migration
 ```
 
+## Deployment
+
+### Production Setup
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd probenplaner
+   ```
+
+2. Configure environment:
+   - Copy `.env.example` to `.env`
+   - Update production database credentials and other settings
+
+3. Build and start containers:
+   ```bash
+   docker compose -f docker-compose.prod.yml up -d
+   ```
+
 
