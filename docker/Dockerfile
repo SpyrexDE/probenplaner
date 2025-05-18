@@ -29,7 +29,8 @@ RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
     -out /etc/apache2/ssl/cert.pem \
     -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost" \
     && cp /etc/apache2/ssl/cert.pem /etc/apache2/ssl/chain.pem \
-    && chmod 644 /etc/apache2/ssl/*.pem
+    && chmod 644 /etc/apache2/ssl/*.pem \
+    && chown www-data:www-data /etc/apache2/ssl/*.pem
 
 # Set working directory
 WORKDIR /var/www/html

@@ -17,7 +17,7 @@ services:
     environment:
       - APP_ENV=production
       - DB_HOST=db
-      - DB_USER=${DB_USER:-probenplaner}
+      - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=probenplaner
     restart: always
@@ -32,7 +32,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: probenplaner
-      MYSQL_USER: ${DB_USER:-probenplaner}
+      MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
       - db_data:/var/lib/mysql

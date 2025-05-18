@@ -17,8 +17,8 @@ services:
     environment:
       - APP_ENV=test
       - DB_HOST=db
-      - DB_USER=${DB_USER:-probenplaner}
-      - DB_PASSWORD=${DB_PASSWORD:-kDo1#a43}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=probenplaner_test
     restart: always
     networks:
@@ -32,7 +32,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: probenplaner_test
-      MYSQL_USER: ${DB_USER:-probenplaner}
+      MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
       - db_test_data:/var/lib/mysql
