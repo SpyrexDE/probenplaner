@@ -4,10 +4,10 @@
 mkdir -p /var/www/html/database/migrations
 
 # Check SSL certificates
-if [ ! -f /etc/apache2/ssl/cert.pem ] || [ ! -f /etc/apache2/ssl/key.pem ] || [ ! -f /etc/apache2/ssl/ca.pem ]; then
+if [ ! -f /etc/apache2/ssl/crt.pem ] || [ ! -f /etc/apache2/ssl/key.pem ]; then
     echo "Error: SSL certificates not found in /etc/apache2/ssl/"
     echo "Please make sure CERT_PATH is set correctly in your .env file"
-    echo "Expected files: cert.pem, key.pem, ca.pem"
+    echo "Expected files: crt.pem, key.pem"
     exit 1
 fi
 
