@@ -3,7 +3,6 @@
 # Create necessary directories
 mkdir -p /var/www/html/database/migrations
 
-
 # Function to test MySQL connection
 wait_for_mysql() {
     echo "Waiting for MySQL to be ready..."
