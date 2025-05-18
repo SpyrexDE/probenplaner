@@ -72,12 +72,6 @@ $(document).ready(function(){
         timer: 5000,
         timerProgressBar: true
     });
-    
-    Toast.fire({
-        icon: 'warning',
-        title: 'Achtung',
-        text: 'Das Löschen eines Orchesters kann nicht rückgängig gemacht werden. Alle Daten, einschließlich Proben, Nutzer und Zusagen werden unwiderruflich gelöscht.'
-    });
 });
 
 function confirmDelete(event) {

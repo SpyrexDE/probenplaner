@@ -131,6 +131,11 @@ input, textarea {
         
         $groupsText = str_replace("_", " ", implode("<br>", $groupArray));
         
+        // Prepare time display
+        $start_time_prom = isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, 5) : '??:??';
+        $end_time_prom = isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, 5) : '??:??';
+        $time_display_prom = $start_time_prom . ' - ' . $end_time_prom;
+        
         // Determine color class
         $colorClass = 'grayOut'; // Default for pending (unpromised)
         
@@ -146,7 +151,7 @@ input, textarea {
                 <div class="col col-8" style="margin-top: -7px;">
                     <div class="row">
                         <div class="col col-6">
-                            <label class="col-form-label text-break user-data" style="margin-bottom: 0; margin-top: 15px; margin-left: 20px; font-size: 20px; font-weight: 600; width: 100%; overflow: auto; max-height: 40px;" data-rehearsal-id="<?= $rehearsal['id'] ?>" data-rehearsal-date="<?= htmlspecialchars($rehearsal['date']) ?>" data-rehearsal-time="<?= htmlspecialchars($rehearsal['time']) ?>" data-rehearsal-location="<?= htmlspecialchars($rehearsal['location']) ?>" data-rehearsal-description="<?= htmlspecialchars($rehearsal['description'] ?? '') ?>">
+                            <label class="col-form-label text-break user-data" style="margin-bottom: 0; margin-top: 15px; margin-left: 20px; font-size: 20px; font-weight: 600; width: 100%; overflow: auto; max-height: 40px;" data-rehearsal-id="<?= $rehearsal['id'] ?>" data-rehearsal-date="<?= htmlspecialchars($rehearsal['date']) ?>" data-rehearsal-start-time="<?= htmlspecialchars($start_time_prom) ?>" data-rehearsal-end-time="<?= htmlspecialchars($end_time_prom) ?>" data-rehearsal-location="<?= htmlspecialchars($rehearsal['location']) ?>" data-rehearsal-description="<?= htmlspecialchars($rehearsal['description'] ?? '') ?>">
                                 <?= htmlspecialchars($rehearsal['date']) ?>
                             </label>
                         </div>
@@ -159,7 +164,7 @@ input, textarea {
                     <div class="row">
                         <div class="col col-6">
                             <label class="col-form-label text-break" style="margin-bottom: 0; margin-left: 20px; font-size: 20px; font-weight: 600; width: 100%; overflow: auto; max-height: 40px;">
-                                <?= htmlspecialchars($rehearsal['time']) ?>
+                                <?= htmlspecialchars($time_display_prom) ?>
                             </label>
                         </div>
                         <div class="col">
@@ -711,34 +716,29 @@ $(document).ready(function() {
         return promises;
     }
     
-    // Handle clicking on rehearsal data to show details
+    // Show rehearsal details in a modal
     $('.user-data').click(function() {
         const rehearsalId = $(this).data('rehearsal-id');
         const rehearsalDate = $(this).data('rehearsal-date');
-        const rehearsalTime = $(this).data('rehearsal-time');
+        const rehearsalStartTime = $(this).data('rehearsal-start-time');
+        const rehearsalEndTime = $(this).data('rehearsal-end-time');
         const rehearsalLocation = $(this).data('rehearsal-location');
-        const rehearsalDescription = $(this).data('rehearsal-description') || '';
+        const rehearsalDescription = $(this).data('rehearsal-description');
         
-        // Get status and note
-        const status = $('.checkBtn[id="' + rehearsalId + '"]').hasClass('deselected') ? 'Nicht dabei' : 'Dabei';
-        const note = $('#note' + rehearsalId).val() || '';
-        
-        // Create content for modal
-        let content = `
-            <div style="text-align: left;">
-                <p><strong>Datum:</strong> ${rehearsalDate}</p>
-                <p><strong>Zeit:</strong> ${rehearsalTime}</p>
-                <p><strong>Ort:</strong> ${rehearsalLocation}</p>
-                ${rehearsalDescription ? '<p><strong>Beschreibung:</strong> ' + rehearsalDescription + '</p>' : ''}
-                <p><strong>Status:</strong> <span style="color: ${status === 'Dabei' ? '#50dc36' : '#dc3836'}">${status}</span></p>
-                ${note ? '<p><strong>Notiz:</strong> ' + note + '</p>' : ''}
-            </div>
+        let htmlContent = `
+            <p><strong>Datum:</strong> ${rehearsalDate}</p>
+            <p><strong>Zeit:</strong> ${rehearsalStartTime} - ${rehearsalEndTime}</p>
+            <p><strong>Ort:</strong> ${rehearsalLocation}</p>
         `;
+        
+        if (rehearsalDescription) {
+            htmlContent += `<p><strong>Beschreibung:</strong> ${rehearsalDescription}</p>`;
+        }
         
         // Show SweetAlert with rehearsal details
         Swal.fire({
             title: 'Proben Details',
-            html: content,
+            html: htmlContent,
             confirmButtonText: 'Schließen',
             showCancelButton: false,
             customClass: {

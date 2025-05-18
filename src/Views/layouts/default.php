@@ -101,8 +101,8 @@ if (isset($_SESSION['username'])): ?>
     // Show buttons on relevant routes
     $currentUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
     
-    // Show history button only on promises routes
-    $showHistoryButton = (strpos($currentUri, '/promises') === 0);
+    // Show history button on promises routes and rehearsals routes
+    $showHistoryButton = (strpos($currentUri, '/promises') === 0) || (strpos($currentUri, '/rehearsals') === 0);
     
     // Show help button on all main feature pages
     $showHelpButton = in_array($currentUri, ['/promises', '/promises/leader', '/promises/admin', 
@@ -155,8 +155,8 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
     // Show buttons on relevant routes
     $currentUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
     
-    // Show history button only on promises routes
-    $showHistoryButton = (strpos($currentUri, '/promises') === 0);
+    // Show history button on promises routes and rehearsals routes
+    $showHistoryButton = (strpos($currentUri, '/promises') === 0) || (strpos($currentUri, '/rehearsals') === 0);
     
     // Show help button on all main feature pages
     $showHelpButton = in_array($currentUri, ['/promises', '/promises/leader', '/promises/admin', 

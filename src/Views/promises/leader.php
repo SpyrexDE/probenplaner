@@ -11,7 +11,9 @@
             <?php 
                 $rehearsalId = $rehearsal['id'];
                 $date = $rehearsal['date'];
-                $time = $rehearsal['time'];
+                $start_time_ldr = isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, 5) : '??:??';
+                $end_time_ldr = isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, 5) : '??:??';
+                $time_display_ldr = $start_time_ldr . ' - ' . $end_time_ldr;
                 $location = $rehearsal['location'] ?? 'TBA';
 
                 // Determine rehearsal type
@@ -52,7 +54,7 @@
                             <a style="color:#000; text-decoration:none; background-color: <?= !empty($rehearsal['color']) ? $rehearsal['color'] : 'white' ?>;" data-toggle="collapse" href="#Orchester<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Orchester<?= $rehearsalId ?>">
                                 <i class="collapsed"><i class="fas fa-folder"></i></i>
                                 <i class="expanded"><i class="far fa-folder-open"></i></i> 
-                                <?= htmlspecialchars($date) ?> - <?= htmlspecialchars($time) ?>
+                                <?= htmlspecialchars($date) ?> - <?= htmlspecialchars($time_display_ldr) ?>
                                 <?php if (!empty($rehearsalType)): ?>
                                     - <?= htmlspecialchars($rehearsalType) ?>
                                 <?php endif; ?>

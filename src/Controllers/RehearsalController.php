@@ -79,7 +79,8 @@ class RehearsalController extends Controller
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Get form data
             $date = $_POST['date'] ?? '';
-            $time = $_POST['time'] ?? '';
+            $start_time = $_POST['start_time'] ?? '';
+            $end_time = $_POST['end_time'] ?? '';
             $location = $_POST['location'] ?? '';
             $color = $_POST['color'] ?? '';
             
@@ -110,8 +111,17 @@ class RehearsalController extends Controller
                 $errors[] = 'Date is required';
             }
             
-            if (empty($time)) {
-                $errors[] = 'Time is required';
+            if (empty($start_time)) {
+                $errors[] = 'Start time is required';
+            }
+
+            if (empty($end_time)) {
+                $errors[] = 'End time is required';
+            }
+            
+            // Optional: Add validation to ensure end_time is after start_time
+            if (!empty($start_time) && !empty($end_time) && strtotime($end_time) <= strtotime($start_time)) {
+                $errors[] = 'End time must be after start time';
             }
             
             if (empty($location)) {
@@ -126,7 +136,8 @@ class RehearsalController extends Controller
                 // Save rehearsal
                 $rehearsalData = [
                     'date' => $date,
-                    'time' => $time,
+                    'start_time' => $start_time,
+                    'end_time' => $end_time,
                     'location' => $location,
                     'orchestra_id' => (int)$_SESSION['orchestra_id'],
                     'is_small_group' => $isSmallGroup ? 1 : 0
@@ -162,7 +173,8 @@ class RehearsalController extends Controller
                 'errors' => $errors,
                 'formData' => [
                     'date' => $date, // HTML date input expects Y-m-d format
-                    'time' => $time,
+                    'start_time' => $start_time,
+                    'end_time' => $end_time,
                     'location' => $location,
                     'color' => $color,
                     'rehearsal_type' => $rehearsalType,
@@ -177,7 +189,8 @@ class RehearsalController extends Controller
                 'errors' => [],
                 'formData' => [
                     'date' => '',
-                    'time' => '',
+                    'start_time' => '',
+                    'end_time' => '',
                     'location' => '',
                     'color' => 'white',
                     'rehearsal_type' => '',
@@ -228,7 +241,8 @@ class RehearsalController extends Controller
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Get form data
             $date = $_POST['date'] ?? '';
-            $time = $_POST['time'] ?? '';
+            $start_time = $_POST['start_time'] ?? '';
+            $end_time = $_POST['end_time'] ?? '';
             $location = $_POST['location'] ?? '';
             $color = $_POST['color'] ?? '';
             
@@ -259,8 +273,17 @@ class RehearsalController extends Controller
                 $errors[] = 'Date is required';
             }
             
-            if (empty($time)) {
-                $errors[] = 'Time is required';
+            if (empty($start_time)) {
+                $errors[] = 'Start time is required';
+            }
+
+            if (empty($end_time)) {
+                $errors[] = 'End time is required';
+            }
+            
+            // Optional: Add validation to ensure end_time is after start_time
+            if (!empty($start_time) && !empty($end_time) && strtotime($end_time) <= strtotime($start_time)) {
+                $errors[] = 'End time must be after start time';
             }
             
             if (empty($location)) {
@@ -275,7 +298,8 @@ class RehearsalController extends Controller
                 // Update rehearsal
                 $updateData = [
                     'date' => $date,
-                    'time' => $time,
+                    'start_time' => $start_time,
+                    'end_time' => $end_time,
                     'location' => $location,
                     'is_small_group' => $isSmallGroup ? 1 : 0
                 ];
@@ -305,7 +329,8 @@ class RehearsalController extends Controller
                 'errors' => $errors,
                 'formData' => [
                     'date' => $date,
-                    'time' => $time,
+                    'start_time' => $start_time,
+                    'end_time' => $end_time,
                     'location' => $location,
                     'color' => $color,
                     'rehearsal_type' => $rehearsalType,
@@ -342,7 +367,8 @@ class RehearsalController extends Controller
                 'errors' => [],
                 'formData' => [
                     'date' => $displayDate,
-                    'time' => $rehearsal['time'],
+                    'start_time' => $rehearsal['start_time'] ?? '',
+                    'end_time' => $rehearsal['end_time'] ?? '',
                     'location' => $rehearsal['location'],
                     'color' => $rehearsal['color'] ?? '',
                     'rehearsal_type' => $rehearsalType,

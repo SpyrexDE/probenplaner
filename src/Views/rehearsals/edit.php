@@ -27,7 +27,16 @@
             <form method="post" action="/rehearsals/edit/<?= $rehearsal['id'] ?>">
                 <input class="form-control" type="date" id="date" name="date" value="<?= htmlspecialchars($formData['date'] ?? '') ?>" placeholder="Datum" style="font-family: Roboto, sans-serif; margin-bottom: 20px;" required="" minlength="3" maxlength="50">
                 
-                <input class="form-control" type="time" id="time" name="time" value="<?= htmlspecialchars($formData['time'] ?? '') ?>" placeholder="Uhrzeit" style="font-family: Roboto, sans-serif; margin-bottom: 20px;" required="" minlength="3" maxlength="50">
+                <div class="row" style="margin-bottom: 20px;">
+                    <div class="col-md-6">
+                        <label for="start_time" style="font-family: Roboto, sans-serif; display: block; text-align: left; margin-bottom: 5px;">Startzeit</label>
+                        <input class="form-control" type="time" id="start_time" name="start_time" value="<?= htmlspecialchars($formData['start_time'] ?? '') ?>" placeholder="Startzeit" style="font-family: Roboto, sans-serif;" required="">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="end_time" style="font-family: Roboto, sans-serif; display: block; text-align: left; margin-bottom: 5px;">Endzeit</label>
+                        <input class="form-control" type="time" id="end_time" name="end_time" value="<?= htmlspecialchars($formData['end_time'] ?? '') ?>" placeholder="Endzeit" style="font-family: Roboto, sans-serif;" required="">
+                    </div>
+                </div>
                 
                 <input class="form-control" type="text" id="location" name="location" value="<?= htmlspecialchars($formData['location'] ?? '') ?>" placeholder="Ort" style="font-family: Roboto, sans-serif; margin-bottom: 20px;" required="" minlength="3" maxlength="50">
                 

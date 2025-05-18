@@ -32,7 +32,7 @@ class Rehearsal extends Model
             $sql .= " AND date >= CURDATE()";
         }
         
-        $sql .= " ORDER BY date, time";
+        $sql .= " ORDER BY date, start_time";
         
         $result = $this->db->query($sql);
         
@@ -143,7 +143,7 @@ class Rehearsal extends Model
             $sql .= "AND date >= '{$today}' ";
         }
         
-        $sql .= "ORDER BY date, time";
+        $sql .= "ORDER BY date, start_time";
         
         $result = $this->db->query($sql);
         
@@ -449,7 +449,7 @@ class Rehearsal extends Model
             $sql .= "AND date >= '{$today}' ";
         }
         
-        $sql .= "ORDER BY date, time";
+        $sql .= "ORDER BY date, start_time";
         
         $result = $this->db->query($sql);
         

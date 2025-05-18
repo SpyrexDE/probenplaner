@@ -318,22 +318,15 @@ class User extends Model
      */
     public function getPromises($userId)
     {
-        $sql = "SELECT up.*, r.date, r.time, r.location
+        $userId = (int)$userId;
+        
+        $sql = "SELECT up.*, r.date, r.start_time, r.end_time, r.location, r.color, r.is_small_group
                 FROM user_promises up
                 JOIN rehearsals r ON up.rehearsal_id = r.id
-                WHERE up.user_id = ?
-                ORDER BY r.date, r.time";
-        
-        $stmt = $this->db->prepare($sql);
-        if (!$stmt) {
-            error_log("Failed to prepare statement in getPromises: " . $this->db->getConnection()->error);
-            return [];
-        }
-        
-        $stmt->bind_param('i', $userId);
-        $stmt->execute();
-        
-        $result = $stmt->get_result();
+                WHERE up.user_id = {$userId}
+                ORDER BY r.date, r.start_time";
+                
+        $result = $this->db->query($sql);
         
         $promises = [];
         while ($row = $result->fetch_assoc()) {

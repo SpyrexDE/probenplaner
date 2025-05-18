@@ -34,7 +34,9 @@
             <?php 
                 $rehearsalId = $rehearsal['id'];
                 $date = $rehearsal['date'];
-                $time = $rehearsal['time'];
+                $start_time = isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, 5) : '??:??';
+                $end_time = isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, 5) : '??:??';
+                $time_display = $start_time . ' - ' . $end_time;
                 $location = $rehearsal['location'] ?? 'TBA';
                 
                 // Determine rehearsal groups
@@ -67,7 +69,7 @@
                         </div>
                         <div class="row">
                             <div class="col col-6">
-                                <label class="col-form-label text-break" style="margin-bottom: 0; margin-left: 20px; font-size: 20px; font-weight: 600; width: 100%; overflow: auto; max-height: 40px;"><?= htmlspecialchars($time) ?><br></label>
+                                <label class="col-form-label text-break" style="margin-bottom: 0; margin-left: 20px; font-size: 20px; font-weight: 600; width: 100%; overflow: auto; max-height: 40px;"><?= htmlspecialchars($time_display) ?><br></label>
                             </div>
                             <div class="col">
                                 <label class="col-form-label text-break" style="margin-bottom: 0; font-size: 20px; font-weight: 600; width: 100%; overflow: auto; max-height: 40px;"><?= htmlspecialchars($location) ?><br></label>

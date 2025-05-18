@@ -12,7 +12,12 @@
                         <h5>Rehearsal Details:</h5>
                         <ul class="list-group">
                             <li class="list-group-item"><strong>Date:</strong> <?= htmlspecialchars($rehearsal['date']) ?></li>
-                            <li class="list-group-item"><strong>Time:</strong> <?= htmlspecialchars($rehearsal['time']) ?></li>
+                            <?php 
+                                $start_time_del = isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, 5) : '??:??';
+                                $end_time_del = isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, 5) : '??:??';
+                                $time_display_del = $start_time_del . ' - ' . $end_time_del;
+                            ?>
+                            <li class="list-group-item"><strong>Time:</strong> <?= htmlspecialchars($time_display_del) ?></li>
                             <li class="list-group-item"><strong>Location:</strong> <?= htmlspecialchars($rehearsal['location']) ?></li>
                             <?php if (!empty($rehearsal['description'])): ?>
                                 <li class="list-group-item"><strong>Notes:</strong> <?= htmlspecialchars($rehearsal['description']) ?></li>

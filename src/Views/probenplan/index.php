@@ -35,10 +35,15 @@
                             </tr>
                         <?php else: ?>
                             <?php foreach ($rehearsals as $i => $rehearsal): ?>
+                                <?php
+                                    $start_time_pp = isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, 5) : '??:??';
+                                    $end_time_pp = isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, 5) : '??:??';
+                                    $time_display_pp = $start_time_pp . ' - ' . $end_time_pp;
+                                ?>
                                 <tr style="background-color: <?= !empty($rehearsal['color']) ? $rehearsal['color'] : 'transparent' ?>">
                                     <td><?= isset($days[$i]) ? $days[$i] : '' ?></td>
                                     <td><?= $rehearsal['date'] ?></td>
-                                    <td><?= $rehearsal['time'] ?></td>
+                                    <td><?= htmlspecialchars($time_display_pp) ?></td>
                                     <td><?= $rehearsal['location'] ?></td>
                                     <td>
                                         <?php 

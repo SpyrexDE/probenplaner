@@ -70,7 +70,10 @@ input, textarea {
             <?php 
                 $rehearsalId = $rehearsal['id'];
                 $date = $rehearsal['date'];
-                $time = $rehearsal['time'];
+                // $time = $rehearsal['time']; // Old time field
+                $start_time_adm = isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, 5) : '??:??';
+                $end_time_adm = isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, 5) : '??:??';
+                $time_display_adm = $start_time_adm . ' - ' . $end_time_adm;
                 $location = $rehearsal['location'] ?? 'TBA';
 
                 // Determine rehearsal type
@@ -152,7 +155,7 @@ input, textarea {
                             <a style="color:#000; text-decoration:none; background-color: <?= !empty($rehearsal['color']) ? $rehearsal['color'] : 'white' ?>;" data-toggle="collapse" href="#Orchester<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Orchester<?= $rehearsalId ?>">
                                 <i class="collapsed"><i class="fas fa-folder"></i></i>
                                 <i class="expanded"><i class="far fa-folder-open"></i></i> 
-                                <?= htmlspecialchars($date) ?> - <?= htmlspecialchars($time) ?>
+                                <?= htmlspecialchars($date) ?> - <?= htmlspecialchars($time_display_adm) ?>
                                 <?php if (!empty($rehearsalType)): ?>
                                     - <?= htmlspecialchars($rehearsalType) ?>
                                 <?php endif; ?>
