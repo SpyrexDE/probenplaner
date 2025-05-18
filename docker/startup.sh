@@ -6,10 +6,12 @@ mkdir -p /var/www/html/database/migrations
 # Verify SSL certificates exist
 if [ ! -f /etc/apache2/ssl/cert.pem ] || [ ! -f /etc/apache2/ssl/privkey.pem ] || [ ! -f /etc/apache2/ssl/chain.pem ]; then
     echo "Generating SSL certificates..."
+    # Get domain from environment variable or use localhost as fallback
+    DOMAIN=${DOMAIN:-localhost}
     openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
         -keyout /etc/apache2/ssl/privkey.pem \
         -out /etc/apache2/ssl/cert.pem \
-        -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost" \
+        -subj "/C=DE/ST=State/L=City/O=Organization/CN=${DOMAIN}" \
         && cp /etc/apache2/ssl/cert.pem /etc/apache2/ssl/chain.pem \
         && chmod 644 /etc/apache2/ssl/*.pem \
         && chown www-data:www-data /etc/apache2/ssl/*.pem
