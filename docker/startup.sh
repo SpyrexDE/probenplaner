@@ -19,7 +19,10 @@ fi
 wait_for_mysql() {
     echo "Waiting for MySQL to be ready..."
     DB_USER=${DB_USER:-probenplaner}
-    DB_PASSWORD=${DB_PASSWORD:-kDo1#a43}
+    if [ -z "$DB_PASSWORD" ]; then
+        echo "Error: DB_PASSWORD environment variable is not set"
+        exit 1
+    fi
     
     while ! mysqladmin ping -h"db" -u"$DB_USER" -p"$DB_PASSWORD" --silent; do
         sleep 1

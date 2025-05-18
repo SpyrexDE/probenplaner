@@ -10,7 +10,7 @@ define('APP_ENV', getenv('APP_ENV') ?: 'production');
 // Database configuration
 define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
 define('DB_USER', getenv('DB_USER') ?: 'probenplaner');
-define('DB_PASSWORD', getenv('DB_PASSWORD') ?: 'kDo1#a43');
+define('DB_PASSWORD', getenv('DB_PASSWORD'));
 define('DB_NAME', getenv('DB_NAME') ?: 'probenplaner');
 
 // Application settings
