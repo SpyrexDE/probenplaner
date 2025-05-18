@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     unzip \
     git \
     default-mysql-client \
+    openssl \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd mysqli pdo pdo_mysql
 
@@ -22,16 +23,18 @@ RUN a2enmod setenvif
 # Create SSL directory
 RUN mkdir -p /etc/apache2/ssl
 
+# Generate self-signed SSL certificates
+RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout /etc/apache2/ssl/privkey.pem \
+    -out /etc/apache2/ssl/cert.pem \
+    -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost" \
+    && cp /etc/apache2/ssl/cert.pem /etc/apache2/ssl/chain.pem
+
 # Set working directory
 WORKDIR /var/www/html
 
 # Copy Apache configuration
 COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
-
-# Copy SSL certificates
-COPY docker/ssl/cert.pem /etc/apache2/ssl/
-COPY docker/ssl/privkey.pem /etc/apache2/ssl/
-COPY docker/ssl/chain.pem /etc/apache2/ssl/
 
 # Create startup script
 COPY docker/startup.sh /usr/local/bin/
