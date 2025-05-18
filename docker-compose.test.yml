@@ -18,7 +18,7 @@ services:
       - APP_ENV=test
       - DB_HOST=db
       - DB_USER=${DB_USER:-probenplaner}
-      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PASSWORD=${DB_PASSWORD:-kDo1#a43}
       - DB_NAME=probenplaner_test
     restart: always
     networks:
