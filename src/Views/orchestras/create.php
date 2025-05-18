@@ -14,19 +14,19 @@
                     <form action="/orchestras/store" method="post">
                         <div class="mb-3">
                             <label for="name" class="form-label">Orchestername</label>
-                            <input type="text" class="form-control" id="name" name="name" required>
+                            <input type="text" class="form-control" id="name" name="name" value="<?= isset($formData['name']) ? htmlspecialchars($formData['name']) : '' ?>" required>
                             <div class="form-text">Der vollständige Name des Orchesters.</div>
                         </div>
                         
                         <div class="mb-3">
                             <label for="token" class="form-label">Token</label>
-                            <input type="text" class="form-control" id="token" name="token" required>
+                            <input type="text" class="form-control" id="token" name="token" value="<?= isset($formData['token']) ? htmlspecialchars($formData['token']) : '' ?>" required>
                             <div class="form-text">Ein kurzer Code für die Registrierung neuer Mitglieder.</div>
                         </div>
                         
                         <div class="mb-3">
                             <label for="leader_pw" class="form-label">Stimmführer-Passwort</label>
-                            <input type="text" class="form-control" id="leader_pw" name="leader_pw" required>
+                            <input type="text" class="form-control" id="leader_pw" name="leader_pw" value="<?= isset($formData['leader_pw']) ? htmlspecialchars($formData['leader_pw']) : '' ?>" required>
                             <div class="form-text">Passwort für Stimmführer-Berechtigungen bei der Registrierung.</div>
                         </div>
                         
@@ -35,7 +35,7 @@
                         
                         <div class="mb-3">
                             <label for="conductor_username" class="form-label">Benutzername</label>
-                            <input type="text" class="form-control" id="conductor_username" name="conductor_username" required>
+                            <input type="text" class="form-control" id="conductor_username" name="conductor_username" value="<?= isset($formData['conductor_username']) ? htmlspecialchars($formData['conductor_username']) : '' ?>" required>
                             <div class="form-text">Benutzername für den Dirigenten-Account.</div>
                         </div>
                         

@@ -199,7 +199,7 @@ class AuthController extends Controller
         // For debugging - log registration attempt
         error_log("Registration attempt - Username: $username, Type: $type, Token: $token");
         
-        // Validate inputs
+        // Validate inputs - check required fields
         if (empty($username) || empty($password) || empty($passwordConfirm) || empty($type) || empty($token)) {
             $missingFields = array_filter([
                 empty($username) ? 'Benutzername' : null,
@@ -219,41 +219,17 @@ class AuthController extends Controller
             return;
         }
         
-        if ($password !== $passwordConfirm) {
+        // Validate user input using the model's validation method
+        $userModel = new User();
+        $validation = $userModel->validateUserInput($username, $password, null, null, $passwordConfirm);
+        
+        if (!$validation['valid']) {
             $this->addAlert(
                 'Fehler!', 
-                'Die Passwörter stimmen nicht überein.', 
-                'error',
-                'Die eingegebenen Passwörter sind unterschiedlich. Bitte stellen Sie sicher, dass Sie das gleiche Passwort zweimal eingeben.'
+                implode(', ', $validation['errors']), 
+                'error'
             );
-            error_log("Registration failed - Passwords don't match");
-            $this->redirect('/register');
-            return;
-        }
-        
-        // Password requirements
-        $passwordErrors = [];
-        if (strlen($password) < 8) {
-            $passwordErrors[] = 'mindestens 8 Zeichen';
-        }
-        if (!preg_match('/[A-Z]/', $password)) {
-            $passwordErrors[] = 'mindestens ein Großbuchstabe';
-        }
-        if (!preg_match('/[a-z]/', $password)) {
-            $passwordErrors[] = 'mindestens ein Kleinbuchstabe';
-        }
-        if (!preg_match('/[0-9]/', $password)) {
-            $passwordErrors[] = 'mindestens eine Zahl';
-        }
-        
-        if (!empty($passwordErrors)) {
-            $this->addAlert(
-                'Fehler!', 
-                'Das Passwort muss mindestens 8 Zeichen lang sein und mindestens einen Großbuchstaben, einen Kleinbuchstaben und eine Zahl enthalten.', 
-                'error',
-                'Das Passwort muss folgende Anforderungen erfüllen: ' . implode(', ', $passwordErrors)
-            );
-            error_log("Registration failed - Password requirements not met: " . implode(', ', $passwordErrors));
+            error_log("Registration failed - Validation errors: " . implode(', ', $validation['errors']));
             $this->redirect('/register');
             return;
         }

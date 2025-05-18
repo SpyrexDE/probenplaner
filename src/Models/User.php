@@ -118,14 +118,15 @@ class User extends Model
      * @param string $type
      * @param int $orchestraId
      * @param string $role
-     * @return array|bool Array with error info or true on success
+     * @return int|array Inserted user ID on success, array with error info on failure
      */
     public function register($username, $password, $type, $orchestraId, $role = 'member')
     {
-        // Check if username exists in the same orchestra
-        if ($this->findByUsername($username, $orchestraId)) {
-            error_log("Registration failed: Username already exists in this orchestra");
-            return ['error' => true, 'message' => 'Der Benutzername ist bereits vergeben.', 'details' => 'Ein Benutzer mit diesem Namen existiert bereits in diesem Orchester.'];
+        // Validate input
+        $validation = $this->validateUserInput($username, $password, $orchestraId);
+        if (!$validation['valid']) {
+            error_log("Registration failed: " . implode(', ', $validation['errors']));
+            return ['error' => true, 'message' => implode(', ', $validation['errors'])];
         }
         
         // Validate orchestraId exists
@@ -182,9 +183,37 @@ class User extends Model
     public function updateProfile($id, $data)
     {
         try {
-            // If updating password, hash it
+            // Validate data before updating
+            $validationErrors = [];
+            
+            // Validate username if it's being updated
+            if (isset($data['username'])) {
+                $user = $this->findById($id);
+                if (!$user) {
+                    return ['error' => true, 'message' => 'Benutzer nicht gefunden.'];
+                }
+                
+                $validation = $this->validateUserInput($data['username'], null, $user['orchestra_id'], $id);
+                if (!$validation['valid']) {
+                    $validationErrors = array_merge($validationErrors, $validation['errors']);
+                }
+            }
+            
+            // Validate password if it's being updated
             if (isset($data['password'])) {
+                $validation = $this->validateUserInput(null, $data['password']);
+                if (!$validation['valid']) {
+                    $validationErrors = array_merge($validationErrors, $validation['errors']);
+                }
+                
+                // Hash the password before updating
                 $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+            }
+            
+            // Return errors if validation failed
+            if (!empty($validationErrors)) {
+                error_log("User profile update failed - Validation errors: " . implode(', ', $validationErrors));
+                return ['error' => true, 'message' => implode(', ', $validationErrors)];
             }
             
             // Debug log
@@ -343,6 +372,70 @@ class User extends Model
         }
         
         return $user['role'] === $role;
+    }
+    
+    /**
+     * Validate user input for registration or profile updates
+     * 
+     * @param string $username Username to validate
+     * @param string $password Password to validate (if provided)
+     * @param int|null $orchestraId Orchestra ID for duplicate username check
+     * @param int|null $excludeUserId User ID to exclude from duplicate check (for updates)
+     * @param string|null $passwordConfirm Confirmation password to check (if provided)
+     * @return array Array with 'valid' => bool and 'errors' => array
+     */
+    public function validateUserInput($username, $password = null, $orchestraId = null, $excludeUserId = null, $passwordConfirm = null)
+    {
+        $errors = [];
+        
+        // Validate username
+        if (empty($username)) {
+            $errors[] = "Benutzername fehlt";
+        } elseif (strlen($username) < 3 || strlen($username) > 20) {
+            $errors[] = "Der Benutzername muss zwischen 3 und 20 Zeichen haben";
+        } else {
+            // Check for duplicates if not updating own username
+            $existingUser = $this->findByUsername($username, $orchestraId);
+            if ($existingUser && (!$excludeUserId || $existingUser['id'] != $excludeUserId)) {
+                $errors[] = "Dieser Benutzername ist bereits vergeben";
+            }
+        }
+        
+        // Validate password if provided
+        if ($password !== null) {
+            if (empty($password)) {
+                $errors[] = "Passwort fehlt";
+            } else {
+                // Password requirements from AuthController
+                $passwordErrors = [];
+                if (strlen($password) < 8) {
+                    $passwordErrors[] = 'mindestens 8 Zeichen';
+                }
+                if (!preg_match('/[A-Z]/', $password)) {
+                    $passwordErrors[] = 'mindestens ein Großbuchstabe';
+                }
+                if (!preg_match('/[a-z]/', $password)) {
+                    $passwordErrors[] = 'mindestens ein Kleinbuchstabe';
+                }
+                if (!preg_match('/[0-9]/', $password)) {
+                    $passwordErrors[] = 'mindestens eine Zahl';
+                }
+                
+                if (!empty($passwordErrors)) {
+                    $errors[] = "Das Passwort muss " . implode(', ', $passwordErrors) . " enthalten";
+                }
+            }
+            
+            // Check if passwords match (if confirmation is provided)
+            if ($passwordConfirm !== null && $password !== $passwordConfirm) {
+                $errors[] = "Die Passwörter stimmen nicht überein";
+            }
+        }
+        
+        return [
+            'valid' => empty($errors),
+            'errors' => $errors
+        ];
     }
     
     /**

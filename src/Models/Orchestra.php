@@ -56,10 +56,9 @@ class Orchestra extends Model
      * Create a new orchestra
      * 
      * @param array $data Orchestra data
-     * @param array $conductorData Conductor user data
      * @return int|bool Orchestra ID or false on failure
      */
-    public function createOrchestra($data, $conductorData)
+    public function createOrchestra($data)
     {
         // Silence any directory creation errors
         ini_set('display_errors', 0);
@@ -76,7 +75,6 @@ class Orchestra extends Model
         
         $debugLog("Starting orchestra creation process");
         $debugLog("Data: " . json_encode($data));
-        $debugLog("Conductor data: " . json_encode(['username' => $conductorData['username'], 'password' => '[REDACTED]']));
         
         if ($debug) {
             @error_log($logPrefix . "DEBUG: Starting orchestra creation with data: " . json_encode($data));
@@ -98,13 +96,6 @@ class Orchestra extends Model
         }
         $debugLog("Orchestra data validated");
         
-        if (empty($conductorData['username']) || empty($conductorData['password'])) {
-            $debugLog("Missing required conductor data fields");
-            @error_log($logPrefix . "Missing required conductor data fields");
-            return false;
-        }
-        $debugLog("Conductor data validated");
-        
         // Start transaction
         $debugLog("Attempting to start transaction");
         if (!$this->db->getConnection()->begin_transaction()) {
@@ -125,7 +116,7 @@ class Orchestra extends Model
             }
             $debugLog("Token is unique");
             
-            // Insert orchestra without conductor_id first (will update after creating conductor)
+            // Insert orchestra
             $debugLog("Preparing to insert orchestra");
             @error_log($logPrefix . "Attempting to insert orchestra with name: {$data['name']}, token: {$data['token']}");
             
@@ -143,34 +134,6 @@ class Orchestra extends Model
                 throw new \Exception("Failed to create orchestra: {$error}");
             }
             $debugLog("Orchestra inserted successfully with ID: " . $orchestraId);
-            
-            // Create conductor user
-            $userModel = new User();
-            $debugLog("Creating conductor user: " . $conductorData['username']);
-            @error_log($logPrefix . "Attempting to create conductor with username: {$conductorData['username']}");
-            
-            $conductorData['password'] = password_hash($conductorData['password'], PASSWORD_DEFAULT);
-            $debugLog("Conductor data prepared, password hashed");
-            
-            $conductorId = $userModel->insert([
-                'username' => $conductorData['username'],
-                'password' => $conductorData['password'],
-                'type' => 'Dirigent',
-                'orchestra_id' => $orchestraId,
-                'role' => 'conductor'
-            ]);
-            
-            if (!$conductorId) {
-                $error = $this->db->getLastError();
-                $debugLog("Failed to create conductor user: " . $error);
-                @error_log($logPrefix . "Failed to create conductor user: {$error}");
-                throw new \Exception("Failed to create conductor user: {$error}");
-            }
-            $debugLog("Conductor created successfully with ID: " . $conductorId);
-            
-            // Update orchestra to set conductor_id
-            $this->update($orchestraId, ['conductor_id' => $conductorId]);
-            $debugLog("Updated orchestra with conductor_id: " . $conductorId);
             
             // Commit transaction
             $debugLog("Attempting to commit transaction");

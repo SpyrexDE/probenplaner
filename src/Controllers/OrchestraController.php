@@ -38,20 +38,37 @@ class OrchestraController extends Controller
      */
     public function create()
     {
+        // Check if we have form data from a failed validation - this means admin was already verified
+        $formData = [];
+        $adminVerified = false;
+        
+        if (isset($_SESSION['orchestra_form_data'])) {
+            $formData = $_SESSION['orchestra_form_data'];
+            // Admin was already verified if we have form data
+            $adminVerified = true;
+            // Don't unset the form data here - we'll need it if redirected again
+        }
+        
         // Check if ADMIN password provided
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (isset($_POST['admin_password']) && $_POST['admin_password'] === ADMIN_PW) {
-                $this->render('orchestras/create', [
-                    'currentPage' => 'create_orchestra',
-                    'admin_verified' => true
-                ]);
-                return;
+                $adminVerified = true;
             } else {
                 $this->addAlert('Fehler!', 'Falsches Admin-Passwort.', 'error');
             }
         }
         
-        // Display admin password verification form
+        // If admin is verified, show the creation form
+        if ($adminVerified) {
+            $this->render('orchestras/create', [
+                'currentPage' => 'create_orchestra',
+                'admin_verified' => true,
+                'formData' => $formData
+            ]);
+            return;
+        }
+        
+        // Otherwise display admin password verification form
         $this->render('orchestras/admin_verify', [
             'currentPage' => 'create_orchestra'
         ]);
@@ -88,12 +105,22 @@ class OrchestraController extends Controller
         $conductorUsername = isset($_POST['conductor_username']) ? $this->sanitizeUtf8(trim($_POST['conductor_username'])) : '';
         $conductorPassword = isset($_POST['conductor_password']) ? $this->sanitizeUtf8(trim($_POST['conductor_password'])) : '';
         
+        // Store form data for repopulation on validation failure
+        $formData = [
+            'name' => $name,
+            'token' => $token,
+            'leader_pw' => $leaderPw,
+            'conductor_username' => $conductorUsername,
+            // Don't store password for security reasons
+        ];
+        
         // Log input
         error_log("Orchestra creation attempt - Name: $name, Token: $token, ConductorUser: $conductorUsername");
         
         // Add detailed validation
         $errors = [];
         
+        // Validate orchestra data
         if (empty($name)) {
             $errors[] = "Orchestername fehlt";
         }
@@ -110,20 +137,20 @@ class OrchestraController extends Controller
             $errors[] = "Stimmführer-Passwort fehlt";
         }
         
-        if (empty($conductorUsername)) {
-            $errors[] = "Dirigenten-Benutzername fehlt";
-        } elseif (strlen($conductorUsername) < 2) {
-            $errors[] = "Dirigenten-Benutzername muss mindestens 2 Zeichen lang sein";
-        }
-        
-        if (empty($conductorPassword)) {
-            $errors[] = "Dirigenten-Passwort fehlt";
-        } elseif (strlen($conductorPassword) < 4) {
-            $errors[] = "Dirigenten-Passwort muss mindestens 4 Zeichen lang sein";
+        // Validate conductor data using the User model's validation method
+        $userValidation = $this->userModel->validateUserInput($conductorUsername, $conductorPassword);
+        if (!$userValidation['valid']) {
+            // Add conductor-specific prefix to error messages
+            foreach ($userValidation['errors'] as $error) {
+                $errors[] = "Dirigent: " . $error;
+            }
         }
         
         // If validation errors, show them
         if (!empty($errors)) {
+            // Store form data in session to repopulate the form
+            $_SESSION['orchestra_form_data'] = $formData;
+            
             $errorMsg = implode(", ", $errors);
             $this->addAlert('Fehler!', $errorMsg, 'error');
             $this->redirect('/orchestras/create');
@@ -131,53 +158,60 @@ class OrchestraController extends Controller
         }
         
         try {
-            // Create orchestra and conductor
-            $result = $this->orchestraModel->createOrchestra(
-                [
-                    'name' => $name,
-                    'token' => $token,
-                    'leader_pw' => $leaderPw
-                ],
-                [
-                    'username' => $conductorUsername,
-                    'password' => $conductorPassword
-                ]
+            // Create orchestra
+            $orchestraData = [
+                'name' => $name,
+                'token' => $token,
+                'leader_pw' => $leaderPw
+            ];
+            
+            $orchestraId = $this->orchestraModel->createOrchestra($orchestraData);
+            
+            if (!$orchestraId) {
+                throw new \Exception("Fehler beim Erstellen des Orchesters.");
+            }
+            
+            // Create conductor
+            $userResult = $this->userModel->register(
+                $conductorUsername, 
+                $conductorPassword,
+                'Dirigent', 
+                $orchestraId,
+                'conductor'
             );
             
-            // If regular creation fails, try a fallback method with direct queries
-            if (!$result) {
-                error_log("Regular orchestra creation failed, attempting fallback method");
-                $result = $this->attemptFallbackCreation($name, $token, $leaderPw, $conductorUsername, $conductorPassword);
+            if (is_array($userResult) && isset($userResult['error'])) {
+                // Handle error from user creation
+                // Rollback by deleting the orchestra
+                $this->orchestraModel->delete($orchestraId);
+                
+                // Store form data in session to repopulate the form
+                $_SESSION['orchestra_form_data'] = $formData;
+                
+                $this->addAlert('Fehler!', $userResult['message'], 'error', $userResult['details'] ?? '');
+                $this->redirect('/orchestras/create');
+                return;
             }
             
-            if ($result) {
-                $this->addAlert('Erfolg!', 'Das Orchester wurde erfolgreich erstellt.', 'success');
-                $this->redirect('/login');
-            } else {
-                // Get a more detailed error message by checking for common issues
-                if ($this->orchestraModel->findByToken($token)) {
-                    $this->addAlert('Fehler!', 'Dieser Token wird bereits verwendet.', 'error');
-                } else {
-                    $errorInfo = error_get_last();
-                    $errorMsg = $errorInfo ? $errorInfo['message'] : 'Unbekannter Fehler';
-                    
-                    // Skip directory permission errors in the error message
-                    if (strpos($errorMsg, 'mkdir') !== false && strpos($errorMsg, 'Permission denied') !== false) {
-                        $errorMsg = 'Interner Serverfehler';
-                    }
-                    
-                    $this->addAlert('Fehler!', 'Das Orchester konnte nicht erstellt werden: ' . $errorMsg, 'error');
-                    error_log("Orchestra creation failed with error: $errorMsg");
-                    
-                    // If we're in development environment and have a debug log, show its path
-                    if (defined('APP_ENV') && (APP_ENV === 'development' || APP_ENV === 'test') && isset($_SESSION['debug_log_file'])) {
-                        $this->addAlert('Debug Info', 'Debug log: ' . $_SESSION['debug_log_file'], 'info');
-                    }
-                }
-                $this->redirect('/orchestras/create');
+            $conductorId = $userResult;
+            
+            // Update orchestra with the conductor ID
+            $this->orchestraModel->update($orchestraId, ['conductor_id' => $conductorId]);
+            
+            // Clear any stored form data on success
+            if (isset($_SESSION['orchestra_form_data'])) {
+                unset($_SESSION['orchestra_form_data']);
             }
+            
+            $this->addAlert('Erfolg!', 'Das Orchester wurde erfolgreich erstellt.', 'success');
+            $this->redirect('/login');
+            
         } catch (\Exception $e) {
             error_log("Exception during orchestra creation: " . $e->getMessage());
+            
+            // Store form data in session to repopulate the form
+            $_SESSION['orchestra_form_data'] = $formData;
+            
             $this->addAlert('Fehler!', 'Fehler bei der Erstellung: ' . $e->getMessage(), 'error');
             $this->redirect('/orchestras/create');
         } finally {
@@ -351,106 +385,5 @@ class OrchestraController extends Controller
         $string = preg_replace('/[^\p{L}\p{N}\s\-_\.]/u', '', $string);
         
         return $string;
-    }
-    
-    /**
-     * Attempt fallback creation method using direct SQL
-     * This is used when the model-based approach fails
-     * 
-     * @param string $name Orchestra name
-     * @param string $token Orchestra token
-     * @param string $leaderPw Leader password
-     * @param string $username Conductor username
-     * @param string $password Conductor password
-     * @return int|bool Orchestra ID or false on failure
-     */
-    private function attemptFallbackCreation($name, $token, $leaderPw, $username, $password)
-    {
-        try {
-            // Get database connection
-            $db = \App\Core\Database::getInstance();
-            $conn = $db->getConnection();
-            
-            // Check if there might be a permission issue with foreign keys
-            $permissionTest = $conn->query("SHOW GRANTS FOR CURRENT_USER");
-            $limitedPermissions = false;
-            
-            if ($permissionTest) {
-                $permissionString = '';
-                while ($row = $permissionTest->fetch_row()) {
-                    $permissionString .= $row[0] . ' ';
-                }
-                
-                // Check if permissions might be limited
-                if (strpos($permissionString, 'ALL PRIVILEGES') === false) {
-                    $limitedPermissions = true;
-                    error_log("Limited database permissions detected, using ultra-safe mode");
-                }
-            }
-            
-            // Start transaction with ultra-safe mode for limited permissions
-            if (!$limitedPermissions) {
-                $conn->begin_transaction();
-            }
-            
-            // Step 1: Check if token exists first to avoid duplication
-            $checkToken = $conn->prepare("SELECT id FROM orchestras WHERE token = ?");
-            $checkToken->bind_param("s", $token);
-            $checkToken->execute();
-            $tokenResult = $checkToken->get_result();
-            
-            if ($tokenResult->num_rows > 0) {
-                error_log("Token $token already exists");
-                return false;
-            }
-            
-            // Step 2: Insert orchestra using direct query
-            $insertOrchestra = $conn->prepare("INSERT INTO orchestras (name, token, leader_pw, conductor_username) VALUES (?, ?, ?, ?)");
-            $insertOrchestra->bind_param("ssss", $name, $token, $leaderPw, $username);
-            
-            if (!$insertOrchestra->execute()) {
-                throw new \Exception("Failed to insert orchestra: " . $conn->error);
-            }
-            
-            $orchestraId = $conn->insert_id;
-            
-            // Step 3: Insert conductor user
-            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-            
-            $insertUser = $conn->prepare("INSERT INTO users (username, password, type, orchestra_id, role) VALUES (?, ?, 'Dirigent', ?, 'conductor')");
-            $insertUser->bind_param("ssi", $username, $hashedPassword, $orchestraId);
-            
-            if (!$insertUser->execute()) {
-                // If we're in a transaction, roll it back
-                if (!$limitedPermissions) {
-                    $conn->rollback();
-                } else {
-                    // In ultra-safe mode, we need to manually delete the orchestra
-                    $cleanup = $conn->prepare("DELETE FROM orchestras WHERE id = ?");
-                    $cleanup->bind_param("i", $orchestraId);
-                    $cleanup->execute();
-                }
-                
-                throw new \Exception("Failed to insert conductor: " . $conn->error);
-            }
-            
-            // Commit transaction if we started one
-            if (!$limitedPermissions) {
-                $conn->commit();
-            }
-            
-            error_log("Fallback orchestra creation successful with ID: $orchestraId" . ($limitedPermissions ? " in ultra-safe mode" : ""));
-            return $orchestraId;
-        } catch (\Exception $e) {
-            // Log the error
-            error_log("Fallback orchestra creation failed: " . $e->getMessage());
-            
-            // Rollback if possible
-            if (isset($conn) && !$limitedPermissions && $conn->ping()) {
-                $conn->rollback();
-            }
-            
-            return false;
-        }
     }
 } 

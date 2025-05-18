@@ -142,17 +142,16 @@ class UserController extends Controller
         
         // Process username changes if provided
         if (!empty($newUsername) && $newUsername != $oldUsername) {
-            // Check if username is too short/long
-            if (strlen($newUsername) < 3 || strlen($newUsername) > 20) {
-                $this->addAlert('Fehler!', 'Der Nutzername muss zwischen 3 und 20 Zeichen haben.', 'error');
-                $this->redirect('/conductor/profile');
-                return;
-            }
+            // Validate username using the model's validation method
+            $usernameValidation = $this->userModel->validateUserInput(
+                $newUsername, 
+                null, 
+                $_SESSION['orchestra_id'], 
+                $user['id']
+            );
             
-            // Check if username is already taken
-            $existingUser = $this->userModel->findByUsername($newUsername);
-            if ($existingUser && $existingUser['id'] != $user['id']) {
-                $this->addAlert('Fehler!', 'Dieser Nutzername ist bereits vergeben.', 'error');
+            if (!$usernameValidation['valid']) {
+                $this->addAlert('Fehler!', implode(", ", $usernameValidation['errors']), 'error');
                 $this->redirect('/conductor/profile');
                 return;
             }
@@ -176,9 +175,10 @@ class UserController extends Controller
                 return;
             }
             
-            // Check new password length
-            if (strlen($newPassword) < 4 || strlen($newPassword) > 20) {
-                $this->addAlert('Fehler!', 'Das neue Passwort muss mindestens 4 und darf maximal 20 Zeichen haben.', 'error');
+            // Validate password using the model's validation method
+            $passwordValidation = $this->userModel->validateUserInput(null, $newPassword);
+            if (!$passwordValidation['valid']) {
+                $this->addAlert('Fehler!', implode(", ", $passwordValidation['errors']), 'error');
                 $this->redirect('/conductor/profile');
                 return;
             }
@@ -242,17 +242,16 @@ class UserController extends Controller
         
         // Process username changes if provided
         if (!empty($newUsername) && $newUsername != $oldUsername) {
-            // Check if username is too short/long
-            if (strlen($newUsername) < 3 || strlen($newUsername) > 20) {
-                $this->addAlert('Fehler!', 'Der Nutzername muss zwischen 3 und 20 Zeichen haben.', 'error');
-                $this->redirect('/profile');
-                return;
-            }
+            // Validate username using the model's validation method
+            $usernameValidation = $this->userModel->validateUserInput(
+                $newUsername, 
+                null, 
+                $_SESSION['orchestra_id'], 
+                $user['id']
+            );
             
-            // Check if username is already taken
-            $existingUser = $this->userModel->findByUsername($newUsername);
-            if ($existingUser) {
-                $this->addAlert('Fehler!', 'Dieser Nutzername ist bereits vergeben.', 'error');
+            if (!$usernameValidation['valid']) {
+                $this->addAlert('Fehler!', implode(", ", $usernameValidation['errors']), 'error');
                 $this->redirect('/profile');
                 return;
             }
@@ -276,9 +275,10 @@ class UserController extends Controller
                 return;
             }
             
-            // Check new password length
-            if (strlen($newPassword) < 4 || strlen($newPassword) > 20) {
-                $this->addAlert('Fehler!', 'Das neue Passwort muss mindestens 4 und darf maximal 20 Zeichen haben.', 'error');
+            // Validate password using the model's validation method
+            $passwordValidation = $this->userModel->validateUserInput(null, $newPassword);
+            if (!$passwordValidation['valid']) {
+                $this->addAlert('Fehler!', implode(", ", $passwordValidation['errors']), 'error');
                 $this->redirect('/profile');
                 return;
             }
@@ -597,7 +597,7 @@ class UserController extends Controller
         $newPassword = '12345';
         $result = $this->userModel->updateProfile($user['id'], ['password' => $newPassword]);
         
-        if ($result) {
+        if ($result === true) {
             echo json_encode([
                 'success' => true,
                 'message' => "Das Passwort des Nutzers $username wurde auf 12345 zurückgesetzt."
@@ -605,7 +605,7 @@ class UserController extends Controller
         } else {
             http_response_code(500);
             echo json_encode([
-                'error' => "Fehler beim Zurücksetzen des Passworts."
+                'error' => is_array($result) && isset($result['message']) ? $result['message'] : "Fehler beim Zurücksetzen des Passworts."
             ]);
         }
     }
