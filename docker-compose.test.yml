@@ -20,6 +20,7 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=probenplaner_test
+      - CERT_PATH=${CERT_PATH}
     restart: always
     networks:
       - app_net
