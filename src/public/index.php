@@ -33,6 +33,9 @@ $router->addRoute('/rehearsals/create', 'RehearsalController', 'create');
 $router->addRoute('/rehearsals/edit/{id}', 'RehearsalController', 'edit');
 $router->addRoute('/rehearsals/delete/{id}', 'RehearsalController', 'delete');
 
+// Probenplan route
+$router->addRoute('/probenplan', 'ProbenplanController', 'index');
+
 // User profile routes
 $router->addRoute('/profile', 'UserController', 'profile');
 $router->addRoute('/profile/check-leader-password', 'UserController', 'checkLeaderPassword');

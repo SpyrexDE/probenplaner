@@ -19,7 +19,7 @@
         "name": "Probenplan einsehen",
         "short_name": "Probenplan",
         "description": "Zeigt den Probenplan",
-        "url": "/Probenplan",
+        "url": "/probenplan",
         "icons": [{ "src": "/images/tabIcon.png", "sizes": "300x300" }]
       }
     ]

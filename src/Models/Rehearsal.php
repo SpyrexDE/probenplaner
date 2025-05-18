@@ -428,4 +428,47 @@ class Rehearsal extends Model
         
         return $rehearsal;
     }
+    
+    /**
+     * Get rehearsals relevant for a specific user
+     * 
+     * @param int $orchestraId Orchestra ID
+     * @param string $userType User type/instrument
+     * @param array $userGroups User's groups
+     * @param bool $includeOld Whether to include past rehearsals
+     * @return array
+     */
+    public function getRelevantForUser($orchestraId, $userType, $userGroups = [], $includeOld = false)
+    {
+        $orchestraId = (int)$orchestraId;
+        $today = date('Y-m-d');
+        
+        $sql = "SELECT * FROM {$this->table} WHERE orchestra_id = {$orchestraId} ";
+        
+        if (!$includeOld) {
+            $sql .= "AND date >= '{$today}' ";
+        }
+        
+        $sql .= "ORDER BY date, time";
+        
+        $result = $this->db->query($sql);
+        
+        $rehearsals = [];
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $groups = $this->getGroupsAsAssoc($row['id']);
+                $isSmallGroup = isset($userGroups['is_small_group']) && $userGroups['is_small_group'];
+                $rehearsalIsSmallGroup = isset($row['is_small_group']) && $row['is_small_group'] == 1;
+                
+                if ($this->isUserInRehearsalGroup($userType, $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
+                    // Format the date in a user-friendly format
+                    $row['date_formatted'] = Helpers::formatDate($row['date']);
+                    $row['groups'] = $this->getGroups($row['id']);
+                    $rehearsals[] = $row;
+                }
+            }
+        }
+        
+        return $rehearsals;
+    }
 } 

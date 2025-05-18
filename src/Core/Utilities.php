@@ -52,4 +52,26 @@ class Utilities
         
         return self::formatUsername($username, $role, $isSmallGroup);
     }
+    
+    /**
+     * Get German day abbreviation from a DateTime object
+     * 
+     * @param \DateTime $date Date to get day abbreviation for
+     * @return string German day abbreviation (Mo, Di, etc.)
+     */
+    public static function getGermanDayAbbreviation(\DateTime $date)
+    {
+        static $germanDays = [
+            'Mon' => 'Mo',
+            'Tue' => 'Di',
+            'Wed' => 'Mi',
+            'Thu' => 'Do',
+            'Fri' => 'Fr',
+            'Sat' => 'Sa',
+            'Sun' => 'So'
+        ];
+        
+        $englishDay = $date->format('D');
+        return $germanDays[$englishDay] ?? $englishDay;
+    }
 } 

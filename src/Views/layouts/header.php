@@ -69,7 +69,7 @@
                         <a class="<?= $currentPage === 'conductor_profile' ? 'activeTab' : '' ?>" href="/conductor/profile" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Profil bearbeiten</a>
                         <a class="<?= $currentPage === 'orchestra_settings' ? 'activeTab' : '' ?>" href="/orchestras/settings" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Orchester bearbeiten</a>
                     <?php else: ?>
-                        <a class="<?= $currentPage === 'rehearsals' ? 'activeTab' : '' ?>" href="/rehearsals" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Probenplan</a>
+                        <a class="<?= $currentPage === 'probenplan' ? 'activeTab' : '' ?>" href="/probenplan" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Probenplan</a>
                         <a class="<?= $currentPage === 'profile' ? 'activeTab' : '' ?>" href="/profile" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Profil bearbeiten</a>
                     <?php endif; ?>
                     <a href="/logout" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Logout</a>
@@ -94,12 +94,31 @@
                     </div>
                   </div>
                   <div class="col-auto">
+                    <?php 
+                    // Show buttons on relevant routes
+                    $currentUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+                    
+                    // Show history button only on promises routes
+                    $showHistoryButton = (strpos($currentUri, '/promises') === 0);
+                    
+                    // Show help button on all main feature pages
+                    $showHelpButton = in_array($currentUri, ['/promises', '/promises/leader', '/promises/admin', 
+                                                            '/rehearsals', '/probenplan', '/profile', '/conductor/profile']) 
+                                     || (strpos($currentUri, '/promises/') === 0)
+                                     || (strpos($currentUri, '/rehearsals/') === 0);
+                    ?>
+                    
+                    <?php if ($showHistoryButton): ?>
                     <a href="javascript:void(0)" class="history-link" onclick="openOld()">
                       <i class="fas fa-history mr-4"></i>
                     </a>
+                    <?php endif; ?>
+                    
+                    <?php if ($showHelpButton): ?>
                     <a href="javascript:void(0)" class="help-link" onclick="window.app && window.app.help()">
                       <i class="fas fa-question-circle"></i>
                     </a>
+                    <?php endif; ?>
                   </div>
                 </div>
               </div>
@@ -119,12 +138,31 @@
         </div>
       </div>
       <div class="col-auto">
+        <?php 
+        // Show buttons on relevant routes
+        $currentUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        
+        // Show history button only on promises routes
+        $showHistoryButton = (strpos($currentUri, '/promises') === 0);
+        
+        // Show help button on all main feature pages
+        $showHelpButton = in_array($currentUri, ['/promises', '/promises/leader', '/promises/admin', 
+                                                '/rehearsals', '/probenplan', '/profile', '/conductor/profile']) 
+                                 || (strpos($currentUri, '/promises/') === 0)
+                                 || (strpos($currentUri, '/rehearsals/') === 0);
+        ?>
+        
+        <?php if ($showHistoryButton): ?>
         <a href="javascript:void(0)" class="history-link" onclick="openOld()">
           <i class="fas fa-history mr-4"></i>
         </a>
+        <?php endif; ?>
+        
+        <?php if ($showHelpButton): ?>
         <a href="javascript:void(0)" class="help-link" onclick="window.app && window.app.help()">
           <i class="fas fa-question-circle"></i>
         </a>
+        <?php endif; ?>
       </div>
     </div>
   </div>
