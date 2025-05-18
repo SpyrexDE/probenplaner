@@ -5,6 +5,8 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
+      args:
+        - DOMAIN=${DOMAIN}
     ports:
       - "8090:80"
       - "8091:443"

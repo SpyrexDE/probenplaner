@@ -1,5 +1,8 @@
 FROM php:8.0-apache
 
+# Add build argument
+ARG DOMAIN
+
 # Install dependencies
 RUN apt-get update && apt-get install -y \
     libpng-dev \
@@ -39,7 +42,11 @@ RUN chown -R www-data:www-data /var/www/html \
 
 # Pass environment variables to Apache
 RUN echo "PassEnv APP_ENV" >> /etc/apache2/conf-available/environment.conf
+RUN echo "PassEnv DOMAIN" >> /etc/apache2/conf-available/environment.conf
 RUN a2enconf environment
+
+# Set global ServerName
+RUN echo "ServerName ${DOMAIN:-localhost}" >> /etc/apache2/apache2.conf
 
 # Expose ports
 EXPOSE 80
