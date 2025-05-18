@@ -11,7 +11,7 @@ services:
     volumes:
       - ./src:/var/www/html
       - ./database:/var/www/html/database
-      - ./docker/ssl:/etc/apache2/ssl
+      - ${CERT_PATH}:/etc/apache2/ssl:ro
     depends_on:
       - db
     environment:
