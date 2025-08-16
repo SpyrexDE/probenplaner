@@ -203,7 +203,7 @@ class OrchestraController extends Controller
                 unset($_SESSION['orchestra_form_data']);
             }
             
-            $this->addAlert('Erfolg!', 'Das Orchester wurde erfolgreich erstellt.', 'success');
+            $this->setFlash('success', 'Das Orchester wurde erfolgreich erstellt.');
             $this->redirect('/login');
             
         } catch (\Exception $e) {
@@ -303,7 +303,7 @@ class OrchestraController extends Controller
         ]);
         
         if ($result) {
-            $this->addAlert('Erfolg!', 'Die Orchestereinstellungen wurden aktualisiert.', 'success');
+            $this->setFlash('success', 'Die Orchestereinstellungen wurden aktualisiert.');
         } else {
             $this->addAlert('Fehler!', 'Die Einstellungen konnten nicht aktualisiert werden.', 'error');
         }
@@ -366,7 +366,6 @@ class OrchestraController extends Controller
         
         if ($result) {
             // Logout user
-            $this->addAlert('Erfolg!', 'Das Orchester wurde erfolgreich gelöscht.', 'success');
             $this->redirect('/logout');
         } else {
             $this->addAlert('Fehler!', 'Das Orchester konnte nicht gelöscht werden.', 'error');

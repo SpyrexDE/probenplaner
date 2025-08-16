@@ -4,9 +4,11 @@
 
 <div class="container-fluid mt-4">
     <?php if (empty($rehearsals)): ?>
-        <div class="alert alert-info">
-            Keine Termine gefunden.
-        </div>
+        <?php 
+            $title = 'Keine Termine gefunden';
+            $message = 'Es gibt aktuell keine geplanten Proben.';
+            include __DIR__ . '/../components/empty-state.php';
+        ?>
     <?php else: ?>
         <?php foreach ($rehearsals as $rehearsal): ?>
             <?php 

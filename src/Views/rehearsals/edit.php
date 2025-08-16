@@ -3,19 +3,8 @@
 <div class="container-fluid mt-4">
     <?php if (!empty($errors)): ?>
     <script>
-        const Toast = Swal.mixin({
-            toast: true,
-            position: 'bottom-end',
-            showConfirmButton: false,
-            timer: 5000,
-            timerProgressBar: true
-        });
-        
         <?php foreach ($errors as $error): ?>
-            Toast.fire({
-                icon: 'error',
-                title: '<?= htmlspecialchars($error) ?>'
-            });
+            window.notifyError('<?= htmlspecialchars($error) ?>', { timer: 5000 });
         <?php endforeach; ?>
     </script>
     <?php endif; ?>

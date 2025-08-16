@@ -206,10 +206,10 @@ class UserController extends Controller
         if ($result) {
             if ($usernameChanged) {
                 // If username changed, need to log out and back in
-                $this->addAlert('Erfolg!', 'Profil aktualisiert. Bitte melden Sie sich erneut an.', 'success');
+                $this->setFlash('success', 'Profil aktualisiert. Bitte melden Sie sich erneut an.');
                 $this->logout();
             } else {
-                $this->addAlert('Erfolg!', 'Profil erfolgreich aktualisiert.', 'success');
+                $this->setFlash('success', 'Profil erfolgreich aktualisiert.');
                 $this->redirect('/conductor/profile');
             }
         } else {
@@ -335,7 +335,7 @@ class UserController extends Controller
         if ($result === true) {
             if ($usernameChanged) {
                 // If username changed, need to log out and back in
-                $this->addAlert('Erfolg!', 'Profil aktualisiert. Bitte melden Sie sich erneut an.', 'success');
+                $this->setFlash('success', 'Profil aktualisiert. Bitte melden Sie sich erneut an.');
                 $this->logout();
             } else {
                 // Update session variables to reflect changes
@@ -349,7 +349,7 @@ class UserController extends Controller
                     $_SESSION['role'] = $updateData['role'];
                 }
                 
-                $this->addAlert('Erfolg!', 'Profil erfolgreich aktualisiert.', 'success');
+                $this->setFlash('success', 'Profil erfolgreich aktualisiert.');
                 $this->redirect('/profile');
             }
         } else {
@@ -431,8 +431,8 @@ class UserController extends Controller
         
         if ($result) {
             // Log out the user
+            $this->setFlash('success', 'Dein Account wurde erfolgreich gelöscht.');
             $this->logout();
-            $this->addAlert('Erfolg!', 'Dein Account wurde erfolgreich gelöscht.', 'success');
         } else {
             $this->addAlert('Fehler!', 'Fehler beim Löschen des Accounts.', 'error');
             $this->redirect('/profile');

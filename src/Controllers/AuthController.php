@@ -142,7 +142,7 @@ class AuthController extends Controller
         setcookie("username", $user['username'], time() + 604800);
         // Do not store password in cookie for security reasons
         
-        $this->addAlert('Willkommen!', 'Sie wurden erfolgreich eingeloggt.', 'success');
+        $this->setFlash('success', 'Sie wurden erfolgreich eingeloggt.');
         
         // Redirect based on role
         if ($user['role'] === 'conductor') {
@@ -268,7 +268,7 @@ class AuthController extends Controller
         }
         
         if ($result) {
-            $this->addAlert('Erfolg!', 'Ihr Konto wurde erfolgreich erstellt. Sie können sich jetzt anmelden.', 'success');
+            $this->setFlash('success', 'Ihr Konto wurde erfolgreich erstellt. Sie können sich jetzt anmelden.');
             error_log("Registration successful - User ID: $result");
             $this->redirect('/login?token=' . urlencode($token));
         } else {

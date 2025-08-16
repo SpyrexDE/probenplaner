@@ -117,23 +117,13 @@ function deleteAccount(username) {
                     return response.json();
                 })
                 .then(data => {
-                    // Use toast notification for success
-                    const Toast = Swal.mixin({
-                        toast: true,
-                        position: 'bottom-end',
-                        showConfirmButton: false,
-                        timer: 2000,
-                        timerProgressBar: true,
-                        didClose: () => {
-                            // Reload the page to reflect the account deletion
-                            window.location.reload();
-                        }
-                    });
-                    
-                    Toast.fire({
-                        icon: "success",
-                        title: data.message
-                    });
+                    if (window.notifySuccess) {
+                        window.notifySuccess(data.message, { timer: 2000 });
+                        setTimeout(() => window.location.reload(), 600);
+                    } else {
+                        alert(data.message);
+                        window.location.reload();
+                    }
                 })
                 .catch(error => {
                     console.error('Error deleting account:', error);
@@ -165,19 +155,11 @@ function resetPassword(username) {
                     return response.json();
                 })
                 .then(data => {
-                    // Use toast notification for success
-                    const Toast = Swal.mixin({
-                        toast: true,
-                        position: 'bottom-end',
-                        showConfirmButton: false,
-                        timer: 10000,
-                        timerProgressBar: true
-                    });
-                    
-                    Toast.fire({
-                        icon: "success",
-                        title: data.message
-                    });
+                    if (window.notifySuccess) {
+                        window.notifySuccess(data.message, { timer: 10000 });
+                    } else {
+                        alert(data.message);
+                    }
                 })
                 .catch(error => {
                     console.error('Error resetting password:', error);
@@ -189,18 +171,11 @@ function resetPassword(username) {
 
 // Show error toast notification
 function showErrorToast(message, timer = 3000) {
-    const Toast = Swal.mixin({
-        toast: true,
-        position: 'bottom-end',
-        showConfirmButton: false,
-        timer: timer,
-        timerProgressBar: true
-    });
-    
-    Toast.fire({
-        icon: "error",
-        title: message
-    });
+    if (window.notifyError) {
+        window.notifyError(message, { timer: timer });
+    } else {
+        alert(message);
+    }
 }
 
 // Initialize view toggle functionality (leader view only)

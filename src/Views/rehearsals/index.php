@@ -1,34 +1,16 @@
 <?php $this->layout('layouts/default', ['title' => 'Termine', 'currentPage' => $currentPage ?? 'rehearsals']) ?>
 
 <div class="container-fluid mt-4">
-    <?php if (isset($_SESSION['flash_messages']) && !empty($_SESSION['flash_messages'])): ?>
-    <script>
-        const Toast = Swal.mixin({
-            toast: true,
-            position: 'bottom-end',
-            showConfirmButton: false,
-            timer: 3000,
-            timerProgressBar: true
-        });
-        
-        <?php foreach ($_SESSION['flash_messages'] as $key => $message): ?>
-            Toast.fire({
-                icon: '<?= $message['type'] === 'error' ? 'error' : ($message['type'] === 'success' ? 'success' : 'info') ?>',
-                title: '<?= htmlspecialchars($message['message']) ?>'
-            });
-        <?php unset($_SESSION['flash_messages'][$key]); endforeach; ?>
-    </script>
-    <?php endif; ?>
+    
 
     <?php if (empty($rehearsals)): ?>
-    <script>
-        Swal.fire({
-            title: 'Information',
-            text: 'Keine Termine gefunden.',
-            icon: 'info',
-            confirmButtonColor: '#478cf4'
-        });
-    </script>
+        <?php 
+            $title = 'Keine Termine gefunden';
+            $message = 'Lege einen neuen Termin an, um hier Proben zu sehen.';
+            $actionHref = '/rehearsals/create';
+            $actionLabel = 'Termin hinzufügen';
+            include __DIR__ . '/../components/empty-state.php';
+        ?>
     <?php else: ?>
         <?php foreach ($rehearsals as $rehearsal): ?>
             <?php 
@@ -117,7 +99,12 @@ document.querySelectorAll('.delete').forEach(function(element) {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        location.reload();
+                        if (window.notifySuccess) {
+                            window.notifySuccess('Termin gelöscht');
+                            setTimeout(function(){ location.reload(); }, 600);
+                        } else {
+                            location.reload();
+                        }
                     } else {
                         Swal.fire({
                             title: 'Fehler',

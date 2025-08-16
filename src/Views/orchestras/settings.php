@@ -72,14 +72,8 @@ $(document).ready(function(){
         arrow: true
     });
     
-    // Show warning toast on page load
-    const Toast = Swal.mixin({
-        toast: true,
-        position: 'bottom-end',
-        showConfirmButton: false,
-        timer: 5000,
-        timerProgressBar: true
-    });
+    // Example: show a contextual info toast if needed
+    // window.notifyInfo('Einstellungen speichern, um Änderungen zu übernehmen.', { timer: 4000 });
 });
 
 function confirmDelete(event) {

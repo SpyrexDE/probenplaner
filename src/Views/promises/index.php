@@ -96,14 +96,11 @@ input, textarea {
 
 <div class="container-fluid mt-4">
 <?php if (empty($rehearsals)): ?>
-    <div class="row justify-content-center">
-        <div class="col-md-10 col-lg-8">
-            <div style="background-color: #e8f7fc; padding: 40px 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1);">
-                <h2 style="color: #006064; text-align: center; font-size: 2.5rem; font-weight: 500; margin-bottom: 20px;">Keine Proben gefunden</h2>
-                <p style="text-align: center; font-size: 1.2rem; margin-bottom: 30px;">Aktuell sind keine Proben für dich eingetragen.</p>
-            </div>
-        </div>
-    </div>
+    <?php 
+        $title = 'Keine Proben gefunden';
+        $message = 'Aktuell sind keine Proben für dich eingetragen.';
+        include __DIR__ . '/../components/empty-state.php';
+    ?>
 <?php else: ?>
     <?php foreach ($rehearsals as $rehearsal): ?>
         <?php 
@@ -538,19 +535,9 @@ $(document).ready(function() {
                 
                 // Show brief success message
                 if (window.updateQueue.length === 0) {
-                    // Use toast notification instead of modal for success
-                    const Toast = Swal.mixin({
-                        toast: true,
-                        position: 'bottom-end',
-                        showConfirmButton: false,
-                        timer: 2000,
-                        timerProgressBar: true
-                    });
-                    
-                    Toast.fire({
-                        icon: 'success',
-                        title: 'Anmerkung gespeichert'
-                    });
+                    if (window.notifySuccess) {
+                        window.notifySuccess('Anmerkung gespeichert', { timer: 2000 });
+                    }
                 }
                 
                 // Process the next update in the queue

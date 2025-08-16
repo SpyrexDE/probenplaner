@@ -17,9 +17,11 @@
     <?php endif; ?>
 
     <?php if (empty($rehearsals)): ?>
-        <div class="alert alert-info">
-            Keine Termine für deine Gruppe gefunden.
-        </div>
+        <?php 
+            $title = 'Keine Termine gefunden';
+            $message = 'Für deine Gruppe sind aktuell keine Proben geplant.';
+            include __DIR__ . '/../components/empty-state.php';
+        ?>
     <?php else: ?>
         <?php foreach ($rehearsals as $rehearsal): ?>
             <?php 
