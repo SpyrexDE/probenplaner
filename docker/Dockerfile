@@ -31,6 +31,7 @@ WORKDIR /var/www/html
 
 # Copy Apache configuration
 COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
+COPY docker/apache-ssl.conf /etc/apache2/sites-available/default-ssl.conf
 
 # Create startup script
 COPY docker/startup.sh /usr/local/bin/
@@ -44,6 +45,7 @@ RUN chown -R www-data:www-data /var/www/html \
 RUN echo "PassEnv APP_ENV" >> /etc/apache2/conf-available/environment.conf
 RUN echo "PassEnv DOMAIN" >> /etc/apache2/conf-available/environment.conf
 RUN a2enconf environment
+RUN a2ensite 000-default
 
 # Set global ServerName
 RUN echo "ServerName ${DOMAIN:-localhost}" >> /etc/apache2/apache2.conf

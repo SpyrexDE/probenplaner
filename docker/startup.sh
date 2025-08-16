@@ -3,12 +3,18 @@
 # Create necessary directories
 mkdir -p /var/www/html/database/migrations
 
-# Check SSL certificates
-if [ ! -f /etc/apache2/ssl/crt.pem ] || [ ! -f /etc/apache2/ssl/key.pem ]; then
-    echo "Error: SSL certificates not found in /etc/apache2/ssl/"
-    echo "Please make sure CERT_PATH is set correctly in your .env file"
-    echo "Expected files: crt.pem, key.pem"
-    exit 1
+# Check SSL certificates only for test and production
+if [ "${APP_ENV}" = "test" ] || [ "${APP_ENV}" = "production" ]; then
+    if [ ! -f /etc/apache2/ssl/crt.pem ] || [ ! -f /etc/apache2/ssl/key.pem ]; then
+        echo "Error: SSL certificates not found in /etc/apache2/ssl/"
+        echo "Please make sure CERT_PATH is set correctly in your .env file"
+        echo "Expected files: crt.pem, key.pem"
+        exit 1
+    fi
+    a2ensite default-ssl >/dev/null 2>&1 || true
+else
+    echo "Skipping SSL certificate check in ${APP_ENV:-development} environment"
+    a2dissite default-ssl >/dev/null 2>&1 || true
 fi
 
 # Function to test MySQL connection
