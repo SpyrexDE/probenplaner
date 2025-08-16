@@ -291,11 +291,15 @@ class OrchestraController extends Controller
             return;
         }
         
+        // Leaders can view all sections toggle
+        $leadersCanViewAll = isset($_POST['leaders_can_view_all_sections']) ? 1 : 0;
+        
         // Update orchestra
         $result = $this->orchestraModel->update($_SESSION['orchestra_id'], [
             'name' => $name,
             'token' => $token,
-            'leader_pw' => $leaderPw
+            'leader_pw' => $leaderPw,
+            'leaders_can_view_all_sections' => $leadersCanViewAll
         ]);
         
         if ($result) {

@@ -121,8 +121,22 @@ class PromiseController extends Controller
         $isSmallGroup = isset($_SESSION['is_small_group']) && $_SESSION['is_small_group'];
         $rehearsals = $this->rehearsalModel->getForUser($sectionName, $_SESSION['orchestra_id'], $showOld, $isSmallGroup);
         
-        // Get all members of this section
-        $members = $this->userModel->findByType($sectionName, $_SESSION['orchestra_id']);
+        // Get orchestra to check settings (leaders can view all sections?)
+        $orchestraModel = new \App\Models\Orchestra();
+        $orchestra = $orchestraModel->findById($_SESSION['orchestra_id']);
+        $leadersCanViewAll = !empty($orchestra['leaders_can_view_all_sections']);
+
+        // Get members: either only own section or all sections based on setting
+        if ($leadersCanViewAll) {
+            $members = $this->userModel->getOrchestraMembers($_SESSION['orchestra_id']);
+        } else {
+            $members = $this->userModel->findByType($sectionName, $_SESSION['orchestra_id']);
+        }
+        // Exclude conductors from leader view
+        $members = array_values(array_filter($members, function($m) {
+            $role = isset($m['role']) ? $m['role'] : '';
+            return $role !== 'conductor';
+        }));
         
         // Get promises for each member and organize by rehearsal
         $memberPromises = [];
@@ -144,6 +158,7 @@ class PromiseController extends Controller
                         $category = $promise['attending'] ? 'attending' : 'not_attending';
                         $memberPromises[$rehearsalId][$category][] = [
                             'username' => $member['username'],
+                            'type' => $member['type'],
                             'note' => $promise['note']
                         ];
                         $found = true;
@@ -153,7 +168,8 @@ class PromiseController extends Controller
                 
                 if (!$found) {
                     $memberPromises[$rehearsalId]['no_response'][] = [
-                        'username' => $member['username']
+                        'username' => $member['username'],
+                        'type' => $member['type']
                     ];
                 }
             }
@@ -164,7 +180,8 @@ class PromiseController extends Controller
             'currentPage' => 'leader',
             'rehearsals' => $rehearsals,
             'memberPromises' => $memberPromises,
-            'showOld' => $showOld
+            'showOld' => $showOld,
+            'leadersCanViewAllSections' => $leadersCanViewAll
         ]);
     }
     

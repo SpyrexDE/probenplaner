@@ -27,6 +27,14 @@
                         <small class="form-text text-muted">Dieses Passwort ermöglicht Stimmführer-Berechtigungen bei der Registrierung.</small>
                     </div>
                     
+                    <div class="form-group">
+                        <div class="custom-control custom-switch" style="margin-bottom: 15px;">
+                            <input type="checkbox" class="custom-control-input" id="leaders_can_view_all_sections" name="leaders_can_view_all_sections" <?php echo !empty($orchestra['leaders_can_view_all_sections']) ? 'checked' : ''; ?>>
+                            <label class="custom-control-label" for="leaders_can_view_all_sections">Stimmführer dürfen alle Register sehen</label>
+                        </div>
+                        <small class="form-text text-muted">Erlaubt Stimmführern die Ansicht aller Register in der Rückmeldungsübersicht.</small>
+                    </div>
+
                     <div class="form-group mt-4">
                         <button type="submit" class="btn btn-block" style="background-color: rgb(71,140,244); color: white; font-family: Roboto, sans-serif;">
                             <i class="fas fa-save mr-2" style="color: white;"></i>Speichern
