@@ -4,12 +4,12 @@
 
 <div class="container-fluid mt-4">
     <!-- View Toggle (Leader Only) -->
-    <?php if (!empty($rehearsals) && isset($memberPromises) && !empty($_SESSION['role']) && $_SESSION['role'] === 'leader' && !empty($leadersCanViewAllSections)): ?>
+    <?php if (!empty($rehearsals) && isset($memberPromises) && !empty($_SESSION['role']) && $_SESSION['role'] === 'leader'): ?>
     <div class="d-flex justify-content-end">
-        <div class="view-toggle-container">
+        <div class="view-toggle-container" title="<?php echo empty($leadersCanViewAllSections) ? 'Nicht verfügbar: vom Dirigenten deaktiviert' : ''; ?>">
             <span class="toggle-label">Alle Register</span>
             <label class="view-toggle">
-                <input type="checkbox" id="viewToggle" />
+                <input type="checkbox" id="viewToggle" <?php echo empty($leadersCanViewAllSections) ? 'disabled' : ''; ?> />
                 <span class="toggle-slider"></span>
             </label>
         </div>

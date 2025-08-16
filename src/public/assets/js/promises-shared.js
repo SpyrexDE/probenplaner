@@ -207,6 +207,7 @@ function showErrorToast(message, timer = 3000) {
 function initializeViewToggle() {
     const viewToggle = document.getElementById('viewToggle');
     if (!viewToggle) return; // Only exists on leader view
+    if (viewToggle.disabled) return; // Disabled by settings: leave both views in default (simple) and gray out
     
     const simpleViews = document.querySelectorAll('.simple-view');
     const sectionalViews = document.querySelectorAll('.sectional-view');

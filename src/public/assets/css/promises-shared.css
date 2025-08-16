@@ -72,6 +72,19 @@
     outline-offset: 2px;
 }
 
+/* Disabled state styling (grayed out) */
+.view-toggle-container:has(input[disabled]) {
+    opacity: 0.5;
+    filter: grayscale(20%);
+}
+.view-toggle input[disabled] + .toggle-slider {
+    background: #e5e7eb; /* neutral-200 */
+    cursor: not-allowed;
+}
+.view-toggle input[disabled] + .toggle-slider:before {
+    box-shadow: none;
+}
+
 /* Smooth container fade used by JS */
 .container-fluid {
     transition: opacity 0.25s ease;
