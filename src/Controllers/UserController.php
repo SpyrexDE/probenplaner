@@ -593,14 +593,14 @@ class UserController extends Controller
             return;
         }
         
-        // Reset password to default
-        $newPassword = '12345';
+        // Generate a secure random password (min 8 chars, at least one upper and one lower)
+        $newPassword = $this->generateSecurePassword(12);
         $result = $this->userModel->updateProfile($user['id'], ['password' => $newPassword]);
         
         if ($result === true) {
             echo json_encode([
                 'success' => true,
-                'message' => "Das Passwort des Nutzers $username wurde auf 12345 zurückgesetzt."
+                'message' => "Das Passwort des Nutzers $username wurde zurückgesetzt: $newPassword"
             ]);
         } else {
             http_response_code(500);
@@ -608,6 +608,42 @@ class UserController extends Controller
                 'error' => is_array($result) && isset($result['message']) ? $result['message'] : "Fehler beim Zurücksetzen des Passworts."
             ]);
         }
+    }
+
+    /**
+     * Generate a secure password containing at least one uppercase, one lowercase, and one digit
+     *
+     * @param int $length
+     * @return string
+     */
+    private function generateSecurePassword($length = 12)
+    {
+        $length = max(8, (int)$length);
+        $lower = 'abcdefghijklmnopqrstuvwxyz';
+        $upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $digits = '0123456789';
+        $all = $lower . $upper . $digits;
+        
+        // Ensure required character classes
+        $passwordChars = [];
+        $passwordChars[] = $lower[random_int(0, strlen($lower) - 1)];
+        $passwordChars[] = $upper[random_int(0, strlen($upper) - 1)];
+        $passwordChars[] = $digits[random_int(0, strlen($digits) - 1)];
+        
+        // Fill remaining length
+        for ($i = count($passwordChars); $i < $length; $i++) {
+            $passwordChars[] = $all[random_int(0, strlen($all) - 1)];
+        }
+        
+        // Shuffle to avoid predictable pattern
+        for ($i = 0; $i < $length; $i++) {
+            $j = random_int(0, $length - 1);
+            $tmp = $passwordChars[$i];
+            $passwordChars[$i] = $passwordChars[$j];
+            $passwordChars[$j] = $tmp;
+        }
+        
+        return implode('', $passwordChars);
     }
     
     /**

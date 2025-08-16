@@ -155,11 +155,68 @@ function resetPassword(username) {
                     return response.json();
                 })
                 .then(data => {
-                    if (window.notifySuccess) {
-                        window.notifySuccess(data.message, { timer: 10000 });
-                    } else {
-                        alert(data.message);
-                    }
+                    // Extract password from message and show in a modal that can be copied
+                    const msg = data.message || 'Passwort zurückgesetzt';
+                    const passwordMatch = msg.match(/zurückgesetzt:\s*(\S+)$/);
+                    const password = passwordMatch ? passwordMatch[1] : '';
+                    const userMatch = msg.match(/Nutzers\s+(\S+)\s+wurde/);
+                    const username = userMatch ? userMatch[1] : '';
+                    
+                    Swal.fire({
+                        title: 'Passwort zurückgesetzt',
+                        html: '<div style="text-align: left; margin: 15px 0;">' +
+                                  '<p style="margin-bottom: 15px;">Das Passwort des Nutzers <strong>' + username + '</strong> wurde zurückgesetzt</p>' +
+                                  '<div style="background: #f8f9fa; padding: 15px; border-radius: 4px; border: 1px solid #dee2e6; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">' +
+                                      '<div style="font-family: monospace; font-size: 18px; font-weight: bold; color: #495057;">' +
+                                          password +
+                                      '</div>' +
+                                      '<button id="copyPasswordBtn" style="background: #478cf4; border: none; border-radius: 4px; color: white; padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.2s ease; display: flex; align-items: center; gap: 4px; margin-left: 15px;" onmouseover="this.style.background=\'#3b7ae0\'" onmouseout="this.style.background=\'#478cf4\'">' +
+                                          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                                              '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>' +
+                                              '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>' +
+                                          '</svg>' +
+                                          'Kopieren' +
+                                      '</button>' +
+                                  '</div>' +
+                                  '<small style="color: #6c757d;">Teile dieses Passwort sicher mit dem Benutzer</small>' +
+                               '</div>',
+                        icon: 'success',
+                        confirmButtonText: 'Verstanden',
+                        confirmButtonColor: '#478cf4',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            // Add copy functionality
+                            const copyBtn = document.getElementById('copyPasswordBtn');
+                            if (copyBtn) {
+                                copyBtn.addEventListener('click', () => {
+                                    navigator.clipboard.writeText(password).then(() => {
+                                        copyBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"></polyline></svg> Kopiert!';
+                                        copyBtn.style.background = '#28a745';
+                                        setTimeout(() => {
+                                            copyBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Kopieren';
+                                            copyBtn.style.background = '#478cf4';
+                                        }, 2000);
+                                    }).catch(err => {
+                                        console.error('Failed to copy password:', err);
+                                        // Fallback for older browsers
+                                        const textArea = document.createElement('textarea');
+                                        textArea.value = password;
+                                        document.body.appendChild(textArea);
+                                        textArea.select();
+                                        document.execCommand('copy');
+                                        document.body.removeChild(textArea);
+                                        
+                                        copyBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"></polyline></svg> Kopiert!';
+                                        copyBtn.style.background = '#28a745';
+                                        setTimeout(() => {
+                                            copyBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Kopieren';
+                                            copyBtn.style.background = '#478cf4';
+                                        }, 2000);
+                                    });
+                                });
+                            }
+                        }
+                    });
                 })
                 .catch(error => {
                     console.error('Error resetting password:', error);

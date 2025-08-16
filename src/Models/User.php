@@ -201,9 +201,35 @@ class User extends Model
             
             // Validate password if it's being updated
             if (isset($data['password'])) {
-                $validation = $this->validateUserInput(null, $data['password']);
-                if (!$validation['valid']) {
-                    $validationErrors = array_merge($validationErrors, $validation['errors']);
+                // Only validate the password part, skip username validation
+                $password = $data['password'];
+                $passwordErrors = [];
+                
+                if (empty($password)) {
+                    $passwordErrors[] = "Passwort fehlt";
+                } else {
+                    // Password requirements
+                    $passwordValidationErrors = [];
+                    if (strlen($password) < 8) {
+                        $passwordValidationErrors[] = 'mindestens 8 Zeichen';
+                    }
+                    if (!preg_match('/[A-Z]/', $password)) {
+                        $passwordValidationErrors[] = 'mindestens ein Großbuchstabe';
+                    }
+                    if (!preg_match('/[a-z]/', $password)) {
+                        $passwordValidationErrors[] = 'mindestens ein Kleinbuchstabe';
+                    }
+                    if (!preg_match('/[0-9]/', $password)) {
+                        $passwordValidationErrors[] = 'mindestens eine Zahl';
+                    }
+                    
+                    if (!empty($passwordValidationErrors)) {
+                        $passwordErrors[] = "Das Passwort muss " . implode(', ', $passwordValidationErrors) . " enthalten";
+                    }
+                }
+                
+                if (!empty($passwordErrors)) {
+                    $validationErrors = array_merge($validationErrors, $passwordErrors);
                 }
                 
                 // Hash the password before updating
