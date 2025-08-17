@@ -43,8 +43,8 @@ class Rehearsal extends Model
         
         $rehearsals = [];
         while ($row = $result->fetch_assoc()) {
-            // Format date to dd.mm.yyyy
-            $row['date'] = Helpers::formatDate($row['date']);
+            // Create formatted date field while preserving original
+            $row['date_formatted'] = Helpers::formatDate($row['date']);
             
             // Add related groups
             $row['groups'] = $this->getGroups($row['id']);

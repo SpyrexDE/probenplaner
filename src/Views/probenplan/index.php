@@ -42,7 +42,7 @@
                                 ?>
                                 <tr style="background-color: <?= !empty($rehearsal['color']) ? $rehearsal['color'] : 'transparent' ?>">
                                     <td><?= isset($days[$i]) ? $days[$i] : '' ?></td>
-                                    <td><?= $rehearsal['date'] ?></td>
+                                    <td><?= $rehearsal['date_formatted'] ?? $rehearsal['date'] ?></td>
                                     <td><?= htmlspecialchars($time_display_pp) ?></td>
                                     <td><?= $rehearsal['location'] ?></td>
                                     <td>

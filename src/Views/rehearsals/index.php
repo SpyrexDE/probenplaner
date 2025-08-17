@@ -15,7 +15,7 @@
         <?php foreach ($rehearsals as $rehearsal): ?>
             <?php 
                 $rehearsalId = $rehearsal['id'];
-                $date = $rehearsal['date'];
+                $date = $rehearsal['date_formatted'] ?? $rehearsal['date'];
                 $start_time = isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, 5) : '??:??';
                 $end_time = isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, 5) : '??:??';
                 $time_display = $start_time . ' - ' . $end_time;
@@ -43,7 +43,7 @@
                     <div class="col col-8" style="margin-top: -7px;">
                         <div class="row">
                             <div class="col col-6">
-                                <label class="col-form-label text-break" style="margin-bottom: 0; margin-top: 15px; margin-left: 20px; font-size: 20px; font-weight: 600; width: 100%; overflow: auto; max-height: 40px;"><?= htmlspecialchars($date) ?><br></label>
+                                <label class="col-form-label text-break" style="margin-bottom: 0; margin-top: 15px; margin-left: 20px; font-size: 20px; font-weight: 600; width: 100%; overflow: auto; max-height: 40px;"><?= htmlspecialchars($rehearsal['date_formatted'] ?? $date) ?><br></label>
                             </div>
                             <div class="col">
                                 <label class="col-form-label text-break" style="margin-bottom: 0; margin-top: 15px; font-size: 20px; font-weight: 600; width: 100%; overflow: auto; max-height: 40px;"><?= $groupsDisplay ?>&nbsp;<br></label>

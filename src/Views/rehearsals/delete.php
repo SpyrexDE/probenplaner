@@ -11,7 +11,7 @@
                     <div class="mb-4">
                         <h5>Rehearsal Details:</h5>
                         <ul class="list-group">
-                            <li class="list-group-item"><strong>Date:</strong> <?= htmlspecialchars($rehearsal['date']) ?></li>
+                            <li class="list-group-item"><strong>Date:</strong> <?= htmlspecialchars($rehearsal['date_formatted'] ?? $rehearsal['date']) ?></li>
                             <?php 
                                 $start_time_del = isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, 5) : '??:??';
                                 $end_time_del = isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, 5) : '??:??';

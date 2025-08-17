@@ -10,7 +10,7 @@
  */
 
 $rehearsalId = $rehearsal['id'];
-$date = $rehearsal['date'];
+$date = $rehearsal['date_formatted'] ?? $rehearsal['date'];
 $start_time = isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, 5) : '??:??';
 $end_time = isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, 5) : '??:??';
 $time_display = $start_time . ' - ' . $end_time;
@@ -50,7 +50,7 @@ if ($isSmallGroup) {
        aria-controls="<?= htmlspecialchars($collapseTarget) ?>">
         <i class="collapsed"><i class="fas fa-folder"></i></i>
         <i class="expanded"><i class="far fa-folder-open"></i></i> 
-        <?= htmlspecialchars($date) ?> - <?= htmlspecialchars($time_display) ?>
+        <?= htmlspecialchars($rehearsal['date_formatted'] ?? $date) ?> - <?= htmlspecialchars($time_display) ?>
         <?php if (!empty($rehearsalType)): ?>
             - <?= htmlspecialchars($rehearsalType) ?>
         <?php endif; ?>

@@ -148,8 +148,8 @@ input, textarea {
                 <div class="col col-8" style="margin-top: -7px;">
                     <div class="row">
                         <div class="col col-6">
-                            <label class="col-form-label text-break user-data" style="margin-bottom: 0; margin-top: 15px; margin-left: 20px; font-size: 20px; font-weight: 600; width: 100%; overflow: auto; max-height: 40px;" data-rehearsal-id="<?= $rehearsal['id'] ?>" data-rehearsal-date="<?= htmlspecialchars($rehearsal['date']) ?>" data-rehearsal-start-time="<?= htmlspecialchars($start_time_prom) ?>" data-rehearsal-end-time="<?= htmlspecialchars($end_time_prom) ?>" data-rehearsal-location="<?= htmlspecialchars($rehearsal['location']) ?>" data-rehearsal-description="<?= htmlspecialchars($rehearsal['description'] ?? '') ?>">
-                                <?= htmlspecialchars($rehearsal['date']) ?>
+                            <label class="col-form-label text-break" style="margin-bottom: 0; margin-top: 15px; margin-left: 20px; font-size: 20px; font-weight: 600; width: 100%; overflow: auto; max-height: 40px;">
+                                <?= htmlspecialchars($rehearsal['date_formatted'] ?? $rehearsal['date']) ?>
                             </label>
                         </div>
                         <div class="col">
@@ -703,35 +703,6 @@ $(document).ready(function() {
         return promises;
     }
     
-    // Show rehearsal details in a modal
-    $('.user-data').click(function() {
-        const rehearsalId = $(this).data('rehearsal-id');
-        const rehearsalDate = $(this).data('rehearsal-date');
-        const rehearsalStartTime = $(this).data('rehearsal-start-time');
-        const rehearsalEndTime = $(this).data('rehearsal-end-time');
-        const rehearsalLocation = $(this).data('rehearsal-location');
-        const rehearsalDescription = $(this).data('rehearsal-description');
-        
-        let htmlContent = `
-            <p><strong>Datum:</strong> ${rehearsalDate}</p>
-            <p><strong>Zeit:</strong> ${rehearsalStartTime} - ${rehearsalEndTime}</p>
-            <p><strong>Ort:</strong> ${rehearsalLocation}</p>
-        `;
-        
-        if (rehearsalDescription) {
-            htmlContent += `<p><strong>Beschreibung:</strong> ${rehearsalDescription}</p>`;
-        }
-        
-        // Show SweetAlert with rehearsal details
-        Swal.fire({
-            title: 'Proben Details',
-            html: htmlContent,
-            confirmButtonText: 'Schließen',
-            showCancelButton: false,
-            customClass: {
-                confirmButton: 'btn btn-primary'
-            }
-        });
-    });
+
 });
 </script> 

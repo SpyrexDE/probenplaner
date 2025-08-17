@@ -11,6 +11,17 @@
     .fas, .far {
         font-size: 21px;
     }
+    .illustration {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .illustration img {
+        max-width: 200px;
+        height: auto;
+        width: 100%;
+        max-height: 120px;
+        object-fit: contain;
+    }
     /* Ensure mobile responsiveness */
     @media (max-width: 767px) {
         .login-clean form {
@@ -21,6 +32,10 @@
         .login-clean {
             padding-bottom: 10vh;
         }
+        .illustration img {
+            max-width: 150px;
+            max-height: 90px;
+        }
     }
 </style>
 
@@ -28,7 +43,7 @@
     <form method="post" action="/register">
         <h2 class="sr-only">Registration Form</h2>
         <div class="illustration">
-            <img src="/assets/img/Logo.png" style="transform: scale(0.85); transform-origin: 0 0;"/>
+            <img src="/assets/img/Logo.png" alt="Logo"/>
         </div>
         <div class="form-group">
             <input class="form-control" type="text" id="username" name="username" placeholder="Nutzername" style="font-family: Roboto, sans-serif;" required minlength="2" maxlength="20">
