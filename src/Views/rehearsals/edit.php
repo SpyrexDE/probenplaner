@@ -41,14 +41,8 @@
                     <input type="hidden" name="color" id="selectedColor" value="<?= htmlspecialchars($formData['color'] ?? 'white') ?>">
                 </div>
 
-                <p class="float-none" style="color: rgba(82,88,97,0.74); font-size: 27px; font-family: Roboto, sans-serif; font-weight: 700; text-align: left; margin-bottom: 20px;">Stimmgruppen</p>
-                
                 <div style="text-align: left;">
-                    <div class="form-check custom-control custom-checkbox mb-3" style="margin-bottom: 10px !important;">
-                        <input class="form-check-input custom-control-input" type="checkbox" id="is_small_group" name="is_small_group" value="1" <?= !empty($formData['is_small_group']) ? 'checked' : '' ?>>
-                        <label class="form-check-label custom-control-label" for="is_small_group">Kleingruppe</label>
-                    </div>
-                    
+                    <p style="margin: 10px 0 5px; color: rgba(82,88,97,0.8); font-weight: 600;">Sondertermin (maximal eins)</p>
                     <div class="form-check custom-control custom-checkbox mb-3" style="margin-bottom: 10px !important;">
                         <input class="form-check-input custom-control-input" type="checkbox" id="Konzertreise" name="rehearsal_type" value="Konzertreise" <?= ($formData['rehearsal_type'] ?? '') === 'Konzertreise' ? 'checked' : '' ?>>
                         <label class="form-check-label custom-control-label" for="Konzertreise">Konzertreise</label>
@@ -69,8 +63,13 @@
                         <label class="form-check-label custom-control-label" for="Registerprobe">Registerprobe</label>
                     </div>
                     
+                    <p style="margin: 15px 0 5px; color: rgba(82,88,97,0.8); font-weight: 600;">Gruppen</p>
+                    <div class="form-check custom-control custom-checkbox mb-3" style="margin-bottom: 10px !important;">
+                        <input class="form-check-input custom-control-input" type="checkbox" id="is_small_group" name="is_small_group" value="1" <?= !empty($formData['is_small_group']) ? 'checked' : '' ?>>
+                        <label class="form-check-label custom-control-label" for="is_small_group">Kleingruppe</label>
+                    </div>
                     <div class="form-check custom-control custom-checkbox mb-3" style="margin-bottom: 10px !important; font-weight: 700; font-size: 1.1em;">
-                        <input name="rehearsal_type" class="form-check-input custom-control-input" type="checkbox" id="Tutti" value="Tutti" <?= ($formData['rehearsal_type'] ?? '') === 'Tutti' ? 'checked' : '' ?>>
+                        <input name="is_tutti" class="form-check-input custom-control-input" type="checkbox" id="Tutti" value="1" <?= !empty($formData['is_tutti']) ? 'checked' : '' ?>>
                         <label class="form-check-label custom-control-label" id="TuttiLabel" for="Tutti">Tutti</label>
                     </div>
                     

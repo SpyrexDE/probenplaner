@@ -91,9 +91,13 @@ class RehearsalController extends Controller
             $groups = [];
             $rehearsalType = $_POST['rehearsal_type'] ?? '';
             $groupsSelected = $_POST['groups'] ?? [];
+            $isTutti = isset($_POST['is_tutti']) && $_POST['is_tutti'] === '1';
             
             if (!empty($rehearsalType)) {
                 $groups[$rehearsalType] = 0;
+            }
+            if ($isTutti) {
+                $groups['Tutti'] = 0;
             }
             
             // Add selected groups
@@ -179,7 +183,8 @@ class RehearsalController extends Controller
                     'color' => $color,
                     'rehearsal_type' => $rehearsalType,
                     'groups' => $groupsSelected,
-                    'is_small_group' => $isSmallGroup
+                    'is_small_group' => $isSmallGroup,
+                    'is_tutti' => $isTutti
                 ]
             ]);
         } else {
@@ -195,7 +200,8 @@ class RehearsalController extends Controller
                     'color' => 'white',
                     'rehearsal_type' => '',
                     'groups' => [],
-                    'is_small_group' => false
+                    'is_small_group' => false,
+                    'is_tutti' => false
                 ]
             ]);
         }
@@ -253,9 +259,13 @@ class RehearsalController extends Controller
             $groups = [];
             $rehearsalType = $_POST['rehearsal_type'] ?? '';
             $groupsSelected = $_POST['groups'] ?? [];
+            $isTutti = isset($_POST['is_tutti']) && $_POST['is_tutti'] === '1';
             
             if (!empty($rehearsalType)) {
                 $groups[$rehearsalType] = 0;
+            }
+            if ($isTutti) {
+                $groups['Tutti'] = 0;
             }
             
             // Add selected groups
@@ -335,7 +345,8 @@ class RehearsalController extends Controller
                     'color' => $color,
                     'rehearsal_type' => $rehearsalType,
                     'groups' => $groupsSelected,
-                    'is_small_group' => $isSmallGroup
+                    'is_small_group' => $isSmallGroup,
+                    'is_tutti' => $isTutti
                 ]
             ]);
         } else {
@@ -350,7 +361,7 @@ class RehearsalController extends Controller
             
             // Check if any of the rehearsal types is in the groups
             $rehearsalType = '';
-            $rehearsalTypes = ['Konzertreise', 'Konzert', 'Generalprobe', 'Registerprobe', 'Tutti'];
+            $rehearsalTypes = ['Konzertreise', 'Konzert', 'Generalprobe', 'Registerprobe'];
             $groups = $rehearsal['groups'] ?? [];
             
             foreach ($rehearsalTypes as $type) {
@@ -360,6 +371,7 @@ class RehearsalController extends Controller
                 }
             }
             
+            $isTutti = in_array('Tutti', $groups);
             // Display the form
             $this->render('rehearsals/edit', [
                 'currentPage' => 'rehearsals',
@@ -373,7 +385,8 @@ class RehearsalController extends Controller
                     'color' => $rehearsal['color'] ?? '',
                     'rehearsal_type' => $rehearsalType,
                     'groups' => $rehearsal['groups'] ?? [],
-                    'is_small_group' => $rehearsal['is_small_group'] ?? false
+                    'is_small_group' => $rehearsal['is_small_group'] ?? false,
+                    'is_tutti' => $isTutti
                 ]
             ]);
         }
