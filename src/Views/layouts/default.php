@@ -36,7 +36,7 @@
 use App\Core\Utilities;
 if (isset($_SESSION['username'])): ?>
     <div id="wrapper">
-        <div class="shadow-lg topBar" id="sidebar-wrapper" style="background-color: #ffffff;">
+        <div class="topBar" id="sidebar-wrapper" style="background-color: #ffffff; border-right: 1px solid #e9ecef;">
             <ul class="sidebar-nav">
                 <li class="sidebar-brand" style="background-color: #478cf4; height: 67px;">
                     <div class="text-secondary" style="width: 100%; height: 100%; overflow: hidden; background-color: #ffffff; border-width: 0; border-bottom: 0; border-color: lightgrey; border-style: solid;">
@@ -87,7 +87,7 @@ if (isset($_SESSION['username'])): ?>
                 </li>
             </ul>
         </div>
-        <div class="shadow-sm page-content-wrapper" style="width: 100%; background-color: #ffffff; padding-bottom: 0px;">
+        <div class="page-content-wrapper" style="width: 100%; background-color: #ffffff; padding-bottom: 0px;">
             <!-- Navbar in exact original style -->
             <div class="col topBar"><a class="btn btn-link float-left" role="button" id="menu-toggle" href="#menu-toggle" style="font-size: 37px;"><i class="fa fa-bars"></i></a>
                 <div class="float-none text-center">
@@ -142,7 +142,7 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
 
 <?php if (!$hideNavbar): ?>
 <!-- Navbar for non-logged in users - match original style -->
-<div class="shadow-sm page-content-wrapper" style="width: 100%; background-color: #ffffff; padding-bottom: 0px;">
+<div class="page-content-wrapper" style="width: 100%; background-color: #ffffff; padding-bottom: 0px;">
     <div class="col topBar">
         <div class="float-none text-center">
             <div style="display: block;padding: 9.5px;margin: 0 0 10px;font-size: 13px;line-height: 1.42857143;word-break: break-all;word-wrap: break-word;overflow: hidden;"> <a class="navbar-brand float-none" href="#" style="color: #478cf4 !important;

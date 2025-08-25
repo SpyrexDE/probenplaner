@@ -27,11 +27,15 @@ $usernamePrefix = $_POST['username_prefix'];
 $maxUsers = min((int)$_POST['max_users'], 20); // Cap at 20 for safety
 
 // Verify orchestra exists
-$orchestraResult = $conn->query("SELECT id, name FROM orchestras WHERE id = {$orchestraId}");
+$stmt = $conn->prepare("SELECT id, name FROM orchestras WHERE id = ?");
+$stmt->bind_param('i', $orchestraId);
+$stmt->execute();
+$orchestraResult = $stmt->get_result();
 if ($orchestraResult->num_rows === 0) {
     return ['message' => 'Selected orchestra does not exist', 'messageType' => 'error'];
 }
 $orchestra = $orchestraResult->fetch_assoc();
+$stmt->close();
 
 // Define user sections
 $sections = [
@@ -65,8 +69,12 @@ try {
             $usernameCounter++;
             
             // Check if user with this username already exists in this orchestra
-            $checkResult = $conn->query("SELECT id FROM users WHERE username = '{$username}' AND orchestra_id = {$orchestraId}");
+            $checkStmt = $conn->prepare("SELECT id FROM users WHERE username = ? AND orchestra_id = ?");
+            $checkStmt->bind_param('si', $username, $orchestraId);
+            $checkStmt->execute();
+            $checkResult = $checkStmt->get_result();
             if ($checkResult->num_rows > 0) {
+                $checkStmt->close();
                 // Skip this username
                 continue;
             }
@@ -74,11 +82,11 @@ try {
             // Hash the password (same as username)
             $hashedPassword = password_hash($username, PASSWORD_DEFAULT);
             
-            // Create the user
-            $sql = "INSERT INTO users (username, password, type, orchestra_id, role) 
-                    VALUES ('{$username}', '{$hashedPassword}', '{$section}', {$orchestraId}, 'member')";
+            // Create the user with prepared statement
+            $insertStmt = $conn->prepare("INSERT INTO users (username, password, type, orchestra_id, role) VALUES (?, ?, ?, ?, 'member')");
+            $insertStmt->bind_param('sssi', $username, $hashedPassword, $section, $orchestraId);
             
-            if ($conn->query($sql)) {
+            if ($insertStmt->execute()) {
                 $generatedUsers[] = [
                     'username' => $username,
                     'password' => $username, // Username is the password
@@ -86,6 +94,7 @@ try {
                 ];
                 $totalGenerated++;
             }
+            $insertStmt->close();
         }
     }
     

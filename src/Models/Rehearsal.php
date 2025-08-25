@@ -2,6 +2,7 @@
 namespace App\Models;
 
 use App\Core\Model;
+use App\Core\ErrorHandler;
 use App\Core\Helpers;
 
 /**
@@ -22,7 +23,7 @@ class Rehearsal extends Model
      * @param bool $includeOld Include past rehearsals
      * @return array
      */
-    public function getUpcoming($orchestraId, $includeOld = false)
+    public function getUpcoming(int $orchestraId, bool $includeOld = false): array
     {
         $orchestraId = (int)$orchestraId;
         
@@ -60,7 +61,7 @@ class Rehearsal extends Model
      * @param int $rehearsalId Rehearsal ID
      * @return array Group names
      */
-    public function getGroups($rehearsalId)
+    public function getGroups(int $rehearsalId): array
     {
         $sql = "SELECT name FROM rehearsal_groups WHERE rehearsal_id = ?";
         $stmt = $this->db->prepare($sql);
@@ -84,7 +85,7 @@ class Rehearsal extends Model
      * @param array $groups Group names
      * @return bool Success or failure
      */
-    public function updateGroups($rehearsalId, $groups)
+    public function updateGroups(int $rehearsalId, ?string $groups)
     {
         // Start transaction
         $this->db->getConnection()->begin_transaction();
@@ -119,7 +120,7 @@ class Rehearsal extends Model
         } catch (\Exception $e) {
             // Rollback on error
             $this->db->getConnection()->rollback();
-            return ['error' => true, 'message' => $e->getMessage()];
+            return ErrorHandler::handleDatabaseError($e, 'Rehearsal update');
         }
     }
     
@@ -132,7 +133,7 @@ class Rehearsal extends Model
      * @param bool $isSmallGroup Whether user is in small group
      * @return array
      */
-    public function getForUser($userType, $orchestraId, $includeOld = false, $isSmallGroup = false)
+    public function getForUser(string $userType, int $orchestraId, bool $includeOld = false, bool $isSmallGroup = false): array
     {
         $orchestraId = (int)$orchestraId;
         $today = date('Y-m-d');
@@ -170,7 +171,7 @@ class Rehearsal extends Model
      * @param int $rehearsalId Rehearsal ID
      * @return array Group names as keys with dummy values
      */
-    public function getGroupsAsAssoc($rehearsalId)
+    public function getGroupsAsAssoc(int $rehearsalId): array
     {
         $sql = "SELECT name FROM rehearsal_groups WHERE rehearsal_id = ?";
         $stmt = $this->db->prepare($sql);
@@ -196,7 +197,7 @@ class Rehearsal extends Model
      * @param bool $rehearsalIsSmallGroup Whether the rehearsal is a small group rehearsal
      * @return bool
      */
-    public function isUserInRehearsalGroup($userType, $isSmallGroup, $groups, $rehearsalIsSmallGroup = false)
+    public function isUserInRehearsalGroup(string $userType, bool $isSmallGroup, $groups, bool $rehearsalIsSmallGroup = false): bool
     {
         // Special types that apply to everyone
         if (isset($groups['Tutti']) || isset($groups['Konzert']) || isset($groups['Konzertreise']) || isset($groups['Generalprobe'])) {
@@ -250,7 +251,7 @@ class Rehearsal extends Model
      * @param array $groups Groups involved
      * @return int|bool Rehearsal ID or false on failure
      */
-    public function create($data, $groups)
+    public function create(array $data, ?string $groups)
     {
         // Start transaction
         $this->db->getConnection()->begin_transaction();
@@ -319,23 +320,7 @@ class Rehearsal extends Model
         } catch (\Exception $e) {
             // Rollback on error
             $this->db->getConnection()->rollback();
-            error_log("Exception during rehearsal creation: " . $e->getMessage());
-            
-            // Get detailed error information
-            $details = $e->getMessage();
-            if ($e->getCode() == 1054) { // Unknown column
-                $details .= "\nBitte führen Sie die Migrationen aus, um die Datenbankstruktur zu aktualisieren.";
-            } elseif ($e->getCode() == 1062) { // Duplicate entry
-                $details .= "\nEin Eintrag mit diesen Daten existiert bereits.";
-            } elseif ($e->getCode() == 1452) { // Foreign key constraint fails
-                $details .= "\nUngültige Referenz auf einen anderen Datensatz.";
-            }
-            
-            return [
-                'error' => true, 
-                'message' => $e->getMessage(),
-                'details' => $details
-            ];
+            return ErrorHandler::handleDatabaseError($e, 'Rehearsal creation');
         }
     }
     
@@ -347,7 +332,7 @@ class Rehearsal extends Model
      * @param array $groups Groups involved
      * @return bool Success or failure
      */
-    public function updateRehearsal($id, $data, $groups)
+    public function updateRehearsal(int $id, array $data, ?string $groups)
     {
         // Start transaction
         $this->db->getConnection()->begin_transaction();
@@ -393,7 +378,7 @@ class Rehearsal extends Model
         } catch (\Exception $e) {
             // Rollback on error
             $this->db->getConnection()->rollback();
-            return ['error' => true, 'message' => $e->getMessage()];
+            return ErrorHandler::handleDatabaseError($e, 'Rehearsal update');
         }
     }
     
@@ -403,7 +388,7 @@ class Rehearsal extends Model
      * @param int $id Rehearsal ID
      * @return bool Success or failure
      */
-    public function delete($id)
+    public function delete(int $id): bool
     {
         // Foreign key constraints with CASCADE will handle related records
         return parent::delete($id);
@@ -415,7 +400,7 @@ class Rehearsal extends Model
      * @param int $id Rehearsal ID
      * @return array|null Rehearsal data or null if not found
      */
-    public function findById($id)
+    public function findById(int $id): ?array
     {
         $id = (int)$id;
         $rehearsal = parent::findById($id);

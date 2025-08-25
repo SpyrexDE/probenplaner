@@ -2,6 +2,7 @@
 namespace App\Models;
 
 use App\Core\Model;
+use App\Core\ErrorHandler;
 
 /**
  * Orchestra Model
@@ -20,7 +21,7 @@ class Orchestra extends Model
      * @param string $token
      * @return array|null
      */
-    public function findByToken($token)
+    public function findByToken(string $token): ?array
     {
         $token = $this->db->escape($token);
         
@@ -40,7 +41,7 @@ class Orchestra extends Model
      * @param int $orchestraId
      * @return array|null
      */
-    public function getConductor($orchestraId)
+    public function getConductor(int $orchestraId): ?array
     {
         $orchestra = $this->findById($orchestraId);
         
@@ -58,7 +59,7 @@ class Orchestra extends Model
      * @param array $data Orchestra data
      * @return int|bool Orchestra ID or false on failure
      */
-    public function createOrchestra($data)
+    public function createOrchestra(array $data)
     {
         // Silence any directory creation errors
         ini_set('display_errors', 0);
@@ -76,7 +77,7 @@ class Orchestra extends Model
         $debugLog("Starting orchestra creation process");
         $debugLog("Data: " . json_encode($data));
         
-        if ($debug) {
+        if ($debug && defined('APP_ENV') && APP_ENV === 'development') {
             @error_log($logPrefix . "DEBUG: Starting orchestra creation with data: " . json_encode($data));
         }
         
@@ -84,7 +85,7 @@ class Orchestra extends Model
         if (!$this->db || !$this->db->getConnection()) {
             $debugLog("Database connection failed: " . ($this->db ? $this->db->getLastError() : "No DB instance"));
             @error_log($logPrefix . "Database connection failed: " . $this->db->getLastError());
-            return false;
+            return ErrorHandler::error('Datenbankverbindung fehlgeschlagen');
         }
         $debugLog("Database connection verified");
         
@@ -92,7 +93,7 @@ class Orchestra extends Model
         if (empty($data['name']) || empty($data['token']) || empty($data['leader_pw'])) {
             $debugLog("Missing required orchestra data fields");
             @error_log($logPrefix . "Missing required orchestra data fields");
-            return false;
+            return ErrorHandler::error('Erforderliche Orchesterdaten fehlen');
         }
         $debugLog("Orchestra data validated");
         
@@ -101,7 +102,7 @@ class Orchestra extends Model
         if (!$this->db->getConnection()->begin_transaction()) {
             $debugLog("Failed to start transaction: " . $this->db->getLastError());
             @error_log($logPrefix . "Failed to start transaction: " . $this->db->getLastError());
-            return false;
+            return ErrorHandler::error('Transaktion konnte nicht gestartet werden');
         }
         $debugLog("Transaction started successfully");
         
@@ -173,7 +174,7 @@ class Orchestra extends Model
      * @param array $data Update data
      * @return bool Success or failure
      */
-    public function updateSettings($id, $data)
+    public function updateSettings(int $id, array $data): bool
     {
         return $this->update($id, $data);
     }
@@ -185,7 +186,7 @@ class Orchestra extends Model
      * @param int $conductorId User ID of the conductor
      * @return bool Success or failure
      */
-    public function setConductor($orchestraId, $conductorId)
+    public function setConductor(int $orchestraId, int $conductorId): bool
     {
         return $this->update($orchestraId, ['conductor_id' => $conductorId]);
     }
@@ -196,7 +197,7 @@ class Orchestra extends Model
      * @param int $id Orchestra ID
      * @return bool Success or failure
      */
-    public function delete($id)
+    public function delete(int $id): bool
     {
         // Note: With proper foreign key constraints and CASCADE option,
         // this will automatically delete all related records
@@ -210,7 +211,7 @@ class Orchestra extends Model
      * @param string $password Password to check
      * @return bool Valid or not
      */
-    public function validateLeaderPw($orchestraId, $password)
+    public function validateLeaderPw(int $orchestraId, string $password): bool
     {
         $orchestra = $this->findById($orchestraId);
         

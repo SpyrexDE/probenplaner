@@ -42,7 +42,7 @@
 <body style="width: 100%; height: 100%;">
 <?php if (isset($_SESSION['username'])): ?>
     <div id="wrapper">
-        <div class="shadow-lg topBar" id="sidebar-wrapper" style="background-color: #ffffff;">
+        <div class="topBar" id="sidebar-wrapper" style="background-color: #ffffff; border-right: 1px solid #e9ecef;">
             <ul class="sidebar-nav">
                 <li class="sidebar-brand" style="background-color: #478cf4; height: 67px;">
                     <div class="text-secondary" style="width: 100%; height: 100%; overflow: hidden; background-color: #ffffff; border-width: 0; border-bottom: 0; border-color: lightgrey; border-style: solid;">

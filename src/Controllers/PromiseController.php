@@ -2,6 +2,8 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\Validator;
+use App\Core\ErrorHandler;
 use App\Models\User;
 use App\Models\Rehearsal;
 use App\Models\UserPromise;
@@ -275,7 +277,7 @@ class PromiseController extends Controller
         
         // Get parameters
         $rehearsalId = isset($_POST['id']) ? intval($_POST['id']) : 0;
-        $note = isset($_POST['note']) ? trim($_POST['note']) : '';
+        $note = Validator::sanitizeUtf8($_POST['note'] ?? '');
         
         if ($rehearsalId <= 0) {
             header('Content-Type: application/json');

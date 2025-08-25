@@ -2,6 +2,8 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\Validator;
+use App\Core\CSRF;
 use App\Models\User;
 use App\Models\Orchestra;
 
@@ -57,7 +59,8 @@ class AuthController extends Controller
         
         // Display login form
         $this->render('auth/login', [
-            'currentPage' => 'login'
+            'currentPage' => 'login',
+            'csrf_token' => $this->getCSRFToken()
         ]);
     }
     
@@ -68,20 +71,25 @@ class AuthController extends Controller
      */
     private function processLogin()
     {
+        // CSRF protection
+        try {
+            $this->protectCSRF();
+        } catch (\Exception $e) {
+            $this->addAlert('Sicherheitsfehler!', $e->getMessage(), 'error');
+            $this->redirect('/login');
+            return;
+        }
         // Validate input
-        $username = isset($_POST['username']) ? trim($_POST['username']) : '';
-        $password = isset($_POST['password']) ? trim($_POST['password']) : '';
+        $username = Validator::sanitizeUtf8($_POST['username'] ?? '');
+        $password = $_POST['password'] ?? '';
         
-        if (empty($username) || empty($password)) {
-            $missingFields = array_filter([
-                empty($username) ? 'Benutzername' : null,
-                empty($password) ? 'Passwort' : null
-            ]);
+        $validation = Validator::validateRequired(['username' => $username, 'password' => $password], ['username', 'password']);
+        
+        if (!$validation['valid']) {
             $this->addAlert(
                 'Fehler!', 
-                'Bitte füllen Sie alle erforderlichen Felder aus.', 
-                'error',
-                'Fehlende Felder: ' . implode(', ', $missingFields)
+                implode(' ', $validation['errors']), 
+                'error'
             );
             $this->redirect('/login');
             return;
@@ -105,7 +113,8 @@ class AuthController extends Controller
                 'error',
                 'Bitte überprüfen Sie Ihr Passwort. Falls Sie Ihr Passwort vergessen haben, kontaktieren Sie bitte Ihren Dirigenten.'
             );
-            error_log("Login failed - Wrong password for user: $username");
+            // Log failed login without exposing username for privacy
+            error_log("Login failed - Wrong password attempt");
         } else {
             $this->addAlert(
                 'Fehler!', 
@@ -126,6 +135,9 @@ class AuthController extends Controller
      */
     private function processSuccessfulLogin($user)
     {
+        // Regenerate session ID to prevent session fixation attacks
+        session_regenerate_id(true);
+        
         // Get orchestra
         $orchestra = $this->orchestraModel->findById($user['orchestra_id']);
         
@@ -138,8 +150,16 @@ class AuthController extends Controller
         $_SESSION['orchestra_name'] = $orchestra['name'];
         $_SESSION['is_small_group'] = isset($user['is_small_group']) && $user['is_small_group'] ? true : false;
         
-        // Set cookies for 7 days
-        setcookie("username", $user['username'], time() + 604800);
+        // Set secure cookies
+        $cookieOptions = [
+            'expires' => time() + COOKIE_LIFETIME,
+            'path' => '/',
+            'domain' => '',
+            'secure' => (APP_ENV !== 'development' && APP_ENV !== 'test'), // Only over HTTPS in production
+            'httponly' => true, // Prevent XSS attacks
+            'samesite' => 'Strict' // CSRF protection
+        ];
+        setcookie("username", $user['username'], $cookieOptions);
         // Do not store password in cookie for security reasons
         
         $this->setFlash('success', 'Sie wurden erfolgreich eingeloggt.');
@@ -173,7 +193,8 @@ class AuthController extends Controller
         // Display registration form
         $this->render('auth/register', [
             'currentPage' => 'register',
-            'typeStructure' => $this->getTypeStructure()
+            'typeStructure' => $this->getTypeStructure(),
+            'csrf_token' => $this->getCSRFToken()
         ]);
     }
     
@@ -189,39 +210,51 @@ class AuthController extends Controller
             return;
         }
         
-        // Get POST data
-        $username = trim($_POST['username'] ?? '');
-        $password = $_POST['password'] ?? '';
-        $passwordConfirm = $_POST['password_confirm'] ?? '';
-        $type = trim($_POST['type'] ?? '');
-        $token = trim($_POST['token'] ?? '');
-        
-        // For debugging - log registration attempt
-        error_log("Registration attempt - Username: $username, Type: $type, Token: $token");
-        
-        // Validate inputs - check required fields
-        if (empty($username) || empty($password) || empty($passwordConfirm) || empty($type) || empty($token)) {
-            $missingFields = array_filter([
-                empty($username) ? 'Benutzername' : null,
-                empty($password) ? 'Passwort' : null,
-                empty($passwordConfirm) ? 'Passwort bestätigen' : null,
-                empty($type) ? 'Instrument/Rolle' : null,
-                empty($token) ? 'Orchester-Token' : null
-            ]);
-            $this->addAlert(
-                'Fehler!', 
-                'Bitte füllen Sie alle erforderlichen Felder aus.', 
-                'error',
-                'Fehlende Felder: ' . implode(', ', $missingFields)
-            );
-            error_log("Registration failed - Empty fields: " . implode(', ', $missingFields));
+        // CSRF protection
+        try {
+            $this->protectCSRF();
+        } catch (\Exception $e) {
+            $this->addAlert('Sicherheitsfehler!', $e->getMessage(), 'error');
             $this->redirect('/register');
             return;
         }
         
-        // Validate user input using the model's validation method
-        $userModel = new User();
-        $validation = $userModel->validateUserInput($username, $password, null, null, $passwordConfirm);
+        // Get and sanitize POST data
+        $username = Validator::sanitizeUtf8($_POST['username'] ?? '');
+        $password = $_POST['password'] ?? '';
+        $passwordConfirm = $_POST['password_confirm'] ?? '';
+        $type = Validator::sanitizeUtf8($_POST['type'] ?? '');
+        $token = Validator::sanitizeUtf8($_POST['token'] ?? '');
+        
+        // For debugging - log registration attempt
+        error_log("Registration attempt - Type: $type, Token: $token");
+        
+        // Validate required fields
+        $requiredValidation = Validator::validateRequired([
+            'username' => $username,
+            'password' => $password,
+            'password_confirm' => $passwordConfirm,
+            'type' => $type,
+            'token' => $token
+        ], ['username', 'password', 'password_confirm', 'type', 'token']);
+        
+        if (!$requiredValidation['valid']) {
+            $this->addAlert(
+                'Fehler!', 
+                implode(' ', $requiredValidation['errors']), 
+                'error'
+            );
+            error_log("Registration failed - Missing required fields");
+            $this->redirect('/register');
+            return;
+        }
+        
+        // Validate individual field formats
+        $usernameValidation = Validator::validateUsername($username);
+        $passwordValidation = Validator::validatePassword($password, $passwordConfirm);
+        $tokenValidation = Validator::validateToken($token);
+        
+        $validation = Validator::mergeResults([$usernameValidation, $passwordValidation, $tokenValidation]);
         
         if (!$validation['valid']) {
             $this->addAlert(
@@ -308,9 +341,17 @@ class AuthController extends Controller
         
         session_destroy();
         
-        // Clear cookies
-        setcookie("username", "", time() - 3600);
-        setcookie("password", "", time() - 3600);
+        // Clear cookies securely
+        $cookieOptions = [
+            'expires' => time() - 3600,
+            'path' => '/',
+            'domain' => '',
+            'secure' => (APP_ENV !== 'development' && APP_ENV !== 'test'),
+            'httponly' => true,
+            'samesite' => 'Strict'
+        ];
+        setcookie("username", "", $cookieOptions);
+        setcookie("password", "", $cookieOptions);
         
         $this->redirect('/login');
     }

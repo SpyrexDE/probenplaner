@@ -4,8 +4,39 @@
  * Main entry point
  */
 
-// Bootstrap the application
-require_once __DIR__ . '/../bootstrap.php';
+try {
+    // Bootstrap the application
+    require_once __DIR__ . '/../bootstrap.php';
+} catch (\Exception $e) {
+    // Handle critical bootstrap errors
+    error_log("Critical bootstrap error: " . $e->getMessage());
+    
+    // Show user-friendly error page
+    http_response_code(500);
+    ?>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Service Temporarily Unavailable</title>
+        <style>
+            body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+            .error { color: #d32f2f; }
+        </style>
+    </head>
+    <body>
+        <h1>Service Temporarily Unavailable</h1>
+        <p class="error">The application is currently experiencing technical difficulties.</p>
+        <p>Please try again later or contact your system administrator.</p>
+        <?php if (defined('APP_ENV') && APP_ENV === 'development'): ?>
+        <hr>
+        <h3>Debug Information (Development Mode)</h3>
+        <p><?= htmlspecialchars($e->getMessage()) ?></p>
+        <?php endif; ?>
+    </body>
+    </html>
+    <?php
+    exit;
+}
 
 // Get the requested URI
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -56,4 +87,35 @@ $router->addRoute('/orchestras/delete-confirm', 'OrchestraController', 'confirmD
 $router->addRoute('/orchestras/delete', 'OrchestraController', 'delete');
 
 // Process the request
-$router->dispatch($uri); 
+try {
+    $router->dispatch($uri);
+} catch (\Exception $e) {
+    // Handle routing/controller errors
+    error_log("Application error: " . $e->getMessage());
+    
+    // Show user-friendly error page
+    http_response_code(500);
+    ?>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Application Error</title>
+        <style>
+            body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+            .error { color: #d32f2f; }
+        </style>
+    </head>
+    <body>
+        <h1>Application Error</h1>
+        <p class="error">An error occurred while processing your request.</p>
+        <p><a href="/">Return to Home</a></p>
+        <?php if (defined('APP_ENV') && APP_ENV === 'development'): ?>
+        <hr>
+        <h3>Debug Information (Development Mode)</h3>
+        <p><?= htmlspecialchars($e->getMessage()) ?></p>
+        <pre><?= htmlspecialchars($e->getTraceAsString()) ?></pre>
+        <?php endif; ?>
+    </body>
+    </html>
+    <?php
+} 

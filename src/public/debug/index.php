@@ -93,8 +93,13 @@ if (empty($moduleData) && file_exists(__DIR__ . '/data/' . $currentModule . '.ph
 
 // Save a shared helper
 function isColumnExists($conn, $table, $column) {
-    $result = $conn->query("SHOW COLUMNS FROM `$table` LIKE '$column'");
-    return $result && $result->num_rows > 0;
+    $stmt = $conn->prepare("SHOW COLUMNS FROM `$table` LIKE ?");
+    $stmt->bind_param('s', $column);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $exists = $result && $result->num_rows > 0;
+    $stmt->close();
+    return $exists;
 }
 
 // Pass this helper to modules

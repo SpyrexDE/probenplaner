@@ -12,6 +12,9 @@
                     <p class="card-text">Füllen Sie bitte alle Felder aus, um ein neues Orchester zu erstellen.</p>
                     
                     <form action="/orchestras/store" method="post">
+                        <?php if (isset($csrf_token)): ?>
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8') ?>">
+                        <?php endif; ?>
                         <div class="mb-3">
                             <label for="name" class="form-label">Orchestername</label>
                             <input type="text" class="form-control" id="name" name="name" value="<?= isset($formData['name']) ? htmlspecialchars($formData['name']) : '' ?>" required>
@@ -25,8 +28,8 @@
                         </div>
                         
                         <div class="mb-3">
-                            <label for="leader_pw" class="form-label">Stimmführer-Passwort</label>
-                            <input type="text" class="form-control" id="leader_pw" name="leader_pw" value="<?= isset($formData['leader_pw']) ? htmlspecialchars($formData['leader_pw']) : '' ?>" required>
+                            <label for="leader_password" class="form-label">Stimmführer-Passwort</label>
+                            <input type="text" class="form-control" id="leader_password" name="leader_password" value="<?= isset($formData['leader_password']) ? htmlspecialchars($formData['leader_password']) : '' ?>" required>
                             <div class="form-text">Passwort für Stimmführer-Berechtigungen bei der Registrierung.</div>
                         </div>
                         

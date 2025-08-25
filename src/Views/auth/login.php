@@ -41,6 +41,9 @@
 
 <div class="login-clean">
     <form method="post" action="/login">
+        <?php if (isset($csrf_token)): ?>
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8') ?>">
+        <?php endif; ?>
         <h2 class="sr-only">Login Form</h2>
         <div class="illustration">
             <img src="/assets/img/Logo.png" alt="Logo"/>

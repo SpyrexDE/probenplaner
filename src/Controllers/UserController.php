@@ -2,6 +2,8 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\Validator;
+use App\Core\ErrorHandler;
 use App\Models\User;
 
 /**
@@ -75,7 +77,8 @@ class UserController extends Controller
         $this->render('user/profile', [
             'currentPage' => 'profile',
             'user' => $user,
-            'typeStructure' => $this->getTypeStructure()
+            'typeStructure' => $this->getTypeStructure(),
+            'csrf_token' => $this->getCSRFToken()
         ]);
     }
     
@@ -118,7 +121,8 @@ class UserController extends Controller
         // Render conductor profile view
         $this->render('user/conductor_profile', [
             'currentPage' => 'conductor_profile',
-            'user' => $user
+            'user' => $user,
+            'csrf_token' => $this->getCSRFToken()
         ]);
     }
     
@@ -130,12 +134,20 @@ class UserController extends Controller
      */
     private function processConductorProfileEdit($user)
     {
-        // Validate input
+        // CSRF protection
+        try {
+            $this->protectCSRF();
+        } catch (\Exception $e) {
+            $this->addAlert('Sicherheitsfehler!', $e->getMessage(), 'error');
+            $this->redirect('/conductor/profile');
+            return;
+        }
+        // Validate and sanitize input
         $oldUsername = $user['username'];
-        $newUsername = isset($_POST['username']) ? trim($_POST['username']) : '';
-        $currentPassword = isset($_POST['current_password']) ? trim($_POST['current_password']) : '';
-        $newPassword = isset($_POST['new_password']) ? trim($_POST['new_password']) : '';
-        $confirmPassword = isset($_POST['confirm_password']) ? trim($_POST['confirm_password']) : '';
+        $newUsername = Validator::sanitizeUtf8($_POST['username'] ?? '');
+        $currentPassword = $_POST['current_password'] ?? '';
+        $newPassword = $_POST['new_password'] ?? '';
+        $confirmPassword = $_POST['confirm_password'] ?? '';
         
         $updateData = [];
         $usernameChanged = false;
@@ -226,16 +238,24 @@ class UserController extends Controller
      */
     private function processProfileEdit($user)
     {
-        // Validate input
+        // CSRF protection
+        try {
+            $this->protectCSRF();
+        } catch (\Exception $e) {
+            $this->addAlert('Sicherheitsfehler!', $e->getMessage(), 'error');
+            $this->redirect('/profile');
+            return;
+        }
+        // Validate and sanitize input
         $oldUsername = $user['username'];
-        $newUsername = isset($_POST['username']) ? trim($_POST['username']) : '';
-        $currentPassword = isset($_POST['current_password']) ? trim($_POST['current_password']) : '';
-        $newPassword = isset($_POST['new_password']) ? trim($_POST['new_password']) : '';
-        $confirmPassword = isset($_POST['confirm_password']) ? trim($_POST['confirm_password']) : '';
-        $groupType = isset($_POST['group_type']) ? trim($_POST['group_type']) : '';
+        $newUsername = Validator::sanitizeUtf8($_POST['username'] ?? '');
+        $currentPassword = $_POST['current_password'] ?? '';
+        $newPassword = $_POST['new_password'] ?? '';
+        $confirmPassword = $_POST['confirm_password'] ?? '';
+        $groupType = Validator::sanitizeUtf8($_POST['group_type'] ?? '');
         $smallGroup = isset($_POST['small_group']) ? true : false;
         $groupLeader = isset($_POST['group_leader']) ? true : false;
-        $groupLeaderPw = isset($_POST['group_leader_pw']) ? trim($_POST['group_leader_pw']) : '';
+        $groupLeaderPassword = Validator::sanitizeUtf8($_POST['group_leader_password'] ?? '');
         
         $updateData = [];
         $usernameChanged = false;
@@ -309,7 +329,7 @@ class UserController extends Controller
             // Check leader password
             $leaderPassword = $this->getLeaderPassword();
             // Use case-insensitive comparison
-            if (strtolower($groupLeaderPw) !== strtolower($leaderPassword)) {
+            if (strtolower($groupLeaderPassword) !== strtolower($leaderPassword)) {
                 $this->addAlert('Fehler!', 'Das Stimmführer-Passwort ist falsch.', 'error');
                 $this->redirect('/profile');
                 return;

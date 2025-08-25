@@ -48,7 +48,7 @@ class Database
             }
             
             // Set charset
-            $charsets = ['utf8mb4', 'utf8', 'latin1'];
+            $charsets = DB_CHARSET_FALLBACK;
             $charset_success = false;
             foreach ($charsets as $charset) {
                 try {
@@ -77,7 +77,7 @@ class Database
             @error_log("Database connection successful");
         } catch (\Exception $e) {
             @error_log("Database Error: " . $e->getMessage());
-            die("Database Error: " . $e->getMessage());
+            throw new \Exception("Database connection failed: " . $e->getMessage());
         }
     }
     

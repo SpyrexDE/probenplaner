@@ -2,6 +2,7 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\Validator;
 use App\Models\Orchestra;
 use App\Models\User;
 
@@ -51,6 +52,15 @@ class OrchestraController extends Controller
         
         // Check if ADMIN password provided
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // CSRF protection for admin verification
+            try {
+                $this->protectCSRF();
+            } catch (\Exception $e) {
+                $this->addAlert('Sicherheitsfehler!', $e->getMessage(), 'error');
+                $this->redirect('/orchestras/create');
+                return;
+            }
+            
             if (isset($_POST['admin_password']) && $_POST['admin_password'] === ADMIN_PW) {
                 $adminVerified = true;
             } else {
@@ -63,14 +73,16 @@ class OrchestraController extends Controller
             $this->render('orchestras/create', [
                 'currentPage' => 'create_orchestra',
                 'admin_verified' => true,
-                'formData' => $formData
+                'formData' => $formData,
+                'csrf_token' => $this->getCSRFToken()
             ]);
             return;
         }
         
         // Otherwise display admin password verification form
         $this->render('orchestras/admin_verify', [
-            'currentPage' => 'create_orchestra'
+            'currentPage' => 'create_orchestra',
+            'csrf_token' => $this->getCSRFToken()
         ]);
     }
     
@@ -81,6 +93,15 @@ class OrchestraController extends Controller
      */
     public function store()
     {
+        // CSRF protection
+        try {
+            $this->protectCSRF();
+        } catch (\Exception $e) {
+            $this->addAlert('Sicherheitsfehler!', $e->getMessage(), 'error');
+            $this->redirect('/orchestras/create');
+            return;
+        }
+        
         // Activate custom error handler
         set_error_handler(function($severity, $message, $file, $line) {
             // Ignore directory permission errors
@@ -99,17 +120,17 @@ class OrchestraController extends Controller
         }
         
         // Validate input and sanitize for UTF-8
-        $name = isset($_POST['name']) ? $this->sanitizeUtf8(trim($_POST['name'])) : '';
-        $token = isset($_POST['token']) ? $this->sanitizeUtf8(trim($_POST['token'])) : '';
-        $leaderPw = isset($_POST['leader_pw']) ? $this->sanitizeUtf8(trim($_POST['leader_pw'])) : '';
-        $conductorUsername = isset($_POST['conductor_username']) ? $this->sanitizeUtf8(trim($_POST['conductor_username'])) : '';
-        $conductorPassword = isset($_POST['conductor_password']) ? $this->sanitizeUtf8(trim($_POST['conductor_password'])) : '';
+        $name = Validator::sanitizeUtf8($_POST['name'] ?? '');
+        $token = Validator::sanitizeUtf8($_POST['token'] ?? '');
+        $leaderPassword = Validator::sanitizeUtf8($_POST['leader_password'] ?? '');
+        $conductorUsername = Validator::sanitizeUtf8($_POST['conductor_username'] ?? '');
+        $conductorPassword = $_POST['conductor_password'] ?? '';
         
         // Store form data for repopulation on validation failure
         $formData = [
             'name' => $name,
             'token' => $token,
-            'leader_pw' => $leaderPw,
+            'leader_password' => $leaderPassword,
             'conductor_username' => $conductorUsername,
             // Don't store password for security reasons
         ];
@@ -117,41 +138,41 @@ class OrchestraController extends Controller
         // Log input
         error_log("Orchestra creation attempt - Name: $name, Token: $token, ConductorUser: $conductorUsername");
         
-        // Add detailed validation
-        $errors = [];
+        // Validate required fields
+        $requiredValidation = Validator::validateRequired([
+            'name' => $name,
+            'token' => $token,
+            'leader_password' => $leaderPassword,
+            'conductor_username' => $conductorUsername,
+            'conductor_password' => $conductorPassword
+        ], ['name', 'token', 'leader_password', 'conductor_username', 'conductor_password']);
         
-        // Validate orchestra data
-        if (empty($name)) {
-            $errors[] = "Orchestername fehlt";
+        // Validate individual fields
+        $tokenValidation = Validator::validateToken($token);
+        $usernameValidation = Validator::validateUsername($conductorUsername);
+        $passwordValidation = Validator::validatePassword($conductorPassword);
+        
+        // Check for duplicate token
+        $tokenErrors = [];
+        if (!empty($token) && $this->orchestraModel->findByToken($token)) {
+            $tokenErrors[] = "Dieser Token wird bereits verwendet";
         }
         
-        if (empty($token)) {
-            $errors[] = "Token fehlt";
-        } elseif (strlen($token) < 2) {
-            $errors[] = "Token muss mindestens 2 Zeichen lang sein";
-        } elseif ($this->orchestraModel->findByToken($token)) {
-            $errors[] = "Dieser Token wird bereits verwendet";
-        }
-        
-        if (empty($leaderPw)) {
-            $errors[] = "Stimmführer-Passwort fehlt";
-        }
-        
-        // Validate conductor data using the User model's validation method
-        $userValidation = $this->userModel->validateUserInput($conductorUsername, $conductorPassword);
-        if (!$userValidation['valid']) {
-            // Add conductor-specific prefix to error messages
-            foreach ($userValidation['errors'] as $error) {
-                $errors[] = "Dirigent: " . $error;
-            }
-        }
+        // Merge all validations
+        $validation = Validator::mergeResults([
+            $requiredValidation,
+            $tokenValidation,
+            $usernameValidation,
+            $passwordValidation,
+            ['valid' => empty($tokenErrors), 'errors' => $tokenErrors]
+        ]);
         
         // If validation errors, show them
-        if (!empty($errors)) {
+        if (!$validation['valid']) {
             // Store form data in session to repopulate the form
             $_SESSION['orchestra_form_data'] = $formData;
             
-            $errorMsg = implode(", ", $errors);
+            $errorMsg = implode(", ", $validation['errors']);
             $this->addAlert('Fehler!', $errorMsg, 'error');
             $this->redirect('/orchestras/create');
             return;
@@ -162,7 +183,7 @@ class OrchestraController extends Controller
             $orchestraData = [
                 'name' => $name,
                 'token' => $token,
-                'leader_pw' => $leaderPw
+                'leader_pw' => $leaderPassword
             ];
             
             $orchestraId = $this->orchestraModel->createOrchestra($orchestraData);
@@ -273,9 +294,9 @@ class OrchestraController extends Controller
         // Validate input
         $name = isset($_POST['name']) ? trim($_POST['name']) : '';
         $token = isset($_POST['token']) ? trim($_POST['token']) : '';
-        $leaderPw = isset($_POST['leader_pw']) ? trim($_POST['leader_pw']) : '';
+        $leaderPassword = isset($_POST['leader_password']) ? trim($_POST['leader_password']) : '';
         
-        if (empty($name) || empty($token) || empty($leaderPw)) {
+        if (empty($name) || empty($token) || empty($leaderPassword)) {
             $this->addAlert('Fehler!', 'Alle Felder müssen ausgefüllt werden.', 'error');
             $this->redirect('/orchestras/settings');
             return;
@@ -298,7 +319,7 @@ class OrchestraController extends Controller
         $result = $this->orchestraModel->update($_SESSION['orchestra_id'], [
             'name' => $name,
             'token' => $token,
-            'leader_pw' => $leaderPw,
+            'leader_pw' => $leaderPassword,
             'leaders_can_view_all_sections' => $leadersCanViewAll
         ]);
         
@@ -373,20 +394,4 @@ class OrchestraController extends Controller
         }
     }
     
-    /**
-     * Sanitize UTF-8 string to prevent encoding issues
-     * 
-     * @param string $string String to sanitize
-     * @return string Sanitized string
-     */
-    private function sanitizeUtf8($string)
-    {
-        // Remove any invalid UTF-8 characters
-        $string = mb_convert_encoding($string, 'UTF-8', 'UTF-8');
-        
-        // Remove any potentially problematic characters
-        $string = preg_replace('/[^\p{L}\p{N}\s\-_\.]/u', '', $string);
-        
-        return $string;
-    }
 } 

@@ -1,8 +1,10 @@
 <div class="container mt-5">
     <div class="row">
         <div class="col-md-8 offset-md-2">
-            <div class="shadow-sm">
-                <div style="white-space: pre;display: block;margin: 0 0 10px;font-size: 13px;line-height: 1.42857143;word-break: break-all;word-wrap: break-word;overflow: hidden;"><span class="float-none" href="#" style="color: #525861;font-size: 31px;padding-top: 0;font-family: Roboto, sans-serif;font-weight: 1000;padding-bottom: 0px;margin-right: 0;">Profil bearbeiten</span><i id="editInfoTip" class="fa fa-exclamation-circle" style="transform: scale(2); transform-origin: 0; position: absolute; cursor: pointer;"></i>
+            <div class="card shadow-sm" style="background-color: white; padding: 30px; border-radius: 10px;">
+                <div class="card-header" style="background: none; border: none; padding: 0 0 20px 0;">
+                    <h2 style="color: #525861; font-size: 31px; font-family: Roboto, sans-serif; font-weight: 1000; margin: 0;">Profil bearbeiten</h2>
+                    <i id="editInfoTip" class="fa fa-exclamation-circle" style="transform: scale(2); transform-origin: 0; position: absolute; cursor: pointer; right: 30px; top: 30px;"></i>
                 </div>
                 
                 <style>
@@ -25,6 +27,9 @@
                 </style>
                 
                 <form action="/profile" method="post">
+                    <?php if (isset($csrf_token)): ?>
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8') ?>">
+                    <?php endif; ?>
                     <div class="form-group">
                         <label for="username">Nutzername</label>
                         <input type="text" class="form-control" id="username" name="username" placeholder="Nutzername" minlength="3" maxlength="20" style="font-family: Roboto, sans-serif;margin-bottom: 15px;" value="<?php echo htmlspecialchars($user['username']); ?>">
@@ -93,7 +98,7 @@
                         <div class="custom-control custom-checkbox mb-3 zoomed" style="position: relative;">
                             <input type="checkbox" class="custom-control-input" id="group_leader" name="group_leader" <?php echo ($user['role'] === 'leader') ? 'checked' : ''; ?>>
                             <label class="custom-control-label" for="group_leader">Stimmführer</label>
-                            <input type="hidden" id="group_leader_pw" name="group_leader_pw">
+                            <input type="hidden" id="group_leader_password" name="group_leader_password">
                         </div>
                     </div>
                     
@@ -103,10 +108,19 @@
                         </button>
                     </div>
                 </form>
+            </div>
+
+            <div class="card shadow-sm mt-4" style="background-color: white; padding: 30px; border-radius: 10px;">
+                <div class="card-header" style="background: none; border: none; padding: 0 0 20px 0;">
+                    <h2 style="color: #525861; font-size: 31px; font-family: Roboto, sans-serif; font-weight: 1000; margin: 0;">Account löschen</h2>
+                    <i id="deleteInfoTip" class="fa fa-exclamation-circle" style="transform: scale(2); transform-origin: 0; position: absolute; cursor: pointer; right: 30px; top: 30px;"></i>
+                </div>
                 
-                <button type="button" id="deleteAccount" class="btn btn-block mt-3" style="background-color: rgb(226, 38, 38); color: white; font-family: Roboto, sans-serif;">
-                    <i class="fas fa-trash mr-2" style="color: white;"></i>Account löschen
-                </button>
+                <div class="form-group mt-4">
+                    <button type="button" id="deleteAccount" class="btn btn-block" style="background-color: rgb(226, 38, 38); color: white; font-family: Roboto, sans-serif;">
+                        <i class="fas fa-trash mr-2" style="color: white;"></i>Account löschen
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -122,6 +136,11 @@ $(document).ready(function(){
     
     tippy('#smallGroupTip', {
         content: 'Markiere diese Checkbox, wenn du zur Kleingruppe gehörst. Personen die zur Kleingruppe gehören, bekommen auch die Proben angezeigt, bei denen für Stücke mit geringer Besetzung geprobt wird.',
+        arrow: true
+    });
+    
+    tippy('#deleteInfoTip', {
+        content: 'Diese Aktion kann nicht rückgängig gemacht werden. Alle Daten werden unwiderruflich gelöscht.',
         arrow: true
     });
     
@@ -148,7 +167,7 @@ $(document).ready(function(){
             // Trim the password to remove any accidental spaces
             password = password.trim();
             
-            $('#group_leader_pw').val(password);
+            $('#group_leader_password').val(password);
             
             // AJAX request to verify the password
             $.ajax({
@@ -179,8 +198,7 @@ $(document).ready(function(){
     // Handle form submission
     $('form').submit(function() {
         // Log type selection for debugging
-        console.log('Selected type:', $('#group_type').val());
-        console.log('Current type (debug):', $('#debug_current_type').val());
+
         
         // Make sure a type is selected
         if (!$('#group_type').val()) {

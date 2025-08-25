@@ -27,7 +27,7 @@ class Controller
      * @param array $data Data to pass to the view
      * @return void
      */
-    protected function render($view, $data = [])
+    protected function render(string $view, array $data = []): void
     {
         // Create a template renderer
         $template = new TemplateRenderer();
@@ -46,7 +46,7 @@ class Controller
      * @param array $data Data to pass to the view
      * @return void
      */
-    protected function renderPartial($view, $data = [])
+    protected function renderPartial(string $view, array $data = []): void
     {
         // Extract data to make it available in the view
         extract($data);
@@ -61,7 +61,7 @@ class Controller
      * @param string $url The URL to redirect to
      * @return void
      */
-    protected function redirect($url)
+    protected function redirect(string $url): void
     {
         header('Location: ' . $url);
         exit;
@@ -72,7 +72,7 @@ class Controller
      * 
      * @return bool
      */
-    protected function isLoggedIn()
+    protected function isLoggedIn(): bool
     {
         return isset($_SESSION['username']);
     }
@@ -82,7 +82,7 @@ class Controller
      * 
      * @return bool
      */
-    protected function isAdmin()
+    protected function isAdmin(): bool
     {
         return isset($_SESSION['type']) && $_SESSION['type'] === 'Dirigent';
     }
@@ -92,7 +92,7 @@ class Controller
      * 
      * @return bool
      */
-    protected function isLeader()
+    protected function isLeader(): bool
     {
         return isset($_SESSION['role']) && $_SESSION['role'] === 'leader';
     }
@@ -101,18 +101,51 @@ class Controller
      * Add alert message to session
      * 
      * @param string $title Alert title
-     * @param string $message Alert message
+     * @param string|array $message Alert message(s)
      * @param string $type Alert type (success, error, info)
      * @param string|null $details Optional detailed information
      * @return void
      */
-    protected function addAlert($title, $message, $type, $details = null)
+    protected function addAlert(string $title, $message, string $type, ?string $details = null): void
     {
         if (!isset($_SESSION['alerts']) || !is_array($_SESSION['alerts'])) {
             $_SESSION['alerts'] = [];
         }
         
+        // Handle array messages
+        if (is_array($message)) {
+            $message = implode(', ', $message);
+        }
+        
         $_SESSION['alerts'][] = [$title, $message, $type, $details];
+    }
+    
+    /**
+     * Handle error response consistently using ErrorHandler
+     * 
+     * @param array $errorResponse Error response from ErrorHandler
+     * @param string $redirectUrl URL to redirect to after showing error
+     * @return void
+     */
+    protected function handleErrorResponse(array $errorResponse, ?string $redirectUrl = null): void
+    {
+        if (!$errorResponse['success']) {
+            $this->addAlert(
+                'Fehler!',
+                $errorResponse['messages'],
+                $errorResponse['type']
+            );
+        } else {
+            $this->addAlert(
+                'Erfolg!',
+                $errorResponse['messages'],
+                $errorResponse['type']
+            );
+        }
+        
+        if ($redirectUrl) {
+            $this->redirect($redirectUrl);
+        }
     }
     
     /**
@@ -137,5 +170,37 @@ class Controller
             'message' => $message,
             'details' => $details
         ];
+    }
+    
+    /**
+     * Protect against CSRF attacks
+     * Call this in controllers that handle POST requests
+     * 
+     * @throws \Exception If CSRF token is invalid
+     * @return void
+     */
+    protected function protectCSRF(): void
+    {
+        CSRF::protect();
+    }
+    
+    /**
+     * Get CSRF token for forms
+     * 
+     * @return string CSRF token
+     */
+    protected function getCSRFToken(): string
+    {
+        return CSRF::getToken();
+    }
+    
+    /**
+     * Get CSRF token HTML field
+     * 
+     * @return string HTML input field
+     */
+    protected function getCSRFField(): string
+    {
+        return CSRF::getTokenField();
     }
 } 

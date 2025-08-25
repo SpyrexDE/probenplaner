@@ -36,7 +36,7 @@ abstract class Model
      * @param string $orderBy Order by clause
      * @return array
      */
-    public function findAll($orderBy = '')
+    public function findAll(string $orderBy = ''): array
     {
         $sql = "SELECT * FROM {$this->table}";
         
@@ -62,7 +62,7 @@ abstract class Model
      * @param int $id Record ID
      * @return array|null
      */
-    public function findById($id)
+    public function findById(int $id): ?array
     {
         $sql = "SELECT * FROM {$this->table} WHERE {$this->primaryKey} = ?";
         $stmt = $this->db->prepare($sql);
@@ -85,22 +85,54 @@ abstract class Model
      * @param mixed $value Field value
      * @return array
      */
-    public function findBy($field, $value)
+    public function findBy(string $field, $value): array
     {
-        $field = $this->db->escape($field);
-        $value = $this->db->escape($value);
+        // Whitelist allowed field names to prevent field injection
+        $allowedFields = $this->getAllowedFields();
+        if (!empty($allowedFields) && !in_array($field, $allowedFields)) {
+            throw new \InvalidArgumentException("Invalid field name: " . $field);
+        }
         
-        $sql = "SELECT * FROM {$this->table} WHERE {$field} = '{$value}'";
-        $result = $this->db->query($sql);
+        // Use prepared statement to prevent SQL injection
+        $sql = "SELECT * FROM {$this->table} WHERE `{$field}` = ?";
+        $stmt = $this->db->prepare($sql);
         
+        if (!$stmt) {
+            throw new \Exception("Failed to prepare statement: " . $this->db->getLastError());
+        }
+        
+        // Determine parameter type
+        $type = 's'; // default to string
+        if (is_int($value)) {
+            $type = 'i';
+        } elseif (is_float($value)) {
+            $type = 'd';
+        }
+        
+        $stmt->bind_param($type, $value);
+        $stmt->execute();
+        
+        $result = $stmt->get_result();
         $rows = [];
+        
         if ($result && $result instanceof \mysqli_result) {
             while ($row = $result->fetch_assoc()) {
                 $rows[] = $row;
             }
         }
         
+        $stmt->close();
         return $rows;
+    }
+    
+    /**
+     * Get allowed fields for this model (override in child classes)
+     * 
+     * @return array Empty array means all fields are allowed
+     */
+    protected function getAllowedFields(): array
+    {
+        return []; // Override in child classes for field whitelisting
     }
     
     /**
@@ -109,7 +141,7 @@ abstract class Model
      * @param array $data Data to insert
      * @return int|bool Inserted ID or false on failure
      */
-    public function insert($data)
+    public function insert(array $data)
     {
         // If empty data, return false
         if (empty($data)) {
@@ -128,9 +160,11 @@ abstract class Model
             
             $sql = "INSERT INTO {$this->table} ({$fields_str}) VALUES ({$placeholders_str})";
             
-            // Debug output
-            @error_log("DEBUG SQL: " . $sql);
-            @error_log("DEBUG params: " . json_encode($values));
+                         // Debug output only in development
+             if (defined('APP_ENV') && APP_ENV === 'development') {
+                 @error_log("DEBUG SQL: " . $sql);
+                 @error_log("DEBUG params: " . json_encode($values));
+             }
             
             // If no values to bind, perform a simple insert
             if (empty($values)) {
@@ -150,50 +184,27 @@ abstract class Model
                 return false;
             }
             
-            // Determine types for bind_param
-            $types = '';
-            foreach ($values as $value) {
-                if (is_int($value) || (is_string($value) && ctype_digit($value) && strlen($value) < 10)) {
-                    $types .= 'i';
-                } elseif (is_float($value) || (is_string($value) && is_numeric($value) && strpos($value, '.') !== false)) {
-                    $types .= 'd';
-                } elseif (is_string($value)) {
-                    $types .= 's';
-                } else {
-                    $types .= 's'; // Default to string
-                }
-            }
-            
-            // Debug output for types
-            @error_log("DEBUG: Value count: " . count($values) . ", Types string: " . $types . ", Length: " . strlen($types));
-            
-            // Verify that types string length matches value count
-            if (strlen($types) !== count($values)) {
-                @error_log("ERROR: Type string length (" . strlen($types) . ") does not match parameter count (" . count($values) . ")");
-                $types = str_repeat('s', count($values)); // Fallback to all strings
-                @error_log("Falling back to all strings: " . $types);
-            }
-            
-            // Bind parameters - safer approach avoiding references
-            if (count($values) > 0) {
-                // Create a new array for params starting with types string
-                $params = [];
-                $params[] = $types;  // Add types string as first parameter
-                
-                // Create references to all values
-                foreach ($values as $key => $value) {
-                    // Create a new variable reference for each value
-                    $params[] = &$values[$key];
-                }
-                
-                // Call bind_param with the array of references
-                try {
-                    call_user_func_array([$stmt, 'bind_param'], $params);
-                } catch (\Exception $e) {
-                    @error_log("bind_param error: " . $e->getMessage());
-                    return false;
-                }
-            }
+                         // Simplified parameter binding - treat everything as strings for reliability
+             $types = str_repeat('s', count($values));
+             
+             // Debug output only in development
+             if (defined('APP_ENV') && APP_ENV === 'development') {
+                 @error_log("DEBUG SQL: Value count: " . count($values) . ", Types: " . $types);
+             }
+             
+             // Bind parameters using modern approach
+             if (count($values) > 0) {
+                 try {
+                     $stmt->bind_param($types, ...$values);
+                 } catch (\Exception $e) {
+                     ErrorHandler::log("Parameter binding failed: " . $e->getMessage(), [
+                         'sql' => $sql,
+                         'values' => $values
+                     ]);
+                     $stmt->close();
+                     return false;
+                 }
+             }
             
             // Execute and check result
             $result = $stmt->execute();
@@ -232,7 +243,7 @@ abstract class Model
      * @param array $data Data to update
      * @return bool Success or failure
      */
-    public function update($id, $data)
+    public function update(int $id, array $data): bool
     {
         if (empty($data)) {
             error_log("Cannot update: empty data array");
@@ -317,7 +328,7 @@ abstract class Model
      * @param int $id ID of record to delete
      * @return bool Success or failure
      */
-    public function delete($id)
+    public function delete(int $id): bool
     {
         try {
             $sql = "DELETE FROM {$this->table} WHERE {$this->primaryKey} = ?";

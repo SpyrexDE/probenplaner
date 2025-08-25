@@ -2,6 +2,7 @@
 namespace App\Models;
 
 use App\Core\Model;
+use App\Core\ErrorHandler;
 use App\Models\Orchestra;
 use App\Models\UserPromise;
 
@@ -23,24 +24,28 @@ class User extends Model
      * @param int $orchestraId
      * @return array|null
      */
-    public function findByUsername($username, $orchestraId = null)
+    public function findByUsername(string $username, ?int $orchestraId = null): ?array
     {
-        $username = $this->db->escape($username);
-        
-        $sql = "SELECT * FROM {$this->table} WHERE username = '{$username}'";
-        
         if ($orchestraId !== null) {
-            $orchestraId = (int)$orchestraId;
-            $sql .= " AND orchestra_id = {$orchestraId}";
+            $sql = "SELECT * FROM {$this->table} WHERE username = ? AND orchestra_id = ?";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bind_param('si', $username, $orchestraId);
+        } else {
+            $sql = "SELECT * FROM {$this->table} WHERE username = ?";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bind_param('s', $username);
         }
         
-        $result = $this->db->query($sql);
+        $stmt->execute();
+        $result = $stmt->get_result();
         
-        if ($result && $result->num_rows > 0) {
-            return $result->fetch_assoc();
+        $user = null;
+        if ($result && $result instanceof \mysqli_result) {
+            $user = $result->fetch_assoc();
         }
         
-        return null;
+        $stmt->close();
+        return $user;
     }
     
     /**
@@ -50,13 +55,13 @@ class User extends Model
      * @param int $orchestraId
      * @return array
      */
-    public function findByType($type, $orchestraId)
+    public function findByType(string $type, int $orchestraId): array
     {
-        $type = $this->db->escape($type);
-        $orchestraId = (int)$orchestraId;
-        
-        $sql = "SELECT * FROM {$this->table} WHERE type = '{$type}' AND orchestra_id = {$orchestraId}";
-        $result = $this->db->query($sql);
+        $sql = "SELECT * FROM {$this->table} WHERE type = ? AND orchestra_id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param('si', $type, $orchestraId);
+        $stmt->execute();
+        $result = $stmt->get_result();
         
         $users = [];
         if ($result) {
@@ -74,7 +79,7 @@ class User extends Model
      * @param int $orchestraId
      * @return array
      */
-    public function getOrchestraMembers($orchestraId)
+    public function getOrchestraMembers(int $orchestraId): array
     {
         $orchestraId = (int)$orchestraId;
         
@@ -99,7 +104,7 @@ class User extends Model
      * @param int|null $orchestraId
      * @return array|null
      */
-    public function authenticate($username, $password, $orchestraId = null)
+    public function authenticate(string $username, string $password, ?int $orchestraId = null): ?array
     {
         $user = $this->findByUsername($username, $orchestraId);
         
@@ -120,7 +125,7 @@ class User extends Model
      * @param string $role
      * @return int|array Inserted user ID on success, array with error info on failure
      */
-    public function register($username, $password, $type, $orchestraId, $role = 'member')
+    public function register(string $username, string $password, string $type, int $orchestraId, string $role = 'member')
     {
         // Validate input
         $validation = $this->validateUserInput($username, $password, $orchestraId);
@@ -160,14 +165,9 @@ class User extends Model
             $error = $this->db->getLastError();
             error_log("Registration failed - Database error: " . $error);
             
-            // Check for specific error types
-            if (strpos($error, '1062') !== false) { // Duplicate entry
-                return ['error' => true, 'message' => 'Der Benutzername ist bereits vergeben.', 'details' => 'Ein Benutzer mit diesem Namen existiert bereits.'];
-            } elseif (strpos($error, '1452') !== false) { // Foreign key constraint
-                return ['error' => true, 'message' => 'Das Orchester wurde nicht gefunden.', 'details' => 'Das angegebene Orchester existiert nicht mehr. Bitte kontaktieren Sie Ihren Dirigenten.'];
-            } else {
-                return ['error' => true, 'message' => 'Bei der Registrierung ist ein Fehler aufgetreten.', 'details' => 'Technischer Fehler: ' . $error];
-            }
+            // Handle specific database errors with user-friendly messages
+            $exception = new \Exception($error);
+            return ErrorHandler::handleDatabaseError($exception, 'User registration');
         }
         
         return $result;
@@ -180,7 +180,7 @@ class User extends Model
      * @param array $data
      * @return bool|array True on success, error details array on failure
      */
-    public function updateProfile($id, $data)
+    public function updateProfile(int $id, array $data)
     {
         try {
             // Validate data before updating
@@ -263,8 +263,7 @@ class User extends Model
             
             return $result;
         } catch (\Exception $e) {
-            error_log("Exception in updateProfile: " . $e->getMessage());
-            return ['error' => true, 'message' => 'Bei der Aktualisierung ist ein Fehler aufgetreten.', 'details' => 'Exception: ' . $e->getMessage()];
+            return ErrorHandler::handleDatabaseError($e, 'User profile update');
         }
     }
     
@@ -277,7 +276,7 @@ class User extends Model
      * @param string $note
      * @return array|bool Array with error info or true on success
      */
-    public function updatePromise($userId, $rehearsalId, $attending, $note = '')
+    public function updatePromise(int $userId, int $rehearsalId, bool $attending, string $note = '')
     {
         try {
             $promiseModel = new UserPromise();
@@ -331,8 +330,7 @@ class User extends Model
             
             return true;
         } catch (\Exception $e) {
-            error_log("Exception in updatePromise: " . $e->getMessage());
-            return ['error' => true, 'message' => 'Bei der Aktualisierung ist ein Fehler aufgetreten.', 'details' => 'Technischer Fehler: ' . $e->getMessage()];
+            return ErrorHandler::handleDatabaseError($e, 'User promise update');
         }
     }
     
@@ -342,7 +340,7 @@ class User extends Model
      * @param int $userId
      * @return array
      */
-    public function getPromises($userId)
+    public function getPromises(int $userId): array
     {
         $userId = (int)$userId;
         
@@ -370,7 +368,7 @@ class User extends Model
      * @param int $userId
      * @return bool
      */
-    public function setAsLeader($userId)
+    public function setAsLeader(int $userId): bool
     {
         return $this->update($userId, ['role' => 'leader']);
     }
@@ -382,7 +380,7 @@ class User extends Model
      * @param string $role
      * @return bool
      */
-    public function isInRole($userId, $role)
+    public function isInRole(int $userId, string $role): bool
     {
         $user = $this->findById($userId);
         
@@ -403,7 +401,7 @@ class User extends Model
      * @param string|null $passwordConfirm Confirmation password to check (if provided)
      * @return array Array with 'valid' => bool and 'errors' => array
      */
-    public function validateUserInput($username, $password = null, $orchestraId = null, $excludeUserId = null, $passwordConfirm = null)
+    public function validateUserInput(string $username, ?string $password = null, ?int $orchestraId = null, ?int $excludeUserId = null, ?string $passwordConfirm = null): array
     {
         $errors = [];
         
@@ -463,7 +461,7 @@ class User extends Model
      * @param int $userId
      * @return bool
      */
-    public function delete($userId)
+    public function delete(int $userId): bool
     {
         return parent::delete($userId);
     }

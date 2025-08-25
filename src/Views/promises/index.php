@@ -391,7 +391,7 @@ $(document).ready(function() {
                 status: attending ? 1 : 0
             },
             success: function(response) {
-                console.log('Promise update response:', response);
+
                 if (response.success) {
                     // If server returned updated promises, update UI accordingly
                     if (response.promises) {
@@ -519,7 +519,7 @@ $(document).ready(function() {
                 note: note
             },
             success: function(response) {
-                console.log('Note update response:', response);
+
                 if (response.success) {
                     // If server returned updated promises, update UI accordingly
                     if (response.promises) {
@@ -600,7 +600,7 @@ $(document).ready(function() {
         if (!promisesStr) return;
         
         const promises = parsePromisesString(promisesStr);
-        console.log('Parsed promises:', promises);
+
         
         // First set all containers to unpromised (gray)
         $('.rehearsal-card').each(function() {

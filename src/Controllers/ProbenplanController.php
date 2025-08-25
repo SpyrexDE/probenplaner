@@ -30,7 +30,7 @@ class ProbenplanController extends Controller
      * 
      * @return void
      */
-    public function index()
+    public function index(): void
     {
         // Check if user is logged in
         if (!$this->isLoggedIn()) {

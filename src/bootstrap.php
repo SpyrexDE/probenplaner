@@ -70,7 +70,7 @@ if (!empty($missingExtensions)) {
     $errorMsg = "Missing required PHP extensions: " . implode(', ', $missingExtensions);
     error_log($errorMsg);
     if (PHP_SAPI !== 'cli') {
-        die($errorMsg);
+        throw new \Exception($errorMsg);
     }
 }
 

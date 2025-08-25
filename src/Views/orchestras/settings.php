@@ -3,10 +3,10 @@
 <div class="container mt-5">
     <div class="row">
         <div class="col-md-8 offset-md-2">
-            <div class="shadow-sm">
-                <div style="white-space: pre;display: block;margin: 0 0 10px;font-size: 13px;line-height: 1.42857143;word-break: break-all;word-wrap: break-word;overflow: hidden;">
-                    <span class="float-none" href="#" style="color: #525861;font-size: 31px;padding-top: 0;font-family: Roboto, sans-serif;font-weight: 1000;padding-bottom: 0px;margin-right: 0;">Orchester bearbeiten</span>
-                    <i id="editInfoTip" class="fa fa-exclamation-circle" style="transform: scale(2); transform-origin: 0; position: absolute; cursor: pointer;"></i>
+            <div class="card shadow-sm" style="background-color: white; padding: 30px; border-radius: 10px;">
+                <div class="card-header" style="background: none; border: none; padding: 0 0 20px 0;">
+                    <h2 style="color: #525861; font-size: 31px; font-family: Roboto, sans-serif; font-weight: 1000; margin: 0;">Orchester bearbeiten</h2>
+                    <i id="editInfoTip" class="fa fa-exclamation-circle" style="transform: scale(2); transform-origin: 0; position: absolute; cursor: pointer; right: 30px; top: 30px;"></i>
                 </div>
                 
                 <form action="/orchestras/update" method="post">
@@ -22,8 +22,8 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="leader_pw">Stimmführer-Passwort</label>
-                        <input type="text" class="form-control" id="leader_pw" name="leader_pw" placeholder="Stimmführer-Passwort" style="font-family: Roboto, sans-serif;margin-bottom: 15px;" value="<?php echo htmlspecialchars($orchestra['leader_pw']); ?>" required>
+                        <label for="leader_password">Stimmführer-Passwort</label>
+                        <input type="text" class="form-control" id="leader_password" name="leader_password" placeholder="Stimmführer-Passwort" style="font-family: Roboto, sans-serif;margin-bottom: 15px;" value="<?php echo htmlspecialchars($orchestra['leader_pw']); ?>" required>
                         <small class="form-text text-muted">Dieses Passwort ermöglicht Stimmführer-Berechtigungen bei der Registrierung.</small>
                     </div>
                     
@@ -43,10 +43,10 @@
                 </form>
             </div>
 
-            <div class="shadow-sm mt-4">
-                <div style="white-space: pre;display: block;margin: 0 0 10px;font-size: 13px;line-height: 1.42857143;word-break: break-all;word-wrap: break-word;overflow: hidden;">
-                    <span class="float-none" href="#" style="color: #525861;font-size: 31px;padding-top: 0;font-family: Roboto, sans-serif;font-weight: 1000;padding-bottom: 0px;margin-right: 0;">Orchester löschen</span>
-                    <i id="deleteInfoTip" class="fa fa-exclamation-circle" style="transform: scale(2); transform-origin: 0; position: absolute; cursor: pointer;"></i>
+            <div class="card shadow-sm mt-4" style="background-color: white; padding: 30px; border-radius: 10px;">
+                <div class="card-header" style="background: none; border: none; padding: 0 0 20px 0;">
+                    <h2 style="color: #525861; font-size: 31px; font-family: Roboto, sans-serif; font-weight: 1000; margin: 0;">Orchester löschen</h2>
+                    <i id="deleteInfoTip" class="fa fa-exclamation-circle" style="transform: scale(2); transform-origin: 0; position: absolute; cursor: pointer; right: 30px; top: 30px;"></i>
                 </div>
                 
                 <div class="form-group mt-4">

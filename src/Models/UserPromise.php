@@ -2,6 +2,7 @@
 namespace App\Models;
 
 use App\Core\Model;
+use App\Core\ErrorHandler;
 
 /**
  * UserPromise Model
@@ -21,7 +22,7 @@ class UserPromise extends Model
      * @param int $rehearsalId Rehearsal ID
      * @return array|null Promise data or null if not found
      */
-    public function findByUserAndRehearsal($userId, $rehearsalId)
+    public function findByUserAndRehearsal(int $userId, int $rehearsalId): ?array
     {
         $sql = "SELECT * FROM {$this->table} WHERE user_id = ? AND rehearsal_id = ?";
         $stmt = $this->db->prepare($sql);
@@ -43,7 +44,7 @@ class UserPromise extends Model
      * @param int $rehearsalId Rehearsal ID
      * @return array Promises for the rehearsal
      */
-    public function getByRehearsal($rehearsalId)
+    public function getByRehearsal(int $rehearsalId): array
     {
         $sql = "SELECT up.*, u.username, u.type
                 FROM {$this->table} up
@@ -72,7 +73,7 @@ class UserPromise extends Model
      * @param int $orchestraId Orchestra ID
      * @return array Statistics
      */
-    public function getPromiseStats($rehearsalId, $orchestraId)
+    public function getPromiseStats(int $rehearsalId, int $orchestraId): array
     {
         $stats = [
             'total' => 0,
@@ -160,7 +161,7 @@ class UserPromise extends Model
      * @param bool $rehearsalIsSmallGroup Whether the rehearsal is a small group
      * @return bool
      */
-    private function isUserInRehearsalGroup($userType, $isSmallGroup, $groups, $rehearsalIsSmallGroup = false)
+    private function isUserInRehearsalGroup(string $userType, bool $isSmallGroup, $groups, bool $rehearsalIsSmallGroup = false): bool
     {
         $rehearsalModel = new Rehearsal();
         return $rehearsalModel->isUserInRehearsalGroup($userType, $isSmallGroup, $groups, $rehearsalIsSmallGroup);
