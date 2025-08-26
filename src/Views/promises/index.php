@@ -2,7 +2,7 @@
 
 <?php 
 /**
- * Promises (attendance) view
+ * Promises (attendance) view - Professional Mobile-First Design
  */
 
 // Helper function to sort groups by importance
@@ -31,77 +31,362 @@ function sortGroups($groups) {
 }
 ?>
 
-<!-- Custom styling -->
 <style>
-/* Make elements unselectable */
+/* Professional Mobile-First Card Design */
 * {
-    -webkit-touch-callout: none; /* iOS Safari */
-    -webkit-user-select: none;   /* Safari */
-    -khtml-user-select: none;    /* Konqueror HTML */
-    -moz-user-select: none;      /* Firefox */
-    -ms-user-select: none;       /* Internet Explorer/Edge */
-    user-select: none;           /* Non-prefixed version, currently supported by Chrome and Opera */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
 }
 
-/* Allow selection only in input/textarea elements */
 input, textarea {
-    -webkit-touch-callout: text;
     -webkit-user-select: text;
-    -khtml-user-select: text;
     -moz-user-select: text;
-    -ms-user-select: text;
     user-select: text;
 }
 
-/* Fix colors for check and cross buttons */
-.checkBtn:not(.deselected) {
-    filter: brightness(1.1) hue-rotate(5deg); /* Adjust green shade */
+.container-fluid {
+    padding: 4px 8px 60px;
+    max-width: 800px;
+    margin: 0 auto;
 }
 
-.crossBtn:not(.deselected) {
-    filter: brightness(1.1) hue-rotate(-5deg); /* Adjust red shade */
-}
-
-/* Set exact colors for the border colors */
-.greenOut {
-    border-color: #50dc36 !important; /* Original green color */
-}
-
-.redOut {
-    border-color: #dc3836 !important; /* Original red color */
-}
-
-/* Add gray border for unpromised rehearsals */
-.grayOut {
-    border-color: #aaaaaa !important; /* Gray color for unpromised rehearsals */
-}
-
-/* Add hover effect to rehearsal cards */
+/* Professional Card Design */
 .rehearsal-card {
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    background: white;
+    border: 1px solid #e8eaed;
+    border-left: 4px solid #dadce0;
+    border-radius: 12px;
+    margin: 8px 0;
+    padding: 16px 20px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 1px 3px rgba(60,64,67,0.1);
+    min-height: 72px;
 }
 
 .rehearsal-card:hover {
-    transform: scale(1.01);
-    box-shadow: 0px 0px 35px rgba(100,100,100,0.5);
-    cursor: pointer;
+    border-color: #dadce0;
+    border-left-color: #4285f4;
+    box-shadow: 0 4px 12px rgba(60,64,67,0.15);
+    transform: translateY(-2px);
 }
 
-/* Style for disabled buttons */
-.checkBtn.disabled, .crossBtn.disabled {
-    opacity: 0.5;
+/* Status indicators */
+.rehearsal-card.greenOut {
+    border-left-color: #34a853;
+}
+
+.rehearsal-card.redOut {
+    border-left-color: #ea4335;
+}
+
+.rehearsal-card.grayOut {
+    border-left-color: #9aa0a6;
+}
+
+/* Card content */
+.card-content {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 16px;
+}
+
+.card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.info-primary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.info-secondary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    opacity: 0.8;
+}
+
+.date-time {
+    font-size: 15px;
+    font-weight: 600;
+    color: #202124;
+}
+
+.event-type {
+    font-size: 14px;
+    font-weight: 500;
+    color: #5f6368;
+    margin-left: 8px;
+}
+
+.time-detail {
+    font-size: 13px;
+    color: #5f6368;
+}
+
+.location {
+    font-size: 13px;
+    color: #5f6368;
+    margin-left: 8px;
+}
+
+/* Note indicator */
+.note-dot {
+    width: 8px;
+    height: 8px;
+    background: #ea4335;
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.2s;
+    margin-left: 6px;
+}
+
+.note-dot.visible {
+    opacity: 1;
+}
+
+/* Professional Action Buttons */
+.card-actions {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.action-btn {
+    width: 52px;
+    height: 52px;
+    border: 2px solid #e8eaed;
+    background: white;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(60,64,67,0.1);
+    position: relative;
+}
+
+.action-btn img {
+    width: 28px;
+    height: 28px;
+    transition: all 0.2s ease;
+    filter: brightness(0.8);
+}
+
+.action-btn:hover {
+    border-color: #4285f4;
+    background: #f8f9ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(66,133,244,0.15);
+}
+
+.action-btn:hover img {
+    filter: brightness(1);
+    transform: scale(1.1);
+}
+
+.action-btn:active {
+    transform: translateY(-1px);
+    transition: all 0.1s ease;
+}
+
+/* Selected state */
+.action-btn:not(.deselected) {
+    border-color: #34a853;
+    background: #e8f5e8;
+    box-shadow: 0 2px 8px rgba(52,168,83,0.2);
+}
+
+.action-btn.crossBtn:not(.deselected) {
+    border-color: #ea4335;
+    background: #fce8e6;
+    box-shadow: 0 2px 8px rgba(234,67,53,0.2);
+}
+
+.action-btn:not(.deselected) img {
+    filter: brightness(1) saturate(1.2);
+}
+
+/* Deselected state */
+.action-btn.deselected {
+    opacity: 0.4;
+    background: #f8f9fa;
+    border-color: #e8eaed;
+    box-shadow: none;
+}
+
+.action-btn.deselected img {
+    filter: grayscale(100%) brightness(0.7);
+}
+
+/* Responsive Button Sizes - Maintaining Touch Standards */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 2px 6px 60px;
+    }
+    
+    .rehearsal-card {
+        margin: 6px 0;
+        padding: 12px 14px;
+        gap: 12px;
+    }
+    
+    .card-content {
+        gap: 14px;
+    }
+    
+    .card-actions {
+        gap: 8px;
+    }
+    
+    .action-btn {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+    }
+    
+    .action-btn img {
+        width: 26px;
+        height: 26px;
+    }
+    
+    .date-time {
+        font-size: 14px;
+    }
+    
+    .event-type {
+        font-size: 13px;
+    }
+    
+    .time-detail,
+    .location {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .rehearsal-card {
+        padding: 10px 12px;
+        gap: 10px;
+        margin: 5px 0;
+    }
+    
+    .card-content {
+        gap: 10px;
+    }
+    
+    .info-primary,
+    .info-secondary {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+    }
+    
+    .event-type,
+    .location {
+        margin-left: 0;
+    }
+    
+    .card-actions {
+        gap: 6px;
+    }
+    
+    .action-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+    }
+    
+    .action-btn img {
+        width: 24px;
+        height: 24px;
+    }
+}
+
+/* Disabled state */
+.action-btn.disabled {
+    opacity: 0.3;
     cursor: not-allowed;
+    border-color: #f1f3f4;
+    background: #f8f9fa;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Loading indicator for buttons */
+.action-btn.loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.action-btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid #4285f4;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 0.8s linear infinite;
+}
+
+.action-btn.loading img {
+    opacity: 0;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Save indicator */
+.save-indicator {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #333;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 24px;
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.3);
+}
+
+.save-indicator.show {
+    display: flex;
+}
+
+.save-indicator i {
+    font-size: 14px;
 }
 </style>
 
-<div class="container-fluid mt-4">
-<?php if (empty($rehearsals)): ?>
-    <?php 
-        $title = 'Keine Proben gefunden';
-        $message = 'Aktuell sind keine Proben für dich eingetragen.';
-        include __DIR__ . '/../components/empty-state.php';
-    ?>
-<?php else: ?>
+<div class="container-fluid">
+    <?php if (empty($rehearsals)): ?>
+        <?php 
+            $title = 'Keine Proben gefunden';
+            $message = 'Aktuell sind keine Proben für dich eingetragen.';
+            include __DIR__ . '/../components/empty-state.php';
+        ?>
+    <?php else: ?>
     <?php foreach ($rehearsals as $rehearsal): ?>
         <?php 
         // Determine status for this rehearsal
@@ -126,7 +411,7 @@ input, textarea {
             }
         }
         
-        $groupsText = str_replace("_", " ", implode("<br>", $groupArray));
+        $groupsText = str_replace("_", " ", implode(", ", $groupArray));
         
         // Prepare time display
         $start_time_prom = isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, 5) : '??:??';
@@ -134,7 +419,7 @@ input, textarea {
         $time_display_prom = $start_time_prom . ' - ' . $end_time_prom;
         
         // Determine color class
-        $colorClass = 'grayOut'; // Default for pending (unpromised)
+        $colorClass = 'grayOut'; // Default for pending
         
         if ($status === 'attending') {
             $colorClass = 'greenOut';
@@ -143,51 +428,39 @@ input, textarea {
         }
         ?>
         
-        <div class="rehearsal-card <?= $colorClass ?>" style="display: block; border-radius: 10px; height: 111px; margin-right: 20px; margin-left: 20px; box-shadow: 0px 0px 30px rgba(128,128,128,0.4); margin-top: 30px; text-align: left; min-width: 300px; zoom: 0.8; border-width: 4px; border-style: solid; <?php if ($status === 'not_attending'): ?>border-color: #dc3836;<?php elseif ($status === 'attending'): ?>border-color: #50dc36;<?php else: ?>border-color: #aaaaaa;<?php endif; ?> position: relative; <?= !empty($rehearsal['color']) ? 'background-color: ' . $rehearsal['color'] . ';' : 'background-color: white;' ?>">
-            <div class="row" style="width: 100%;">
-                <div class="col col-8" style="margin-top: -7px;">
-                    <div class="row">
-                        <div class="col col-6">
-                            <label class="col-form-label text-break" style="margin-bottom: 0; margin-top: 15px; margin-left: 20px; font-size: 20px; font-weight: 600; width: 100%; overflow: auto; max-height: 40px;">
-                                <?= htmlspecialchars($rehearsal['date_formatted'] ?? $rehearsal['date']) ?>
-                            </label>
-                        </div>
-                        <div class="col">
-                            <label class="col-form-label text-break" style="margin-bottom: 0; margin-top: 15px; font-size: 20px; font-weight: 600; width: 100%; overflow: auto; max-height: 40px;">
-                                <?= $groupsText ?>
-                            </label>
-                        </div>
+        <div class="rehearsal-card <?= $colorClass ?>" style="<?= !empty($rehearsal['color']) ? 'background-color: ' . $rehearsal['color'] . ';' : '' ?>">
+            <div class="card-content">
+                <div class="card-info">
+                    <div class="info-primary">
+                        <span class="date-time"><?= htmlspecialchars($rehearsal['date_formatted'] ?? $rehearsal['date']) ?></span>
+                        <span class="event-type"><?= $groupsText ?>
+                            <span class="note-dot <?= !empty($note) ? 'visible' : '' ?>"></span>
+                        </span>
                     </div>
-                    <div class="row">
-                        <div class="col col-6">
-                            <label class="col-form-label text-break" style="margin-bottom: 0; margin-left: 20px; font-size: 20px; font-weight: 600; width: 100%; overflow: auto; max-height: 40px;">
-                                <?= htmlspecialchars($time_display_prom) ?>
-                            </label>
-                        </div>
-                        <div class="col">
-                            <label class="col-form-label text-break" style="margin-bottom: 0; font-size: 20px; font-weight: 600; width: 100%; overflow: auto; max-height: 40px;">
-                                <?= htmlspecialchars($rehearsal['location']) ?>
-                            </label>
-                        </div>
+                    <div class="info-secondary">
+                        <span class="time-detail"><?= htmlspecialchars($time_display_prom) ?></span>
+                        <span class="location"><?= htmlspecialchars($rehearsal['location']) ?></span>
                     </div>
                 </div>
-                <div style="height: 50%; width: 24%; display: inline-block; white-space: nowrap; float: right; padding-top: 15px; transform: scale(1.4); transform-origin: 0 0;">
-                    <img id="<?= $rehearsal['id'] ?>" class="checkBtn <?= $status !== 'attending' ? 'deselected' : '' ?>" src="/assets/img/icons8_checked_checkbox_48px_2.png" style="cursor: pointer;">
-                    <img id="<?= $rehearsal['id'] ?>" class="crossBtn <?= $status !== 'not_attending' ? 'deselected' : '' ?>" src="/assets/img/icons8_close_window_48px_1.png" style="cursor: pointer;">
+                <div class="card-actions">
+                    <button type="button" id="<?= $rehearsal['id'] ?>" class="checkBtn action-btn <?= $status !== 'attending' ? 'deselected' : '' ?>">
+                        <img src="/assets/img/icons8_checked_checkbox_48px_2.png" alt="Zusagen">
+                    </button>
+                    <button type="button" id="<?= $rehearsal['id'] ?>" class="crossBtn action-btn <?= $status !== 'not_attending' ? 'deselected' : '' ?>">
+                        <img src="/assets/img/icons8_close_window_48px_1.png" alt="Absagen">
+                    </button>
                 </div>
             </div>
-            <i id="icon<?= $rehearsal['id'] ?>" class="<?= $status === 'not_attending' ? 'showIcon' : 'hideIcon' ?> fa <?= empty($note) ? 'fa-plus-square' : 'fa-pen-square' ?> addNoteBtn" style="transform-origin: 0; top: 6px; right: 25px; position: absolute; <?= empty($note) ? 'color: lightgrey;' : '' ?> <?= $status !== 'not_attending' ? 'visibility: hidden;' : '' ?> cursor: pointer;"></i>
             <input type="hidden" id="note<?= $rehearsal['id'] ?>" value="<?= htmlspecialchars($note) ?>">
         </div>
     <?php endforeach; ?>
-<?php endif; ?>
-
-<div class="mt-4 mb-4" style="height: 100px;"></div>
+    <?php endif; ?>
 </div>
 
 <!-- Save indicator -->
-<div id="save-indicator" style="display: none; position: fixed; bottom: 20px; right: 20px; background-color: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 5px; z-index: 1000;">
-    <i class="fa fa-spinner fa-spin" style="margin-right: 10px;"></i> Speichern...
+<div id="save-indicator" class="save-indicator">
+    <i class="fa fa-spinner fa-spin"></i>
+    <span>Speichern...</span>
 </div>
 
 <script>
@@ -206,12 +479,12 @@ $(document).ready(function() {
     // Handle attend/not attend button clicks
     $('.checkBtn').click(function() {
         if ($(this).hasClass('disabled')) {
-            return; // Prevent actions on disabled buttons
+            return;
         }
         
         var id = $(this).attr('id');
         
-        // Disable buttons for this rehearsal to prevent multiple rapid clicks
+        // Disable buttons for this rehearsal
         disableRehearsalButtons(id);
         
         // Toggle selection
@@ -221,26 +494,25 @@ $(document).ready(function() {
         // Update UI
         var container = $(this).closest('.rehearsal-card');
         container.removeClass('redOut grayOut').addClass('greenOut');
-        container.css('border-color', '#50dc36');
         
-        // Hide note icon
-        $('#icon' + id).removeClass('showIcon').addClass('hideIcon').css('visibility', 'hidden');
+        // Hide note dot
+        container.find('.note-dot').removeClass('visible');
         
         // Clear any existing note
         $('#note' + id).val('');
         
-        // Add to queue instead of executing immediately
+        // Add to queue
         queueUpdate("promise", id, true, '');
     });
     
     $('.crossBtn').click(function() {
         if ($(this).hasClass('disabled')) {
-            return; // Prevent actions on disabled buttons
+            return;
         }
         
         var id = $(this).attr('id');
         
-        // Disable buttons for this rehearsal to prevent multiple rapid clicks
+        // Disable buttons for this rehearsal
         disableRehearsalButtons(id);
         
         // Toggle selection
@@ -250,459 +522,145 @@ $(document).ready(function() {
         // Update UI
         var container = $(this).closest('.rehearsal-card');
         container.removeClass('grayOut greenOut').addClass('redOut');
-        container.css('border-color', '#dc3836');
         
         // Get existing note
         var existingNote = $('#note' + id).val();
-        var iconClass = (existingNote && existingNote.trim() !== '') ? 'fa-pen-square' : 'fa-plus-square';
-        var iconColor = (existingNote && existingNote.trim() !== '') ? '' : 'lightgrey';
         
-        // Show note icon with appropriate class and color
-        $('#icon' + id).removeClass('hideIcon').addClass('showIcon')
-                       .removeClass('fa-plus-square fa-pen-square').addClass(iconClass)
-                       .css({
-                           'visibility': 'visible',
-                           'color': iconColor
-                       });
-        
-        // Add to queue instead of executing immediately
-        queueUpdate("promise", id, false, existingNote);
-    });
-    
-    // Handle note button clicks
-    $('.addNoteBtn').click(function() {
-        var id = $(this).attr('id').replace('icon', '');
-        if ($('.checkBtn[id="' + id + '"]').hasClass('disabled')) {
-            return; // Don't show dialog if buttons are disabled
+        // Show note prompt if no note exists
+        if (!existingNote) {
+            showNoteDialog(id, '');
+        } else {
+            // Show existing note dot
+            container.find('.note-dot').addClass('visible');
+            queueUpdate("promise", id, false, existingNote);
         }
-        showNoteDialog(id);
     });
     
-    // Function to disable rehearsal buttons during updates
-    function disableRehearsalButtons(id) {
-        $('.checkBtn[id="' + id + '"], .crossBtn[id="' + id + '"]').addClass('disabled').css('opacity', '0.5');
+    // Note dialog function
+    function showNoteDialog(id, currentNote) {
+        Swal.fire({
+            title: 'Grund für Absage (optional)',
+            input: 'textarea',
+            inputValue: currentNote,
+            inputPlaceholder: 'Warum können Sie nicht teilnehmen?',
+            showCancelButton: true,
+            confirmButtonText: 'Speichern',
+            cancelButtonText: 'Ohne Grund',
+            confirmButtonColor: '#478cf4',
+            cancelButtonColor: '#6c757d',
+            inputValidator: (value) => {
+                if (value && value.length > 500) {
+                    return 'Notiz ist zu lang (max. 500 Zeichen)';
+                }
+            }
+        }).then((result) => {
+            var note = '';
+            if (result.isConfirmed && result.value) {
+                note = result.value;
+                // Show note dot
+                $('.rehearsal-card').has('#' + id).find('.note-dot').addClass('visible');
+            }
+            
+            // Update hidden field
+            $('#note' + id).val(note);
+            
+            // Queue the update
+            queueUpdate("promise", id, false, note);
+        });
     }
     
-    // Function to enable rehearsal buttons after updates
-    function enableRehearsalButtons(id) {
-        $('.checkBtn[id="' + id + '"], .crossBtn[id="' + id + '"]').removeClass('disabled').css('opacity', '1');
-    }
+    // Double click to edit note
+    $('.rehearsal-card').on('dblclick', function() {
+        var card = $(this);
+        if (card.hasClass('redOut')) {
+            var id = card.find('.crossBtn').attr('id');
+            var currentNote = $('#note' + id).val();
+            showNoteDialog(id, currentNote);
+        }
+    });
     
-    // Function to add update to queue
-    function queueUpdate(type, id, status, note) {
-        // Add to queue
+    function queueUpdate(type, id, attending, note) {
         window.updateQueue.push({
             type: type,
             id: id,
-            status: status,
+            attending: attending,
             note: note
         });
         
-        // Show save indicator if it's not already visible
-        if (!window.promiseBeingUpdated) {
-            $('#save-indicator').fadeIn(200);
-            window.promiseBeingUpdated = true;
-        }
-        
-        // Start processing if not already in progress
-        if (!window.isProcessingQueue) {
-            processNextUpdate();
-        }
+        processQueue();
     }
     
-    // Function to process the next update in the queue
-    function processNextUpdate() {
-        if (window.updateQueue.length === 0) {
-            window.isProcessingQueue = false;
-            window.promiseBeingUpdated = false;
-            $('#save-indicator').fadeOut(200);
+    function processQueue() {
+        if (window.isProcessingQueue || window.updateQueue.length === 0) {
             return;
         }
         
         window.isProcessingQueue = true;
-        const update = window.updateQueue.shift();
+        
+        // Show save indicator
+        if (!window.promiseBeingUpdated) {
+            $('#save-indicator').addClass('show');
+            window.promiseBeingUpdated = true;
+        }
+        
+        var update = window.updateQueue.shift();
         
         if (update.type === "promise") {
-            updatePromise(update.id, update.status, update.note);
-        } else if (update.type === "note") {
-            updateNote(update.id, update.note);
+            updatePromise(update.id, update.attending, update.note);
         }
     }
     
-    // Function to show note dialog
-    function showNoteDialog(id) {
-        // Get existing note if any
-        var existingNote = '';
-        
-        // Try to get the note from a hidden field if it exists
-        if ($('#note' + id).length > 0) {
-            existingNote = $('#note' + id).val();
-        }
-        
-        // Disable buttons for this rehearsal to prevent multiple rapid clicks
-        disableRehearsalButtons(id);
-        
-        // Show note modal with SweetAlert2
-        Swal.fire({
-            title: 'Anmerkung hinzufügen',
-            input: 'textarea',
-            inputLabel: 'Deine Anmerkung zur Zu- oder Absage',
-            inputPlaceholder: 'Gib hier deine Anmerkung ein...',
-            inputValue: existingNote,
-            showCancelButton: true,
-            cancelButtonText: 'Abbrechen',
-            confirmButtonText: 'Speichern'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Get the current status
-                const attending = !$('.checkBtn[id="' + id + '"]').hasClass('deselected');
-                
-                // Update note in database
-                queueUpdate("note", id, attending, result.value);
-                
-                // Update hidden field
-                if ($('#note' + id).length > 0) {
-                    $('#note' + id).val(result.value);
-                }
-                
-                // Update icon
-                if (result.value.trim() !== '') {
-                    $('#icon' + id).removeClass('fa-plus-square').addClass('fa-pen-square').css('color', '');
-                } else {
-                    $('#icon' + id).removeClass('fa-pen-square').addClass('fa-plus-square').css('color', 'lightgrey');
-                }
-            } else {
-                // Re-enable the buttons if dialog is canceled
-                enableRehearsalButtons(id);
-            }
-        });
-    }
-    
-    // Function to update promise
     function updatePromise(id, attending, note) {
-        // Show save indicator
-        $('#save-indicator').fadeIn(200);
-        
         $.ajax({
             url: '/promises/update',
             type: 'POST',
             data: {
-                id: id,
-                status: attending ? 1 : 0
+                rehearsal_id: id,
+                attending: attending ? 1 : 0,
+                note: note,
+                csrf_token: $('meta[name="csrf-token"]').attr('content')
             },
             success: function(response) {
-
-                if (response.success) {
-                    // If server returned updated promises, update UI accordingly
-                    if (response.promises) {
-                        // Update all promise UI elements based on returned promises string
-                        updatePromisesUI(response.promises);
-                    }
-                    
-                    // Also update this specific UI element
-                    const container = $('.checkBtn[id="' + id + '"]').closest('.rehearsal-card');
-                    if (attending) {
-                        container.removeClass('redOut grayOut').addClass('greenOut');
-                        // Update border color
-                        container.css('border-color', '#50dc36');
-                    } else {
-                        container.removeClass('grayOut greenOut').addClass('redOut');
-                        // Update border color
-                        container.css('border-color', '#dc3836');
-                    }
-                    
-                    // If we need to update the note as well
-                    if (note !== '') {
-                        // Add note update to the queue
-                        window.updateQueue.push({
-                            type: "note",
-                            id: id,
-                            status: attending,
-                            note: note
-                        });
-                    }
-                    
-                    // Process the next update in the queue
-                    setTimeout(function() {
-                        processNextUpdate();
-                    }, 300);
+                if (response.status === 'success') {
+                    // Success handled in UI already
                 } else {
-                    // Show error to user with details
-                    Swal.fire({
-                        title: response.message || 'Fehler beim Speichern',
-                        html: response.details ? `${response.message}<br><br><button id="showDetailsBtn" class="swal2-styled">Details anzeigen</button><div id="errorDetails" style="display:none; margin-top:10px; text-align:left; font-size:12px; color:#a94442; background:#f9f2f4; border:1px solid #ebccd1; padding:10px; border-radius:4px; white-space:pre-wrap;">${response.details}</div>` : response.message,
-                        icon: 'error',
-                        didOpen: () => {
-                            const btn = document.getElementById('showDetailsBtn');
-                            if (btn) {
-                                btn.onclick = function() {
-                                    const details = document.getElementById('errorDetails');
-                                    if (details.style.display === 'none') {
-                                        details.style.display = 'block';
-                                        btn.textContent = 'Details ausblenden';
-                                    } else {
-                                        details.style.display = 'none';
-                                        btn.textContent = 'Details anzeigen';
-                                    }
-                                };
-                            }
-                        }
-                    });
+                    console.error('Server returned error:', response.message);
+                    notifyError('Fehler beim Speichern: ' + (response.message || 'Unbekannter Fehler'));
                 }
                 
-                // Hide save indicator
-                $('#save-indicator').fadeOut(200);
-                
-                // Re-enable the buttons
+                // Re-enable buttons
                 enableRehearsalButtons(id);
+                
+                // Continue processing queue
+                window.isProcessingQueue = false;
+                
+                if (window.updateQueue.length > 0) {
+                    processQueue();
+                } else {
+                    window.promiseBeingUpdated = false;
+                    $('#save-indicator').removeClass('show');
+                }
             },
             error: function(xhr, status, error) {
-                console.error('Error updating promise:', error);
+                console.error('AJAX Error:', error);
+                notifyError('Verbindungsfehler beim Speichern der Zusage');
                 
-                // Try to parse the error response
-                let errorMessage = 'Fehler beim Speichern der Antwort';
-                let errorDetails = 'Ein unerwarteter Fehler ist aufgetreten.';
-                
-                try {
-                    const response = JSON.parse(xhr.responseText);
-                    if (response.message) {
-                        errorMessage = response.message;
-                    }
-                    if (response.details) {
-                        errorDetails = response.details;
-                    }
-                } catch (e) {
-                    console.error('Error parsing error response:', e);
-                }
-                
-                // Show error to user with details
-                Swal.fire({
-                    title: errorMessage,
-                    html: `${errorMessage}<br><br><button id="showDetailsBtn" class="swal2-styled">Details anzeigen</button><div id="errorDetails" style="display:none; margin-top:10px; text-align:left; font-size:12px; color:#a94442; background:#f9f2f4; border:1px solid #ebccd1; padding:10px; border-radius:4px; white-space:pre-wrap;">${errorDetails}</div>`,
-                    icon: 'error',
-                    didOpen: () => {
-                        const btn = document.getElementById('showDetailsBtn');
-                        if (btn) {
-                            btn.onclick = function() {
-                                const details = document.getElementById('errorDetails');
-                                if (details.style.display === 'none') {
-                                    details.style.display = 'block';
-                                    btn.textContent = 'Details ausblenden';
-                                } else {
-                                    details.style.display = 'none';
-                                    btn.textContent = 'Details anzeigen';
-                                }
-                            };
-                        }
-                    }
-                });
-                
-                // Hide save indicator
-                $('#save-indicator').fadeOut(200);
-                
-                // Re-enable the buttons
+                // Re-enable buttons
                 enableRehearsalButtons(id);
+                
+                window.isProcessingQueue = false;
+                window.promiseBeingUpdated = false;
+                $('#save-indicator').removeClass('show');
             }
         });
     }
     
-    // Function to update note
-    function updateNote(id, note) {
-        // Show save indicator
-        $('#save-indicator').fadeIn(200);
-        
-        $.ajax({
-            url: '/promises/note',
-            type: 'POST',
-            data: {
-                id: id,
-                note: note
-            },
-            success: function(response) {
-
-                if (response.success) {
-                    // If server returned updated promises, update UI accordingly
-                    if (response.promises) {
-                        // Update all promise UI elements based on returned promises string
-                        updatePromisesUI(response.promises);
-                    }
-                }
-                
-                // Re-enable the buttons after a short delay
-                setTimeout(function() {
-                    enableRehearsalButtons(id);
-                }, 200);
-                
-                // Show brief success message
-                if (window.updateQueue.length === 0) {
-                    if (window.notifySuccess) {
-                        window.notifySuccess('Anmerkung gespeichert', { timer: 2000 });
-                    }
-                }
-                
-                // Process the next update in the queue
-                setTimeout(function() {
-                    processNextUpdate();
-                }, 300);
-            },
-            error: function(xhr, status, error) {
-                console.error('Error updating note:', error);
-                
-                // Try to parse the error response
-                let errorMessage = 'Fehler beim Speichern der Anmerkung';
-                let errorDetails = 'Ein unerwarteter Fehler ist aufgetreten.';
-                
-                try {
-                    const response = JSON.parse(xhr.responseText);
-                    if (response.message) {
-                        errorMessage = response.message;
-                    }
-                    if (response.details) {
-                        errorDetails = response.details;
-                    }
-                } catch (e) {
-                    console.error('Error parsing error response:', e);
-                }
-                
-                // Show error to user with details
-                Swal.fire({
-                    title: errorMessage,
-                    html: `${errorMessage}<br><br><button id="showDetailsBtn" class="swal2-styled">Details anzeigen</button><div id="errorDetails" style="display:none; margin-top:10px; text-align:left; font-size:12px; color:#a94442; background:#f9f2f4; border:1px solid #ebccd1; padding:10px; border-radius:4px; white-space:pre-wrap;">${errorDetails}</div>`,
-                    icon: 'error',
-                    didOpen: () => {
-                        const btn = document.getElementById('showDetailsBtn');
-                        if (btn) {
-                            btn.onclick = function() {
-                                const details = document.getElementById('errorDetails');
-                                if (details.style.display === 'none') {
-                                    details.style.display = 'block';
-                                    btn.textContent = 'Details ausblenden';
-                                } else {
-                                    details.style.display = 'none';
-                                    btn.textContent = 'Details anzeigen';
-                                }
-                            };
-                        }
-                    }
-                });
-                
-                // Hide save indicator
-                $('#save-indicator').fadeOut(200);
-                
-                // Re-enable the buttons
-                enableRehearsalButtons(id);
-            }
-        });
+    function disableRehearsalButtons(id) {
+        $('.rehearsal-card').has('#' + id).find('.action-btn').addClass('disabled loading');
     }
     
-    // Function to update UI based on promises string
-    function updatePromisesUI(promisesStr) {
-        if (!promisesStr) return;
-        
-        const promises = parsePromisesString(promisesStr);
-
-        
-        // First set all containers to unpromised (gray)
-        $('.rehearsal-card').each(function() {
-            const container = $(this);
-            // Extract rehearsal ID from the check button inside this container
-            const rehearsalId = container.find('.checkBtn').attr('id');
-            
-            // If this rehearsal ID is not in the promises, set it to unpromised
-            if (!promises[rehearsalId]) {
-                container.removeClass('redOut greenOut').addClass('grayOut');
-                container.css('border-color', '#aaaaaa');
-                
-                // Set both check and cross buttons to deselected
-                container.find('.checkBtn, .crossBtn').addClass('deselected');
-                
-                // Hide note icon
-                $('#icon' + rehearsalId).removeClass('showIcon').addClass('hideIcon').css('visibility', 'hidden');
-            }
-        });
-        
-        // Then update each rehearsal card based on parsed promises
-        Object.keys(promises).forEach(rehearsalId => {
-            const promise = promises[rehearsalId];
-            const attending = promise.attending;
-            const note = promise.note;
-            
-            // Update check/cross buttons
-            if (attending) {
-                $('.checkBtn[id="' + rehearsalId + '"]').removeClass('deselected');
-                $('.crossBtn[id="' + rehearsalId + '"]').addClass('deselected');
-                
-                // Update container styling
-                const container = $('.checkBtn[id="' + rehearsalId + '"]').closest('.rehearsal-card');
-                container.removeClass('redOut grayOut').addClass('greenOut');
-                container.css('border-color', '#50dc36');
-                
-                // Hide note icon
-                $('#icon' + rehearsalId).removeClass('showIcon').addClass('hideIcon').css('visibility', 'hidden');
-            } else {
-                $('.crossBtn[id="' + rehearsalId + '"]').removeClass('deselected');
-                $('.checkBtn[id="' + rehearsalId + '"]').addClass('deselected');
-                
-                // Update container styling
-                const container = $('.crossBtn[id="' + rehearsalId + '"]').closest('.rehearsal-card');
-                container.removeClass('grayOut greenOut').addClass('redOut');
-                container.css('border-color', '#dc3836');
-                
-                // Show note icon with appropriate styling
-                const iconClass = note ? 'fa-pen-square' : 'fa-plus-square';
-                const iconColor = note ? '' : 'lightgrey';
-                
-                $('#icon' + rehearsalId)
-                    .removeClass('hideIcon fa-plus-square fa-pen-square')
-                    .addClass('showIcon ' + iconClass)
-                    .css({
-                        'visibility': 'visible',
-                        'color': iconColor
-                    });
-            }
-            
-            // Update note hidden field
-            $('#note' + rehearsalId).val(note);
-        });
+    function enableRehearsalButtons(id) {
+        $('.rehearsal-card').has('#' + id).find('.action-btn').removeClass('disabled loading');
     }
-    
-    // Function to parse promises string into an object
-    function parsePromisesString(promisesStr) {
-        if (!promisesStr) return {};
-        
-        const promises = {};
-        const promiseItems = promisesStr.split('|');
-        
-        promiseItems.forEach(item => {
-            if (!item) return;
-            
-            let attending = true;
-            let rehearsalId = item;
-            let note = '';
-            
-            // Check if not attending
-            if (item.startsWith('!')) {
-                attending = false;
-                rehearsalId = item.substring(1);
-            }
-            
-            // Extract note if exists
-            const noteMatch = rehearsalId.match(/\((.*?)\)/);
-            if (noteMatch) {
-                note = noteMatch[1];
-                rehearsalId = rehearsalId.replace(/\(.*?\)/, '');
-            }
-            
-            // Store promise data
-            promises[rehearsalId] = {
-                attending: attending,
-                note: note
-            };
-        });
-        
-        return promises;
-    }
-    
-
 });
-</script> 
+</script>

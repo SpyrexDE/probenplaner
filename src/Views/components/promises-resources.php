@@ -6,12 +6,10 @@
 ?>
 
 <!-- Shared CSS for promise views -->
-<link rel="stylesheet" href="/assets/css/promises-shared.css">
+<!-- Note: CSS is now handled by Tailwind in the main layout -->
 
-<!-- Shared styles that need to be inline for immediate rendering -->
-<style>
-/* Any view-specific styles can be added here by the including file */
-</style>
+<!-- Shared Tailwind utility classes for promise views -->
+<!-- All styling is now handled through Tailwind CSS utility classes -->
 
 <?php
 /**

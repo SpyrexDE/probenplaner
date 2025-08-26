@@ -4,22 +4,376 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
     <title><?= isset($_SESSION['orchestra_name']) ? $_SESSION['orchestra_name'] : (isset($title) ? $title : APP_NAME) ?></title>
+    
+    <!-- Theme Configuration -->
+    <script type="module">
+        import { Config } from 'https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4';
+        
+        Config.theme = {
+            colors: {
+                primary: {
+                    50: '#eff6ff',
+                    100: '#dbeafe', 
+                    200: '#bfdbfe',
+                    300: '#93c5fd',
+                    400: '#60a5fa',
+                    500: '#478cf4',
+                    600: '#2563eb',
+                    700: '#1d4ed8',
+                    800: '#1e40af',
+                    900: '#1e3a8a'
+                },
+                success: {
+                    50: '#f0fdf4',
+                    100: '#dcfce7',
+                    200: '#bbf7d0', 
+                    300: '#86efac',
+                    400: '#4ade80',
+                    500: '#53d650',
+                    600: '#16a34a',
+                    700: '#15803d',
+                    800: '#166534',
+                    900: '#14532d'
+                },
+                danger: {
+                    50: '#fef2f2',
+                    100: '#fee2e2',
+                    200: '#fecaca',
+                    300: '#fca5a5', 
+                    400: '#f87171',
+                    500: '#eb554b',
+                    600: '#dc2626',
+                    700: '#b91c1c',
+                    800: '#991b1b',
+                    900: '#7f1d1d'
+                },
+                status: {
+                    transparent: 'transparent',
+                    red: '#ffe1e1',
+                    blue: '#e1ecff',
+                    yellow: '#fff9e1', 
+                    green: '#ebffe1'
+                },
+                auth: {
+                    bg: '#f1f7fc',
+                    accent: '#f4476b',
+                    'accent-hover': '#eb3b60'
+                }
+            },
+            fontFamily: {
+                'sans': ['Roboto', 'system-ui', 'sans-serif'],
+                'brand': ['Fugaz One', 'cursive']
+            },
+            extend: {
+                spacing: {
+                    '18': '4.5rem',
+                    '100': '25rem'
+                },
+                zIndex: {
+                    '999': '999',
+                    '1000': '1000'
+                },
+                boxShadow: {
+                    'soft': '0px 0px 30px rgba(128,128,128,0.4)',
+                    'soft-sm': '0px 0px 10px rgba(0,0,0,0.1)',
+                    'auth': '1px 1px 5px rgba(0,0,0,0.1)'
+                },
+                borderRadius: {
+                    'xl': '10px'
+                },
+                transitionDuration: {
+                    '250': '250ms'
+                },
+                animation: {
+                    'fade-in': 'fade-in 0.2s ease-out',
+                    'scale-in': 'scale-in 0.15s ease-out'
+                },
+                keyframes: {
+                    'fade-in': {
+                        '0%': { opacity: '0', transform: 'translateY(10px)' },
+                        '100%': { opacity: '1', transform: 'translateY(0)' }
+                    },
+                    'scale-in': {
+                        '0%': { opacity: '0', transform: 'scale(0.95)' },
+                        '100%': { opacity: '1', transform: 'scale(1)' }
+                    }
+                }
+            }
+        };
+    </script>
+    
+    <!-- Custom styles for sidebar behavior -->
+    <style>
+
+        
+        /* Professional layout system */
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
+            background: #f8f9fa;
+            color: #333;
+            line-height: 1.4;
+            overflow-x: hidden;
+        }
+        
+        /* App Layout Container */
+        #wrapper {
+            display: flex;
+            min-height: 100vh;
+            transition: all 0.3s ease;
+        }
+        
+                 /* Professional Sidebar */
+         #sidebar-wrapper {
+             width: 280px;
+             background: #212529;
+             position: fixed;
+             top: 0;
+             left: -280px;
+             height: 100vh;
+             z-index: 1001;
+             transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+             overflow-y: auto;
+             box-shadow: 4px 0 20px rgba(0,0,0,0.25);
+         }
+         
+         #wrapper.toggled #sidebar-wrapper {
+             left: 0;
+         }
+         
+         #wrapper.toggled::before {
+             content: '';
+             position: fixed;
+             top: 0;
+             left: 0;
+             right: 0;
+             bottom: 0;
+             background: rgba(0,0,0,0.5);
+             z-index: 1000;
+             opacity: 1;
+             transition: opacity 0.3s ease;
+             pointer-events: auto;
+         }
+        
+        .sidebar-nav {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+        }
+        
+        .sidebar-brand {
+            height: 80px;
+            background: linear-gradient(135deg, #4285f4, #34a853);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            color: white;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            background: rgba(255,255,255,0.95);
+            color: #333;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .user-avatar {
+            width: 52px;
+            height: 52px;
+            margin-right: 12px;
+            color: #4285f4;
+            font-size: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .user-info h4 {
+            margin: 0 0 2px 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .user-info p {
+            margin: 0;
+            font-size: 13px;
+            color: #666;
+            opacity: 0.8;
+        }
+        
+        .sidebar-nav li a {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            color: #b8bcc8;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 15px;
+            font-weight: 500;
+        }
+        
+        .sidebar-nav li a:hover {
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            text-decoration: none;
+            padding-left: 24px;
+        }
+        
+        .sidebar-nav li a.activeTab {
+            background: rgba(66, 133, 244, 0.15);
+            color: #4285f4;
+            border-left: 4px solid #4285f4;
+            font-weight: 600;
+        }
+        
+        .sidebar-nav li a i {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+            font-size: 16px;
+        }
+        
+        /* Top Navigation Bar */
+        .top-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            border-bottom: 1px solid #e8eaed;
+        }
+        
+        .nav-left {
+            display: flex;
+            align-items: center;
+        }
+        
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #478cf4;
+            cursor: pointer;
+            margin-right: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            min-width: 48px;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .menu-toggle:hover {
+            background-color: rgba(71, 140, 244, 0.1);
+            color: #3a7bd5;
+            transform: scale(1.05);
+        }
+        
+        .menu-toggle:active {
+            transform: scale(0.95);
+            background-color: rgba(71, 140, 244, 0.2);
+        }
+        
+        .brand-title {
+            font-family: 'Fugaz One', cursive;
+            font-size: 28px;
+            color: #478cf4;
+            text-decoration: none;
+            font-weight: 900;
+        }
+        
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .nav-icon {
+            font-size: 20px;
+            color: #666;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        
+        .nav-icon:hover {
+            color: #478cf4;
+        }
+        
+        /* Main Content Area */
+        #page-content-wrapper {
+            flex: 1;
+            padding-top: 64px;
+            min-height: 100vh;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @media (min-width: 768px) {
+            #wrapper.toggled #page-content-wrapper {
+                margin-left: 280px;
+                transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+        }
+        
+        @media (max-width: 767px) {
+            #sidebar-wrapper {
+                width: 280px;
+                left: -280px;
+            }
+        }
+        
+        /* Content Area Styling */
+        .main-content {
+            padding: 8px;
+        }
+        
+        /* Clean and minimal styling */
+        .far, .fas { font-size: 21px; }
+        
+        /* Tree view styles */
+        .tree li { cursor: pointer; }
+        .treeIcon { margin-top: 2px; margin-right: 5px; margin-left: 8px; }
+        .smallTreeIcon { font-size: 1rem; transform: scale(1); transform-origin: 0 0; margin-top: 2px; margin-right: 5px; margin-left: 8px; }
+        
+        /* Button interactions */
+        .checkBtn, .crossBtn, .tree li span, .x-drop-btn:hover { cursor: pointer; }
+    </style>
+    <!-- Bootstrap CSS for component functionality -->
     <link rel="stylesheet" href="/assets/bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=ABeeZee">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Bitter:400,700">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Catamaran:100,200,300,400,500,600,700,800,900">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Muli">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titan+One">
+    
+    <!-- Tailwind CSS for custom styling -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,600,700">
     <link href="https://fonts.googleapis.com/css2?family=Fugaz+One&display=swap" rel="stylesheet">
+    
+    <!-- Icon Fonts -->
     <link rel="stylesheet" href="/assets/fonts/fontawesome-all.min.css">
     <link rel="stylesheet" href="/assets/fonts/font-awesome.min.css">
     <link rel="stylesheet" href="/assets/fonts/ionicons.min.css">
     <link rel="stylesheet" href="/assets/fonts/fontawesome5-overrides.min.css">
-    <link rel="stylesheet" href="/assets/css/styles.min.css">
-    <link rel="stylesheet" href="/assets/css/custom.css">
-    <link rel="stylesheet" href="/assets/css/tree-view-clickable.css">
     <link rel="shortcut icon" href="/assets/img/tabIcon.png" type="image/x-icon">
     <link rel="manifest" href="/manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -31,102 +385,98 @@
     <script src="https://unpkg.com/tippy.js@6"></script>
     <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/animations/scale.css"/>
 </head>
-<body style="width: 100%; height: 100%;">
+<body>
 <?php 
 use App\Core\Utilities;
 if (isset($_SESSION['username'])): ?>
     <div id="wrapper">
-        <div class="topBar" id="sidebar-wrapper" style="background-color: #ffffff; border-right: 1px solid #e9ecef;">
+        <!-- Top Navigation -->
+        <nav class="top-nav">
+            <div class="nav-left">
+                <button class="menu-toggle" id="menu-toggle" onclick="(function(){const w=document.getElementById('wrapper');if(w)w.classList.toggle('toggled');})();">
+                    <i class="fa fa-bars"></i>
+                </button>
+                <a href="/" class="brand-title">
+                    <?= isset($_SESSION['orchestra_name']) ? $_SESSION['orchestra_name'] : APP_NAME ?>
+                </a>
+
+            </div>
+            <div class="nav-actions">
+                <?php 
+                // Show buttons on relevant routes
+                $currentUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+                
+                // Show history button on promises routes and rehearsals routes
+                $showHistoryButton = (strpos($currentUri, '/promises') === 0) || (strpos($currentUri, '/rehearsals') === 0);
+                
+                // Show help button on all main feature pages
+                $showHelpButton = in_array($currentUri, ['/promises', '/promises/leader', '/promises/admin', 
+                                                        '/rehearsals', '/probenplan', '/profile', '/conductor/profile']) 
+                                 || (strpos($currentUri, '/promises/') === 0)
+                                 || (strpos($currentUri, '/rehearsals/') === 0);
+                ?>
+                
+                <?php if ($showHistoryButton): ?>
+                <i onclick="openOld();" class="fas fa-history nav-icon"></i>
+                <?php endif; ?>
+                
+                <?php if ($showHelpButton): ?>
+                <i onclick="showHelp();" class="fas fa-question-circle nav-icon"></i>
+                <?php endif; ?>
+            </div>
+        </nav>
+        
+        <!-- Sidebar -->
+        <div id="sidebar-wrapper">
             <ul class="sidebar-nav">
-                <li class="sidebar-brand" style="background-color: #478cf4; height: 67px;">
-                    <div class="text-secondary" style="width: 100%; height: 100%; overflow: hidden; background-color: #ffffff; border-width: 0; border-bottom: 0; border-color: lightgrey; border-style: solid;">
-                        <div style="width: 30%; background: grey; float: left; height: 100%; background-color: rgba(255,255,255,0);">
-                            <i class="icon ion-ios-contact" style="color: #478cf4; font-size: 64px; margin: -18px; margin-left: -28px;"></i>
+                <li class="sidebar-brand">
+                    <div class="user-profile">
+                        <div class="user-avatar">
+                            <i class="icon ion-ios-contact"></i>
                         </div>
-                        <div class="text-nowrap" style="width: 70%; background: green; overflow: hidden; height: 100%; background-color: rgba(255,255,255,0);">
-                            <label style="margin: 0; width: 100%; height: 50%; float: left; margin-left: -10px; margin-top: -7px;">
-                                <?= Utilities::formatUsername($_SESSION['username'], $_SESSION['role'] ?? 'member', $_SESSION['is_small_group'] ?? false) ?>
-                            </label>
-                            <label id="groupLabel" style="margin: 0; width: 100%; height: 50%; float: left; margin-top: -12px; margin-left: -10px;"><?= isset($_SESSION['type']) ? str_replace('_', ' ', $_SESSION['type']) : '' ?></label>
+                        <div class="user-info">
+                            <h4><?= Utilities::formatUsername($_SESSION['username'], $_SESSION['role'] ?? 'member', $_SESSION['is_small_group'] ?? false) ?></h4>
+                            <p><?= isset($_SESSION['type']) ? str_replace('_', ' ', $_SESSION['type']) : '' ?></p>
                         </div>
                     </div>
                 </li>
-                <li>
-                    <?php
-                    $menu = [];
-                    if (isset($_SESSION['type']) && $_SESSION['type'] === 'Dirigent') {
-                        $menu = [
-                            ['label' => 'Termine', 'href' => '/rehearsals', 'page' => 'rehearsals'],
-                            ['label' => 'Probenplan', 'href' => '/probenplan', 'page' => 'probenplan'],
-                            ['label' => 'Rückmeldungen', 'href' => '/promises/admin', 'page' => 'admin'],
-                            ['label' => 'Profil bearbeiten', 'href' => '/conductor/profile', 'page' => 'conductor_profile'],
-                            ['label' => 'Orchester bearbeiten', 'href' => '/orchestras/settings', 'page' => 'orchestra_settings'],
-                            ['label' => 'Logout', 'href' => '/logout', 'page' => null],
-                        ];
-                    } elseif (isset($_SESSION['role']) && $_SESSION['role'] === 'leader') {
-                        $menu = [
-                            ['label' => 'Meine Meldungen', 'href' => '/promises', 'page' => 'promises'],
-                            ['label' => 'Rückmeldungen', 'href' => '/promises/leader', 'page' => 'leader'],
-                            ['label' => 'Probenplan', 'href' => '/probenplan', 'page' => 'probenplan'],
-                            ['label' => 'Profil bearbeiten', 'href' => '/profile', 'page' => 'profile'],
-                            ['label' => 'Logout', 'href' => '/logout', 'page' => null],
-                        ];
-                    } else {
-                        $menu = [
-                            ['label' => 'Meine Meldungen', 'href' => '/promises', 'page' => 'promises'],
-                            ['label' => 'Probenplan', 'href' => '/probenplan', 'page' => 'probenplan'],
-                            ['label' => 'Profil bearbeiten', 'href' => '/profile', 'page' => 'profile'],
-                            ['label' => 'Logout', 'href' => '/logout', 'page' => null],
-                        ];
-                    }
-                    foreach ($menu as $item) {
-                        $active = isset($item['page']) && $currentPage === $item['page'] ? 'activeTab' : '';
-                        echo '<a class="' . $active . '" href="' . $item['href'] . '" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">' . $item['label'] . '</a>';
-                    }
-                    ?>
-                </li>
+                <?php
+                $menu = [];
+                if (isset($_SESSION['type']) && $_SESSION['type'] === 'Dirigent') {
+                    $menu = [
+                        ['label' => 'Termine', 'href' => '/rehearsals', 'page' => 'rehearsals'],
+                        ['label' => 'Probenplan', 'href' => '/probenplan', 'page' => 'probenplan'],
+                        ['label' => 'Rückmeldungen', 'href' => '/promises/admin', 'page' => 'admin'],
+                        ['label' => 'Profil bearbeiten', 'href' => '/conductor/profile', 'page' => 'conductor_profile'],
+                        ['label' => 'Orchester bearbeiten', 'href' => '/orchestras/settings', 'page' => 'orchestra_settings'],
+                        ['label' => 'Logout', 'href' => '/logout', 'page' => null],
+                    ];
+                } elseif (isset($_SESSION['role']) && $_SESSION['role'] === 'leader') {
+                    $menu = [
+                        ['label' => 'Meine Meldungen', 'href' => '/promises', 'page' => 'promises'],
+                        ['label' => 'Rückmeldungen', 'href' => '/promises/leader', 'page' => 'leader'],
+                        ['label' => 'Probenplan', 'href' => '/probenplan', 'page' => 'probenplan'],
+                        ['label' => 'Profil bearbeiten', 'href' => '/profile', 'page' => 'profile'],
+                        ['label' => 'Logout', 'href' => '/logout', 'page' => null],
+                    ];
+                } else {
+                    $menu = [
+                        ['label' => 'Meine Meldungen', 'href' => '/promises', 'page' => 'promises'],
+                        ['label' => 'Probenplan', 'href' => '/probenplan', 'page' => 'probenplan'],
+                        ['label' => 'Profil bearbeiten', 'href' => '/profile', 'page' => 'profile'],
+                        ['label' => 'Logout', 'href' => '/logout', 'page' => null],
+                    ];
+                }
+                foreach ($menu as $item) {
+                    $active = isset($item['page']) && $currentPage === $item['page'] ? 'activeTab' : '';
+                    echo '<li><a class="' . $active . '" href="' . $item['href'] . '">' . $item['label'] . '</a></li>';
+                }
+                ?>
             </ul>
         </div>
-        <div class="page-content-wrapper" style="width: 100%; background-color: #ffffff; padding-bottom: 0px;">
-            <!-- Navbar in exact original style -->
-            <div class="col topBar"><a class="btn btn-link float-left" role="button" id="menu-toggle" href="#menu-toggle" style="font-size: 37px;"><i class="fa fa-bars"></i></a>
-                <div class="float-none text-center">
-                    <div style="display: block;padding: 9.5px;margin: 0 0 10px;font-size: 13px; word-break: break-all;word-wrap: break-word;overflow: hidden;"> <a class="navbar-brand float-none" href="#" style="color: #478cf4 !important;
-    font-size: 31px !important;
-    padding-top: 0 !important;
-    font-weight: 1000 !important;
-    margin-top: 4px !important;
-    padding-bottom: 0px !important;
-    font-family: 'Fugaz One', cursive !important; margin-right: 50px;"><?= isset($_SESSION['orchestra_name']) ? $_SESSION['orchestra_name'] : APP_NAME ?></a>
-    <?php 
-    // Show buttons on relevant routes
-    $currentUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-    
-    // Show history button on promises routes and rehearsals routes
-    $showHistoryButton = (strpos($currentUri, '/promises') === 0) || (strpos($currentUri, '/rehearsals') === 0);
-    
-    // Show help button on all main feature pages
-    $showHelpButton = in_array($currentUri, ['/promises', '/promises/leader', '/promises/admin', 
-                                            '/rehearsals', '/probenplan', '/profile', '/conductor/profile']) 
-                     || (strpos($currentUri, '/promises/') === 0)
-                     || (strpos($currentUri, '/rehearsals/') === 0);
-    ?>
-    
-    <?php if ($showHistoryButton): ?>
-    <i onclick="openOld();" class="fas fa-history" style="transform: scale(1.5); transform-origin: 0; position: fixed; top: 23px; right: 65px; cursor: pointer;"></i>
-    <?php endif; ?>
-    
-    <?php if ($showHelpButton): ?>
-    <i onclick="showHelp();" class="fas fa-question-circle help-link" style="transform: scale(1.5); transform-origin: 0; position: fixed; top: 23px; right: 25px; cursor: pointer;"></i>
-    <?php endif; ?>
-    </div>
-                </div>
-            </div>
-            <div id="contentPage" class="col" style="padding: 0;">
-                <?php 
-                // Remove the floating filter checkbox widget since functionality is already in header
-                ?>
-                
+        <!-- Main Content -->
+        <div id="page-content-wrapper">
+            <div id="contentPage">
                 <?= $content ?? '' ?>
             </div>
         </div>
@@ -141,45 +491,40 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
 ?>
 
 <?php if (!$hideNavbar): ?>
-<!-- Navbar for non-logged in users - match original style -->
-<div class="page-content-wrapper" style="width: 100%; background-color: #ffffff; padding-bottom: 0px;">
-    <div class="col topBar">
-        <div class="float-none text-center">
-            <div style="display: block;padding: 9.5px;margin: 0 0 10px;font-size: 13px;line-height: 1.42857143;word-break: break-all;word-wrap: break-word;overflow: hidden;"> <a class="navbar-brand float-none" href="#" style="color: #478cf4 !important;
-    font-size: 31px !important;
-    padding-top: 0 !important;
-    font-weight: 1000 !important;
-    margin-top: 4px !important;
-    padding-bottom: 0px !important;
-    font-family: 'Fugaz One', cursive !important; margin-right: 50px;"><?= isset($_SESSION['orchestra_name']) ? $_SESSION['orchestra_name'] : APP_NAME ?></a>
-    <?php 
-    // Show buttons on relevant routes
-    $currentUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-    
-    // Show history button on promises routes and rehearsals routes
-    $showHistoryButton = (strpos($currentUri, '/promises') === 0) || (strpos($currentUri, '/rehearsals') === 0);
-    
-    // Show help button on all main feature pages
-    $showHelpButton = in_array($currentUri, ['/promises', '/promises/leader', '/promises/admin', 
-                                            '/rehearsals', '/probenplan', '/profile', '/conductor/profile']) 
-                     || (strpos($currentUri, '/promises/') === 0)
-                     || (strpos($currentUri, '/rehearsals/') === 0);
-    ?>
-    
-    <?php if ($showHistoryButton): ?>
-    <i onclick="openOld();" class="fas fa-history" style="transform: scale(1.5); transform-origin: 0; position: fixed; top: 26px; right: 50px; cursor: pointer;"></i>
-    <?php endif; ?>
-    
-    <?php if ($showHelpButton): ?>
-    <i onclick="showHelp();" class="fas fa-question-circle help-link" style="transform: scale(1.5); transform-origin: 0; position: fixed; top: 26px; right: 20px; cursor: pointer;"></i>
-    <?php endif; ?>
+<!-- Top Navigation for non-logged in users -->
+<nav class="top-nav">
+    <div class="nav-left">
+        <a href="/" class="brand-title">
+            <?= isset($_SESSION['orchestra_name']) ? $_SESSION['orchestra_name'] : APP_NAME ?>
+        </a>
     </div>
-        </div>
+    <div class="nav-actions">
+        <?php 
+        // Show buttons on relevant routes
+        $currentUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        
+        // Show history button on promises routes and rehearsals routes
+        $showHistoryButton = (strpos($currentUri, '/promises') === 0) || (strpos($currentUri, '/rehearsals') === 0);
+        
+        // Show help button on all main feature pages
+        $showHelpButton = in_array($currentUri, ['/promises', '/promises/leader', '/promises/admin', 
+                                                '/rehearsals', '/probenplan', '/profile', '/conductor/profile']) 
+                         || (strpos($currentUri, '/promises/') === 0)
+                         || (strpos($currentUri, '/rehearsals/') === 0);
+        ?>
+        
+        <?php if ($showHistoryButton): ?>
+        <i onclick="openOld();" class="fas fa-history nav-icon"></i>
+        <?php endif; ?>
+        
+        <?php if ($showHelpButton): ?>
+        <i onclick="showHelp();" class="fas fa-question-circle nav-icon"></i>
+        <?php endif; ?>
     </div>
-</div>
+</nav>
 <?php endif; ?>
 
-<div class="container mt-4">
+<div class="main-content">
     <?= $content ?? '' ?>
 </div>
 <?php endif; ?>
@@ -187,9 +532,9 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
 <!-- Add scripts at the end of the body -->
 <script src="/assets/js/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="/assets/bootstrap/js/bootstrap.min.js"></script>
 <script src="/assets/js/script.min.js"></script>
 <script src="/assets/js/tree-view-clickable.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // Show help function with content from old site
     function showHelp() {
@@ -385,7 +730,68 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
 <?php endif; ?>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', function() {
+     // Robust sidebar toggle setup
+     const wrapper = document.getElementById('wrapper');
+     const sidebar = document.getElementById('sidebar-wrapper');
+     const menuToggle = document.getElementById('menu-toggle');
+     
+     // Primary toggle function
+     function toggleSidebar() {
+         if (wrapper) {
+             wrapper.classList.toggle('toggled');
+         }
+     }
+     
+     // Setup menu toggle with multiple handlers for reliability
+     if (menuToggle && wrapper) {
+         // Modern event listener
+         menuToggle.addEventListener('click', function(e) {
+             e.preventDefault();
+             e.stopPropagation();
+             toggleSidebar();
+         });
+         
+         // Backup onclick property
+         menuToggle.onclick = function(e) {
+             e.preventDefault();
+             toggleSidebar();
+             return false;
+         };
+     }
+     
+     // Outside click and escape key handling
+     if (wrapper && sidebar && menuToggle) {
+         document.addEventListener('click', function(e) {
+             if (wrapper.classList.contains('toggled') && 
+                 !sidebar.contains(e.target) && 
+                 !menuToggle.contains(e.target)) {
+                 wrapper.classList.remove('toggled');
+             }
+         });
+         
+         sidebar.addEventListener('click', function(e) {
+             e.stopPropagation();
+         });
+         
+         document.addEventListener('keydown', function(e) {
+             if (e.key === 'Escape' && wrapper.classList.contains('toggled')) {
+                 wrapper.classList.remove('toggled');
+             }
+         });
+     }
+     
+     // Global function for inline onclick as backup
+     window.toggleSidebarMenu = toggleSidebar;
+    
+     // Handle window resize
+     window.addEventListener('resize', function() {
+         const w = document.getElementById('wrapper');
+         if (window.innerWidth >= 768 && w) {
+             w.classList.remove('toggled');
+         }
+     });
+    
     // Update UI visibility based on current route
     updateUIForCurrentRoute();
     

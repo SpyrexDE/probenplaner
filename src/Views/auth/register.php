@@ -1,5 +1,7 @@
 <?php $this->layout('layouts/default', ['title' => 'Registrierung', 'currentPage' => $currentPage]) ?>
 
+
+
 <style>
     .login-clean {
         width: 100%;
@@ -7,13 +9,23 @@
         padding-top: 5vh;
         height: 100%;
         min-height: 440px;
+        background: #f1f7fc;
     }
-    .fas, .far {
-        font-size: 21px;
+    .login-clean form {
+        max-width: 320px;
+        width: 90%;
+        margin: 0 auto;
+        background-color: #fff;
+        padding: 40px;
+        border-radius: 4px;
+        color: #505e6c;
+        box-shadow: 1px 1px 5px rgba(0,0,0,.1);
     }
     .illustration {
         text-align: center;
-        margin-bottom: 20px;
+        padding: 0 0 20px;
+        font-size: 100px;
+        color: #f4476b;
     }
     .illustration img {
         max-width: 200px;
@@ -22,13 +34,54 @@
         max-height: 120px;
         object-fit: contain;
     }
+    .login-clean form .form-control {
+        background: #f7f9fc;
+        border: none;
+        border-bottom: 1px solid #dfe7f1;
+        border-radius: 0;
+        box-shadow: none;
+        outline: 0;
+        color: inherit;
+        text-indent: 8px;
+        height: 42px;
+    }
+    .login-clean form .btn-primary {
+        background: #f4476b;
+        border: none;
+        border-radius: 4px;
+        padding: 11px;
+        box-shadow: none;
+        margin-top: 26px;
+        text-shadow: none;
+        outline: 0!important;
+    }
+    .login-clean form .btn-primary:active,
+    .login-clean form .btn-primary:hover {
+        background: #eb3b60;
+    }
+    .login-clean form .btn-primary:active {
+        transform: translateY(1px);
+    }
+    .login-clean form .forgot {
+        display: block;
+        text-align: center;
+        font-size: 12px;
+        color: #6f7a85;
+        opacity: .9;
+        text-decoration: none;
+        margin-top: 10px;
+    }
+    .login-clean form .forgot:active,
+    .login-clean form .forgot:hover {
+        opacity: 1;
+        text-decoration: none;
+    }
     /* Ensure mobile responsiveness */
     @media (max-width: 767px) {
         .login-clean form {
             width: 90%;
             margin: 0 auto;
         }
-        /* Avoid form being cut off on smaller screens */
         .login-clean {
             padding-bottom: 10vh;
         }
@@ -75,10 +128,10 @@
         <div class="form-group">
             <button class="btn btn-primary btn-block" type="submit" style="background-color: rgb(71,140,244); font-family: Roboto, sans-serif;">Registrieren</button>
         </div>
-        <a href="/login" style="display: block; text-align: center; font-size: 12px; color: gray;">
+        <a href="/login" class="forgot">
             Bereits registriert? Hier <font color="#5772b4">einloggen</font>!
         </a>
-        <a href="/orchestras/create" style="display: block; text-align: center; font-size: 12px; color: gray; margin-top: 10px;">
+        <a href="/orchestras/create" class="forgot">
             Neues Orchester erstellen
         </a>
     </form>
