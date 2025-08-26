@@ -45,7 +45,7 @@ services:
       - app_net
 
   phpmyadmin:
-    image: phpmyadmin/phpmyadmin
+    image: lscr.io/linuxserver/phpmyadmin:latest # multi arch support
     ports:
       - "8081:80"
     environment:
