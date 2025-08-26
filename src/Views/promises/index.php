@@ -503,6 +503,14 @@ $(document).ready(function() {
         
         // Add to queue
         queueUpdate("promise", id, true, '');
+        
+        // Update sidebar stats immediately for better UX
+        if (typeof window.loadUserStats === 'function') {
+            console.log('Updating sidebar stats after attending change...');
+            setTimeout(function() {
+                window.loadUserStats();
+            }, 100);
+        }
     });
     
     $('.crossBtn').click(function() {
@@ -533,6 +541,14 @@ $(document).ready(function() {
             // Show existing note dot
             container.find('.note-dot').addClass('visible');
             queueUpdate("promise", id, false, existingNote);
+            
+            // Update sidebar stats immediately for better UX
+            if (typeof window.loadUserStats === 'function') {
+                console.log('Updating sidebar stats after direct decline...');
+                setTimeout(function() {
+                    window.loadUserStats();
+                }, 100);
+            }
         }
     });
     
@@ -566,6 +582,14 @@ $(document).ready(function() {
             
             // Queue the update
             queueUpdate("promise", id, false, note);
+            
+            // Update sidebar stats after note change
+            if (typeof window.loadUserStats === 'function') {
+                console.log('Updating sidebar stats after note change...');
+                setTimeout(function() {
+                    window.loadUserStats();
+                }, 100);
+            }
         });
     }
     
@@ -615,14 +639,22 @@ $(document).ready(function() {
             url: '/promises/update',
             type: 'POST',
             data: {
-                rehearsal_id: id,
-                attending: attending ? 1 : 0,
+                id: id,
+                status: attending ? 1 : 0,
                 note: note,
                 csrf_token: $('meta[name="csrf-token"]').attr('content')
             },
             success: function(response) {
-                if (response.status === 'success') {
+                if (response.success) {
                     // Success handled in UI already
+                    
+                    // Update sidebar stats after successful promise update
+                    if (typeof window.loadUserStats === 'function') {
+                        console.log('Updating sidebar stats after promise change...');
+                        setTimeout(function() {
+                            window.loadUserStats();
+                        }, 100); // Small delay to ensure UI is updated
+                    }
                 } else {
                     console.error('Server returned error:', response.message);
                     notifyError('Fehler beim Speichern: ' + (response.message || 'Unbekannter Fehler'));

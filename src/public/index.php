@@ -86,6 +86,9 @@ $router->addRoute('/orchestras/update', 'OrchestraController', 'update');
 $router->addRoute('/orchestras/delete-confirm', 'OrchestraController', 'confirmDelete');
 $router->addRoute('/orchestras/delete', 'OrchestraController', 'delete');
 
+// API routes
+$router->addRoute('/api/user-stats', 'ApiController', 'getUserStats');
+
 // Process the request
 try {
     $router->dispatch($uri);

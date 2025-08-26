@@ -1,0 +1,87 @@
+<?php
+
+namespace App\Controllers;
+
+use App\Core\Controller;
+use App\Models\UserPromise;
+use App\Models\Rehearsal;
+use App\Core\Utilities;
+
+class ApiController extends Controller
+{
+    private $userPromiseModel;
+    private $rehearsalModel;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->userPromiseModel = new UserPromise();
+        $this->rehearsalModel = new Rehearsal();
+    }
+
+    /**
+     * Get user promise statistics for sidebar display
+     */
+    public function getUserStats()
+    {
+        // Ensure user is logged in
+        if (!isset($_SESSION['user_id'])) {
+            $this->jsonResponse(['success' => false, 'error' => 'Not authenticated'], 401);
+            return;
+        }
+
+        $userId = $_SESSION['user_id'];
+        $orchestraId = $_SESSION['orchestra_id'] ?? 1;
+
+        try {
+            // Get all future rehearsals for this orchestra
+            $rehearsals = $this->rehearsalModel->getUpcoming($orchestraId, false);
+            
+            $stats = [
+                'attending' => 0,
+                'not_attending' => 0,
+                'no_response' => 0,
+                'total' => 0
+            ];
+
+            foreach ($rehearsals as $rehearsal) {
+                // Check if user is relevant for this rehearsal
+                $groups = $this->rehearsalModel->getGroupsAsAssoc($rehearsal['id']);
+                $isSmallGroup = isset($_SESSION['is_small_group']) && $_SESSION['is_small_group'];
+                $rehearsalIsSmallGroup = isset($rehearsal['is_small_group']) && $rehearsal['is_small_group'] == 1;
+                
+                if ($this->rehearsalModel->isUserInRehearsalGroup($_SESSION['type'], $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
+                    $stats['total']++;
+                    
+                    // Check user's promise for this rehearsal
+                    $promise = $this->userPromiseModel->findByUserAndRehearsal($userId, $rehearsal['id']);
+                    
+                    if ($promise) {
+                        if ($promise['attending']) {
+                            $stats['attending']++;
+                        } else {
+                            $stats['not_attending']++;
+                        }
+                    } else {
+                        $stats['no_response']++;
+                    }
+                }
+            }
+
+            $this->jsonResponse(['success' => true, 'stats' => $stats]);
+        } catch (\Exception $e) {
+            $this->jsonResponse(['success' => false, 'error' => 'Failed to load stats'], 500);
+        }
+    }
+
+    /**
+     * Helper method to send JSON response
+     */
+    private function jsonResponse($data, $statusCode = 200)
+    {
+        http_response_code($statusCode);
+        header('Content-Type: application/json');
+        echo json_encode($data);
+        exit;
+    }
+}
