@@ -33,7 +33,6 @@
     <link rel="stylesheet" href="/assets/css/theme.css">
     <link rel="stylesheet" href="/assets/css/components.css">
     <link rel="stylesheet" href="/assets/css/focus-removal.css">
-    <link rel="stylesheet" href="/assets/css/promise-fixes.css?v=<?= time() ?>">
 </head>
 <body class="w-full h-full">
 <?php if (isset($_SESSION['username'])): ?>

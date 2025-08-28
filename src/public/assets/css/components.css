@@ -970,17 +970,105 @@
   color: var(--color-primary);
 }
 
-/* === SPECIFIC PROMISE BUTTON STYLING === */
-/* Ensure checkBtn shows green when selected */
-.checkBtn.selected {
-  border-color: var(--color-success) !important;
-  background-color: var(--color-success-50) !important;
-  box-shadow: 0 2px 8px var(--color-success-200) !important;
+/* === PROMISE BUTTON COMPONENT === */
+/* Promise buttons for rehearsal attendance */
+.promise-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 44px;
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
 }
 
-/* Ensure crossBtn shows red when selected */
+.promise-btn:hover:not(.deselected) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.promise-btn:active:not(.deselected) {
+  transform: translateY(0);
+}
+
+/* Check button (attending) */
+.checkBtn {
+  color: var(--color-success);
+  background-color: var(--color-bg-primary);
+}
+
+.checkBtn:not(.deselected) {
+  border-color: var(--color-success);
+  background-color: var(--color-success-50);
+  box-shadow: 0 2px 8px var(--color-success-200);
+  opacity: 1;
+}
+
+.checkBtn.deselected {
+  border-color: var(--color-border);
+  background-color: var(--color-bg-tertiary);
+  box-shadow: none;
+  opacity: 0.4;
+  color: var(--color-text-muted);
+}
+
+/* Cross button (not attending) */
+.crossBtn {
+  color: var(--color-error);
+  background-color: var(--color-bg-primary);
+}
+
+.crossBtn:not(.deselected) {
+  border-color: var(--color-error);
+  background-color: var(--color-error-50);
+  box-shadow: 0 2px 8px var(--color-error-200);
+  opacity: 1;
+}
+
+.crossBtn.deselected {
+  border-color: var(--color-border);
+  background-color: var(--color-bg-tertiary);
+  box-shadow: none;
+  opacity: 0.4;
+  color: var(--color-text-muted);
+}
+
+/* Legacy class support (to be removed in future) */
+.checkBtn.selected,
 .crossBtn.selected {
-  border-color: var(--color-error) !important;
-  background-color: var(--color-error-50) !important;
-  box-shadow: 0 2px 8px var(--color-error-200) !important;
+  opacity: 1;
+}
+
+/* === REHEARSAL CARD STATUS INDICATORS === */
+/* Status-based left border colors */
+.rehearsal-card.status-attending {
+  border-left-color: var(--color-success);
+}
+
+.rehearsal-card.status-not_attending {
+  border-left-color: var(--color-error);
+}
+
+.rehearsal-card.status-pending {
+  border-left-color: var(--color-gray-400);
+}
+
+/* Legacy status classes (to be removed in future) */
+.rehearsal-card.redOut {
+  border-left-color: var(--color-error);
+}
+
+.rehearsal-card.greenOut {
+  border-left-color: var(--color-success);
+}
+
+.rehearsal-card.grayOut {
+  border-left-color: var(--color-gray-400);
 }

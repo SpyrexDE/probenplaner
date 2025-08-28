@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="/assets/css/theme.css">
     <link rel="stylesheet" href="/assets/css/components.css">
     <link rel="stylesheet" href="/assets/css/focus-removal.css">
-    <link rel="stylesheet" href="/assets/css/promise-fixes.css?v=<?= time() ?>">
     
     <!-- Bootstrap CSS for component functionality -->
     <link rel="stylesheet" href="/assets/bootstrap/css/bootstrap.min.css">
