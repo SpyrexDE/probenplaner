@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
     <title>404 - Seite nicht gefunden | <?= APP_NAME ?></title>
-    <link rel="stylesheet" href="/assets/bootstrap/css/bootstrap.min.css">
+    <!-- Bootstrap CSS removed - using custom components instead -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fugaz+One">
     <link rel="stylesheet" href="/assets/css/styles.css">
@@ -17,7 +17,7 @@
                 <h1 class="display-1 text-primary mb-4">404</h1>
                 <h2 class="mb-4">Seite nicht gefunden</h2>
                 <p class="lead mb-5">Die angeforderte Seite existiert nicht oder wurde verschoben.</p>
-                <a href="/" class="btn btn-primary btn-lg">Zurück zur Startseite</a>
+                <a href="/" class="btn-base btn-primary btn-lg">Zurück zur Startseite</a>
             </div>
         </div>
     </div>

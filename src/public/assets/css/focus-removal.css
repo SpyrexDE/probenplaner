@@ -27,7 +27,7 @@ a:focus,
   box-shadow: none !important;
 }
 
-/* Remove Bootstrap focus styles */
+/* Remove focus styles */
 .btn:focus,
 .btn.focus,
 .form-control:focus,

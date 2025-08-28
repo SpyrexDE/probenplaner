@@ -31,7 +31,7 @@
                 <input  type="text" id="location" name="location" value="<?= htmlspecialchars($formData['location'] ?? '') ?>" placeholder="Ort" class="form-input mb-5" required minlength="3" maxlength="50">
                 
                 <div class="dropdown" class="mb-10 text-left">
-                    <button id="dropD" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-expanded="false" type="button" class="w-full btn btn-outline text-black" style="background-color: <?= htmlspecialchars($formData['color'] ?? 'white') ?>;">Farbenauswahl</button>
+                    <button id="dropD" class="btn-base btn-outline dropdown-toggle" data-toggle="dropdown" aria-expanded="false" type="button" style="background-color: <?= htmlspecialchars($formData['color'] ?? 'white') ?>;">Farbenauswahl</button>
                     <div role="menu" class="dropdown-menu pre-scrollable">
                         <a role="presentation" class="dropdown-item" href="#" id="white" style="background-color: white;"></a>
                         <a role="presentation" class="dropdown-item" href="#" id="red" style="background-color: #ffcccc;"></a>
@@ -210,7 +210,7 @@
                 </div>
                 
                 <div class="form-group">
-                    <button class="btn btn-primary w-full" type="submit">Speichern</button>
+                    <button class="btn-base btn-primary w-full" type="submit">Speichern</button>
                 </div>
             </form>
     </div>

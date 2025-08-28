@@ -36,7 +36,7 @@
                     </div>
 
                     <div class="form-group mt-4">
-                        <button type="submit" class="btn btn-primary w-full">
+                        <button type="submit" class="btn-base btn-primary w-full">
                             <i class="fas fa-save mr-2"></i>Speichern
                         </button>
                     </div>
@@ -51,7 +51,7 @@
                     </div>
                     
                     <div class="mt-6">
-                        <a href="#" onclick="confirmDelete(event)" class="btn btn-danger w-full text-center block">
+                        <a href="#" onclick="confirmDelete(event)" class="btn-base btn-danger w-full text-center block">
                             <i class="fas fa-trash-alt mr-2"></i>Orchester löschen
                         </a>
                     </div>

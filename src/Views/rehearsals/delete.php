@@ -28,10 +28,10 @@
                     <form action="/rehearsals/delete" method="post">
                         <input type="hidden" name="id" value="<?= htmlspecialchars($rehearsal['id']) ?>">
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-danger" onclick="return confirmDelete(event)">
+                            <button type="submit" class="btn-base btn-danger" onclick="return confirmDelete(event)">
                                 <i class="fas fa-trash-alt me-2"></i>Delete Rehearsal
                             </button>
-                            <a href="/rehearsals" class="btn btn-secondary">Cancel</a>
+                            <a href="/rehearsals" class="btn-base btn-secondary">Cancel</a>
                         </div>
                     </form>
                 </div>

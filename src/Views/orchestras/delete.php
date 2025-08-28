@@ -11,10 +11,10 @@
                         <input type="hidden" name="confirm_delete" value="yes">
                         
                         <div class="space-y-3">
-                            <button type="submit" class="btn btn-danger w-full" onclick="return confirmDelete(event)">
+                            <button type="submit" class="btn-base btn-danger w-full" onclick="return confirmDelete(event)">
                                 <i class="fas fa-trash-alt mr-2"></i>Ja, Orchester unwiderruflich löschen
                             </button>
-                            <a href="/orchestras/settings" class="btn btn-outline w-full text-center block">Abbrechen</a>
+                            <a href="/orchestras/settings" class="btn-base btn-outline w-full text-center block">Abbrechen</a>
                         </div>
                     </form>
                 </div>

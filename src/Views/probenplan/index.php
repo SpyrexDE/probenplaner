@@ -5,10 +5,10 @@
             <h5>Stand: <?= date("d.m.Y") ?></h5>
             
             <div class="flex flex-wrap gap-2 mb-6 justify-center">
-                <button id="filterToggle" class="btn btn-outline btn-sm" onclick="togglePersonalizedView()">
+                <button id="filterToggle" class="btn-base btn-outline btn-sm" onclick="togglePersonalizedView()">
                     <i class="fas fa-filter mr-2"></i><?= $personalized ? 'Personalisierte Ansicht' : 'Alle Proben' ?>
                 </button>
-                <a href="<?= $showOld ? '/probenplan' . ($personalized ? '?personalized=1' : '') : '/probenplan' . ($personalized ? '?personalized=1&showOld=1' : '?showOld=1') ?>" class="btn btn-ghost btn-sm">
+                <a href="<?= $showOld ? '/probenplan' . ($personalized ? '?personalized=1' : '') : '/probenplan' . ($personalized ? '?personalized=1&showOld=1' : '?showOld=1') ?>" class="btn-base btn-ghost btn-sm">
                     <i class="fas fa-history mr-2"></i><?= $showOld ? 'Nur aktuelle Proben' : 'Alle Proben (inkl. vergangene)' ?>
                 </a>
             </div>

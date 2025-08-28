@@ -33,7 +33,7 @@
                     </div>
                     
                     <div class="form-group mt-4">
-                        <button type="submit" class="btn btn-primary w-full">
+                        <button type="submit" class="btn-base btn-primary w-full">
                             <i class="fas fa-save mr-2"></i>Speichern
                         </button>
                     </div>
@@ -48,7 +48,7 @@
                     </div>
                     
                     <div class="mt-6">
-                        <button type="button" id="deleteAccount" class="btn btn-danger w-full">
+                        <button type="button" id="deleteAccount" class="btn-base btn-danger w-full">
                             <i class="fas fa-trash mr-2"></i>Account löschen
                         </button>
                     </div>

@@ -6,7 +6,7 @@
 <?php endif; ?>
 
     <!-- Load JavaScript libraries -->
-    <script src="/assets/bootstrap/js/bootstrap.min.js"></script>
+    <!-- Bootstrap JS removed - using custom components instead -->
     <script src="/assets/js/script.min.js"></script>
     
     <script>

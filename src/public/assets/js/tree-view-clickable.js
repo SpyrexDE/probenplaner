@@ -9,11 +9,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // If the click wasn't directly on the link, trigger the link
             if (collapseLink && e.target !== collapseLink && !e.target.closest('.rightfloatet') && !e.target.closest('.treeIcon')) {
-                // Find the collapse target
+                                // Find the collapse target
                 const target = document.querySelector(collapseLink.getAttribute('href'));
-                if (target) {
-                    // Toggle the collapse state using Bootstrap's API
-                    $(collapseLink.getAttribute('href')).collapse('toggle');
+                if (target && target.collapseInstance) {
+                    // Toggle the collapse state using our vanilla collapse component
+                    target.collapseInstance.toggle();
                     
                     // Update the aria-expanded attribute
                     const expanded = collapseLink.getAttribute('aria-expanded') === 'true';

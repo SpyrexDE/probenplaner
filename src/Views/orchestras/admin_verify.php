@@ -16,11 +16,11 @@
                         <?php endif; ?>
                         <div class="mb-3">
                             <label for="admin_password" class="form-label">Admin-Passwort</label>
-                            <input type="password" class="form-control" id="admin_password" name="admin_password" required>
+                            <input type="password" class="form-input" id="admin_password" name="admin_password" required>
                         </div>
                         
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Verifizieren</button>
+                            <button type="submit" class="btn-base btn-primary">Verifizieren</button>
                         </div>
                     </form>
                 </div>

@@ -10,8 +10,8 @@
     <link rel="stylesheet" href="/assets/css/components.css">
     <link rel="stylesheet" href="/assets/css/focus-removal.css">
     
-    <!-- Bootstrap CSS for component functionality -->
-    <link rel="stylesheet" href="/assets/bootstrap/css/bootstrap.min.css">
+    <!-- Vanilla CSS Components -->
+    <!-- Bootstrap CSS removed - using custom components instead -->
     
     <!-- Tailwind CSS for utility classes -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -294,7 +294,10 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
 <!-- Add scripts at the end of the body -->
 <script src="/assets/js/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="/assets/bootstrap/js/bootstrap.min.js"></script>
+<!-- Bootstrap JS removed - using custom components instead -->
+<script src="/assets/js/collapse.js"></script>
+<script src="/assets/js/dropdown.js"></script>
+<script src="/assets/js/tooltip.js"></script>
 <script src="/assets/js/script.min.js"></script>
 <script src="/assets/js/tree-view-clickable.js"></script>
 <script>

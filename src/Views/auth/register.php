@@ -14,20 +14,20 @@
             <img src="/assets/img/Logo.png" alt="Logo"/>
         </div>
         <div class="form-group">
-            <input class="form-control login-input" type="text" id="username" name="username" placeholder="Nutzername" required minlength="2" maxlength="20">
+            <input class="form-input login-input" type="text" id="username" name="username" placeholder="Nutzername" required minlength="2" maxlength="20">
         </div>
         <div class="form-group">
-            <input class="form-control login-input" type="password" id="password" name="password" placeholder="Passwort" required minlength="4" maxlength="20">
+            <input class="form-input login-input" type="password" id="password" name="password" placeholder="Passwort" required minlength="4" maxlength="20">
         </div>
         <div class="form-group">
-            <input class="form-control login-input" type="password" id="password_confirm" name="password_confirm" placeholder="Passwort bestätigen" required minlength="4" maxlength="20">
+            <input class="form-input login-input" type="password" id="password_confirm" name="password_confirm" placeholder="Passwort bestätigen" required minlength="4" maxlength="20">
         </div>
         <div class="form-group">
-            <input class="form-control login-input" type="text" id="token" name="token" placeholder="Orchester-Token" required>
+            <input class="form-input login-input" type="text" id="token" name="token" placeholder="Orchester-Token" required>
             <small class="form-text text-muted">Der Token identifiziert dein Orchester</small>
         </div>
         <div class="form-group">
-            <select class="form-control login-input" id="type" name="type" required>
+            <select class="form-input login-input" id="type" name="type" required>
                 <option value="" disabled selected>Instrument / Stimmgruppe</option>
                 <?php foreach ($typeStructure as $group => $instruments): ?>
                     <option value="" disabled class="font-bold text-gray-600"><?= $group ?></option>
@@ -38,7 +38,7 @@
             </select>
         </div>
         <div class="form-group">
-            <button class="btn btn-primary btn-block login-button" type="submit">Registrieren</button>
+            <button class="btn-base btn-primary login-button" type="submit">Registrieren</button>
         </div>
         <a href="/login" class="login-link">
             Bereits registriert? Hier <span class="text-primary">einloggen</span>!

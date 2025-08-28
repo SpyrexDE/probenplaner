@@ -64,7 +64,7 @@ $userTypes = [
         <form method="post" action="?module=test_users">
             <div class="form-group">
                 <label for="orchestra_id">Select Orchestra:</label>
-                <select name="orchestra_id" id="orchestra_id" class="form-control" required>
+                <select name="orchestra_id" id="orchestra_id" class="form-input" required>
                     <option value="">-- Select Orchestra --</option>
                     <?php foreach ($orchestras as $id => $name): ?>
                     <option value="<?= $id ?>"><?= htmlspecialchars($name) ?></option>
@@ -74,16 +74,16 @@ $userTypes = [
             
             <div class="form-group">
                 <label>Username Prefix (will be appended with number):</label>
-                <input type="text" name="username_prefix" class="form-control" value="tester" required>
+                <input type="text" name="username_prefix" class="form-input" value="tester" required>
                 <small class="form-text text-muted">Both username and password will be set to the same value.</small>
             </div>
             
             <div class="form-group">
                 <label>Max Users Per Section (random 0-10):</label>
-                <input type="number" name="max_users" class="form-control" value="10" min="1" max="20" required>
+                <input type="number" name="max_users" class="form-input" value="10" min="1" max="20" required>
             </div>
             
-            <button type="submit" name="action" value="generate_users" class="btn btn-primary">Generate Test Users</button>
+            <button type="submit" name="action" value="generate_users" class="btn-base btn-primary">Generate Test Users</button>
         </form>
     </div>
 </div>

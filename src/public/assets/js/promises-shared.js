@@ -14,6 +14,15 @@ function initializeCollapseControls() {
         icon.addEventListener('click', function() {
             const expanded = this.getAttribute('aria-expanded') === 'true';
             this.setAttribute('aria-expanded', !expanded);
+            
+            // Trigger our vanilla collapse component
+            const targetId = this.getAttribute('href');
+            if (targetId) {
+                const target = document.querySelector(targetId);
+                if (target && target.collapseInstance) {
+                    target.collapseInstance.toggle();
+                }
+            }
         });
     });
 }

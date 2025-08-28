@@ -14,13 +14,13 @@
             <img src="/assets/img/Logo.png" alt="Logo"/>
         </div>
         <div class="form-group">
-            <input class="form-control login-input" type="text" id="username" name="username" placeholder="Nutzername" required minlength="2" maxlength="20">
+            <input class="form-input login-input" type="text" id="username" name="username" placeholder="Nutzername" required minlength="2" maxlength="20">
         </div>
         <div class="form-group">
-            <input class="form-control login-input" type="password" id="password" name="password" placeholder="Passwort" required minlength="4" maxlength="20">
+            <input class="form-input login-input" type="password" id="password" name="password" placeholder="Passwort" required minlength="4" maxlength="20">
         </div>
         <div class="form-group">
-            <button class="btn btn-primary btn-block login-button" type="submit">Einloggen</button>
+            <button class="btn-base btn-primary login-button" type="submit">Einloggen</button>
         </div>
         <a href="/register" class="login-link">
             Noch keinen Account? Hier <span class="text-primary">registrieren</span>!
