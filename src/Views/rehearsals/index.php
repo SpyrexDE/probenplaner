@@ -1,7 +1,10 @@
 <?php $this->layout('layouts/default', ['title' => 'Termine', 'currentPage' => $currentPage ?? 'rehearsals']) ?>
 
-<div class="container-app mt-4">
-    
+<div class="container-app">
+    <div class="page-header">
+        <h1 class="page-title">Termine</h1>
+        <p class="page-subtitle">Verwalte alle Proben und Konzerte</p>
+    </div>
 
     <?php if (empty($rehearsals)): ?>
         <?php 
@@ -12,67 +15,69 @@
             include __DIR__ . '/../components/empty-state.php';
         ?>
     <?php else: ?>
-        <?php foreach ($rehearsals as $rehearsal): ?>
-            <?php 
-                $rehearsalId = $rehearsal['id'];
-                $date = $rehearsal['date_formatted'] ?? $rehearsal['date'];
-                $start_time = isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, 5) : '??:??';
-                $end_time = isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, 5) : '??:??';
-                $time_display = $start_time . ' - ' . $end_time;
-                $location = $rehearsal['location'] ?? 'TBA';
-                
-                // Determine rehearsal groups
-                $groupKeys = $rehearsal['groups'] ?? [];
-                
-                // Check if it's a small group
-                $isSmallGroup = isset($rehearsal['is_small_group']) && $rehearsal['is_small_group'] == 1;
-                
-                // Add * suffix to group names if it's a small group
-                if ($isSmallGroup) {
-                    foreach ($groupKeys as &$group) {
-                        $group .= '*';
+        <div class="rehearsal-grid">
+            <?php foreach ($rehearsals as $rehearsal): ?>
+                <?php 
+                    $rehearsalId = $rehearsal['id'];
+                    $date = $rehearsal['date_formatted'] ?? $rehearsal['date'];
+                    $start_time = isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, 5) : '??:??';
+                    $end_time = isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, 5) : '??:??';
+                    $time_display = $start_time . ' - ' . $end_time;
+                    $location = $rehearsal['location'] ?? 'TBA';
+                    
+                    // Determine rehearsal groups
+                    $groupKeys = $rehearsal['groups'] ?? [];
+                    
+                    // Check if it's a small group
+                    $isSmallGroup = isset($rehearsal['is_small_group']) && $rehearsal['is_small_group'] == 1;
+                    
+                    // Add * suffix to group names if it's a small group
+                    if ($isSmallGroup) {
+                        foreach ($groupKeys as &$group) {
+                            $group .= '*';
+                        }
                     }
-                }
+                    
+                    // Convert group keys to formatted display
+                    $groupsDisplay = str_replace("_", " ", implode("<br>", $groupKeys));
+                ?>
                 
-                // Convert group keys to formatted display
-                $groupsDisplay = str_replace("_", " ", implode("<br>", $groupKeys));
-            ?>
-            
-            <div class="rehearsal-card card-hover" style="<?= !empty($rehearsal['color']) ? 'background-color: ' . $rehearsal['color'] . ';' : '' ?>">
-                <div class="rehearsal-card-content">
-                    <div class="rehearsal-card-info">
-                        <div class="rehearsal-card-primary">
-                            <span class="rehearsal-date-time"><?= htmlspecialchars($rehearsal['date_formatted'] ?? $date) ?></span>
-                            <span class="rehearsal-type"><?= $groupsDisplay ?></span>
+                <div class="rehearsal-card" style="<?= !empty($rehearsal['color']) ? 'background-color: ' . $rehearsal['color'] . ';' : '' ?>">
+                    <div class="rehearsal-card-content">
+                        <div class="rehearsal-card-info">
+                            <div class="rehearsal-card-primary">
+                                <span class="rehearsal-date-time"><?= htmlspecialchars($rehearsal['date_formatted'] ?? $date) ?></span>
+                                <span class="rehearsal-type"><?= $groupsDisplay ?></span>
+                            </div>
+                            <div class="rehearsal-card-secondary">
+                                <span class="rehearsal-time"><?= htmlspecialchars($time_display) ?></span>
+                                <span class="rehearsal-location"><?= htmlspecialchars($location) ?></span>
+                            </div>
                         </div>
-                        <div class="rehearsal-card-secondary">
-                            <span class="rehearsal-time"><?= htmlspecialchars($time_display) ?></span>
-                            <span class="rehearsal-location"><?= htmlspecialchars($location) ?></span>
+                        <div class="rehearsal-actions">
+                            <button type="button" id="<?= $rehearsalId ?>" class="btn-icon btn-outline edit-btn">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button type="button" id="<?= $rehearsalId ?>" class="btn-icon btn-danger delete-btn">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </div>
-                    </div>
-                    <div class="rehearsal-actions">
-                        <button type="button" id="<?= $rehearsalId ?>" class="edit btn-icon btn-outline">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button type="button" id="<?= $rehearsalId ?>" class="delete btn-icon btn-danger">
-                            <i class="fas fa-trash"></i>
-                        </button>
                     </div>
                 </div>
-            </div>
-        <?php endforeach; ?>
+            <?php endforeach; ?>
+        </div>
     <?php endif; ?>
     
     <a href="/rehearsals/create" class="fab">
-        <i class="fas fa-plus text-2xl"></i>
+        <i class="fas fa-plus"></i>
     </a>
 </div>
 
 <script>
 // Delete rehearsal with AJAX and Sweetalert2
-document.querySelectorAll('.delete').forEach(function(element) {
+document.querySelectorAll('.delete-btn').forEach(function(element) {
     element.addEventListener('click', function(event) {
-        const id = event.target.id;
+        const id = event.currentTarget.id;
         
         Swal.fire({
             title: 'Willst du diesen Termin wirklich löschen?',
@@ -123,9 +128,8 @@ document.querySelectorAll('.delete').forEach(function(element) {
 });
 
 // Edit rehearsal redirect
-document.querySelectorAll('.edit').forEach(function(element) {
+document.querySelectorAll('.edit-btn').forEach(function(element) {
     element.addEventListener('click', function(event) {
-        // Use the button element's ID, not the icon's ID
         const buttonId = event.currentTarget.id;
         window.location.href = '/rehearsals/edit/' + buttonId;
     });

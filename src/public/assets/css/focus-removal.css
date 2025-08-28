@@ -24,7 +24,7 @@ a:focus,
 [role="tab"]:focus,
 [role="menuitem"]:focus {
   outline: none !important;
-  box-shadow: none !important;
+  /* Keep our styled box-shadow for consistent form aesthetics */
 }
 
 /* Remove focus styles */
@@ -37,7 +37,7 @@ a:focus,
 .custom-checkbox input[type="checkbox"]:focus,
 .custom-radio input[type="radio"]:focus {
   outline: none !important;
-  box-shadow: none !important;
+  /* Keep our styled box-shadow and hover states for better UX */
 }
 
 /* Remove any remaining focus styles */

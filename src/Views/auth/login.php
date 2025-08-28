@@ -1,30 +1,42 @@
 <?php $this->layout('layouts/default', ['title' => 'Login', 'currentPage' => $currentPage]) ?>
 
-
-
-
-
 <div class="login-container">
     <form method="post" action="/login" class="login-form">
         <?php if (isset($csrf_token)): ?>
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8') ?>">
         <?php endif; ?>
-        <h2 class="sr-only">Login Form</h2>
+        
         <div class="login-logo">
             <img src="/assets/img/Logo.png" alt="Logo"/>
         </div>
-        <div class="form-group">
-            <input class="form-input login-input" type="text" id="username" name="username" placeholder="Nutzername" required minlength="2" maxlength="20">
+
+        <input class="login-input" 
+               type="text" 
+               name="username" 
+               placeholder="Nutzername" 
+               required 
+               minlength="2" 
+               maxlength="20"
+               autocomplete="username">
+
+        <input class="login-input" 
+               type="password" 
+               name="password" 
+               placeholder="Passwort" 
+               required 
+               minlength="4" 
+               maxlength="20"
+               autocomplete="current-password">
+
+        <button class="login-button" type="submit">
+            Einloggen
+        </button>
+
+        <div class="auth-links">
+            <a href="/register" class="auth-link">
+                Noch keinen Account? <span class="auth-link-primary">Registrieren</span>
+            </a>
         </div>
-        <div class="form-group">
-            <input class="form-input login-input" type="password" id="password" name="password" placeholder="Passwort" required minlength="4" maxlength="20">
-        </div>
-        <div class="form-group">
-            <button class="btn-base btn-primary login-button" type="submit">Einloggen</button>
-        </div>
-        <a href="/register" class="login-link">
-            Noch keinen Account? Hier <span class="text-primary">registrieren</span>!
-        </a>
     </form>
 </div>
 
@@ -89,4 +101,3 @@ function openOld() {
     <?php unset($_SESSION['alerts'][$key]); endforeach; ?>
 </script>
 <?php endif; ?>
- 
