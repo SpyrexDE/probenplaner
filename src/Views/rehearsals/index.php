@@ -125,7 +125,9 @@ document.querySelectorAll('.delete').forEach(function(element) {
 // Edit rehearsal redirect
 document.querySelectorAll('.edit').forEach(function(element) {
     element.addEventListener('click', function(event) {
-        window.location.href = '/rehearsals/edit/' + event.target.id;
+        // Use the button element's ID, not the icon's ID
+        const buttonId = event.currentTarget.id;
+        window.location.href = '/rehearsals/edit/' + buttonId;
     });
 });
 </script> 
