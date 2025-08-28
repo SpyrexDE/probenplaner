@@ -155,19 +155,45 @@ if (isset($_SESSION['username'])): ?>
         
         <!-- Modern Sidebar -->
         <div id="sidebar-wrapper" class="sidebar">
-            <!-- Sidebar Header -->
+            <!-- Compact Header -->
             <div class="sidebar-header">
-                <div class="sidebar-brand">
-                    <h3 class="sidebar-brand-name"><?= isset($_SESSION['orchestra_name']) ? $_SESSION['orchestra_name'] : APP_NAME ?></h3>
-                </div>
-                
-                <div class="sidebar-user-profile">
-                    <div class="sidebar-user-avatar">
+                <div class="sidebar-user">
+                    <div class="sidebar-avatar">
                         <?= strtoupper(substr($_SESSION['username'] ?? 'U', 0, 1)) ?>
                     </div>
-                    <div class="sidebar-user-info">
-                        <h4 class="sidebar-user-name"><?= Utilities::formatUsername($_SESSION['username'], $_SESSION['role'] ?? 'member', $_SESSION['is_small_group'] ?? false) ?></h4>
-                        <p class="sidebar-user-role"><?= isset($_SESSION['type']) ? str_replace('_', ' ', $_SESSION['type']) : '' ?></p>
+                    <div class="sidebar-info">
+                        <div class="sidebar-name"><?= $_SESSION['username'] ?? 'User' ?></div>
+                        <div class="sidebar-details">
+                            <?php 
+                            $parts = [];
+                            
+                            // Orchestra (abbreviated if too long)
+                            $orchestra = isset($_SESSION['orchestra_name']) ? $_SESSION['orchestra_name'] : APP_NAME;
+                            if (strlen($orchestra) > 12) {
+                                $orchestra = substr($orchestra, 0, 9) . '...';
+                            }
+                            $parts[] = '<span class="orchestra">' . $orchestra . '</span>';
+                            
+                            // Section/Instrument
+                            if (isset($_SESSION['type'])) {
+                                $parts[] = str_replace('_', ' ', $_SESSION['type']);
+                            }
+                            
+                            // Roles (abbreviated)
+                            $roles = [];
+                            if (isset($_SESSION['role']) && $_SESSION['role'] === 'leader') {
+                                $roles[] = 'SF';
+                            }
+                            if (isset($_SESSION['is_small_group']) && $_SESSION['is_small_group']) {
+                                $roles[] = 'KG';
+                            }
+                            if (!empty($roles)) {
+                                $parts[] = '<span class="roles">' . implode('•', $roles) . '</span>';
+                            }
+                            
+                            echo implode(' · ', $parts);
+                            ?>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -177,9 +203,9 @@ if (isset($_SESSION['username'])): ?>
             <div class="sidebar-stats">
                 <div class="sidebar-stats-title">Meine Proben</div>
                 <div class="sidebar-stats-bar" id="sidebar-stats-bar">
-                    <div class="sidebar-stats-segment attending" style="width: 0%;"></div>
-                    <div class="sidebar-stats-segment not-attending" style="width: 0%;"></div>
-                    <div class="sidebar-stats-segment no-response" style="width: 100%;"></div>
+                    <div class="sidebar-stats-segment attending"></div>
+                    <div class="sidebar-stats-segment not-attending"></div>
+                    <div class="sidebar-stats-segment no-response"></div>
                 </div>
                 <div class="sidebar-stats-legend">
                     <div class="sidebar-stats-item">
@@ -199,7 +225,8 @@ if (isset($_SESSION['username'])): ?>
             <?php endif; ?>
             
             <!-- Navigation Menu -->
-            <ul class="sidebar-nav">
+            <nav class="sidebar-nav">
+                <ul class="sidebar-nav-list">
                 <?php
                 $menu = [];
                 if (isset($_SESSION['type']) && $_SESSION['type'] === 'Dirigent') {
@@ -234,7 +261,8 @@ if (isset($_SESSION['username'])): ?>
                     echo $item['label'] . '</a></li>';
                 }
                 ?>
-            </ul>
+                </ul>
+            </nav>
         </div>
         <!-- Main Content -->
         <div id="page-content-wrapper" class="page-content main-content-with-sidebar">
