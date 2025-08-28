@@ -28,14 +28,16 @@ switch ($memberStatus) {
 }
 ?>
 
-<li>
-    <span class="userSpan">
-        <i class="fas fa-user" style="zoom: 0.8; margin-right: 5px;"></i> 
-        <?= $username ?>
-        <?= $additionalInfo ?>
-        <?php if (!empty($note)): ?>
-            - <?= $note ?>
+<li class="flex items-center justify-between py-2 px-3 text-sm">
+    <span class="flex items-center flex-1">
+        <i class="fas fa-user text-xs mr-2 text-muted"></i> 
+        <span class="font-medium"><?= $username ?></span>
+        <?php if ($additionalInfo): ?>
+            <span class="text-muted ml-1"><?= $additionalInfo ?></span>
         <?php endif; ?>
-        <i class="<?= $iconClass ?> smallTreeIcon rightfloatet" style="color: <?= $iconColor ?>;"></i>
+        <?php if (!empty($note)): ?>
+            <span class="text-subtle ml-2">- <?= $note ?></span>
+        <?php endif; ?>
     </span>
+    <i class="<?= $iconClass ?> text-sm ml-2" style="color: <?= $iconColor ?>;"></i>
 </li>

@@ -2,7 +2,7 @@
 
 <?php include __DIR__ . '/../components/promises-resources.php'; ?>
 
-<div class="container-fluid mt-4">
+<div class="container-app mt-6">
     <?php if (empty($rehearsals)): ?>
         <?php 
             $title = 'Keine Termine gefunden';
@@ -61,7 +61,7 @@
             ?>
             
             <div class="tree">
-                <ul style="padding-left: 5px;">
+                <ul class="pl-1">
                     <li>
                         <?php include __DIR__ . '/../components/rehearsal-header.php'; ?>
                         
@@ -70,7 +70,7 @@
                                 <?php if (!empty($stringPlayers)): ?>
                                 <li>
                                     <span class="tree-item-span">
-                                        <a style="color:#000; text-decoration:none;" data-toggle="collapse" href="#Streicher<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Streicher<?= $rehearsalId ?>">
+                                        <a class="text-black no-underline" data-toggle="collapse" href="#Streicher<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Streicher<?= $rehearsalId ?>">
                                             <i class="collapsed"><i class="fas fa-folder"></i></i>
                                             <i class="expanded"><i class="far fa-folder-open"></i></i> Streicher
                                         </a>
@@ -113,7 +113,7 @@
                                             ?>
                                             <li>
                                                 <span class="tree-item-span">
-                                                    <a style="color:#000; text-decoration:none;" data-toggle="collapse" href="#<?= $instrumentId . $rehearsalId ?>" aria-expanded="false" aria-controls="<?= $instrumentId . $rehearsalId ?>">
+                                                    <a class="text-black no-underline" data-toggle="collapse" href="#<?= $instrumentId . $rehearsalId ?>" aria-expanded="false" aria-controls="<?= $instrumentId . $rehearsalId ?>">
                                                         <i class="collapsed"><i class="fas fa-folder"></i></i>
                                                         <i class="expanded"><i class="far fa-folder-open"></i></i> <?= $instrumentName ?>
                                                     </a>
@@ -149,7 +149,7 @@
                                 <?php if (!empty($woodwindPlayers) || !empty($brassPlayers)): ?>
                                 <li>
                                     <span class="tree-item-span">
-                                        <a style="color:#000; text-decoration:none;" data-toggle="collapse" href="#Bläser<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Bläser<?= $rehearsalId ?>">
+                                        <a class="text-black no-underline" data-toggle="collapse" href="#Bläser<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Bläser<?= $rehearsalId ?>">
                                             <i class="collapsed"><i class="fas fa-folder"></i></i>
                                             <i class="expanded"><i class="far fa-folder-open"></i></i> Bläser
                                         </a>
@@ -172,7 +172,7 @@
                                             <?php if (!empty($woodwindPlayers)): ?>
                                             <li>
                                                 <span class="tree-item-span">
-                                                    <a style="color:#000; text-decoration:none;" data-toggle="collapse" href="#Holzbläser<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Holzbläser<?= $rehearsalId ?>">
+                                                    <a class="text-black no-underline" data-toggle="collapse" href="#Holzbläser<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Holzbläser<?= $rehearsalId ?>">
                                                         <i class="collapsed"><i class="fas fa-folder"></i></i>
                                                         <i class="expanded"><i class="far fa-folder-open"></i></i> Holzbläser
                                                     </a>
@@ -214,7 +214,7 @@
                                                         ?>
                                                         <li>
                                                             <span class="tree-item-span">
-                                                                <a style="color:#000; text-decoration:none;" data-toggle="collapse" href="#<?= $instrumentId . $rehearsalId ?>" aria-expanded="false" aria-controls="<?= $instrumentId . $rehearsalId ?>">
+                                                                <a class="text-black no-underline" data-toggle="collapse" href="#<?= $instrumentId . $rehearsalId ?>" aria-expanded="false" aria-controls="<?= $instrumentId . $rehearsalId ?>">
                                                                     <i class="collapsed"><i class="fas fa-folder"></i></i>
                                                                     <i class="expanded"><i class="far fa-folder-open"></i></i> <?= $instrumentName ?>
                                                                 </a>
@@ -250,7 +250,7 @@
                                             <?php if (!empty($brassPlayers)): ?>
                                             <li>
                                                 <span class="tree-item-span">
-                                                    <a style="color:#000; text-decoration:none;" data-toggle="collapse" href="#Blechbläser<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Blechbläser<?= $rehearsalId ?>">
+                                                    <a class="text-black no-underline" data-toggle="collapse" href="#Blechbläser<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Blechbläser<?= $rehearsalId ?>">
                                                         <i class="collapsed"><i class="fas fa-folder"></i></i>
                                                         <i class="expanded"><i class="far fa-folder-open"></i></i> Blechbläser
                                                     </a>
@@ -292,7 +292,7 @@
                                                         ?>
                                                         <li>
                                                             <span class="tree-item-span">
-                                                                <a style="color:#000; text-decoration:none;" data-toggle="collapse" href="#<?= $instrumentId . $rehearsalId ?>" aria-expanded="false" aria-controls="<?= $instrumentId . $rehearsalId ?>">
+                                                                <a class="text-black no-underline" data-toggle="collapse" href="#<?= $instrumentId . $rehearsalId ?>" aria-expanded="false" aria-controls="<?= $instrumentId . $rehearsalId ?>">
                                                                     <i class="collapsed"><i class="fas fa-folder"></i></i>
                                                                     <i class="expanded"><i class="far fa-folder-open"></i></i> <?= $instrumentName ?>
                                                                 </a>
@@ -332,7 +332,7 @@
                                 <?php if (!empty($percussionPlayers)): ?>
                                 <li>
                                     <span class="tree-item-span">
-                                        <a style="color:#000; text-decoration:none;" data-toggle="collapse" href="#Schlagwerk<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Schlagwerk<?= $rehearsalId ?>">
+                                        <a class="text-black no-underline" data-toggle="collapse" href="#Schlagwerk<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Schlagwerk<?= $rehearsalId ?>">
                                             <i class="collapsed"><i class="fas fa-folder"></i></i>
                                             <i class="expanded"><i class="far fa-folder-open"></i></i> Schlagwerk
                                         </a>
@@ -366,7 +366,7 @@
                                 <?php if (!empty($otherPlayers)): ?>
                                 <li>
                                     <span class="tree-item-span">
-                                        <a style="color:#000; text-decoration:none;" data-toggle="collapse" href="#Andere<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Andere<?= $rehearsalId ?>">
+                                        <a class="text-black no-underline" data-toggle="collapse" href="#Andere<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Andere<?= $rehearsalId ?>">
                                             <i class="collapsed"><i class="fas fa-folder"></i></i>
                                             <i class="expanded"><i class="far fa-folder-open"></i></i> Andere
                                         </a>

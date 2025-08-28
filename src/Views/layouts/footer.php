@@ -229,8 +229,8 @@
             Swal.fire({
                 title: '<?= htmlspecialchars($alert[0]) ?>',
                 html: `<?= nl2br(htmlspecialchars($alert[1])) ?><?php if ($hasDetails): ?>
-                    <br><button id="showDetailsBtn" style="margin-top:10px;" class="swal2-styled">Details anzeigen</button>
-                    <div id="errorDetails" style="display:none; margin-top:10px; text-align:left; font-size:12px; color:#a94442; background:#f9f2f4; border:1px solid #ebccd1; padding:10px; border-radius:4px; white-space:pre-wrap;"><?= $details ?></div>
+                    <br><button id="showDetailsBtn" class="swal2-styled mt-2">Details anzeigen</button>
+                    <div id="errorDetails" class="hidden mt-2 text-left text-xs text-red-700 bg-red-50 border border-red-200 p-2 rounded whitespace-pre-wrap"><?= $details ?></div>
                 <?php endif; ?>`,
                 icon: '<?= $alert[2] === 'error' ? 'error' : ($alert[2] === 'success' ? 'success' : 'info') ?>',
                 confirmButtonColor: '#478cf4',
@@ -239,11 +239,11 @@
                     if (btn) {
                         btn.onclick = function() {
                             const details = document.getElementById('errorDetails');
-                            if (details.style.display === 'none') {
-                                details.style.display = 'block';
+                            if (details.classList.contains('hidden')) {
+                                details.classList.remove('hidden');
                                 btn.textContent = 'Details ausblenden';
                             } else {
-                                details.style.display = 'none';
+                                details.classList.add('hidden');
                                 btn.textContent = 'Details anzeigen';
                             }
                         };

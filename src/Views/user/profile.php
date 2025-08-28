@@ -1,30 +1,13 @@
-<div class="container mt-5">
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <div class="card shadow-sm" style="background-color: white; padding: 30px; border-radius: 10px;">
-                <div class="card-header" style="background: none; border: none; padding: 0 0 20px 0;">
-                    <h2 style="color: #525861; font-size: 31px; font-family: Roboto, sans-serif; font-weight: 1000; margin: 0;">Profil bearbeiten</h2>
-                    <i id="editInfoTip" class="fa fa-exclamation-circle" style="transform: scale(2); transform-origin: 0; position: absolute; cursor: pointer; right: 30px; top: 30px;"></i>
+<div class="container-app mt-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="card-base">
+            <div class="p-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-3xl font-bold text-gray-700">Profil bearbeiten</h2>
+                    <i id="editInfoTip" class="fa fa-exclamation-circle text-2xl text-gray-500 cursor-pointer hover:text-primary"></i>
                 </div>
                 
-                <style>
-                    /* Custom styles for select dropdown */
-                    #group_type option[disabled] {
-                        font-weight: bold !important;
-                        color: #333 !important;
-                    }
-                    
-                    /* Fix display in Firefox and other browsers */
-                    #group_type option {
-                        padding: 5px;
-                    }
-                    
-                    /* Make sure selected option is visible */
-                    #group_type option:checked {
-                        background-color: #478cf4;
-                        color: white;
-                    }
-                </style>
+
                 
                 <form action="/profile" method="post">
                     <?php if (isset($csrf_token)): ?>
@@ -32,23 +15,23 @@
                     <?php endif; ?>
                     <div class="form-group">
                         <label for="username">Nutzername</label>
-                        <input type="text" class="form-control" id="username" name="username" placeholder="Nutzername" minlength="3" maxlength="20" style="font-family: Roboto, sans-serif;margin-bottom: 15px;" value="<?php echo htmlspecialchars($user['username']); ?>">
+                        <input type="text" class="form-input mb-4" id="username" name="username" placeholder="Nutzername" minlength="3" maxlength="20" value="<?php echo htmlspecialchars($user['username']); ?>">
                     </div>
                     
                     <div class="form-group">
                         <label for="current_password">Aktuelles Passwort</label>
-                        <input type="password" class="form-control" id="current_password" name="current_password" style="font-family: Roboto, sans-serif;margin-bottom: 15px;">
+                        <input type="password" class="form-input mb-4" id="current_password" name="current_password">
                     </div>
                     
                     <div class="form-group">
                         <label for="new_password">Neues Passwort</label>
-                        <input type="password" class="form-control" id="new_password" name="new_password" minlength="4" maxlength="20" style="font-family: Roboto, sans-serif;margin-bottom: 15px;">
+                        <input type="password" class="form-input mb-4" id="new_password" name="new_password" minlength="4" maxlength="20">
                         <small class="form-text text-muted">Das Passwort muss mindestens 4 und darf maximal 20 Zeichen haben.</small>
                     </div>
                     
                     <div class="form-group">
                         <label for="confirm_password">Neues Passwort bestätigen</label>
-                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" minlength="4" maxlength="20" style="font-family: Roboto, sans-serif;margin-bottom: 15px;">
+                        <input type="password" class="form-input mb-4" id="confirm_password" name="confirm_password" minlength="4" maxlength="20">
                     </div>
                     
                     <div class="form-group">
@@ -63,14 +46,14 @@
                         // Add hidden field with current type for debugging (outside the recursive function)
                         echo '<input type="hidden" id="debug_current_type" value="' . htmlspecialchars($currentType) . '">';
                         ?>
-                        <select class="form-control" id="group_type" name="group_type" style="font-family: Roboto, sans-serif;" required>
+                        <select class="form-input" id="group_type" name="group_type" required>
                             <option value="">Bitte Instrument / Stimmgruppe wählen</option>
                             <?php 
                             function renderTypeOptions($structure, $level = 0, $currentType = '') {
                                 foreach ($structure as $key => $value) {
                                     if (is_array($value)) {
                                         // Group header
-                                        echo '<option value="" disabled style="font-weight: bold; background-color: ' . ($level === 0 ? '#e1e1e1' : '#f3f3f3') . '">' . str_replace('_', ' ', $key) . '</option>';
+                                        echo '<option value="" disabled class="font-bold text-gray-600">' . str_replace('_', ' ', $key) . '</option>';
                                         renderTypeOptions($value, $level + 1, $currentType);
                                     } else {
                                         // Selectable option
@@ -87,42 +70,43 @@
                     </div>
                     
                     <div class="form-group">
-                        <div class="custom-control custom-checkbox mb-3 zoomed" style="position: relative;">
-                            <input type="checkbox" class="custom-control-input" id="small_group" name="small_group" <?php echo (isset($user['is_small_group']) && $user['is_small_group']) ? 'checked' : ''; ?>>
-                            <label class="custom-control-label" for="small_group">Kleingruppe</label>
-                            <i class="fa fa-question-circle ml-2" id="smallGroupTip" style="cursor: pointer;"></i>
+                        <div class="custom-checkbox mb-4">
+                            <input type="checkbox" id="small_group" name="small_group" <?php echo (isset($user['is_small_group']) && $user['is_small_group']) ? 'checked' : ''; ?>>
+                            <label for="small_group">Kleingruppe</label>
+                            <i class="fa fa-question-circle text-gray-500 cursor-pointer hover:text-primary ml-2" id="smallGroupTip"></i>
                         </div>
                     </div>
                     
                     <div class="form-group">
-                        <div class="custom-control custom-checkbox mb-3 zoomed" style="position: relative;">
-                            <input type="checkbox" class="custom-control-input" id="group_leader" name="group_leader" <?php echo ($user['role'] === 'leader') ? 'checked' : ''; ?>>
-                            <label class="custom-control-label" for="group_leader">Stimmführer</label>
+                        <div class="custom-checkbox mb-6">
+                            <input type="checkbox" id="group_leader" name="group_leader" <?php echo ($user['role'] === 'leader') ? 'checked' : ''; ?>>
+                            <label for="group_leader">Stimmführer</label>
                             <input type="hidden" id="group_leader_password" name="group_leader_password">
                         </div>
                     </div>
                     
                     <div class="form-group mt-4">
-                        <button type="submit" class="btn btn-block" style="background-color: rgb(71,140,244); color: white; font-family: Roboto, sans-serif;">
-                            <i class="fas fa-save mr-2" style="color: white;"></i>Speichern
+                        <button type="submit" class="btn btn-primary w-full">
+                            <i class="fas fa-save mr-2"></i>Speichern
                         </button>
                     </div>
                 </form>
             </div>
 
-            <div class="card shadow-sm mt-4" style="background-color: white; padding: 30px; border-radius: 10px;">
-                <div class="card-header" style="background: none; border: none; padding: 0 0 20px 0;">
-                    <h2 style="color: #525861; font-size: 31px; font-family: Roboto, sans-serif; font-weight: 1000; margin: 0;">Account löschen</h2>
-                    <i id="deleteInfoTip" class="fa fa-exclamation-circle" style="transform: scale(2); transform-origin: 0; position: absolute; cursor: pointer; right: 30px; top: 30px;"></i>
-                </div>
-                
-                <div class="form-group mt-4">
-                    <button type="button" id="deleteAccount" class="btn btn-block" style="background-color: rgb(226, 38, 38); color: white; font-family: Roboto, sans-serif;">
-                        <i class="fas fa-trash mr-2" style="color: white;"></i>Account löschen
-                    </button>
+            <div class="card-base mt-6">
+                <div class="p-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-3xl font-bold text-gray-700">Account löschen</h2>
+                        <i id="deleteInfoTip" class="fa fa-exclamation-circle text-2xl text-gray-500 cursor-pointer hover:text-error"></i>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <button type="button" id="deleteAccount" class="btn btn-danger w-full">
+                            <i class="fas fa-trash mr-2"></i>Account löschen
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
     </div>
 </div>
 

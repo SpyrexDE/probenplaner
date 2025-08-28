@@ -2,7 +2,7 @@
 
 <?php include __DIR__ . '/../components/promises-resources.php'; ?>
 
-<div class="container-fluid mt-4">
+<div class="container-app mt-6">
     <!-- View Toggle (Leader Only) -->
     <?php if (!empty($rehearsals) && isset($memberPromises) && !empty($_SESSION['role']) && $_SESSION['role'] === 'leader'): ?>
     <div class="d-flex justify-content-end">
@@ -103,7 +103,7 @@
             
             <!-- Simple View (Default) -->
             <div class="simple-view tree">
-                <ul style="padding-left: 5px;">
+                <ul class="pl-1">
                     <li>
                         <?php include __DIR__ . '/../components/rehearsal-header.php'; ?>
                         
@@ -143,8 +143,8 @@
             
             <?php if (!empty($leadersCanViewAllSections)): ?>
             <!-- Sectional View (Hidden by default) -->
-            <div class="sectional-view tree" style="display: none;">
-                <ul style="padding-left: 5px;">
+            <div class="sectional-view tree hidden">
+                <ul class="pl-1">
                     <li>
                         <?php 
                             $collapseTarget = "Orchester" . $rehearsalId . "Sec";

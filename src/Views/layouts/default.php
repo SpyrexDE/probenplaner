@@ -1,414 +1,86 @@
 <!DOCTYPE html>
-<html lang="de" style="width: 100%; height: 100%;">
+<html lang="de" class="w-full h-full">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
     <title><?= isset($_SESSION['orchestra_name']) ? $_SESSION['orchestra_name'] : (isset($title) ? $title : APP_NAME) ?></title>
     
+    <!-- Theme and Component Styles -->
+    <link rel="stylesheet" href="/assets/css/theme.css">
+    <link rel="stylesheet" href="/assets/css/components.css">
     
-    
-    <!-- Custom styles for sidebar behavior -->
-    <style>
-
-        
-        /* Professional layout system */
-        * {
-            box-sizing: border-box;
-        }
-        
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Roboto', sans-serif;
-            background: #f8f9fa;
-            color: #333;
-            line-height: 1.4;
-            overflow-x: hidden;
-        }
-        
-        /* App Layout Container */
-        #wrapper {
-            display: flex;
-            min-height: 100vh;
-            transition: all 0.3s ease;
-        }
-        
-                         /* Professional Sidebar */
-        #sidebar-wrapper {
-            width: 280px;
-            background: #ffffff;
-            position: fixed;
-            top: 0;
-            left: -280px;
-            height: 100vh;
-            z-index: 1001;
-            transition: left 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            overflow-y: auto;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            border-right: 1px solid #e5e7eb;
-        }
-        
-        /* Desktop: Always visible */
-        @media (min-width: 1200px) {
-            #sidebar-wrapper {
-                left: 0;
-                position: fixed;
-            }
-            
-            #page-content-wrapper {
-                margin-left: 280px;
-            }
-            
-            .menu-toggle {
-                display: none;
-            }
-        }
-        
-        /* Tablet/Mobile: Drawer behavior */
-        @media (max-width: 1199px) {
-            #wrapper.toggled #sidebar-wrapper {
-                left: 0;
-            }
-            
-            #wrapper.toggled::before {
-                content: '';
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0,0,0,0.3);
-                z-index: 1000;
-                opacity: 1;
-                transition: opacity 0.25s ease;
-                pointer-events: auto;
-            }
-        }
-        
-        .sidebar-nav {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            width: 100%;
-        }
-        
-        /* Professional Header */
-        .sidebar-header {
-            padding: 24px 20px;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            border-bottom: 1px solid #e2e8f0;
-        }
-        
-        .orchestra-info {
-            margin-bottom: 18px;
-            text-align: center;
-        }
-        
-        .orchestra-name {
-            font-size: 14px;
-            font-weight: 700;
-            color: #334155;
-            margin: 0;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .user-profile {
-            display: flex;
-            align-items: center;
-            background: rgba(255,255,255,0.8);
-            backdrop-filter: blur(10px);
-            border-radius: 12px;
-            padding: 16px;
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        
-        .user-avatar {
-            width: 44px;
-            height: 44px;
-            margin-right: 14px;
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 16px;
-            font-weight: 700;
-            flex-shrink: 0;
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-        }
-        
-        .user-info {
-            flex: 1;
-            min-width: 0;
-        }
-        
-        .user-info h4 {
-            margin: 0 0 2px 0;
-            font-size: 15px;
-            font-weight: 600;
-            color: #1e293b;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .user-info p {
-            margin: 0;
-            font-size: 12px;
-            color: #64748b;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-weight: 500;
-        }
-        
-        /* Professional Stats */
-        .sidebar-stats {
-            padding: 20px;
-            background: #fafbfc;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        
-        .stats-title {
-            font-size: 12px;
-            font-weight: 700;
-            color: #475569;
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .stats-bar {
-            height: 6px;
-            background: #e2e8f0;
-            border-radius: 6px;
-            overflow: hidden;
-            display: flex;
-            margin-bottom: 14px;
-            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
-        }
-        
-        .stats-segment {
-            height: 100%;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .stats-segment.attending {
-            background: linear-gradient(90deg, #10b981, #059669);
-        }
-        
-        .stats-segment.not-attending {
-            background: linear-gradient(90deg, #ef4444, #dc2626);
-        }
-        
-        .stats-segment.no-response {
-            background: linear-gradient(90deg, #94a3b8, #64748b);
-        }
-        
-        .stats-legend {
-            display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-            color: #64748b;
-            font-weight: 500;
-        }
-        
-        .stats-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        .stats-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }
-        
-        .stats-dot.attending {
-            background: linear-gradient(135deg, #10b981, #059669);
-        }
-        
-        .stats-dot.not-attending {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-        }
-        
-        .stats-dot.no-response {
-            background: linear-gradient(135deg, #94a3b8, #64748b);
-        }
-        
-        /* Professional Navigation */
-        .sidebar-nav {
-            list-style: none;
-            padding: 8px 12px;
-            margin: 0;
-        }
-        
-        .sidebar-nav li {
-            margin: 0 0 4px 0;
-        }
-        
-        .sidebar-nav li a {
-            display: flex;
-            align-items: center;
-            padding: 12px 16px;
-            color: #64748b;
-            text-decoration: none;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            font-size: 14px;
-            font-weight: 500;
-            border-radius: 8px;
-            position: relative;
-        }
-        
-        .sidebar-nav li a:hover {
-            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-            color: #334155;
-            text-decoration: none;
-            transform: translateX(2px);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        
-        .sidebar-nav li a.activeTab {
-            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-            color: #1e40af;
-            font-weight: 600;
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
-        }
-        
-        .sidebar-nav li a.activeTab::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 3px;
-            height: 20px;
-            background: linear-gradient(180deg, #3b82f6, #1d4ed8);
-            border-radius: 0 2px 2px 0;
-        }
-        
-        .sidebar-nav li a i {
-            margin-right: 14px;
-            width: 18px;
-            text-align: center;
-            font-size: 16px;
-        }
-        
-        /* Top Navigation Bar */
-        .top-nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 64px;
-            background: white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            z-index: 999;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
-            border-bottom: 1px solid #e8eaed;
-        }
-        
-        .nav-left {
-            display: flex;
-            align-items: center;
-        }
-        
-        .menu-toggle {
-            background: none;
-            border: none;
-            font-size: 24px;
-            color: #478cf4;
-            cursor: pointer;
-            margin-right: 16px;
-            padding: 12px;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-            min-width: 48px;
-            min-height: 48px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .menu-toggle:hover {
-            background-color: rgba(71, 140, 244, 0.1);
-            color: #3a7bd5;
-            transform: scale(1.05);
-        }
-        
-        .menu-toggle:active {
-            transform: scale(0.95);
-            background-color: rgba(71, 140, 244, 0.2);
-        }
-        
-        .brand-title {
-            font-family: 'Fugaz One', cursive;
-            font-size: 28px;
-            color: #478cf4;
-            text-decoration: none;
-            font-weight: 900;
-        }
-        
-        .nav-actions {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .nav-icon {
-            font-size: 20px;
-            color: #666;
-            cursor: pointer;
-            transition: color 0.2s ease;
-        }
-        
-        .nav-icon:hover {
-            color: #478cf4;
-        }
-        
-        /* Main Content Area */
-        #page-content-wrapper {
-            flex: 1;
-            padding-top: 64px;
-            min-height: 100vh;
-            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-
-        
-        /* Content Area Styling */
-        .main-content {
-            padding: 8px;
-        }
-        
-        /* Clean and minimal styling */
-        .far, .fas { font-size: 21px; }
-        
-        /* Tree view styles */
-        .tree li { cursor: pointer; }
-        .treeIcon { margin-top: 2px; margin-right: 5px; margin-left: 8px; }
-        .smallTreeIcon { font-size: 1rem; transform: scale(1); transform-origin: 0 0; margin-top: 2px; margin-right: 5px; margin-left: 8px; }
-        
-        /* Button interactions */
-        .checkBtn, .crossBtn, .tree li span, .x-drop-btn:hover { cursor: pointer; }
-    </style>
     <!-- Bootstrap CSS for component functionality -->
     <link rel="stylesheet" href="/assets/bootstrap/css/bootstrap.min.css">
     
-    <!-- Tailwind CSS for custom styling -->
+    <!-- Tailwind CSS for utility classes -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#478cf4',
+                            50: '#f0f7ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe', 
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#478cf4',
+                            600: '#3a7bd5',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        },
+                        success: {
+                            DEFAULT: '#10b981',
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            200: '#a7f3d0',
+                            300: '#6ee7b7',
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                        },
+                        error: {
+                            DEFAULT: '#ef4444',
+                            50: '#fef2f2',
+                            100: '#fee2e2',
+                            200: '#fecaca',
+                            300: '#fca5a5',
+                            400: '#f87171',
+                            500: '#ef4444',
+                            600: '#dc2626',
+                            700: '#b91c1c',
+                            800: '#991b1b',
+                            900: '#7f1d1d',
+                        }
+                    },
+                    fontFamily: {
+                        'sans': ['Roboto', 'sans-serif'],
+                        'brand': ['Fugaz One', 'cursive'],
+                    },
+                    spacing: {
+                        '1': '0.25rem',
+                        '2': '0.5rem',
+                        '3': '0.75rem',
+                        '4': '1rem',
+                        '5': '1.25rem',
+                        '6': '1.5rem',
+                        '8': '2rem',
+                        '10': '2.5rem',
+                        '12': '3rem',
+                        '16': '4rem',
+                        '20': '5rem',
+                        '24': '6rem',
+                    }
+                }
+            }
+        }
+    </script>
     
     <!-- Google Fonts -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,600,700">
@@ -421,32 +93,38 @@
     <link rel="stylesheet" href="/assets/fonts/fontawesome5-overrides.min.css">
     <link rel="shortcut icon" href="/assets/img/tabIcon.png" type="image/x-icon">
     <link rel="manifest" href="/manifest.json">
+    
+    <!-- JavaScript Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script type="module" src="https://cdn.jsdelivr.net/npm/easy-pwa-js@1.0/dist/front.js"></script>
     <script src="/assets/js/jquery.min.js"></script>
     <script src="/assets/js/notifications.js"></script>
+    
     <!-- Tippy.js for tooltips -->
     <script src="https://unpkg.com/@popperjs/core@2"></script>
     <script src="https://unpkg.com/tippy.js@6"></script>
     <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/animations/scale.css"/>
 </head>
-<body>
+<body class="bg-gray-50 text-gray-900 font-sans overflow-x-hidden">
+
+
+
+
 <?php 
 use App\Core\Utilities;
 if (isset($_SESSION['username'])): ?>
-    <div id="wrapper">
+    <div id="wrapper" class="flex min-h-screen transition-all duration-slow">
         <!-- Top Navigation -->
         <nav class="top-nav">
-            <div class="nav-left">
-                <button class="menu-toggle" id="menu-toggle" onclick="(function(){const w=document.getElementById('wrapper');if(w)w.classList.toggle('toggled');})();">
+            <div class="top-nav-left">
+                <button class="top-nav-menu-toggle" id="menu-toggle" onclick="(function(){const w=document.getElementById('wrapper');if(w)w.classList.toggle('toggled');})();">
                     <i class="fa fa-bars"></i>
                 </button>
-                <a href="/" class="brand-title">
+                <a href="/" class="top-nav-brand">
                     <?= isset($_SESSION['orchestra_name']) ? $_SESSION['orchestra_name'] : APP_NAME ?>
                 </a>
-
             </div>
-            <div class="nav-actions">
+            <div class="top-nav-actions">
                 <?php 
                 // Show buttons on relevant routes
                 $currentUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -462,30 +140,33 @@ if (isset($_SESSION['username'])): ?>
                 ?>
                 
                 <?php if ($showHistoryButton): ?>
-                <i onclick="openOld();" class="fas fa-history nav-icon"></i>
+                <i onclick="openOld();" class="fas fa-history top-nav-icon"></i>
                 <?php endif; ?>
                 
                 <?php if ($showHelpButton): ?>
-                <i onclick="showHelp();" class="fas fa-question-circle nav-icon"></i>
+                <i onclick="showHelp();" class="fas fa-question-circle top-nav-icon"></i>
                 <?php endif; ?>
             </div>
         </nav>
         
+        <!-- Sidebar Overlay for Mobile -->
+        <div class="sidebar-overlay" onclick="document.getElementById('wrapper').classList.remove('toggled');"></div>
+        
         <!-- Modern Sidebar -->
-        <div id="sidebar-wrapper">
+        <div id="sidebar-wrapper" class="sidebar">
             <!-- Sidebar Header -->
             <div class="sidebar-header">
-                <div class="orchestra-info">
-                    <h3 class="orchestra-name"><?= isset($_SESSION['orchestra_name']) ? $_SESSION['orchestra_name'] : APP_NAME ?></h3>
+                <div class="sidebar-brand">
+                    <h3 class="sidebar-brand-name"><?= isset($_SESSION['orchestra_name']) ? $_SESSION['orchestra_name'] : APP_NAME ?></h3>
                 </div>
                 
-                <div class="user-profile">
-                    <div class="user-avatar">
+                <div class="sidebar-user-profile">
+                    <div class="sidebar-user-avatar">
                         <?= strtoupper(substr($_SESSION['username'] ?? 'U', 0, 1)) ?>
                     </div>
-                    <div class="user-info">
-                        <h4><?= Utilities::formatUsername($_SESSION['username'], $_SESSION['role'] ?? 'member', $_SESSION['is_small_group'] ?? false) ?></h4>
-                        <p><?= isset($_SESSION['type']) ? str_replace('_', ' ', $_SESSION['type']) : '' ?></p>
+                    <div class="sidebar-user-info">
+                        <h4 class="sidebar-user-name"><?= Utilities::formatUsername($_SESSION['username'], $_SESSION['role'] ?? 'member', $_SESSION['is_small_group'] ?? false) ?></h4>
+                        <p class="sidebar-user-role"><?= isset($_SESSION['type']) ? str_replace('_', ' ', $_SESSION['type']) : '' ?></p>
                     </div>
                 </div>
             </div>
@@ -493,23 +174,23 @@ if (isset($_SESSION['username'])): ?>
             <!-- Statistics Section -->
             <?php if (isset($_SESSION['user_id'])): ?>
             <div class="sidebar-stats">
-                <div class="stats-title">Meine Proben</div>
-                <div class="stats-bar" id="sidebar-stats-bar">
-                    <div class="stats-segment attending" style="width: 0%;"></div>
-                    <div class="stats-segment not-attending" style="width: 0%;"></div>
-                    <div class="stats-segment no-response" style="width: 100%;"></div>
+                <div class="sidebar-stats-title">Meine Proben</div>
+                <div class="sidebar-stats-bar" id="sidebar-stats-bar">
+                    <div class="sidebar-stats-segment attending" style="width: 0%;"></div>
+                    <div class="sidebar-stats-segment not-attending" style="width: 0%;"></div>
+                    <div class="sidebar-stats-segment no-response" style="width: 100%;"></div>
                 </div>
-                <div class="stats-legend">
-                    <div class="stats-item">
-                        <div class="stats-dot attending"></div>
+                <div class="sidebar-stats-legend">
+                    <div class="sidebar-stats-item">
+                        <div class="sidebar-stats-dot attending"></div>
                         <span id="stats-attending">0</span>
                     </div>
-                    <div class="stats-item">
-                        <div class="stats-dot not-attending"></div>
+                    <div class="sidebar-stats-item">
+                        <div class="sidebar-stats-dot not-attending"></div>
                         <span id="stats-not-attending">0</span>
                     </div>
-                    <div class="stats-item">
-                        <div class="stats-dot no-response"></div>
+                    <div class="sidebar-stats-item">
+                        <div class="sidebar-stats-dot no-response"></div>
                         <span id="stats-no-response">0</span>
                     </div>
                 </div>
@@ -546,17 +227,17 @@ if (isset($_SESSION['username'])): ?>
                     ];
                 }
                 foreach ($menu as $item) {
-                    $active = isset($item['page']) && $currentPage === $item['page'] ? 'activeTab' : '';
-                    echo '<li><a class="' . $active . '" href="' . $item['href'] . '">';
-                    echo '<i class="' . $item['icon'] . '"></i>';
+                    $active = isset($item['page']) && $currentPage === $item['page'] ? 'active' : '';
+                    echo '<li class="sidebar-nav-item"><a class="sidebar-nav-link ' . $active . '" href="' . $item['href'] . '">';
+                    echo '<i class="sidebar-nav-icon ' . $item['icon'] . '"></i>';
                     echo $item['label'] . '</a></li>';
                 }
                 ?>
             </ul>
         </div>
         <!-- Main Content -->
-        <div id="page-content-wrapper">
-            <div id="contentPage">
+        <div id="page-content-wrapper" class="page-content main-content-with-sidebar">
+            <div id="contentPage" class="page-content-inner">
                 <?= $content ?? '' ?>
             </div>
         </div>
@@ -573,12 +254,12 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
 <?php if (!$hideNavbar): ?>
 <!-- Top Navigation for non-logged in users -->
 <nav class="top-nav">
-    <div class="nav-left">
-        <a href="/" class="brand-title">
+    <div class="top-nav-left">
+        <a href="/" class="top-nav-brand">
             <?= isset($_SESSION['orchestra_name']) ? $_SESSION['orchestra_name'] : APP_NAME ?>
         </a>
     </div>
-    <div class="nav-actions">
+    <div class="top-nav-actions">
         <?php 
         // Show buttons on relevant routes
         $currentUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -594,17 +275,17 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
         ?>
         
         <?php if ($showHistoryButton): ?>
-        <i onclick="openOld();" class="fas fa-history nav-icon"></i>
+        <i onclick="openOld();" class="fas fa-history top-nav-icon"></i>
         <?php endif; ?>
         
         <?php if ($showHelpButton): ?>
-        <i onclick="showHelp();" class="fas fa-question-circle nav-icon"></i>
+        <i onclick="showHelp();" class="fas fa-question-circle top-nav-icon"></i>
         <?php endif; ?>
     </div>
 </nav>
 <?php endif; ?>
 
-<div class="main-content">
+<div class="page-content-inner">
     <?= $content ?? '' ?>
 </div>
 <?php endif; ?>
@@ -877,90 +558,34 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
      window.loadUserStats = function() {
          console.log('Loading user stats...');
          
-         // Try to get stats from current page first
-         let stats = {
-             attending: 0,
-             not_attending: 0,
-             no_response: 0,
-             total: 0
-         };
-         
-         // If we're on the promises page, count the actual rehearsal cards
-         if (window.location.pathname === '/promises') {
-             const rehearsalCards = document.querySelectorAll('.rehearsal-card');
-             
-             rehearsalCards.forEach(card => {
-                 stats.total++;
-                 
-                 // Check if user has responded to this rehearsal
-                 if (card.classList.contains('greenOut')) {
-                     stats.attending++;
-                 } else if (card.classList.contains('redOut')) {
-                     stats.not_attending++;
-                 } else {
-                     stats.no_response++;
-                 }
-             });
-             
-             console.log('Stats from current page:', stats);
-         } else {
-             // If not on promises page, try to load via AJAX
-             fetch('/promises', {
-                 method: 'GET',
-                 headers: {
-                     'Content-Type': 'text/html'
-                 }
-             })
-             .then(response => response.text())
-             .then(html => {
-                 // Parse the HTML to extract rehearsal data
-                 const parser = new DOMParser();
-                 const doc = parser.parseFromString(html, 'text/html');
-                 
-                 // Count rehearsals by status
-                 const ajaxStats = {
-                     attending: 0,
-                     not_attending: 0,
-                     no_response: 0,
-                     total: 0
-                 };
-                 
-                 // Look for rehearsal cards and their status
-                 const rehearsalCards = doc.querySelectorAll('.rehearsal-card');
-                 
-                 rehearsalCards.forEach(card => {
-                     ajaxStats.total++;
-                     
-                     // Check if user has responded to this rehearsal
-                     if (card.classList.contains('greenOut')) {
-                         ajaxStats.attending++;
-                     } else if (card.classList.contains('redOut')) {
-                         ajaxStats.not_attending++;
-                     } else {
-                         ajaxStats.no_response++;
-                     }
-                 });
-                 
-                 console.log('Stats loaded via AJAX:', ajaxStats);
-                 updateStatsDisplay(ajaxStats);
-             })
-             .catch(error => {
-                 console.error('AJAX stats loading failed:', error);
-                 // Use stats from current page if available
-                 if (stats.total > 0) {
-                     updateStatsDisplay(stats);
-                 } else {
-                     // Fallback to zero stats
-                     updateStatsDisplay({ attending: 0, not_attending: 0, no_response: 0, total: 0 });
-                 }
-             });
-             
-             // Return early since we're handling stats asynchronously
-             return;
-         }
-         
-         // Update display with stats from current page
-         updateStatsDisplay(stats);
+         // Use the proper API endpoint instead of scraping HTML
+         fetch('/api/user-stats', {
+             method: 'GET',
+             headers: {
+                 'Content-Type': 'application/json'
+             }
+         })
+         .then(response => {
+             if (!response.ok) {
+                 throw new Error(`HTTP error! status: ${response.status}`);
+             }
+             return response.json();
+         })
+         .then(data => {
+             if (data.success && data.stats) {
+                 console.log('Stats loaded via API:', data.stats);
+                 updateStatsDisplay(data.stats);
+             } else {
+                 console.error('API returned error:', data.error || 'Unknown error');
+                 // Fallback to zero stats
+                 updateStatsDisplay({ attending: 0, not_attending: 0, no_response: 0, total: 0 });
+             }
+         })
+         .catch(error => {
+             console.error('Failed to load stats via API:', error);
+             // Fallback to zero stats
+             updateStatsDisplay({ attending: 0, not_attending: 0, no_response: 0, total: 0 });
+         });
      }
      
      // Function to update stats display
@@ -970,10 +595,10 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
          const notAttendingPercent = ((stats.not_attending || 0) / total) * 100;
          const noResponsePercent = ((stats.no_response || 0) / total) * 100;
          
-         // Update progress bar segments
-         const attendingSegment = document.querySelector('.stats-segment.attending');
-         const notAttendingSegment = document.querySelector('.stats-segment.not-attending');
-         const noResponseSegment = document.querySelector('.stats-segment.no-response');
+                 // Update progress bar segments
+        const attendingSegment = document.querySelector('.sidebar-stats-segment.attending');
+        const notAttendingSegment = document.querySelector('.sidebar-stats-segment.not-attending');
+        const noResponseSegment = document.querySelector('.sidebar-stats-segment.no-response');
          
          if (attendingSegment) attendingSegment.style.width = attendingPercent + '%';
          if (notAttendingSegment) notAttendingSegment.style.width = notAttendingPercent + '%';
@@ -1036,14 +661,14 @@ function updateUIForCurrentRoute() {
                           currentRoute.startsWith('/promises/') || 
                           currentRoute.startsWith('/rehearsals/');
     
-    // Update UI elements visibility
-    document.querySelectorAll('.history-link').forEach(function(element) {
-        element.style.display = showHistoryButton ? 'inline-block' : 'none';
-    });
-    
-    document.querySelectorAll('.help-link').forEach(function(element) {
-        element.style.display = showHelpButton ? 'inline-block' : 'none';
-    });
+            // Update UI elements visibility (keeping these for any legacy references)
+        document.querySelectorAll('.history-link, .top-nav-icon.fa-history').forEach(function(element) {
+            element.style.display = showHistoryButton ? 'inline-block' : 'none';
+        });
+        
+        document.querySelectorAll('.help-link, .top-nav-icon.fa-question-circle').forEach(function(element) {
+            element.style.display = showHelpButton ? 'inline-block' : 'none';
+        });
 }
 
 // Update UI immediately when script loads

@@ -4,6 +4,42 @@
  * Main entry point
  */
 
+// Handle static files for PHP development server
+if (php_sapi_name() === 'cli-server') {
+    $requestUri = $_SERVER['REQUEST_URI'];
+    $filePath = parse_url($requestUri, PHP_URL_PATH);
+    
+    // Check if it's a request for a static file
+    if (preg_match('/\.(css|js|html|htm|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/i', $filePath)) {
+        $staticFile = __DIR__ . $filePath;
+        if (file_exists($staticFile)) {
+            // Determine MIME type
+            $extension = pathinfo($staticFile, PATHINFO_EXTENSION);
+            $mimeTypes = [
+                'css' => 'text/css',
+                'js' => 'application/javascript',
+                'html' => 'text/html',
+                'htm' => 'text/html',
+                'png' => 'image/png',
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'gif' => 'image/gif',
+                'ico' => 'image/x-icon',
+                'svg' => 'image/svg+xml',
+                'woff' => 'font/woff',
+                'woff2' => 'font/woff2',
+                'ttf' => 'font/ttf',
+                'eot' => 'application/vnd.ms-fontobject'
+            ];
+            
+            $mimeType = $mimeTypes[strtolower($extension)] ?? 'application/octet-stream';
+            header('Content-Type: ' . $mimeType);
+            readfile($staticFile);
+            return;
+        }
+    }
+}
+
 try {
     // Bootstrap the application
     require_once __DIR__ . '/../bootstrap.php';

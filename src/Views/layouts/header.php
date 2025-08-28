@@ -9,7 +9,7 @@
  */
 ?>
 <!DOCTYPE html>
-<html lang="de" style="width: 100%; height: 100%;">
+<html lang="de" class="w-full h-full">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
@@ -31,12 +31,12 @@
     <script src="https://unpkg.com/tippy.js@6"></script>
     <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/animations/scale.css"/>
 </head>
-<body style="width: 100%; height: 100%;">
+<body class="w-full h-full">
 <?php if (isset($_SESSION['username'])): ?>
     <div id="wrapper">
-        <div class="topBar" id="sidebar-wrapper" style="background-color: #ffffff; border-right: 1px solid #e9ecef;">
+        <div class="topBar bg-white border-r border-gray-200" id="sidebar-wrapper">
             <ul class="sidebar-nav">
-                <li class="sidebar-brand" style="background-color: #478cf4; height: 67px;">
+                <li class="sidebar-brand bg-primary h-16">
                     <div class="text-secondary" style="width: 100%; height: 100%; overflow: hidden; background-color: #ffffff; border-width: 0; border-bottom: 0; border-color: lightgrey; border-style: solid;">
                         <div style="width: 30%; background: grey; float: left; height: 100%; background-color: rgba(255,255,255,0);">
                             <i class="icon ion-ios-contact" style="color: #478cf4; font-size: 64px; margin: -18px; margin-left: -28px;"></i>
@@ -45,30 +45,30 @@
                             <label style="margin: 0; width: 100%; height: 50%; float: left; margin-left: -10px; margin-top: -7px;"><?= $_SESSION['username'] ?? '' ?></label>
                             <label id="groupLabel" style="margin: 0; width: 100%; height: 50%; float: left; margin-top: -12px; margin-left: -10px;"><?= $_SESSION['type'] ?? '' ?></label>
                             <?php if (isset($_SESSION['orchestra_name'])): ?>
-                                <small style="display: block; font-size: 10px; margin-left: -10px; margin-top: -5px;"><?= $_SESSION['orchestra_name'] ?></small>
+                                <small class="block text-xs -ml-2 -mt-1"><?= $_SESSION['orchestra_name'] ?></small>
                             <?php endif; ?>
                         </div>
                     </div>
                 </li>
                 <li>
-                    <a class="<?= $currentPage === 'promises' ? 'activeTab' : '' ?>" href="/promises" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Meine Meldungen</a>
+                    <a class="<?= $currentPage === 'promises' ? 'activeTab' : '' ?>" href="/promises" class="text-black">Meine Meldungen</a>
                     <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'leader'): ?>
-                        <a class="<?= $currentPage === 'leader' ? 'activeTab' : '' ?>" href="/promises/leader" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Rückmeldungen</a>
+                        <a class="<?= $currentPage === 'leader' ? 'activeTab' : '' ?>" href="/promises/leader" class="text-black">Rückmeldungen</a>
                     <?php endif; ?>
                     <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'conductor' || isset($_SESSION['type']) && $_SESSION['type'] === 'Dirigent'): ?>
-                        <a class="<?= $currentPage === 'admin' ? 'activeTab' : '' ?>" href="/promises/admin" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Alle Rückmeldungen</a>
-                        <a class="<?= $currentPage === 'rehearsals' ? 'activeTab' : '' ?>" href="/rehearsals" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Proben verwalten</a>
-                        <a class="<?= $currentPage === 'conductor_profile' ? 'activeTab' : '' ?>" href="/conductor/profile" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Profil bearbeiten</a>
-                        <a class="<?= $currentPage === 'orchestra_settings' ? 'activeTab' : '' ?>" href="/orchestras/settings" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Orchester bearbeiten</a>
+                        <a class="<?= $currentPage === 'admin' ? 'activeTab' : '' ?>" href="/promises/admin" class="text-black">Alle Rückmeldungen</a>
+                        <a class="<?= $currentPage === 'rehearsals' ? 'activeTab' : '' ?>" href="/rehearsals" class="text-black">Proben verwalten</a>
+                        <a class="<?= $currentPage === 'conductor_profile' ? 'activeTab' : '' ?>" href="/conductor/profile" class="text-black">Profil bearbeiten</a>
+                        <a class="<?= $currentPage === 'orchestra_settings' ? 'activeTab' : '' ?>" href="/orchestras/settings" class="text-black">Orchester bearbeiten</a>
                     <?php else: ?>
-                        <a class="<?= $currentPage === 'probenplan' ? 'activeTab' : '' ?>" href="/probenplan" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Probenplan</a>
-                        <a class="<?= $currentPage === 'profile' ? 'activeTab' : '' ?>" href="/profile" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Profil bearbeiten</a>
+                        <a class="<?= $currentPage === 'probenplan' ? 'activeTab' : '' ?>" href="/probenplan" class="text-black">Probenplan</a>
+                        <a class="<?= $currentPage === 'profile' ? 'activeTab' : '' ?>" href="/profile" class="text-black">Profil bearbeiten</a>
                     <?php endif; ?>
-                    <a href="/logout" style="color: rgb(0,0,0); font-family: Roboto, sans-serif;">Logout</a>
+                    <a href="/logout" class="text-black">Logout</a>
                 </li>
             </ul>
         </div>
-        <div class="page-content-wrapper" style="width: 100%; background-color: #ffffff; padding-bottom: 0px;">
+        <div class="page-content-wrapper w-full bg-white pb-0">
             <!-- Standardized navbar with fixed position icons -->
             <nav class="navbar navbar-light topBar">
               <div class="container-fluid">
@@ -115,7 +115,7 @@
                 </div>
               </div>
             </nav>
-            <div id="contentPage" class="col" style="padding: 0;">
+            <div id="contentPage" class="col p-0">
                 <div class="float-none text-center">
 <?php else: ?>
 <!-- Navbar for non-logged in users -->
@@ -163,7 +163,7 @@
 
 <?php // DEBUG: Remove after testing ?>
 <?php if (isset($_SESSION['role']) || isset($_SESSION['type'])): ?>
-    <div style="color:red; font-size:10px;">role: <?= $_SESSION['role'] ?? 'unset' ?>, type: <?= $_SESSION['type'] ?? 'unset' ?></div>
+    <div class="text-red-500 text-xs">role: <?= $_SESSION['role'] ?? 'unset' ?>, type: <?= $_SESSION['type'] ?? 'unset' ?></div>
 <?php endif; ?>
 
 <!-- Add scripts at the end of the body -->

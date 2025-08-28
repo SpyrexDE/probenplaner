@@ -4,12 +4,12 @@
             <h1>Probenplan</h1>
             <h5>Stand: <?= date("d.m.Y") ?></h5>
             
-            <div class="btn-group btn-group-sm mb-3">
-                <button id="filterToggle" class="btn btn-outline-primary" onclick="togglePersonalizedView()">
-                    <i class="fas fa-filter"></i> <?= $personalized ? 'Personalisierte Ansicht' : 'Alle Proben' ?>
+            <div class="flex flex-wrap gap-2 mb-6 justify-center">
+                <button id="filterToggle" class="btn btn-outline btn-sm" onclick="togglePersonalizedView()">
+                    <i class="fas fa-filter mr-2"></i><?= $personalized ? 'Personalisierte Ansicht' : 'Alle Proben' ?>
                 </button>
-                <a href="<?= $showOld ? '/probenplan' . ($personalized ? '?personalized=1' : '') : '/probenplan' . ($personalized ? '?personalized=1&showOld=1' : '?showOld=1') ?>" class="btn btn-outline-secondary">
-                    <i class="fas fa-history"></i> <?= $showOld ? 'Nur aktuelle Proben' : 'Alle Proben (inkl. vergangene)' ?>
+                <a href="<?= $showOld ? '/probenplan' . ($personalized ? '?personalized=1' : '') : '/probenplan' . ($personalized ? '?personalized=1&showOld=1' : '?showOld=1') ?>" class="btn btn-ghost btn-sm">
+                    <i class="fas fa-history mr-2"></i><?= $showOld ? 'Nur aktuelle Proben' : 'Alle Proben (inkl. vergangene)' ?>
                 </a>
             </div>
         </div>
@@ -18,7 +18,7 @@
     <div class="row mt-4">
         <div class="col-12">
             <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table-themed">
                     <thead>
                         <tr>
                             <th>Tag</th>
@@ -40,7 +40,7 @@
                                     $end_time_pp = isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, 5) : '??:??';
                                     $time_display_pp = $start_time_pp . ' - ' . $end_time_pp;
                                 ?>
-                                <tr style="background-color: <?= !empty($rehearsal['color']) ? $rehearsal['color'] : 'transparent' ?>">
+                                <tr class="<?= !empty($rehearsal['color']) ? '' : '' ?>" style="<?= !empty($rehearsal['color']) ? 'background-color: ' . $rehearsal['color'] . ';' : '' ?>">
                                     <td><?= isset($days[$i]) ? $days[$i] : '' ?></td>
                                     <td><?= $rehearsal['date_formatted'] ?? $rehearsal['date'] ?></td>
                                     <td><?= htmlspecialchars($time_display_pp) ?></td>
@@ -63,28 +63,23 @@
         </div>
     </div>
 
-    <div class="row mt-3 mb-5">
-        <div class="col-12 text-right">
-            <button class="btn btn-primary print-btn" onclick="window.print()">
-                <i class="fas fa-print text-white"></i>
-            </button>
-        </div>
-    </div>
+    <button class="fab" onclick="window.print()" id="print-btn">
+        <i class="fas fa-print text-xl"></i>
+    </button>
 </div>
 
 <style>
 @media print {
     /* Hide UI elements not for print */
-    .print-btn, #filterToggle, .btn-group, /* Probenplan specific controls */
-    #sidebar-wrapper, /* Main sidebar */
-    .topBar, /* All instances of topBar, including the one above contentPage */
+    .fab, #filterToggle, .btn, /* Controls */
+    #sidebar-wrapper, .sidebar, /* Main sidebar */
+    .top-nav, .topBar, /* All instances of topBar, including navigation */
     .navbar, /* Generic bootstrap navbar class */
     nav, /* Generic nav HTML tags, if any */
     header, /* Generic header HTML tags, if any */
-    #menu-toggle, /* Sidebar toggle */
-    .history-link, .help-link, /* Specific header icons */
-    .sidebar-nav, /* Content of sidebar */
-    .page-content-wrapper > .col.topBar /* The topBar directly under page-content-wrapper */
+    #menu-toggle, .top-nav-menu-toggle, /* Sidebar toggle */
+    .history-link, .help-link, .top-nav-icon, /* Header icons */
+    .sidebar-nav /* Content of sidebar */
     {
         display: none !important;
     }
@@ -103,8 +98,8 @@
     }
 
     #wrapper, 
-    .page-content-wrapper, /* This is the main wrapper around contentPage when logged in */
-    #contentPage /* This is the direct container for $content when logged in */
+    .page-content, .page-content-wrapper, /* This is the main wrapper around contentPage when logged in */
+    #contentPage, .page-content-inner /* This is the direct container for $content when logged in */
     {
         width: 100% !important;
         margin: 0 !important;

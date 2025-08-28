@@ -9,7 +9,7 @@
 
 <li>
     <span class="tree-item-span">
-        <a style="color:#000; text-decoration:none;" data-toggle="collapse" href="#Bläser<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Bläser<?= $rehearsalId ?>">
+        <a class="text-black no-underline" data-toggle="collapse" href="#Bläser<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Bläser<?= $rehearsalId ?>">
             <i class="collapsed"><i class="fas fa-folder"></i></i>
             <i class="expanded"><i class="far fa-folder-open"></i></i> Bläser
         </a>
@@ -32,7 +32,7 @@
             <?php if (!empty($woodwindPlayers)): ?>
             <li>
                 <span class="tree-item-span">
-                    <a style="color:#000; text-decoration:none;" data-toggle="collapse" href="#Holzbläser<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Holzbläser<?= $rehearsalId ?>">
+                    <a class="text-black no-underline" data-toggle="collapse" href="#Holzbläser<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Holzbläser<?= $rehearsalId ?>">
                         <i class="collapsed"><i class="fas fa-folder"></i></i>
                         <i class="expanded"><i class="far fa-folder-open"></i></i> Holzbläser
                     </a>
@@ -73,7 +73,7 @@
                         ?>
                         <li>
                             <span class="tree-item-span">
-                                <a style="color:#000; text-decoration:none;" data-toggle="collapse" href="#<?= $instrumentId . $rehearsalId ?>" aria-expanded="false" aria-controls="<?= $instrumentId . $rehearsalId ?>">
+                                <a class="text-black no-underline" data-toggle="collapse" href="#<?= $instrumentId . $rehearsalId ?>" aria-expanded="false" aria-controls="<?= $instrumentId . $rehearsalId ?>">
                                     <i class="collapsed"><i class="fas fa-folder"></i></i>
                                     <i class="expanded"><i class="far fa-folder-open"></i></i> <?= $instrumentName ?>
                                 </a>
@@ -109,7 +109,7 @@
             <?php if (!empty($brassPlayers)): ?>
             <li>
                 <span class="tree-item-span">
-                    <a style="color:#000; text-decoration:none;" data-toggle="collapse" href="#Blechbläser<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Blechbläser<?= $rehearsalId ?>">
+                    <a class="text-black no-underline" data-toggle="collapse" href="#Blechbläser<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Blechbläser<?= $rehearsalId ?>">
                         <i class="collapsed"><i class="fas fa-folder"></i></i>
                         <i class="expanded"><i class="far fa-folder-open"></i></i> Blechbläser
                     </a>
@@ -150,7 +150,7 @@
                         ?>
                         <li>
                             <span class="tree-item-span">
-                                <a style="color:#000; text-decoration:none;" data-toggle="collapse" href="#<?= $instrumentId . $rehearsalId ?>" aria-expanded="false" aria-controls="<?= $instrumentId . $rehearsalId ?>">
+                                <a class="text-black no-underline" data-toggle="collapse" href="#<?= $instrumentId . $rehearsalId ?>" aria-expanded="false" aria-controls="<?= $instrumentId . $rehearsalId ?>">
                                     <i class="collapsed"><i class="fas fa-folder"></i></i>
                                     <i class="expanded"><i class="far fa-folder-open"></i></i> <?= $instrumentName ?>
                                 </a>

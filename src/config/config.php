@@ -26,8 +26,7 @@ ini_set('session.cookie_httponly', 1);           // Prevent XSS attacks
 ini_set('session.use_only_cookies', 1);          // Only use cookies, not URL parameters
 ini_set('session.cookie_samesite', 'Strict');    // CSRF protection
 ini_set('session.use_strict_mode', 1);           // Prevent uninitialized session IDs
-ini_set('session.sid_length', 128);              // Longer session IDs
-ini_set('session.sid_bits_per_character', 6);    // More entropy per character
+// Removed deprecated session.sid_length and session.sid_bits_per_character settings
 
 if (APP_ENV !== 'development' && APP_ENV !== 'test') {
     ini_set('session.cookie_secure', 1);         // Only over HTTPS in production

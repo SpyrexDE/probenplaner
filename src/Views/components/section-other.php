@@ -8,7 +8,7 @@
 
 <li>
     <span class="tree-item-span">
-        <a style="color:#000; text-decoration:none;" data-toggle="collapse" href="#Andere<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Andere<?= $rehearsalId ?>">
+        <a class="text-black no-underline" data-toggle="collapse" href="#Andere<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Andere<?= $rehearsalId ?>">
             <i class="collapsed"><i class="fas fa-folder"></i></i>
             <i class="expanded"><i class="far fa-folder-open"></i></i> Andere
         </a>

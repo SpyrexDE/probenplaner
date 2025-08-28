@@ -1,21 +1,20 @@
 <?php $this->layout('layouts/default', ['title' => 'Orchester löschen', 'currentPage' => $currentPage]) ?>
 
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-danger text-white">
-                    <h5 class="mb-0">Orchester löschen</h5>
-                </div>
-                <div class="card-body">
+<div class="container-app py-8">
+    <div class="max-w-lg mx-auto">
+        <div class="card-base">
+            <div class="p-6 bg-error text-white rounded-t-lg">
+                <h5 class="text-xl font-bold mb-0">Orchester löschen</h5>
+            </div>
+            <div class="p-6">
                     <form action="/orchestras/delete" method="post">
                         <input type="hidden" name="confirm_delete" value="yes">
                         
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-danger" onclick="return confirmDelete(event)">
-                                <i class="fas fa-trash-alt me-2"></i>Ja, Orchester unwiderruflich löschen
+                        <div class="space-y-3">
+                            <button type="submit" class="btn btn-danger w-full" onclick="return confirmDelete(event)">
+                                <i class="fas fa-trash-alt mr-2"></i>Ja, Orchester unwiderruflich löschen
                             </button>
-                            <a href="/orchestras/settings" class="btn btn-secondary">Abbrechen</a>
+                            <a href="/orchestras/settings" class="btn btn-outline w-full text-center block">Abbrechen</a>
                         </div>
                     </form>
                 </div>
@@ -33,7 +32,7 @@ function confirmDelete(event) {
             <p><i class="fas fa-exclamation-triangle text-warning"></i> <strong>Warnung:</strong> Sie sind dabei, das Orchester <strong><?= $this->e($orchestra['name']) ?></strong> zu löschen.</p>
             <p>Diese Aktion kann nicht rückgängig gemacht werden.</p>
             <p><strong>Folgende Daten werden gelöscht:</strong></p>
-            <ul class="text-left" style="list-style-type: disc; padding-left: 20px;">
+            <ul class="text-left list-disc pl-5">
                 <li>Alle Mitglieder und deren Accounts</li>
                 <li>Alle Proben und Konzerte</li>
                 <li>Alle Zusagen der Mitglieder</li>
