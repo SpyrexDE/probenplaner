@@ -1,0 +1,71 @@
+/* 
+ * Global Focus Ring Removal
+ * This file removes all focus rings and outlines from the entire project
+ * to ensure consistent styling without focus indicators.
+ */
+
+/* === GLOBAL FOCUS RING REMOVAL === */
+/* Remove all focus rings globally */
+*:focus,
+*:focus-visible,
+*:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove focus rings from all interactive elements */
+button:focus,
+input:focus,
+select:focus,
+textarea:focus,
+a:focus,
+[tabindex]:focus,
+[role="button"]:focus,
+[role="tab"]:focus,
+[role="menuitem"]:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove Bootstrap focus styles */
+.btn:focus,
+.btn.focus,
+.form-control:focus,
+.form-control.focus,
+.custom-select:focus,
+.custom-select.focus,
+.custom-checkbox input[type="checkbox"]:focus,
+.custom-radio input[type="radio"]:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove any remaining focus styles */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Specific focus removal for promise buttons */
+.checkBtn:focus,
+.crossBtn:focus,
+.checkBtn:focus-visible,
+.crossBtn:focus-visible,
+.checkBtn:focus-within,
+.crossBtn:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove focus from action buttons */
+.action-btn:focus,
+.action-btn:focus-visible,
+.action-btn:focus-within {
+  outline: none !important;
+  box-shadow: var(--shadow-sm) !important;
+}

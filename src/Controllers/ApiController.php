@@ -50,20 +50,34 @@ class ApiController extends Controller
                 $isSmallGroup = isset($_SESSION['is_small_group']) && $_SESSION['is_small_group'];
                 $rehearsalIsSmallGroup = isset($rehearsal['is_small_group']) && $rehearsal['is_small_group'] == 1;
                 
-                if ($this->rehearsalModel->isUserInRehearsalGroup($_SESSION['type'], $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
+                if ($this->rehearsalModel->isUserInRehearsalGroup($_SESSION['type'] ?? '', $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
                     $stats['total']++;
                     
                     // Check user's promise for this rehearsal
                     $promise = $this->userPromiseModel->findByUserAndRehearsal($userId, $rehearsal['id']);
                     
+                    // Debug: Log what we found
+                    error_log("Rehearsal {$rehearsal['id']}: Promise found: " . ($promise ? 'yes' : 'no'));
                     if ($promise) {
-                        if ($promise['attending']) {
+                        error_log("Promise data: " . json_encode($promise));
+                        error_log("Promise status value: " . ($promise['status'] ?? 'undefined'));
+                    }
+                    
+                    if ($promise && isset($promise['status'])) {
+                        if ($promise['status'] === 'yes') {
                             $stats['attending']++;
-                        } else {
+                            error_log("Counted as attending (status: yes)");
+                        } elseif ($promise['status'] === 'no') {
                             $stats['not_attending']++;
+                            error_log("Counted as not attending (status: no)");
+                        } else {
+                            // 'maybe' or any other status counts as no response
+                            $stats['no_response']++;
+                            error_log("Counted as no response (status: " . $promise['status'] . ")");
                         }
                     } else {
                         $stats['no_response']++;
+                        error_log("Counted as no response (no promise found)");
                     }
                 }
             }

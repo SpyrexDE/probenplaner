@@ -123,6 +123,8 @@ $router->addRoute('/orchestras/delete-confirm', 'OrchestraController', 'confirmD
 $router->addRoute('/orchestras/delete', 'OrchestraController', 'delete');
 
 // API routes
+$router->addRoute('/api/test', 'ApiController', 'test');
+$router->addRoute('/api/minimal-stats', 'ApiController', 'minimalStats');
 $router->addRoute('/api/user-stats', 'ApiController', 'getUserStats');
 
 // Process the request

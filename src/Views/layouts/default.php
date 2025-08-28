@@ -8,6 +8,8 @@
     <!-- Theme and Component Styles -->
     <link rel="stylesheet" href="/assets/css/theme.css">
     <link rel="stylesheet" href="/assets/css/components.css">
+    <link rel="stylesheet" href="/assets/css/focus-removal.css">
+    <link rel="stylesheet" href="/assets/css/promise-fixes.css?v=<?= time() ?>">
     
     <!-- Bootstrap CSS for component functionality -->
     <link rel="stylesheet" href="/assets/bootstrap/css/bootstrap.min.css">
@@ -577,8 +579,42 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
                  updateStatsDisplay(data.stats);
              } else {
                  console.error('API returned error:', data.error || 'Unknown error');
-                 // Fallback to zero stats
-                 updateStatsDisplay({ attending: 0, not_attending: 0, no_response: 0, total: 0 });
+                 // This suggests a PHP error - try the test endpoint
+                 console.log('Trying test endpoint to debug API issues...');
+                 fetch('/api/test')
+                     .then(testResponse => testResponse.text())
+                     .then(testText => {
+                         console.log('Test endpoint response:', testText);
+                         if (testText.includes('API is working')) {
+                             console.log('API is working, issue is with getUserStats endpoint');
+                         } else {
+                             console.log('API has fundamental issues');
+                         }
+                     })
+                     .catch(testError => {
+                         console.error('Test endpoint also failed:', testError);
+                     });
+                 
+                 // Try the minimal stats endpoint as a fallback
+                 console.log('Trying minimal stats endpoint as fallback...');
+                 fetch('/api/minimal-stats')
+                     .then(fallbackResponse => fallbackResponse.json())
+                     .then(fallbackData => {
+                         if (fallbackData.success && fallbackData.stats) {
+                             console.log('Minimal stats endpoint worked, using fallback data:', fallbackData.stats);
+                             updateStatsDisplay(fallbackData.stats);
+                         } else {
+                             console.log('Minimal stats endpoint failed too');
+                             updateStatsDisplay({ attending: 0, not_attending: 0, no_response: 0, total: 0 });
+                         }
+                     })
+                     .catch(fallbackError => {
+                         console.error('Minimal stats endpoint also failed:', fallbackError);
+                         updateStatsDisplay({ attending: 0, not_attending: 0, no_response: 0, total: 0 });
+                     });
+                 
+                 // Don't fall through to the default fallback
+                 return;
              }
          })
          .catch(error => {
