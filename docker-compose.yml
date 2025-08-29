@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
+      args:
+        - GIT_VERSION=${GIT_VERSION}
     ports:
       - "8080:80"
     volumes:
@@ -17,6 +19,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
       - ADMIN_PW=${ADMIN_PW}
+      - GIT_VERSION=${GIT_VERSION}
     networks:
       - app_net
 

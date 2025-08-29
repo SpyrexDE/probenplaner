@@ -113,6 +113,7 @@
 
 <?php 
 use App\Core\Utilities;
+use App\Core\Version;
 if (isset($_SESSION['username'])): ?>
     <div id="wrapper" class="flex min-h-screen transition-all duration-slow">
         <!-- Top Navigation -->
@@ -270,6 +271,15 @@ if (isset($_SESSION['username'])): ?>
                 ?>
                 </ul>
             </nav>
+            
+            <!-- Version Footer -->
+            <div class="sidebar-footer">
+                <div class="sidebar-version">
+                    Probenplaner by Fabian Kessler · <?php 
+                    echo Version::getShortVersion();
+                    ?>
+                </div>
+            </div>
         </div>
         <!-- Main Content -->
         <div id="page-content-wrapper" class="page-content main-content-with-sidebar">

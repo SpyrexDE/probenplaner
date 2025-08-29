@@ -1,7 +1,8 @@
 FROM php:8.0-apache
 
-# Add build argument
+# Add build arguments
 ARG DOMAIN
+ARG GIT_VERSION
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
@@ -29,9 +30,17 @@ RUN mkdir -p /etc/apache2/ssl
 # Set working directory
 WORKDIR /var/www/html
 
+# Set environment variable from build arg
+ENV GIT_VERSION=${GIT_VERSION:-N/A}
+RUN echo "Setting GIT_VERSION to: $GIT_VERSION"
+
 # Copy Apache configuration
 COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
 COPY docker/apache-ssl.conf /etc/apache2/sites-available/default-ssl.conf
+
+# Copy application code
+COPY src/ ./src/
+COPY database/ ./database/
 
 # Create startup script
 COPY docker/startup.sh /usr/local/bin/
@@ -44,6 +53,7 @@ RUN chown -R www-data:www-data /var/www/html \
 # Pass environment variables to Apache
 RUN echo "PassEnv APP_ENV" >> /etc/apache2/conf-available/environment.conf
 RUN echo "PassEnv DOMAIN" >> /etc/apache2/conf-available/environment.conf
+RUN echo "PassEnv GIT_VERSION" >> /etc/apache2/conf-available/environment.conf
 RUN a2enconf environment
 RUN a2ensite 000-default
 
