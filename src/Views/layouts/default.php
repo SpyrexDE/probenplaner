@@ -201,7 +201,14 @@ if (isset($_SESSION['username'])): ?>
             <!-- Statistics Section -->
             <?php if (isset($_SESSION['user_id'])): ?>
             <div class="sidebar-stats">
+                <?php if (isset($_SESSION['type']) && $_SESSION['type'] === 'Dirigent'): ?>
+                <div class="sidebar-stats-header">
+                    <div class="sidebar-stats-title">Probe</div>
+                    <div class="sidebar-stats-date" id="next-rehearsal-date">Lade...</div>
+                </div>
+                <?php else: ?>
                 <div class="sidebar-stats-title">Meine Proben</div>
+                <?php endif; ?>
                 <div class="sidebar-stats-bar" id="sidebar-stats-bar">
                     <div class="sidebar-stats-segment attending"></div>
                     <div class="sidebar-stats-segment not-attending"></div>
@@ -661,7 +668,7 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
          const notAttendingPercent = ((stats.not_attending || 0) / total) * 100;
          const noResponsePercent = ((stats.no_response || 0) / total) * 100;
          
-                 // Update progress bar segments
+         // Update progress bar segments
         const attendingSegment = document.querySelector('.sidebar-stats-segment.attending');
         const notAttendingSegment = document.querySelector('.sidebar-stats-segment.not-attending');
         const noResponseSegment = document.querySelector('.sidebar-stats-segment.no-response');
@@ -678,6 +685,22 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
          if (attendingText) attendingText.textContent = stats.attending || 0;
          if (notAttendingText) notAttendingText.textContent = stats.not_attending || 0;
          if (noResponseText) noResponseText.textContent = stats.no_response || 0;
+
+         // If this is conductor stats, update the next rehearsal display
+         if (stats.next_rehearsal) {
+             const dateElement = document.getElementById('next-rehearsal-date');
+             const titleElement = document.querySelector('.sidebar-stats-header .sidebar-stats-title');
+             
+             if (dateElement) {
+                 dateElement.textContent = stats.next_rehearsal.date_formatted || stats.next_rehearsal.date;
+             }
+             
+             if (titleElement) {
+                 // Show rehearsal type if it's not "Probe", otherwise just "Probe"
+                 const rehearsalType = stats.next_rehearsal.type || 'Probe';
+                 titleElement.textContent = rehearsalType;
+             }
+         }
      }
     
     // Update UI visibility based on current route

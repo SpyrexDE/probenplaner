@@ -92,7 +92,7 @@ class UserPromise extends Model
         }
         
         // Get relevant groups for this rehearsal
-        $sql = "SELECT group_name FROM rehearsal_groups WHERE rehearsal_id = ?";
+        $sql = "SELECT name FROM rehearsal_groups WHERE rehearsal_id = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param('i', $rehearsalId);
         $stmt->execute();
@@ -100,7 +100,7 @@ class UserPromise extends Model
         
         $groups = [];
         while ($row = $result->fetch_assoc()) {
-            $groups[$row['group_name']] = true;
+            $groups[$row['name']] = true;
         }
         
         // Get all users from this orchestra
@@ -132,12 +132,16 @@ class UserPromise extends Model
                 ];
                 
                 if ($promise) {
-                    if ($promise['attending']) {
+                    if ($promise['status'] === 'yes') {
                         $userStat['status'] = 'attending';
                         $stats['attending']++;
-                    } else {
+                    } elseif ($promise['status'] === 'no') {
                         $userStat['status'] = 'not_attending';
                         $stats['not_attending']++;
+                    } else {
+                        // 'maybe' or any other status counts as no response
+                        $userStat['status'] = 'no_response';
+                        $stats['no_response']++;
                     }
                     
                     $userStat['note'] = $promise['note'] ?? '';

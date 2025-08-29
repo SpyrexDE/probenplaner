@@ -332,7 +332,7 @@ class Rehearsal extends Model
      * @param array $groups Groups involved
      * @return bool Success or failure
      */
-    public function updateRehearsal(int $id, array $data, ?string $groups)
+    public function updateRehearsal(int $id, array $data, ?array $groups)
     {
         // Start transaction
         $this->db->getConnection()->begin_transaction();
@@ -359,15 +359,17 @@ class Rehearsal extends Model
                 throw new \Exception($stmt->error);
             }
             
-            // Add new groups
-            foreach ($groups as $group) {
-                $sql = "INSERT INTO rehearsal_groups (rehearsal_id, name) VALUES (?, ?)";
-                $stmt = $this->db->prepare($sql);
-                $stmt->bind_param('is', $id, $group);
-                $result = $stmt->execute();
-                
-                if (!$result) {
-                    throw new \Exception($stmt->error);
+                        // Add new groups if provided
+            if ($groups && is_array($groups)) {
+                foreach ($groups as $group) {
+                    $sql = "INSERT INTO rehearsal_groups (rehearsal_id, name) VALUES (?, ?)";
+                    $stmt = $this->db->prepare($sql);
+                    $stmt->bind_param('is', $id, $group);
+                    $result = $stmt->execute();
+                    
+                    if (!$result) {
+                        throw new \Exception($stmt->error);
+                    }
                 }
             }
             

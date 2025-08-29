@@ -33,6 +33,12 @@ class ApiController extends Controller
         $userId = $_SESSION['user_id'];
         $orchestraId = $_SESSION['orchestra_id'] ?? 1;
 
+        // If user is a conductor, get upcoming rehearsal stats instead of personal stats
+        if (isset($_SESSION['type']) && $_SESSION['type'] === 'Dirigent') {
+            $this->getConductorStats($orchestraId);
+            return;
+        }
+
         try {
             // Get all future rehearsals for this orchestra
             $rehearsals = $this->rehearsalModel->getUpcoming($orchestraId, false);
@@ -86,6 +92,59 @@ class ApiController extends Controller
         } catch (\Exception $e) {
             $this->jsonResponse(['success' => false, 'error' => 'Failed to load stats'], 500);
         }
+    }
+
+    /**
+     * Get upcoming rehearsal statistics for conductors
+     */
+    private function getConductorStats(int $orchestraId)
+    {
+        try {
+            // Get the next upcoming rehearsal
+            $rehearsals = $this->rehearsalModel->getUpcoming($orchestraId, false);
+            
+            if (empty($rehearsals)) {
+                // No upcoming rehearsals
+                $this->jsonResponse([
+                    'success' => true, 
+                    'stats' => [
+                        'attending' => 0,
+                        'not_attending' => 0,
+                        'no_response' => 0,
+                        'total' => 0
+                    ],
+                    'next_rehearsal' => null
+                ]);
+                return;
+            }
+
+            $nextRehearsal = $rehearsals[0]; // First rehearsal is the next one
+            
+            // Get statistics for this rehearsal
+            $stats = $this->userPromiseModel->getPromiseStats($nextRehearsal['id'], $orchestraId);
+            
+            // Add rehearsal info to the response
+            $stats['next_rehearsal'] = [
+                'id' => $nextRehearsal['id'],
+                'date' => $nextRehearsal['date'],
+                'date_formatted' => $nextRehearsal['date_formatted'],
+                'start_time' => $nextRehearsal['start_time'],
+                'end_time' => $nextRehearsal['end_time'],
+                'type' => $nextRehearsal['type'] ?? 'Probe'
+            ];
+
+            $this->jsonResponse(['success' => true, 'stats' => $stats]);
+        } catch (\Exception $e) {
+            $this->jsonResponse(['success' => false, 'error' => 'Failed to load conductor stats'], 500);
+        }
+    }
+
+    /**
+     * Test endpoint for debugging
+     */
+    public function test()
+    {
+        $this->jsonResponse(['success' => true, 'message' => 'API is working']);
     }
 
     /**

@@ -141,6 +141,7 @@ class RehearsalController extends Controller
                 // Save rehearsal
                 $rehearsalData = [
                     'date' => $date,
+                    'type' => !empty($rehearsalType) ? $rehearsalType : 'Probe',
                     'start_time' => $start_time,
                     'end_time' => $end_time,
                     'location' => $location,
@@ -153,7 +154,12 @@ class RehearsalController extends Controller
                     $rehearsalData['color'] = $color;
                 }
                 
-                $result = $this->rehearsalModel->create($rehearsalData, array_keys($groups));
+                // Remove rehearsal type from groups since it's now a separate field
+                $filteredGroups = array_values(array_filter(array_keys($groups), function($group) use ($rehearsalType) {
+                    return $group !== $rehearsalType;
+                }));
+                
+                $result = $this->rehearsalModel->create($rehearsalData, implode(',', $filteredGroups));
                 
                 if ($result && !is_array($result)) {
                     $this->setFlash('success', 'Rehearsal created successfully');
@@ -309,6 +315,7 @@ class RehearsalController extends Controller
                 // Update rehearsal
                 $updateData = [
                     'date' => $date,
+                    'type' => !empty($rehearsalType) ? $rehearsalType : 'Probe',
                     'start_time' => $start_time,
                     'end_time' => $end_time,
                     'location' => $location,
@@ -319,7 +326,12 @@ class RehearsalController extends Controller
                     $updateData['color'] = $color;
                 }
                 
-                $result = $this->rehearsalModel->updateRehearsal($rehearsalId, $updateData, array_keys($groups));
+                // Remove rehearsal type from groups since it's now a separate field
+                $filteredGroups = array_values(array_filter(array_keys($groups), function($group) use ($rehearsalType) {
+                    return $group !== $rehearsalType;
+                }));
+                
+                $result = $this->rehearsalModel->updateRehearsal($rehearsalId, $updateData, $filteredGroups);
                 
                 if ($result === true) {
                     $this->setFlash('success', 'Rehearsal updated successfully');
@@ -360,17 +372,9 @@ class RehearsalController extends Controller
                 $displayDate = Helpers::formatDateForDb($rehearsal['date']);
             }
             
-            // Check if any of the rehearsal types is in the groups
-            $rehearsalType = '';
-            $rehearsalTypes = ['Konzertreise', 'Konzert', 'Generalprobe', 'Registerprobe'];
+            // Get rehearsal type from the new type field
+            $rehearsalType = $rehearsal['type'] ?? 'Probe';
             $groups = $rehearsal['groups'] ?? [];
-            
-            foreach ($rehearsalTypes as $type) {
-                if (in_array($type, $groups)) {
-                    $rehearsalType = $type;
-                    break;
-                }
-            }
             
             $isTutti = in_array('Tutti', $groups);
             // Display the form
