@@ -1235,11 +1235,18 @@
   margin-bottom: var(--space-3);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-base);
-  transition: background-color var(--transition-base);
+  transition: all var(--transition-base);
+  cursor: pointer;
+  user-select: none;
 }
 
 .checkbox-item:hover {
   background-color: var(--color-bg-tertiary);
+  transform: translateX(2px);
+}
+
+.checkbox-item:active {
+  transform: translateX(1px);
 }
 
 .checkbox-item input[type="checkbox"] {
@@ -1247,6 +1254,7 @@
   height: 18px;
   margin-right: var(--space-3);
   accent-color: var(--color-primary);
+  cursor: pointer;
 }
 
 .checkbox-item label {
@@ -1254,10 +1262,45 @@
   color: var(--color-text-primary);
   cursor: pointer;
   user-select: none;
+  flex: 1;
+  padding: var(--space-1) 0;
+}
+
+/* Handle disabled state */
+.checkbox-item input[type="checkbox"]:disabled + label {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.checkbox-item input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.checkbox-item:has(input[type="checkbox"]:disabled) {
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.checkbox-item:has(input[type="checkbox"]:disabled):hover {
+  background-color: transparent;
+  transform: none;
+}
+
+/* Indeterminate state styling */
+.checkbox-item input[type="checkbox"]:indeterminate {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 .sub-group {
-  margin-left: var(--space-8);
+  margin-left: var(--space-5);
+  padding-left: var(--space-4);
+  border-left: 2px solid var(--color-border-light);
+}
+
+.sub-sub-group {
+  margin-left: var(--space-5);
   padding-left: var(--space-4);
   border-left: 2px solid var(--color-border-light);
 }
@@ -1509,4 +1552,39 @@
 
 .fab i {
   font-size: var(--font-size-xl);
+}
+
+/* === SHADOW PRESERVATION === */
+/* Ensure cards never lose their shadows, even when child elements are focused */
+.form {
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.rehearsal-card {
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.rehearsal-card:hover {
+  box-shadow: var(--shadow-md) !important;
+}
+
+.confirmation-card {
+  box-shadow: var(--shadow-lg) !important;
+}
+
+/* Prevent focus-within from overriding the base shadows */
+.form:focus-within {
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.rehearsal-card:focus-within {
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.rehearsal-card:hover:focus-within {
+  box-shadow: var(--shadow-md) !important;
+}
+
+.confirmation-card:focus-within {
+  box-shadow: var(--shadow-lg) !important;
 }
