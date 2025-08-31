@@ -251,7 +251,7 @@ class Rehearsal extends Model
      * @param array $groups Groups involved
      * @return int|bool Rehearsal ID or false on failure
      */
-    public function create(array $data, ?string $groups)
+    public function create(array $data, ?array $groups)
     {
         // Start transaction
         $this->db->getConnection()->begin_transaction();
@@ -286,8 +286,9 @@ class Rehearsal extends Model
             }
             
             // Add groups
-            error_log("Creating rehearsal groups for rehearsal ID: " . $rehearsalId);
-            foreach ($groups as $group) {
+            if ($groups && is_array($groups)) {
+                error_log("Creating rehearsal groups for rehearsal ID: " . $rehearsalId);
+                foreach ($groups as $group) {
                 $sql = "INSERT INTO rehearsal_groups (rehearsal_id, name) VALUES (?, ?)";
                 $stmt = $this->db->prepare($sql);
                 $stmt->bind_param('is', $rehearsalId, $group);
@@ -310,6 +311,7 @@ class Rehearsal extends Model
                     
                     throw new \Exception($error, $errno);
                 }
+            }
             }
             
             // Commit transaction

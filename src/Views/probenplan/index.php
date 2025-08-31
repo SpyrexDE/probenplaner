@@ -40,7 +40,7 @@
                                     $end_time_pp = isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, 5) : '??:??';
                                     $time_display_pp = $start_time_pp . ' - ' . $end_time_pp;
                                 ?>
-                                <tr class="<?= !empty($rehearsal['color']) ? '' : '' ?>" style="<?= !empty($rehearsal['color']) ? 'background-color: ' . $rehearsal['color'] . ';' : '' ?>">
+                                <tr class="<?= !empty($rehearsal['color']) ? '' : '' ?>" style="<?= !empty($rehearsal['color']) ? 'border-left: 4px solid ' . $rehearsal['color'] . ';' : '' ?>">
                                     <td><?= isset($days[$i]) ? $days[$i] : '' ?></td>
                                     <td><?= $rehearsal['date_formatted'] ?? $rehearsal['date'] ?></td>
                                     <td><?= htmlspecialchars($time_display_pp) ?></td>

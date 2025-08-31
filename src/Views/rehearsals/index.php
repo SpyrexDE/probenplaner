@@ -42,7 +42,7 @@
                     $groupsDisplay = str_replace("_", " ", implode("<br>", $groupKeys));
                 ?>
                 
-                <div class="rehearsal-card" style="<?= !empty($rehearsal['color']) ? 'background-color: ' . $rehearsal['color'] . ';' : '' ?>">
+                <div class="rehearsal-card" style="<?= !empty($rehearsal['color']) ? 'border-left-color: ' . $rehearsal['color'] . ';' : '' ?>">
                     <div class="rehearsal-card-content">
                         <div class="rehearsal-card-info">
                             <div class="rehearsal-card-primary">

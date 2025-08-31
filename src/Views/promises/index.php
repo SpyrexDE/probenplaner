@@ -90,7 +90,7 @@ function sortGroups($groups) {
         }
         ?>
         
-        <div class="rehearsal-card status-<?= $status ?>" style="<?= !empty($rehearsal['color']) ? 'background-color: ' . $rehearsal['color'] . ';' : '' ?>">
+        <div class="rehearsal-card status-<?= $status ?>" style="<?= !empty($rehearsal['color']) ? 'border-left-color: ' . $rehearsal['color'] . ';' : '' ?>">
             <div class="rehearsal-card-content">
                 <div class="rehearsal-card-info">
                     <div class="rehearsal-card-primary">

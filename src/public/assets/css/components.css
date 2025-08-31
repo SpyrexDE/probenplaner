@@ -1345,6 +1345,101 @@
   border-left: 2px solid var(--color-border-light);
 }
 
+/* === COMPACT COLOR PICKER === */
+.compact-color-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: flex-start;
+  margin-bottom: var(--space-4);
+}
+
+.compact-color-picker-label {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-2);
+}
+
+.compact-color-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--space-2);
+  width: 264px;
+}
+
+@media (max-width: 640px) {
+  .compact-color-picker-grid {
+    width: 240px;
+    gap: var(--space-1);
+  }
+  
+  .compact-color-option {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+.compact-color-option {
+  width: 36px;
+  height: 36px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-base);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+  outline: none;
+  background-clip: content-box;
+  background: none !important;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Color classes */
+.compact-color-option.color-ffffff { background-color: #ffffff !important; }
+.compact-color-option.color-3b82f6 { background-color: #3b82f6 !important; }
+.compact-color-option.color-10b981 { background-color: #10b981 !important; }
+.compact-color-option.color-f59e0b { background-color: #f59e0b !important; }
+.compact-color-option.color-ef4444 { background-color: #ef4444 !important; }
+.compact-color-option.color-8b5cf6 { background-color: #8b5cf6 !important; }
+.compact-color-option.color-f97316 { background-color: #f97316 !important; }
+.compact-color-option.color-ec4899 { background-color: #ec4899 !important; }
+.compact-color-option.color-14b8a6 { background-color: #14b8a6 !important; }
+.compact-color-option.color-6366f1 { background-color: #6366f1 !important; }
+.compact-color-option.color-6b7280 { background-color: #6b7280 !important; }
+.compact-color-option.color-475569 { background-color: #475569 !important; }
+
+.compact-color-option:hover {
+  border-color: var(--color-border-dark);
+  transform: translateY(-1px);
+}
+
+.compact-color-option:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.compact-color-option.selected {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.compact-color-option.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-weight: var(--font-weight-bold);
+  font-size: 14px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+
+
 /* === COLOR PICKER === */
 .color-picker {
   position: relative;

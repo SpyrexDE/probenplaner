@@ -34,12 +34,18 @@ class Constants
     const REHEARSAL_SMALL_GROUP = 'small_group';
     
     // Color Codes for Rehearsals
-    const COLOR_WHITE = 'white';
-    const COLOR_BLUE = 'blue';
-    const COLOR_GREEN = 'green';
-    const COLOR_YELLOW = 'yellow';
-    const COLOR_RED = 'red';
-    const COLOR_PURPLE = 'purple';
+    const COLOR_WHITE = '#ffffff';
+    const COLOR_BLUE = '#3b82f6';
+    const COLOR_GREEN = '#10b981';
+    const COLOR_YELLOW = '#f59e0b';
+    const COLOR_RED = '#ef4444';
+    const COLOR_PURPLE = '#8b5cf6';
+    const COLOR_ORANGE = '#f97316';
+    const COLOR_PINK = '#ec4899';
+    const COLOR_TEAL = '#14b8a6';
+    const COLOR_INDIGO = '#6366f1';
+    const COLOR_GRAY = '#6b7280';
+    const COLOR_SLATE = '#475569';
     
     // Date/Time Formats
     const DATE_FORMAT = 'Y-m-d';
@@ -72,7 +78,13 @@ class Constants
             self::COLOR_GREEN => 'Grün',
             self::COLOR_YELLOW => 'Gelb',
             self::COLOR_RED => 'Rot',
-            self::COLOR_PURPLE => 'Lila'
+            self::COLOR_PURPLE => 'Lila',
+            self::COLOR_ORANGE => 'Orange',
+            self::COLOR_PINK => 'Pink',
+            self::COLOR_TEAL => 'Türkis',
+            self::COLOR_INDIGO => 'Indigo',
+            self::COLOR_GRAY => 'Grau',
+            self::COLOR_SLATE => 'Schiefer'
         ];
     }
     

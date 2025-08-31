@@ -5,6 +5,7 @@ use App\Core\Controller;
 use App\Core\Validator;
 use App\Models\Rehearsal;
 use App\Core\Helpers;
+use App\Core\Constants;
 
 /**
  * Rehearsal Controller
@@ -159,7 +160,7 @@ class RehearsalController extends Controller
                     return $group !== $rehearsalType;
                 }));
                 
-                $result = $this->rehearsalModel->create($rehearsalData, implode(',', $filteredGroups));
+                $result = $this->rehearsalModel->create($rehearsalData, $filteredGroups);
                 
                 if ($result && !is_array($result)) {
                     $this->setFlash('success', 'Rehearsal created successfully');
@@ -204,7 +205,7 @@ class RehearsalController extends Controller
                     'start_time' => '',
                     'end_time' => '',
                     'location' => '',
-                    'color' => 'white',
+                    'color' => Constants::COLOR_WHITE,
                     'rehearsal_type' => '',
                     'groups' => [],
                     'is_small_group' => false,

@@ -44,7 +44,7 @@ if ($isSmallGroup) {
 
 <span class="tree-item-span">
     <a class="text-black no-underline" 
-       style="background-color: <?= !empty($rehearsal['color']) ? $rehearsal['color'] : 'white' ?>;" 
+       style="border-left-color: <?= !empty($rehearsal['color']) ? $rehearsal['color'] : '#ffffff' ?>;" 
        data-toggle="collapse" 
        href="#<?= htmlspecialchars($collapseTarget) ?>" 
        aria-expanded="false" 

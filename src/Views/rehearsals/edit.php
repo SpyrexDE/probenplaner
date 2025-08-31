@@ -38,20 +38,10 @@
             </div>
             
             <div class="form-group">
-                <label class="form-label">Farbenauswahl</label>
-                <div class="color-picker">
-                    <button id="dropD" class="btn-base btn-outline color-picker-btn" data-toggle="dropdown" aria-expanded="false" type="button" style="background-color: <?= htmlspecialchars($formData['color'] ?? 'white') ?>;">
-                        Farbenauswahl
-                    </button>
-                    <div class="dropdown-menu color-options">
-                        <a class="dropdown-item color-option" href="#" id="white" style="background-color: white;"></a>
-                        <a class="dropdown-item color-option" href="#" id="red" style="background-color: #ffcccc;"></a>
-                        <a class="dropdown-item color-option" href="#" id="blue" style="background-color: #ccccff;"></a>
-                        <a class="dropdown-item color-option" href="#" id="yellow" style="background-color: #ffffcc;"></a>
-                        <a class="dropdown-item color-option" href="#" id="green" style="background-color: #ccffcc;"></a>
-                    </div>
-                </div>
-                <input type="hidden" name="color" id="selectedColor" value="<?= htmlspecialchars($formData['color'] ?? 'white') ?>">
+                <?php 
+                $selectedColor = $formData['color'] ?? null;
+                include __DIR__ . '/../components/compact-color-picker.php'; 
+                ?>
             </div>
 
             <div class="form-section">
@@ -212,18 +202,9 @@
     </div>
 </div>
 
+<script src="/assets/js/compact-color-picker.js"></script>
 <script>
-// Color picker functionality
-document.querySelectorAll('.color-option').forEach(function(option) {
-    option.addEventListener('click', function(e) {
-        e.preventDefault();
-        const color = this.id;
-        const colorValue = this.style.backgroundColor;
-        
-        document.getElementById('selectedColor').value = colorValue;
-        document.getElementById('dropD').style.backgroundColor = colorValue;
-    });
-});
+// Color picker functionality is now handled by compact-color-picker.js
 
 // 3-Level Hierarchy Logic:
 // Level 1: Tutti (root) controls all main groups
