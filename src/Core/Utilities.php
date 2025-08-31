@@ -74,4 +74,59 @@ class Utilities
         $englishDay = $date->format('D');
         return $germanDays[$englishDay] ?? $englishDay;
     }
+    
+    /**
+     * Generate FontAwesome icon HTML
+     * 
+     * @param string $iconName Icon name (without fa- prefix)
+     * @param string $classes Additional CSS classes
+     * @return string FontAwesome icon HTML
+     */
+    public static function icon($iconName, $classes = '')
+    {
+        $faClass = 'fas fa-' . $iconName;
+        $allClasses = trim($faClass . ' ' . $classes);
+        
+        return '<i class="' . $allClasses . '"></i>';
+    }
+    
+    /**
+     * Format a date for display
+     * 
+     * @param string $date Date string
+     * @return string Formatted date
+     */
+    public static function formatDate($date)
+    {
+        if (empty($date)) {
+            return '';
+        }
+        
+        try {
+            $dateObj = new \DateTime($date);
+            return $dateObj->format('d.m.Y');
+        } catch (\Exception $e) {
+            return $date; // Return original if parsing fails
+        }
+    }
+    
+    /**
+     * Format a date for database storage
+     * 
+     * @param string $date Date string
+     * @return string Formatted date for database (Y-m-d)
+     */
+    public static function formatDateForDb($date)
+    {
+        if (empty($date)) {
+            return '';
+        }
+        
+        try {
+            $dateObj = new \DateTime($date);
+            return $dateObj->format('Y-m-d');
+        } catch (\Exception $e) {
+            return $date; // Return original if parsing fails
+        }
+    }
 } 

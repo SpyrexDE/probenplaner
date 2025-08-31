@@ -71,7 +71,7 @@
                                 <li>
                                     <span class="tree-item-span">
                                         <a class="text-black no-underline" data-toggle="collapse" href="#Streicher<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Streicher<?= $rehearsalId ?>">
-                                            <i class="collapsed"><i class="fas fa-folder"></i></i>
+                                            <i class="collapsed"><i ><?= icon('folder', 'text-gray-600') ?>></i></i>
                                             <i class="expanded"><i class="far fa-folder-open"></i></i> Streicher
                                         </a>
                                         <?php 
@@ -80,11 +80,11 @@
                                             $stringsNoResponse = count(array_filter($stringPlayers, function($m) { return $m['status'] === 'no_response'; }));
                                         ?>
                                         <a class="rightfloatet"><?= $stringsNotAttending ?></a>
-                                        <i class="fas fa-times-circle treeIcon rightfloatet"></i>
+                                        <i class=" treeIcon rightfloatet"><?= icon('times-circle', 'text-gray-600') ?>></i>
                                         <a class="rightfloatet"><?= $stringsAttending ?></a>
-                                        <i class="fas fa-check-circle treeIcon rightfloatet"></i>
+                                        <i class=" treeIcon rightfloatet"><?= icon('check-circle', 'text-gray-600') ?>></i>
                                         <a class="rightfloatet"><?= $stringsNoResponse ?></a>
-                                        <i class="fas fa-question-circle treeIcon rightfloatet"></i>
+                                        <i class=" treeIcon rightfloatet"><?= icon('question-circle', 'text-gray-600') ?>></i>
                                     </span>
                                     
                                     <div id="Streicher<?= $rehearsalId ?>" class="collapse">
@@ -114,15 +114,15 @@
                                             <li>
                                                 <span class="tree-item-span">
                                                     <a class="text-black no-underline" data-toggle="collapse" href="#<?= $instrumentId . $rehearsalId ?>" aria-expanded="false" aria-controls="<?= $instrumentId . $rehearsalId ?>">
-                                                        <i class="collapsed"><i class="fas fa-folder"></i></i>
+                                                        <i class="collapsed"><i ><?= icon('folder', 'text-gray-600') ?>></i></i>
                                                         <i class="expanded"><i class="far fa-folder-open"></i></i> <?= $instrumentName ?>
                                                     </a>
                                                     <a class="rightfloatet"><?= $notAttending ?></a>
-                                                    <i class="fas fa-times-circle treeIcon rightfloatet"></i>
+                                                    <i class=" treeIcon rightfloatet"><?= icon('times-circle', 'text-gray-600') ?>></i>
                                                     <a class="rightfloatet"><?= $attending ?></a>
-                                                    <i class="fas fa-check-circle treeIcon rightfloatet"></i>
+                                                    <i class=" treeIcon rightfloatet"><?= icon('check-circle', 'text-gray-600') ?>></i>
                                                     <a class="rightfloatet"><?= $noResponse ?></a>
-                                                    <i class="fas fa-question-circle treeIcon rightfloatet"></i>
+                                                    <i class=" treeIcon rightfloatet"><?= icon('question-circle', 'text-gray-600') ?>></i>
                                                 </span>
                                                 
                                                 <div id="<?= $instrumentId . $rehearsalId ?>" class="collapse">
@@ -150,7 +150,7 @@
                                 <li>
                                     <span class="tree-item-span">
                                         <a class="text-black no-underline" data-toggle="collapse" href="#Bläser<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Bläser<?= $rehearsalId ?>">
-                                            <i class="collapsed"><i class="fas fa-folder"></i></i>
+                                            <i class="collapsed"><i ><?= icon('folder', 'text-gray-600') ?>></i></i>
                                             <i class="expanded"><i class="far fa-folder-open"></i></i> Bläser
                                         </a>
                                         <?php 
@@ -160,11 +160,11 @@
                                             $windsNoResponse = count(array_filter($allWinds, function($m) { return $m['status'] === 'no_response'; }));
                                         ?>
                                         <a class="rightfloatet"><?= $windsNotAttending ?></a>
-                                        <i class="fas fa-times-circle treeIcon rightfloatet"></i>
+                                        <i class=" treeIcon rightfloatet"><?= icon('times-circle', 'text-gray-600') ?>></i>
                                         <a class="rightfloatet"><?= $windsAttending ?></a>
-                                        <i class="fas fa-check-circle treeIcon rightfloatet"></i>
+                                        <i class=" treeIcon rightfloatet"><?= icon('check-circle', 'text-gray-600') ?>></i>
                                         <a class="rightfloatet"><?= $windsNoResponse ?></a>
-                                        <i class="fas fa-question-circle treeIcon rightfloatet"></i>
+                                        <i class=" treeIcon rightfloatet"><?= icon('question-circle', 'text-gray-600') ?>></i>
                                     </span>
                                     
                                     <div id="Bläser<?= $rehearsalId ?>" class="collapse">
@@ -173,7 +173,7 @@
                                             <li>
                                                 <span class="tree-item-span">
                                                     <a class="text-black no-underline" data-toggle="collapse" href="#Holzbläser<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Holzbläser<?= $rehearsalId ?>">
-                                                        <i class="collapsed"><i class="fas fa-folder"></i></i>
+                                                        <i class="collapsed"><i ><?= icon('folder', 'text-gray-600') ?>></i></i>
                                                         <i class="expanded"><i class="far fa-folder-open"></i></i> Holzbläser
                                                     </a>
                                                     <?php 
@@ -182,11 +182,11 @@
                                                         $woodNoResponse = count(array_filter($woodwindPlayers, function($m) { return $m['status'] === 'no_response'; }));
                                                     ?>
                                                     <a class="rightfloatet"><?= $woodNotAttending ?></a>
-                                                    <i class="fas fa-times-circle treeIcon rightfloatet"></i>
+                                                    <i class=" treeIcon rightfloatet"><?= icon('times-circle', 'text-gray-600') ?>></i>
                                                     <a class="rightfloatet"><?= $woodAttending ?></a>
-                                                    <i class="fas fa-check-circle treeIcon rightfloatet"></i>
+                                                    <i class=" treeIcon rightfloatet"><?= icon('check-circle', 'text-gray-600') ?>></i>
                                                     <a class="rightfloatet"><?= $woodNoResponse ?></a>
-                                                    <i class="fas fa-question-circle treeIcon rightfloatet"></i>
+                                                    <i class=" treeIcon rightfloatet"><?= icon('question-circle', 'text-gray-600') ?>></i>
                                                 </span>
                                                 
                                                 <div id="Holzbläser<?= $rehearsalId ?>" class="collapse">
@@ -215,15 +215,15 @@
                                                         <li>
                                                             <span class="tree-item-span">
                                                                 <a class="text-black no-underline" data-toggle="collapse" href="#<?= $instrumentId . $rehearsalId ?>" aria-expanded="false" aria-controls="<?= $instrumentId . $rehearsalId ?>">
-                                                                    <i class="collapsed"><i class="fas fa-folder"></i></i>
+                                                                    <i class="collapsed"><i ><?= icon('folder', 'text-gray-600') ?>></i></i>
                                                                     <i class="expanded"><i class="far fa-folder-open"></i></i> <?= $instrumentName ?>
                                                                 </a>
                                                                 <a class="rightfloatet"><?= $notAttending ?></a>
-                                                                <i class="fas fa-times-circle treeIcon rightfloatet"></i>
+                                                                <i class=" treeIcon rightfloatet"><?= icon('times-circle', 'text-gray-600') ?>></i>
                                                                 <a class="rightfloatet"><?= $attending ?></a>
-                                                                <i class="fas fa-check-circle treeIcon rightfloatet"></i>
+                                                                <i class=" treeIcon rightfloatet"><?= icon('check-circle', 'text-gray-600') ?>></i>
                                                                 <a class="rightfloatet"><?= $noResponse ?></a>
-                                                                <i class="fas fa-question-circle treeIcon rightfloatet"></i>
+                                                                <i class=" treeIcon rightfloatet"><?= icon('question-circle', 'text-gray-600') ?>></i>
                                                             </span>
                                                             
                                                             <div id="<?= $instrumentId . $rehearsalId ?>" class="collapse">
@@ -251,7 +251,7 @@
                                             <li>
                                                 <span class="tree-item-span">
                                                     <a class="text-black no-underline" data-toggle="collapse" href="#Blechbläser<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Blechbläser<?= $rehearsalId ?>">
-                                                        <i class="collapsed"><i class="fas fa-folder"></i></i>
+                                                        <i class="collapsed"><i ><?= icon('folder', 'text-gray-600') ?>></i></i>
                                                         <i class="expanded"><i class="far fa-folder-open"></i></i> Blechbläser
                                                     </a>
                                                     <?php 
@@ -260,11 +260,11 @@
                                                         $brassNoResponse = count(array_filter($brassPlayers, function($m) { return $m['status'] === 'no_response'; }));
                                                     ?>
                                                     <a class="rightfloatet"><?= $brassNotAttending ?></a>
-                                                    <i class="fas fa-times-circle treeIcon rightfloatet"></i>
+                                                    <i class=" treeIcon rightfloatet"><?= icon('times-circle', 'text-gray-600') ?>></i>
                                                     <a class="rightfloatet"><?= $brassAttending ?></a>
-                                                    <i class="fas fa-check-circle treeIcon rightfloatet"></i>
+                                                    <i class=" treeIcon rightfloatet"><?= icon('check-circle', 'text-gray-600') ?>></i>
                                                     <a class="rightfloatet"><?= $brassNoResponse ?></a>
-                                                    <i class="fas fa-question-circle treeIcon rightfloatet"></i>
+                                                    <i class=" treeIcon rightfloatet"><?= icon('question-circle', 'text-gray-600') ?>></i>
                                                 </span>
                                                 
                                                 <div id="Blechbläser<?= $rehearsalId ?>" class="collapse">
@@ -293,15 +293,15 @@
                                                         <li>
                                                             <span class="tree-item-span">
                                                                 <a class="text-black no-underline" data-toggle="collapse" href="#<?= $instrumentId . $rehearsalId ?>" aria-expanded="false" aria-controls="<?= $instrumentId . $rehearsalId ?>">
-                                                                    <i class="collapsed"><i class="fas fa-folder"></i></i>
+                                                                    <i class="collapsed"><i ><?= icon('folder', 'text-gray-600') ?>></i></i>
                                                                     <i class="expanded"><i class="far fa-folder-open"></i></i> <?= $instrumentName ?>
                                                                 </a>
                                                                 <a class="rightfloatet"><?= $notAttending ?></a>
-                                                                <i class="fas fa-times-circle treeIcon rightfloatet"></i>
+                                                                <i class=" treeIcon rightfloatet"><?= icon('times-circle', 'text-gray-600') ?>></i>
                                                                 <a class="rightfloatet"><?= $attending ?></a>
-                                                                <i class="fas fa-check-circle treeIcon rightfloatet"></i>
+                                                                <i class=" treeIcon rightfloatet"><?= icon('check-circle', 'text-gray-600') ?>></i>
                                                                 <a class="rightfloatet"><?= $noResponse ?></a>
-                                                                <i class="fas fa-question-circle treeIcon rightfloatet"></i>
+                                                                <i class=" treeIcon rightfloatet"><?= icon('question-circle', 'text-gray-600') ?>></i>
                                                             </span>
                                                             
                                                             <div id="<?= $instrumentId . $rehearsalId ?>" class="collapse">
@@ -333,7 +333,7 @@
                                 <li>
                                     <span class="tree-item-span">
                                         <a class="text-black no-underline" data-toggle="collapse" href="#Schlagwerk<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Schlagwerk<?= $rehearsalId ?>">
-                                            <i class="collapsed"><i class="fas fa-folder"></i></i>
+                                            <i class="collapsed"><i ><?= icon('folder', 'text-gray-600') ?>></i></i>
                                             <i class="expanded"><i class="far fa-folder-open"></i></i> Schlagwerk
                                         </a>
                                         <?php 
@@ -342,11 +342,11 @@
                                             $percNoResponse = count(array_filter($percussionPlayers, function($m) { return $m['status'] === 'no_response'; }));
                                         ?>
                                         <a class="rightfloatet"><?= $percNotAttending ?></a>
-                                        <i class="fas fa-times-circle treeIcon rightfloatet"></i>
+                                        <i class=" treeIcon rightfloatet"><?= icon('times-circle', 'text-gray-600') ?>></i>
                                         <a class="rightfloatet"><?= $percAttending ?></a>
-                                        <i class="fas fa-check-circle treeIcon rightfloatet"></i>
+                                        <i class=" treeIcon rightfloatet"><?= icon('check-circle', 'text-gray-600') ?>></i>
                                         <a class="rightfloatet"><?= $percNoResponse ?></a>
-                                        <i class="fas fa-question-circle treeIcon rightfloatet"></i>
+                                        <i class=" treeIcon rightfloatet"><?= icon('question-circle', 'text-gray-600') ?>></i>
                                     </span>
                                     
                                     <div id="Schlagwerk<?= $rehearsalId ?>" class="collapse">
@@ -367,7 +367,7 @@
                                 <li>
                                     <span class="tree-item-span">
                                         <a class="text-black no-underline" data-toggle="collapse" href="#Andere<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Andere<?= $rehearsalId ?>">
-                                            <i class="collapsed"><i class="fas fa-folder"></i></i>
+                                            <i class="collapsed"><i ><?= icon('folder', 'text-gray-600') ?>></i></i>
                                             <i class="expanded"><i class="far fa-folder-open"></i></i> Andere
                                         </a>
                                         <?php 
@@ -376,11 +376,11 @@
                                             $otherNoResponse = count(array_filter($otherPlayers, function($m) { return $m['status'] === 'no_response'; }));
                                         ?>
                                         <a class="rightfloatet"><?= $otherNotAttending ?></a>
-                                        <i class="fas fa-times-circle treeIcon rightfloatet"></i>
+                                        <i class=" treeIcon rightfloatet"><?= icon('times-circle', 'text-gray-600') ?>></i>
                                         <a class="rightfloatet"><?= $otherAttending ?></a>
-                                        <i class="fas fa-check-circle treeIcon rightfloatet"></i>
+                                        <i class=" treeIcon rightfloatet"><?= icon('check-circle', 'text-gray-600') ?>></i>
                                         <a class="rightfloatet"><?= $otherNoResponse ?></a>
-                                        <i class="fas fa-question-circle treeIcon rightfloatet"></i>
+                                        <i class=" treeIcon rightfloatet"><?= icon('question-circle', 'text-gray-600') ?>></i>
                                     </span>
                                     
                                     <div id="Andere<?= $rehearsalId ?>" class="collapse">

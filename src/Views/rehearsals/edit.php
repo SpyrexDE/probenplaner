@@ -206,7 +206,7 @@
             
             <div class="form-actions">
                 <button type="submit" class="btn-primary">Änderungen speichern</button>
-                <a href="/rehearsals" class="btn-secondary">Abbrechen</a>
+                <a href="/rehearsals" class="btn-outline">Abbrechen</a>
             </div>
         </form>
     </div>

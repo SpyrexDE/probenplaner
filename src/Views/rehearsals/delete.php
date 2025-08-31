@@ -9,7 +9,7 @@
     <div class="form-container">
         <div class="confirmation-card">
             <div class="confirmation-header">
-                <i class="fas fa-exclamation-triangle text-warning"></i>
+                <i class=" text-warning"><?= icon('exclamation-triangle', 'text-gray-600') ?>></i>
                 <h3>Termin löschen</h3>
             </div>
             
@@ -53,10 +53,10 @@
                 <input type="hidden" name="id" value="<?= htmlspecialchars($rehearsal['id']) ?>">
                 <div class="form-actions">
                     <button type="submit" class="btn-danger" onclick="return confirmDelete(event)">
-                        <i class="fas fa-trash-alt"></i>
+                        <i class=" -alt"><?= icon('trash', 'text-white') ?></i>
                         Termin löschen
                     </button>
-                    <a href="/rehearsals" class="btn-secondary">Abbrechen</a>
+                                         <a href="/rehearsals" class="btn-outline">Abbrechen</a>
                 </div>
             </form>
         </div>
@@ -68,7 +68,7 @@ function confirmDelete(event) {
     event.preventDefault();
     Swal.fire({
         title: 'Termin löschen?',
-        html: '<div class="text-left"><p><i class="fas fa-exclamation-triangle text-warning"></i> <strong>Achtung:</strong> Diese Aktion kann nicht rückgängig gemacht werden.</p><p>Alle zugehörigen Daten, einschließlich Teilnehmerantworten und Notizen, werden dauerhaft gelöscht.</p></div>',
+        html: '<div class="text-left"><p><i class=" text-warning"><?= icon('exclamation-triangle', 'text-gray-600') ?>></i> <strong>Achtung:</strong> Diese Aktion kann nicht rückgängig gemacht werden.</p><p>Alle zugehörigen Daten, einschließlich Teilnehmerantworten und Notizen, werden dauerhaft gelöscht.</p></div>',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Löschen',

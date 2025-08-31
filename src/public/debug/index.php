@@ -132,6 +132,9 @@ $helpers = [
     <div style="display: flex; gap: 20px;">
         <!-- Simple navigation -->
         <nav style="min-width: 200px;">
+            <small style="color: #666; margin-bottom: 10px; display: block;">
+                <?= htmlspecialchars(\App\Core\Version::getShortVersion()) ?>
+            </small>
             <p class="status-<?= $dbConnection ? 'ok' : 'error' ?>">
                 Database: <?= $dbConnection ? 'Connected' : 'Disconnected' ?>
             </p>

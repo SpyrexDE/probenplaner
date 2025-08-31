@@ -49,7 +49,7 @@ if ($isSmallGroup) {
        href="#<?= htmlspecialchars($collapseTarget) ?>" 
        aria-expanded="false" 
        aria-controls="<?= htmlspecialchars($collapseTarget) ?>">
-        <i class="collapsed"><i class="fas fa-folder"></i></i>
+        <i class="collapsed"><i ><?= icon('folder', 'text-gray-600') ?>></i></i>
         <i class="expanded"><i class="far fa-folder-open"></i></i> 
         <?= htmlspecialchars($rehearsal['date_formatted'] ?? $date) ?> - <?= htmlspecialchars($time_display) ?>
         <?php if (!empty($rehearsalType)): ?>
@@ -57,9 +57,9 @@ if ($isSmallGroup) {
         <?php endif; ?>
     </a>
     <a class="rightfloatet"><?= $notAttendingCount ?></a>
-    <i class="fas fa-times-circle treeIcon rightfloatet"></i>
+    <i class=" treeIcon rightfloatet"><?= icon('times-circle', 'text-gray-600') ?>></i>
     <a class="rightfloatet"><?= $attendingCount ?></a>
-    <i class="fas fa-check-circle treeIcon rightfloatet"></i>
+    <i class=" treeIcon rightfloatet"><?= icon('check-circle', 'text-gray-600') ?>></i>
     <a class="rightfloatet"><?= $noResponseCount ?></a>
-    <i class="fas fa-question-circle treeIcon rightfloatet"></i>
+    <i class=" treeIcon rightfloatet"><?= icon('question-circle', 'text-gray-600') ?>></i>
 </span>

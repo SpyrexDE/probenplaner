@@ -12,7 +12,7 @@
                         
                         <div class="space-y-3">
                             <button type="submit" class="btn-base btn-danger w-full" onclick="return confirmDelete(event)">
-                                <i class="fas fa-trash-alt mr-2"></i>Ja, Orchester unwiderruflich löschen
+                                <i class=" -alt mr-2"><?= icon('trash', 'text-white') ?></i>Ja, Orchester unwiderruflich löschen
                             </button>
                             <a href="/orchestras/settings" class="btn-base btn-outline w-full text-center block">Abbrechen</a>
                         </div>
@@ -29,7 +29,7 @@ function confirmDelete(event) {
     Swal.fire({
         title: 'Orchester löschen?',
         html: `<div class="text-left">
-            <p><i class="fas fa-exclamation-triangle text-warning"></i> <strong>Warnung:</strong> Sie sind dabei, das Orchester <strong><?= $this->e($orchestra['name']) ?></strong> zu löschen.</p>
+            <p><i class=" text-warning"><?= icon('exclamation-triangle', 'text-gray-600') ?>></i> <strong>Warnung:</strong> Sie sind dabei, das Orchester <strong><?= $this->e($orchestra['name']) ?></strong> zu löschen.</p>
             <p>Diese Aktion kann nicht rückgängig gemacht werden.</p>
             <p><strong>Folgende Daten werden gelöscht:</strong></p>
             <ul class="text-left list-disc pl-5">

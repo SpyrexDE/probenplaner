@@ -1,36 +1,32 @@
 <?php
-namespace App\Core;
-
 /**
- * Helper functions for the application
+ * Global Helper Functions
+ * These functions are available throughout the application
  */
-class Helpers
-{
+
+use App\Core\Utilities;
+
+if (!function_exists('icon')) {
     /**
-     * Format a date from Y-m-d to dd.mm.yyyy
+     * Generate FontAwesome icon HTML
      * 
-     * @param string $date Date in Y-m-d format
-     * @return string Date in dd.mm.yyyy format
+     * @param string $iconName Icon name (without fa- prefix)
+     * @param string $classes Additional CSS classes
+     * @return string FontAwesome icon HTML
      */
-    public static function formatDate($date)
-    {
-        if (!empty($date) && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $date, $matches)) {
-            return $matches[3] . '.' . $matches[2] . '.' . $matches[1]; // dd.mm.yyyy format
-        }
-        return $date;
+    function icon($iconName, $classes = '') {
+        return Utilities::icon($iconName, $classes);
     }
-    
+}
+
+if (!function_exists('e')) {
     /**
-     * Convert date from dd.mm.yyyy to Y-m-d
+     * Escape HTML entities
      * 
-     * @param string $date Date in dd.mm.yyyy format
-     * @return string Date in Y-m-d format
+     * @param string $value Value to escape
+     * @return string Escaped value
      */
-    public static function formatDateForDb($date)
-    {
-        if (!empty($date) && preg_match('/^(\d{2})\.(\d{2})\.(\d{4})$/', $date, $matches)) {
-            return $matches[3] . '-' . $matches[2] . '-' . $matches[1]; // Y-m-d format
-        }
-        return $date;
+    function e($value) {
+        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
     }
-} 
+}

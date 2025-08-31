@@ -259,6 +259,10 @@ body {
   padding: var(--space-4) var(--space-6);
   border-radius: var(--radius-md);
   min-height: 48px;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-primary:hover {
@@ -329,6 +333,10 @@ body {
   padding: var(--space-4) var(--space-6);
   border-radius: var(--radius-md);
   min-height: 48px;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-outline:hover {
@@ -417,6 +425,24 @@ input[type="time"]:focus, input[type="datetime-local"]:focus, textarea:focus, se
   border-color: var(--color-primary);
   box-shadow: 0 4px 16px rgba(71, 140, 244, 0.15);
   transform: translateY(-1px);
+}
+
+/* Ensure login form inputs don't interfere with card shadow */
+.login-form .form-input:focus,
+.login-form .form-control:focus,
+.login-form input[type="text"]:focus,
+.login-form input[type="email"]:focus,
+.login-form input[type="password"]:focus,
+.login-form input[type="number"]:focus,
+.login-form input[type="tel"]:focus,
+.login-form input[type="url"]:focus,
+.login-form input[type="search"]:focus,
+.login-form input[type="date"]:focus,
+.login-form input[type="time"]:focus,
+.login-form input[type="datetime-local"]:focus,
+.login-form textarea:focus,
+.login-form select:focus {
+  box-shadow: 0 0 0 3px rgba(71, 140, 244, 0.1), 0 4px 16px rgba(71, 140, 244, 0.15);
 }
 
 .form-input:disabled, .form-control:disabled, input:disabled, textarea:disabled, select:disabled {

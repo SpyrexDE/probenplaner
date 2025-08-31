@@ -4,7 +4,7 @@
             <div class="p-8">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-3xl font-bold text-gray-700">Profil bearbeiten</h2>
-                    <i id="editInfoTip" class="fa fa-exclamation-circle text-2xl text-gray-500 cursor-pointer hover:text-primary"></i>
+                    <i id="editInfoTip" class=" text-2xl text-gray-500 cursor-pointer hover:text-primary"><?= icon('exclamation-circle', 'text-gray-600') ?></i>
                 </div>
                 
                 <form action="/conductor/profile" method="post">
@@ -34,7 +34,7 @@
                     
                     <div class="form-group mt-4">
                         <button type="submit" class="btn-base btn-primary w-full">
-                            <i class="fas fa-save mr-2"></i>Speichern
+                            <i class=" mr-2"><?= icon('save', 'text-gray-600') ?></i>Speichern
                         </button>
                     </div>
                 </form>
@@ -44,12 +44,12 @@
                 <div class="p-8">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-3xl font-bold text-gray-700">Account löschen</h2>
-                        <i id="deleteInfoTip" class="fa fa-exclamation-circle text-2xl text-gray-500 cursor-pointer hover:text-error"></i>
+                        <i id="deleteInfoTip" class=" text-2xl text-gray-500 cursor-pointer hover:text-error"><?= icon('exclamation-circle', 'text-gray-600') ?></i>
                     </div>
                     
                     <div class="mt-6">
                         <button type="button" id="deleteAccount" class="btn-base btn-danger w-full">
-                            <i class="fas fa-trash mr-2"></i>Account löschen
+                            <i class=" mr-2"><?= icon('trash', 'text-white') ?></i>Account löschen
                         </button>
                     </div>
                 </div>

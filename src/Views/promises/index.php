@@ -81,12 +81,12 @@ function sortGroups($groups) {
         $time_display_prom = $start_time_prom . ' - ' . $end_time_prom;
         
         // Determine color class
-        $colorClass = 'grayOut'; // Default for pending
+        $colorClass = 'status-pending'; // Default for pending
         
         if ($status === 'attending') {
-            $colorClass = 'greenOut';
+            $colorClass = 'status-attending';
         } else if ($status === 'not_attending') {
-            $colorClass = 'redOut';
+            $colorClass = 'status-not_attending';
         }
         ?>
         
@@ -155,7 +155,7 @@ $(document).ready(function() {
         
         // Update UI
         var container = $(this).closest('.rehearsal-card');
-        container.removeClass('redOut grayOut').addClass('greenOut');
+        container.removeClass('status-not_attending status-pending').addClass('status-attending');
         
         // Hide note dot
         container.find('.note-dot').removeClass('visible');
@@ -191,7 +191,7 @@ $(document).ready(function() {
         
         // Update UI
         var container = $(this).closest('.rehearsal-card');
-        container.removeClass('grayOut greenOut').addClass('redOut');
+        container.removeClass('status-pending status-attending').addClass('status-not_attending');
         
         // Get existing note
         var existingNote = $('#note' + id).val();
@@ -258,7 +258,7 @@ $(document).ready(function() {
     // Double click to edit note
     $('.rehearsal-card').on('dblclick', function() {
         var card = $(this);
-        if (card.hasClass('redOut')) {
+        if (card.hasClass('status-not_attending')) {
             var id = card.find('.crossBtn').attr('id');
             var currentNote = $('#note' + id).val();
             showNoteDialog(id, currentNote);

@@ -10,6 +10,9 @@ define('APP_ROOT', __DIR__);
 // Load configuration
 require_once APP_ROOT . '/config/config.php';
 
+// Load global helper functions
+require_once APP_ROOT . '/Core/Helpers.php';
+
 // Register autoloader
 spl_autoload_register(function ($class) {
     // Convert namespace to file path

@@ -39,4 +39,22 @@ class Version
         return 'N/A';
     }
 
+    /**
+     * Get just the tag from the version string
+     * 
+     * @return string
+     */
+    public static function getTag(): string
+    {
+        $version = self::getVersion();
+        
+        // Extract tag from version string like "v0.0.1-1-g53fab78"
+        if (preg_match('/^(v\d+\.\d+\.\d+)/', $version, $matches)) {
+            return $matches[1];
+        }
+        
+        // If no tag found, return the full version
+        return $version;
+    }
+
 }

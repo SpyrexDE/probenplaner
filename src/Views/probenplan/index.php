@@ -1,6 +1,6 @@
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-12 text-center">
+<div class="max-w-7xl mx-auto px-4 mt-4">
+    <div class="w-full">
+        <div class="w-full text-center">
             <h1>Probenplan</h1>
             <h5>Stand: <?= date("d.m.Y") ?></h5>
             
@@ -15,8 +15,8 @@
         </div>
     </div>
 
-    <div class="row mt-4">
-        <div class="col-12">
+    <div class="w-full mt-4">
+        <div class="w-full">
             <div class="table-responsive">
                 <table class="table-themed">
                     <thead>
@@ -63,140 +63,95 @@
         </div>
     </div>
 
-    <button class="fab" onclick="window.print()" id="print-btn">
+    <button class="fixed bottom-5 right-5 bg-primary text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:scale-110 transition-transform print:hidden" onclick="window.print()" id="print-btn">
         <i class="fas fa-print text-xl"></i>
     </button>
 </div>
 
 <style>
 @media print {
-    /* Hide UI elements not for print */
-    .fab, #filterToggle, .btn, /* Controls */
-    #sidebar-wrapper, .sidebar, /* Main sidebar */
-    .top-nav, .topBar, /* All instances of topBar, including navigation */
-    .navbar, /* Generic bootstrap navbar class */
-    nav, /* Generic nav HTML tags, if any */
-    header, /* Generic header HTML tags, if any */
-    #menu-toggle, .top-nav-menu-toggle, /* Sidebar toggle */
-    .history-link, .help-link, .top-nav-icon, /* Header icons */
-    .sidebar-nav /* Content of sidebar */
-    {
+    /* Hide navigation and UI elements */
+    .top-nav, nav, header, .sidebar, #sidebar-wrapper, #wrapper > nav,
+    .btn, button, .fab, #print-btn, .print\\:hidden {
         display: none !important;
     }
 
-    /* Ensure the main content and its wrappers are visible and take full space */
+    /* Reset page layout */
     body, html {
-        width: 100% !important;
-        height: auto !important;
         margin: 0 !important;
         padding: 0 !important;
-        background: white !important; /* Prevent unwanted backgrounds */
-        overflow: visible !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important; /* For Firefox */
-        color-adjust: exact !important; /* Standard */
+        background: white !important;
+        font-size: 12pt !important;
+        line-height: 1.4 !important;
     }
 
-    #wrapper, 
-    .page-content, .page-content-wrapper, /* This is the main wrapper around contentPage when logged in */
-    #contentPage, .page-content-inner /* This is the direct container for $content when logged in */
-    {
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: visible !important; /* Allow content to flow */
-        display: block !important; /* Ensure they are rendered as blocks */
-        background-color: transparent !important; /* Avoid overriding content background */
-        box-shadow: none !important; /* Remove shadows */
-        border: none !important; /* Remove any borders */
-    }
-
-    /* Style the actual content container from probenplan/index.php (which is this view itself) */
-    /* This rule targets the <div class="container mt-4"> that starts this view file */
-    body > .container.mt-4, /* For non-logged in case */
-    #contentPage > .container.mt-4 /* For logged in case */
-    {
+    /* Reset main containers */
+    #wrapper, .page-content-inner, .max-w-7xl {
         width: 100% !important;
         max-width: none !important;
-        padding: 0 !important; /* Remove padding like mt-4 for print */
-        margin: 0 auto !important; /* Center if there\'s still some page margin from @page */
-        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
         box-shadow: none !important;
+        border: none !important;
     }
 
-    /* Show h1, h5 titles from probenplan/index.php, matching old style */
-    h1, h5 {
-        display: block !important;
+    /* Center and style headers */
+    h1 {
         text-align: center !important;
-        margin-top: 0.5em;
-        margin-bottom: 0.5em;
+        font-size: 18pt !important;
+        margin: 0.5em 0 !important;
     }
+
     h5 {
-        color: gray !important;
-        margin-bottom: 5em !important; /* As per user's original example */
+        text-align: center !important;
+        font-size: 12pt !important;
+        color: #666 !important;
+        margin: 0.5em 0 2em 0 !important;
     }
 
+    /* Table styling */
     .table-responsive {
-        overflow-x: visible !important; /* Ensure full table is printed, not scrolled */
-        border: none !important;
-        box-shadow: none !important;
+        overflow: visible !important;
     }
 
-    .table {
-        width: 100% !important; /* Ensure table takes full width */
+    table {
+        width: 100% !important;
         border-collapse: collapse !important;
-        margin: 0 !important; /* Remove any margins on table */
+        margin: 0 !important;
+        font-size: 11pt !important;
     }
 
-    .table th, .table td {
-        border: 1px solid #ddd !important;
-        padding: 8px !important;
-        background-color: transparent !important; /* Ensure row colors are not overridden by general rules */
+    th, td {
+        border: 1px solid #333 !important;
+        padding: 6px 8px !important;
+        text-align: left !important;
     }
-    
-    /* Preserve explicit background colors on table rows if set by style attribute */
+
+    th {
+        background-color: #f5f5f5 !important;
+        font-weight: bold !important;
+    }
+
+    /* Preserve row colors */
     tr[style*="background-color"] {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
-        color-adjust: exact !important;
     }
 
-    tr {
-        page-break-inside: avoid !important;
-    }
-
+    /* Page settings */
     @page {
-        margin: 1cm; /* Standard page margin */
+        margin: 1.5cm !important;
+        size: A4 !important;
     }
 }
 
-@media screen {
-    .print-btn {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        border-radius: 50%;
-        width: 60px;
-        height: 60px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        transition: transform 0.2s;
+@media screen and (max-width: 768px) {
+    .table-themed {
+        font-size: 0.875rem;
     }
     
-    .print-btn:hover {
-        transform: scale(1.1);
-    }
-    
-    .print-btn:active {
-        transform: scale(0.9);
-    }
-}
-
-@media only screen and (max-width: 600px) {
-    .table {
-        font-size: 0.9rem;
+    th, td {
+        padding: 0.5rem 0.25rem;
     }
 }
 </style>

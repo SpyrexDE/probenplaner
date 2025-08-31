@@ -45,7 +45,7 @@ class Rehearsal extends Model
         $rehearsals = [];
         while ($row = $result->fetch_assoc()) {
             // Create formatted date field while preserving original
-            $row['date_formatted'] = Helpers::formatDate($row['date']);
+            $row['date_formatted'] = \App\Core\Utilities::formatDate($row['date']);
             
             // Add related groups
             $row['groups'] = $this->getGroups($row['id']);
@@ -155,7 +155,7 @@ class Rehearsal extends Model
                 $rehearsalIsSmallGroup = isset($row['is_small_group']) && $row['is_small_group'] == 1;
                 
                 if ($this->isUserInRehearsalGroup($userType, $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
-                    $row['date_formatted'] = Helpers::formatDate($row['date']);
+                    $row['date_formatted'] = \App\Core\Utilities::formatDate($row['date']);
                     $row['groups'] = $this->getGroups($row['id']);
                     $rehearsals[] = $row;
                 }
@@ -449,7 +449,7 @@ class Rehearsal extends Model
                 
                 if ($this->isUserInRehearsalGroup($userType, $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
                     // Format the date in a user-friendly format
-                    $row['date_formatted'] = Helpers::formatDate($row['date']);
+                    $row['date_formatted'] = \App\Core\Utilities::formatDate($row['date']);
                     $row['groups'] = $this->getGroups($row['id']);
                     $rehearsals[] = $row;
                 }

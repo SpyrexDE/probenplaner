@@ -56,10 +56,10 @@
                         </div>
                         <div class="rehearsal-actions">
                             <button type="button" id="<?= $rehearsalId ?>" class="btn-icon btn-outline edit-btn">
-                                <i class="fas fa-edit"></i>
+                                <i ><?= icon('edit', 'text-gray-600') ?></i>
                             </button>
                             <button type="button" id="<?= $rehearsalId ?>" class="btn-icon btn-danger delete-btn">
-                                <i class="fas fa-trash"></i>
+                                <i ><?= icon('trash', 'text-white') ?></i>
                             </button>
                         </div>
                     </div>
@@ -68,9 +68,9 @@
         </div>
     <?php endif; ?>
     
-    <a href="/rehearsals/create" class="fab">
-        <i class="fas fa-plus"></i>
-    </a>
+         <a href="/rehearsals/create" class="fixed bottom-5 right-5 bg-primary text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
+         <i ><?= icon('plus', 'text-white') ?></i>
+     </a>
 </div>
 
 <script>

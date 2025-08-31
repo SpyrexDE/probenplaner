@@ -30,7 +30,7 @@ switch ($memberStatus) {
 
 <li class="flex items-center justify-between py-2 px-3 text-sm">
     <span class="flex items-center flex-1">
-        <i class="fas fa-user text-xs mr-2 text-muted"></i> 
+        <i class=" text-xs mr-2 text-muted"><?= icon('user', 'text-gray-600') ?>></i> 
         <span class="font-medium"><?= $username ?></span>
         <?php if ($additionalInfo): ?>
             <span class="text-muted ml-1"><?= $additionalInfo ?></span>

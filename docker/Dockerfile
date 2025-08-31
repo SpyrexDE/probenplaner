@@ -65,4 +65,4 @@ EXPOSE 80
 EXPOSE 443
 
 # Start Apache and run migrations
-CMD ["/usr/local/bin/startup.sh"] 
+CMD ["/usr/local/bin/startup.sh"]

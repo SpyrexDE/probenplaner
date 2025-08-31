@@ -88,10 +88,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Fugaz+One&display=swap" rel="stylesheet">
     
     <!-- Icon Fonts -->
-    <link rel="stylesheet" href="/assets/fonts/fontawesome-all.min.css">
-    <link rel="stylesheet" href="/assets/fonts/font-awesome.min.css">
-    <link rel="stylesheet" href="/assets/fonts/ionicons.min.css">
-    <link rel="stylesheet" href="/assets/fonts/fontawesome5-overrides.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css">
     <link rel="shortcut icon" href="/assets/img/tabIcon.png" type="image/x-icon">
     <link rel="manifest" href="/manifest.json">
     
@@ -123,7 +120,7 @@ if (isset($_SESSION['username'])): ?>
                     <i class="fa fa-bars"></i>
                 </button>
                 <a href="/" class="top-nav-brand">
-                    <?= isset($_SESSION['orchestra_name']) ? $_SESSION['orchestra_name'] : APP_NAME ?>
+                    <?= APP_NAME ?>
                 </a>
             </div>
             <div class="top-nav-actions">
@@ -275,8 +272,8 @@ if (isset($_SESSION['username'])): ?>
             <!-- Version Footer -->
             <div class="sidebar-footer">
                 <div class="sidebar-version">
-                    Probenplaner by Fabian Kessler · <?php 
-                    echo Version::getShortVersion();
+                    Probenplaner · <?php 
+                    echo Version::getTag();
                     ?>
                 </div>
             </div>
@@ -760,12 +757,12 @@ function updateUIForCurrentRoute() {
                           currentRoute.startsWith('/promises/') || 
                           currentRoute.startsWith('/rehearsals/');
     
-            // Update UI elements visibility (keeping these for any legacy references)
-        document.querySelectorAll('.history-link, .top-nav-icon.fa-history').forEach(function(element) {
+            // Update UI elements visibility
+        document.querySelectorAll('.top-nav-icon.fa-history').forEach(function(element) {
             element.style.display = showHistoryButton ? 'inline-block' : 'none';
         });
         
-        document.querySelectorAll('.help-link, .top-nav-icon.fa-question-circle').forEach(function(element) {
+        document.querySelectorAll('.top-nav-icon.fa-question-circle').forEach(function(element) {
             element.style.display = showHelpButton ? 'inline-block' : 'none';
         });
 }

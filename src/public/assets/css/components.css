@@ -663,6 +663,21 @@
   border-radius: var(--radius-xl);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px rgba(0, 0, 0, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.8);
+  /* Ensure shadow is preserved on focus */
+  transition: box-shadow var(--transition-base);
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+}
+
+/* Preserve login form shadow when any child element is focused */
+.login-form:focus-within {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Additional protection against shadow loss */
+.login-form *:focus {
+  outline: none;
 }
 
 .login-logo {
@@ -705,6 +720,11 @@
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(71, 140, 244, 0.1);
+  /* Ensure the focus shadow doesn't interfere with the card shadow */
+  position: relative;
+  z-index: 1;
+  /* Prevent any transform that might affect the card */
+  transform: none;
 }
 
 .form-text {
@@ -1124,11 +1144,7 @@
   color: var(--color-text-muted);
 }
 
-/* Legacy class support (to be removed in future) */
-.checkBtn.selected,
-.crossBtn.selected {
-  opacity: 1;
-}
+
 
 /* === REHEARSAL CARD STATUS INDICATORS === */
 /* Status-based left border colors */
@@ -1144,18 +1160,9 @@
   border-left-color: var(--color-gray-400);
 }
 
-/* Legacy status classes (to be removed in future) */
-.rehearsal-card.redOut {
-  border-left-color: var(--color-error);
-}
 
-.rehearsal-card.greenOut {
-  border-left-color: var(--color-success);
-}
 
-.rehearsal-card.grayOut {
-  border-left-color: var(--color-gray-400);
-}
+
 
 /* === PAGE HEADER COMPONENT === */
 .page-header {
@@ -1620,4 +1627,22 @@
 
 .confirmation-card:focus-within {
   box-shadow: var(--shadow-lg) !important;
+}
+
+/* Ensure login/register forms never lose their shadows */
+.login-form {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px rgba(0, 0, 0, 0.08) !important;
+}
+
+.login-form:focus-within {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Additional protection for any form in login container */
+.login-container form {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px rgba(0, 0, 0, 0.08) !important;
+}
+
+.login-container form:focus-within {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px rgba(0, 0, 0, 0.08) !important;
 }

@@ -369,7 +369,7 @@ class RehearsalController extends Controller
                 // For HTML date input, we need Y-m-d format
                 // The date from the database is likely in Y-m-d format already
                 // But if it's been formatted to dd.mm.yyyy by the model, convert it back
-                $displayDate = Helpers::formatDateForDb($rehearsal['date']);
+                $displayDate = \App\Core\Utilities::formatDateForDb($rehearsal['date']);
             }
             
             // Get rehearsal type from the new type field

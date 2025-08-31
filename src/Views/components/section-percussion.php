@@ -9,7 +9,7 @@
 <li>
     <span class="tree-item-span">
         <a class="text-black no-underline" data-toggle="collapse" href="#Schlagwerk<?= $rehearsalId ?>" aria-expanded="false" aria-controls="Schlagwerk<?= $rehearsalId ?>">
-            <i class="collapsed"><i class="fas fa-folder"></i></i>
+            <i class="collapsed"><i ><?= icon('folder', 'text-gray-600') ?>></i></i>
             <i class="expanded"><i class="far fa-folder-open"></i></i> Schlagwerk
         </a>
         <?php 
@@ -18,11 +18,11 @@
             $percNoResponse = count(array_filter($percussionPlayers, function($m) { return $m['status'] === 'no_response'; }));
         ?>
         <a class="rightfloatet"><?= $percNotAttending ?></a>
-        <i class="fas fa-times-circle treeIcon rightfloatet"></i>
+        <i class=" treeIcon rightfloatet"><?= icon('times-circle', 'text-gray-600') ?>></i>
         <a class="rightfloatet"><?= $percAttending ?></a>
-        <i class="fas fa-check-circle treeIcon rightfloatet"></i>
+        <i class=" treeIcon rightfloatet"><?= icon('check-circle', 'text-gray-600') ?>></i>
         <a class="rightfloatet"><?= $percNoResponse ?></a>
-        <i class="fas fa-question-circle treeIcon rightfloatet"></i>
+        <i class=" treeIcon rightfloatet"><?= icon('question-circle', 'text-gray-600') ?>></i>
     </span>
     
     <div id="Schlagwerk<?= $rehearsalId ?>" class="collapse">
