@@ -19,14 +19,17 @@ $config = $groupManager->getConfig();
  */
 function generateGroupCheckboxes($groups, $level = 0, $formData = [], $parentClass = '') {
     $html = '';
+    $groupsArray = array_values($groups); // Convert to indexed array for easier last-item detection
+    $totalGroups = count($groupsArray);
     
-    foreach ($groups as $key => $group) {
+    foreach ($groupsArray as $index => $group) {
         if (!is_array($group) || !isset($group['id'])) {
             continue;
         }
         
         $groupId = $group['id'];
         $displayName = $group['display_name'] ?? $groupId;
+        $isLastInGroup = ($index === $totalGroups - 1);
         
         // Determine CSS classes based on level
         $levelClass = match($level) {
@@ -35,10 +38,16 @@ function generateGroupCheckboxes($groups, $level = 0, $formData = [], $parentCla
             default => 'checkbox-group sub-sub-group'
         };
         
-        // Generate checkbox for this group with proper CSS indentation
-        // Level 0 (Tutti) = no indent, Level 1 = 24px, Level 2 = 48px, etc.
-        $indentClass = $level > 0 ? ' indent-' . $level : '';
-        $html .= '<div class="checkbox-item' . $indentClass . '">' . "\n";
+        // Generate checkbox for this group with proper CSS level classes
+        $classes = ['checkbox-item'];
+        if ($level > 0) {
+            $classes[] = 'level-' . $level;
+        }
+        if ($isLastInGroup) {
+            $classes[] = 'last-in-group';
+        }
+        
+        $html .= '<div class="' . implode(' ', $classes) . '">' . "\n";
         
         // All checkboxes use the same structure - no special handling for tutti
         if ($level === 0 && $groupId === 'tutti') {

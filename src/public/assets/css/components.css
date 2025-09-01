@@ -1049,17 +1049,7 @@
   margin-bottom: var(--space-1);
 }
 
-.form-checkbox-group.indent-1 {
-  margin-left: var(--space-6);
-}
 
-.form-checkbox-group.indent-2 {
-  margin-left: var(--space-12);
-}
-
-.form-checkbox-group.indent-3 {
-  margin-left: calc(var(--space-12) + var(--space-6));
-}
 
 /* Special styling for main group checkboxes */
 .form-checkbox-group.main-group .custom-checkbox label {
@@ -1266,14 +1256,18 @@
 
 /* === CHECKBOX COMPONENTS === */
 .checkbox-group {
-  margin-bottom: var(--space-4);
+  margin: 0; /* Remove margins to prevent gaps in tree lines */
+  position: relative;
 }
 
+/* Vertical lines for continuous tree structure */
+
 .checkbox-item {
+  position: relative;
   display: flex;
   align-items: center;
-  margin-bottom: 6px;
-  padding: 4px 8px;
+  margin: 0; /* Remove margins to prevent gaps */
+  padding: 6px 8px;
   border-radius: var(--radius-base);
   transition: all var(--transition-base);
   cursor: pointer;
@@ -1289,6 +1283,8 @@
 .checkbox-item:active {
   transform: translateX(1px);
 }
+
+
 
 .checkbox-item input[type="checkbox"] {
   width: 18px;
@@ -1328,50 +1324,108 @@
   transform: none;
 }
 
-/* Indentation for hierarchical checkbox structure - uniform 24px per level */
-.checkbox-item.indent-1 {
-  padding-left: 24px;
-}
-
-.checkbox-item.indent-2 {
+/* Tree indentation with proper vertical lines */
+.checkbox-item.level-1 {
   padding-left: 48px;
 }
 
-.checkbox-item.indent-3 {
-  padding-left: 72px;
+.checkbox-item.level-2 {
+  padding-left: 87px;
 }
 
-.checkbox-item.indent-4 {
-  padding-left: 96px;
+.checkbox-item.level-3 {
+  padding-left: 127px;
 }
 
-.checkbox-item.indent-5 {
-  padding-left: 120px;
+.checkbox-item.level-4 {
+  padding-left: 160px;
 }
 
-/* Vertical lines for parent items */
-.checkbox-item:has(input[type="checkbox"]:checked),
-.checkbox-item:has(input[type="checkbox"]:indeterminate) {
-  position: relative;
+.checkbox-item.level-5 {
+  padding-left: 200px;
 }
 
-.checkbox-item:has(input[type="checkbox"]:checked)::before,
-.checkbox-item:has(input[type="checkbox"]:indeterminate)::before {
+/* Continuous vertical lines on each indentation level */
+.checkbox-item.level-1::before {
   content: '';
   position: absolute;
-  left: 0;
-  top: 100%;
-  width: 2px;
-  height: 20px;
-  background-color: #e5e7eb;
-  z-index: 1;
+  left: 16px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: var(--color-border);
+  z-index: 0;
+  pointer-events: none;
+  transition: transform var(--transition-base);
 }
 
-/* Extend lines for items with children to connect them visually */
-.checkbox-item:has(+ .checkbox-group)::before {
-  height: calc(100% + 20px);
-  top: 100%;
+.checkbox-item.level-2::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: var(--color-border);
+  z-index: 0;
+  pointer-events: none;
+  box-shadow: 40px 0 0 0 var(--color-border); /* Second line at level 2 position */
+  transition: transform var(--transition-base);
 }
+
+.checkbox-item.level-3::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: var(--color-border);
+  z-index: 0;
+  pointer-events: none;
+  box-shadow: 40px 0 0 0 var(--color-border), 80px 0 0 0 var(--color-border); /* All parent level lines */
+  transition: transform var(--transition-base);
+}
+
+.checkbox-item.level-4::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: var(--color-border);
+  z-index: 0;
+  pointer-events: none;
+  box-shadow: 40px 0 0 0 var(--color-border), 80px 0 0 0 var(--color-border), 120px 0 0 0 var(--color-border);
+  transition: transform var(--transition-base);
+}
+
+.checkbox-item.level-5::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: var(--color-border);
+  z-index: 0;
+  pointer-events: none;
+  box-shadow: 40px 0 0 0 var(--color-border), 80px 0 0 0 var(--color-border), 120px 0 0 0 var(--color-border), 160px 0 0 0 var(--color-border);
+  transition: transform var(--transition-base);
+}
+
+
+/* Keep lines stationary during hover animation */
+.checkbox-item:hover::before {
+  transform: translateX(-2px);
+}
+
+.checkbox-item:active::before {
+  transform: translateX(-1px);
+}
+
+
 
 /* Indeterminate state styling */
 .checkbox-item input[type="checkbox"]:indeterminate {
