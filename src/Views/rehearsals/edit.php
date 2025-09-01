@@ -78,120 +78,10 @@
                     </div>
                 </div>
                 
-                <!-- Level 1: Root (Tutti) -->
-                <div class="checkbox-group">
-                    <div class="checkbox-item">
-                        <input name="is_tutti" type="checkbox" id="Tutti" value="1" <?= !empty($formData['is_tutti']) ? 'checked' : '' ?>>
-                        <label id="TuttiLabel" for="Tutti">Tutti</label>
-                    </div>
-                </div>
-                
-                <!-- Level 2: Main Sections (under Tutti) -->
-                <div class="checkbox-group sub-group">
-                    <!-- Streicher -->
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="Streicher" name="groups[]" value="Streicher" <?= in_array('Streicher', $formData['groups'] ?? []) ? 'checked' : '' ?>>
-                        <label id="StreicherLabel" for="Streicher">Streicher</label>
-                    </div>
-                
-                    <!-- Level 3: Individual instruments (under Streicher) -->
-                    <div class="checkbox-group sub-sub-group">
-                        <div class="checkbox-item">
-                            <input id="Vio1" name="groups[]" value="Violine_1" type="checkbox" <?= in_array('Violine_1', $formData['groups'] ?? []) ? 'checked' : '' ?>>
-                            <label for="Vio1">Violine 1</label>
-                        </div>
-                        
-                        <div class="checkbox-item">
-                            <input id="Vio2" name="groups[]" value="Violine_2" type="checkbox" <?= in_array('Violine_2', $formData['groups'] ?? []) ? 'checked' : '' ?>>
-                            <label for="Vio2">Violine 2</label>
-                        </div>
-                        
-                        <div class="checkbox-item">
-                            <input id="Vla" name="groups[]" value="Viola" type="checkbox" <?= in_array('Viola', $formData['groups'] ?? []) ? 'checked' : '' ?>>
-                            <label for="Vla">Viola</label>
-                        </div>
-                        
-                        <div class="checkbox-item">
-                            <input id="Vc" name="groups[]" value="Violoncello" type="checkbox" <?= in_array('Violoncello', $formData['groups'] ?? []) ? 'checked' : '' ?>>
-                            <label for="Vc">Violoncello</label>
-                        </div>
-                        
-                        <div class="checkbox-item">
-                            <input id="Cb" name="groups[]" value="Kontrabass" type="checkbox" <?= in_array('Kontrabass', $formData['groups'] ?? []) ? 'checked' : '' ?>>
-                            <label for="Cb">Kontrabass</label>
-                        </div>
-                    </div>
-                    
-                    <!-- Holzbläser -->
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="Holzblaeser" name="groups[]" value="Holzblaeser" <?= in_array('Holzblaeser', $formData['groups'] ?? []) ? 'checked' : '' ?>>
-                        <label id="HolzblaeserLabel" for="Holzblaeser">Holzbläser</label>
-                    </div>
-                    
-                    <!-- Level 3: Individual instruments (under Holzbläser) -->
-                    <div class="checkbox-group sub-sub-group">
-                        <div class="checkbox-item">
-                            <input id="Fl" name="groups[]" value="Flöte" type="checkbox" <?= in_array('Flöte', $formData['groups'] ?? []) ? 'checked' : '' ?>>
-                            <label for="Fl">Flöte</label>
-                        </div>
-                        
-                        <div class="checkbox-item">
-                            <input id="Ob" name="groups[]" value="Oboe" type="checkbox" <?= in_array('Oboe', $formData['groups'] ?? []) ? 'checked' : '' ?>>
-                            <label for="Ob">Oboe</label>
-                        </div>
-                        
-                        <div class="checkbox-item">
-                            <input id="Kl" name="groups[]" value="Klarinette" type="checkbox" <?= in_array('Klarinette', $formData['groups'] ?? []) ? 'checked' : '' ?>>
-                            <label for="Kl">Klarinette</label>
-                        </div>
-                        
-                        <div class="checkbox-item">
-                            <input id="Fg" name="groups[]" value="Fagott" type="checkbox" <?= in_array('Fagott', $formData['groups'] ?? []) ? 'checked' : '' ?>>
-                            <label for="Fg">Fagott</label>
-                        </div>
-                    </div>
-                    
-                    <!-- Blechbläser -->
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="Blechblaeser" name="groups[]" value="Blechblaeser" <?= in_array('Blechblaeser', $formData['groups'] ?? []) ? 'checked' : '' ?>>
-                        <label id="BlechblaeserLabel" for="Blechblaeser">Blechbläser</label>
-                    </div>
-                    
-                    <!-- Level 3: Individual instruments (under Blechbläser) -->
-                    <div class="checkbox-group sub-sub-group">
-                        <div class="checkbox-item">
-                            <input id="Hr" name="groups[]" value="Horn" type="checkbox" <?= in_array('Horn', $formData['groups'] ?? []) ? 'checked' : '' ?>>
-                            <label for="Hr">Horn</label>
-                        </div>
-                        
-                        <div class="checkbox-item">
-                            <input id="Tr" name="groups[]" value="Trompete" type="checkbox" <?= in_array('Trompete', $formData['groups'] ?? []) ? 'checked' : '' ?>>
-                            <label for="Tr">Trompete</label>
-                        </div>
-                        
-                        <div class="checkbox-item">
-                            <input id="Po" name="groups[]" value="Posaune" type="checkbox" <?= in_array('Posaune', $formData['groups'] ?? []) ? 'checked' : '' ?>>
-                            <label for="Po">Posaune</label>
-                        </div>
-                        
-                        <div class="checkbox-item">
-                            <input id="Tu" name="groups[]" value="Tuba" type="checkbox" <?= in_array('Tuba', $formData['groups'] ?? []) ? 'checked' : '' ?>>
-                            <label for="Tu">Tuba</label>
-                        </div>
-                    </div>
-                    
-                    <!-- Schlagwerk -->
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="Schlagzeug" name="groups[]" value="Schlagwerk" <?= in_array('Schlagwerk', $formData['groups'] ?? []) ? 'checked' : '' ?>>
-                        <label id="SchlagzeugLabel" for="Schlagzeug">Schlagwerk</label>
-                    </div>
-                    
-                    <!-- Andere -->
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="Andere" name="groups[]" value="Andere" <?= in_array('Andere', $formData['groups'] ?? []) ? 'checked' : '' ?>>
-                        <label id="AndereLabel" for="Andere">Andere</label>
-                    </div>
-                </div>
+                <?php 
+                // Use the dynamic group selector component
+                include __DIR__ . '/../components/dynamic-group-selector.php';
+                ?>
             </div>
             
             <div class="form-actions">
@@ -208,7 +98,7 @@
 
 // 3-Level Hierarchy Logic:
 // Level 1: Tutti (root) controls all main groups
-// Level 2: Main groups (Streicher, Holzbläser, Blechbläser, Schlagwerk, Andere) control their sub-instruments
+// Level 2: Main sections control their sub-instruments dynamically
 // Level 3: Individual instruments update their parent's state
 
 // Tutti controls all main groups

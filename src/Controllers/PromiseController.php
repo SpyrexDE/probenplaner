@@ -349,6 +349,10 @@ class PromiseController extends Controller
         // Get all users in the current orchestra
         $users = $this->userModel->getOrchestraMembers($_SESSION['orchestra_id']);
         
+        // Initialize GroupManager for dynamic section handling
+        $groupManager = new \App\Core\GroupManager();
+        $allSections = $groupManager->getAllSections();
+        
         // Calculate statistics for each rehearsal
         $stats = [];
         $membersBySection = [];
@@ -361,13 +365,11 @@ class PromiseController extends Controller
                 'no_response' => 0
             ];
             
-            $membersBySection[$rehearsalId] = [
-                'all' => [],
-                'strings' => [],
-                'woodwinds' => [],
-                'brass' => [],
-                'percussion' => []
-            ];
+            // Initialize sections dynamically from configuration
+            $membersBySection[$rehearsalId] = ['all' => []];
+            foreach ($allSections as $sectionId => $sectionData) {
+                $membersBySection[$rehearsalId][$sectionId] = [];
+            }
             
             // Determine which users apply to this rehearsal
             $groups = $this->rehearsalModel->getGroupsAsAssoc($rehearsal['id']);
@@ -408,20 +410,13 @@ class PromiseController extends Controller
                     
                     $membersBySection[$rehearsalId]['all'][] = $memberInfo;
                     
-                    // Determine section
-                    $userType = $user['type'];
-                    if ($userType === 'Violine_1' || $userType === 'Violine_2' || $userType === 'Bratsche' || 
-                        $userType === 'Cello' || $userType === 'Kontrabass') {
-                        $membersBySection[$rehearsalId]['strings'][] = $memberInfo;
-                    } elseif ($userType === 'Flöte' || $userType === 'Oboe' || 
-                             $userType === 'Klarinette' || $userType === 'Fagott') {
-                        $membersBySection[$rehearsalId]['woodwinds'][] = $memberInfo;
-                    } elseif ($userType === 'Trompete' || $userType === 'Posaune' || 
-                             $userType === 'Horn' || $userType === 'Tuba') {
-                        $membersBySection[$rehearsalId]['brass'][] = $memberInfo;
-                    } elseif ($userType === 'Schlagwerk' || $userType === 'Percussion' || 
-                             $userType === 'Pauken') {
-                        $membersBySection[$rehearsalId]['percussion'][] = $memberInfo;
+                    // Dynamically determine which sections this user belongs to
+                    $userType = $groupManager->resolveAlias($user['type']);
+                    
+                    foreach ($allSections as $sectionId => $sectionData) {
+                        if ($groupManager->isUserInGroup($userType, $sectionId)) {
+                            $membersBySection[$rehearsalId][$sectionId][] = $memberInfo;
+                        }
                     }
                 }
             }

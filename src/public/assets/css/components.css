@@ -1272,12 +1272,13 @@
 .checkbox-item {
   display: flex;
   align-items: center;
-  margin-bottom: var(--space-3);
-  padding: var(--space-2) var(--space-3);
+  margin-bottom: 6px;
+  padding: 4px 8px;
   border-radius: var(--radius-base);
   transition: all var(--transition-base);
   cursor: pointer;
   user-select: none;
+  line-height: 1.4;
 }
 
 .checkbox-item:hover {
@@ -1327,23 +1328,58 @@
   transform: none;
 }
 
+/* Indentation for hierarchical checkbox structure - uniform 24px per level */
+.checkbox-item.indent-1 {
+  padding-left: 24px;
+}
+
+.checkbox-item.indent-2 {
+  padding-left: 48px;
+}
+
+.checkbox-item.indent-3 {
+  padding-left: 72px;
+}
+
+.checkbox-item.indent-4 {
+  padding-left: 96px;
+}
+
+.checkbox-item.indent-5 {
+  padding-left: 120px;
+}
+
+/* Vertical lines for parent items */
+.checkbox-item:has(input[type="checkbox"]:checked),
+.checkbox-item:has(input[type="checkbox"]:indeterminate) {
+  position: relative;
+}
+
+.checkbox-item:has(input[type="checkbox"]:checked)::before,
+.checkbox-item:has(input[type="checkbox"]:indeterminate)::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 100%;
+  width: 2px;
+  height: 20px;
+  background-color: #e5e7eb;
+  z-index: 1;
+}
+
+/* Extend lines for items with children to connect them visually */
+.checkbox-item:has(+ .checkbox-group)::before {
+  height: calc(100% + 20px);
+  top: 100%;
+}
+
 /* Indeterminate state styling */
 .checkbox-item input[type="checkbox"]:indeterminate {
   background-color: var(--color-primary);
   border-color: var(--color-primary);
 }
 
-.sub-group {
-  margin-left: var(--space-5);
-  padding-left: var(--space-4);
-  border-left: 2px solid var(--color-border-light);
-}
-
-.sub-sub-group {
-  margin-left: var(--space-5);
-  padding-left: var(--space-4);
-  border-left: 2px solid var(--color-border-light);
-}
+/* Removed old sub-group indentation - now using uniform indent-X classes */
 
 /* === COMPACT COLOR PICKER === */
 .compact-color-picker {

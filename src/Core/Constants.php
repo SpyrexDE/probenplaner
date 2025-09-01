@@ -21,12 +21,8 @@ class Constants
     const ROLE_LEADER = 'leader';
     const ROLE_CONDUCTOR = 'conductor';
     
-    // Instrument/Section Types
-    const SECTION_STRINGS = 'Streicher';
-    const SECTION_WINDS = 'Bläser';
-    const SECTION_BRASS = 'Blech';
-    const SECTION_PERCUSSION = 'Schlagwerk';
-    const SECTION_OTHER = 'Andere';
+    // Section/Instrument types are dynamically loaded from config/orchestra_groups.php
+    // Use GroupManager class to access group information
     
     // Rehearsal Types
     const REHEARSAL_TUTTI = 'tutti';

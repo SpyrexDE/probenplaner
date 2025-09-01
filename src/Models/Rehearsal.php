@@ -199,45 +199,21 @@ class Rehearsal extends Model
      */
     public function isUserInRehearsalGroup(string $userType, bool $isSmallGroup, $groups, bool $rehearsalIsSmallGroup = false): bool
     {
-        // Special types that apply to everyone
-        if (isset($groups['Tutti']) || isset($groups['Konzert']) || isset($groups['Konzertreise']) || isset($groups['Generalprobe'])) {
-            return true;
-        }
-        
         // If it's a small group rehearsal, only users with is_small_group should attend
         if ($rehearsalIsSmallGroup && !$isSmallGroup) {
             return false;
         }
         
-        // Check if user type matches a group
+        // Use GroupManager for dynamic group checking
+        $groupManager = new \App\Core\GroupManager();
+        
+        // Resolve any aliases first
+        $userType = $groupManager->resolveAlias($userType);
+        
+        // Check each group
         foreach (array_keys($groups) as $group) {
-            if ($group === $userType) {
+            if ($groupManager->isUserInGroup($userType, $group)) {
                 return true;
-            }
-            
-            // Check parent groups
-            // Strings like "Streicher", "Bläser", "Blechbläser", "Holzbläser" contain multiple instrument groups
-            switch ($group) {
-                case 'Streicher':
-                    if (in_array($userType, ['Violine_1', 'Violine_2', 'Bratsche', 'Cello', 'Kontrabass'])) {
-                        return true;
-                    }
-                    break;
-                case 'Bläser':
-                    if (in_array($userType, ['Flöte', 'Oboe', 'Klarinette', 'Fagott', 'Trompete', 'Posaune', 'Tuba', 'Horn'])) {
-                        return true;
-                    }
-                    break;
-                case 'Blechbläser':
-                    if (in_array($userType, ['Trompete', 'Posaune', 'Tuba', 'Horn'])) {
-                        return true;
-                    }
-                    break;
-                case 'Holzbläser':
-                    if (in_array($userType, ['Flöte', 'Oboe', 'Klarinette', 'Fagott'])) {
-                        return true;
-                    }
-                    break;
             }
         }
         

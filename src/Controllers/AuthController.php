@@ -357,38 +357,51 @@ class AuthController extends Controller
     }
     
     /**
-     * Get instrument/section type structure
+     * Get instrument/section type structure dynamically
      * 
      * @return array
      */
     private function getTypeStructure()
     {
-        return [
-            'Streicher' => [
-                'Violine_1',
-                'Violine_2',
-                'Bratsche',
-                'Cello',
-                'Kontrabass'
-            ],
-            'Holzbläser' => [
-                'Flöte',
-                'Oboe',
-                'Klarinette',
-                'Fagott'
-            ],
-            'Blechbläser' => [
-                'Horn',
-                'Trompete',
-                'Posaune',
-                'Tuba'
-            ],
-            'Andere' => [
-                'Schlagwerk',
-                'Pauke',
-                'Harfe',
-                'Klavier'
-            ]
-        ];
+        $groupManager = new \App\Core\GroupManager();
+        $config = $groupManager->getConfig();
+        
+        // Extract the structure for the registration form
+        if (isset($config['tutti']['children'])) {
+            $structure = [];
+            
+            foreach ($config['tutti']['children'] as $sectionKey => $section) {
+                if ($section['type'] === 'section') {
+                    $sectionInstruments = [];
+                    
+                    if (isset($section['children'])) {
+                        foreach ($section['children'] as $childKey => $child) {
+                            if ($child['type'] === 'instrument') {
+                                $sectionInstruments[] = $child['id'];
+                            } elseif ($child['type'] === 'section' && isset($child['children'])) {
+                                // Flatten nested sections for the form
+                                foreach ($child['children'] as $instrumentKey => $instrument) {
+                                    if ($instrument['type'] === 'instrument') {
+                                        $sectionInstruments[] = $instrument['id'];
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Simple sections like Schlagwerk - add the section ID as an instrument
+                        $sectionInstruments[] = $section['id'];
+                    }
+                    
+                    if (!empty($sectionInstruments)) {
+                        $structure[$section['id']] = $sectionInstruments;
+                    }
+                }
+            }
+            
+            return $structure;
+        }
+        
+        // Configuration is malformed
+        throw new \Exception("Orchestra groups configuration is malformed or missing 'tutti' section. Please check src/config/orchestra_groups.php");
     }
 } 

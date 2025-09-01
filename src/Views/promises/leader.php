@@ -39,12 +39,15 @@
                     $memberPromises[$rehearsalId]['no_response'] ?? []
                 );
                 
-                // Group by instrument family (same logic as admin)
-                $stringPlayers = [];
-                $woodwindPlayers = [];
-                $brassPlayers = [];
-                $percussionPlayers = [];
-                $otherPlayers = [];
+                // Group by sections dynamically using GroupManager
+                $groupManager = new \App\Core\GroupManager();
+                $allSections = $groupManager->getAllSections();
+                $sectionPlayers = [];
+                
+                // Initialize section arrays dynamically
+                foreach ($allSections as $sectionId => $sectionData) {
+                    $sectionPlayers[$sectionId] = [];
+                }
                 
                 foreach ($allMembers as $member) {
                     // Add status to member data for sectional view
@@ -70,33 +73,13 @@
                     
                     $memberWithStatus = array_merge($member, ['status' => $memberStatus]);
                     
-                    $instrument = $member['type'] ?? '';
-                    switch ($instrument) {
-                        case 'Violine_1':
-                        case 'Violine_2':
-                        case 'Bratsche':
-                        case 'Cello':
-                        case 'Kontrabass':
-                            $stringPlayers[] = $memberWithStatus;
-                            break;
-                        case 'Flöte':
-                        case 'Oboe':
-                        case 'Klarinette':
-                        case 'Fagott':
-                            $woodwindPlayers[] = $memberWithStatus;
-                            break;
-                        case 'Horn':
-                        case 'Trompete':
-                        case 'Posaune':
-                        case 'Tuba':
-                            $brassPlayers[] = $memberWithStatus;
-                            break;
-                        case 'Schlagwerk':
-                            $percussionPlayers[] = $memberWithStatus;
-                            break;
-                        default:
-                            $otherPlayers[] = $memberWithStatus;
-                            break;
+                    // Dynamically determine which sections this member belongs to
+                    $userType = $groupManager->resolveAlias($member['type'] ?? '');
+                    
+                    foreach ($allSections as $sectionId => $sectionData) {
+                        if ($groupManager->isUserInGroup($userType, $sectionId)) {
+                            $sectionPlayers[$sectionId][] = $memberWithStatus;
+                        }
                     }
                 }
             ?>
@@ -153,30 +136,15 @@
                         
                         <div id="Orchester<?= $rehearsalId ?>Sec" class="collapse">
                             <ul>
-                                <?php if (!empty($stringPlayers)): ?>
-                                    <?php 
-                                        $membersBySection = [$rehearsalId => ['all' => $stringPlayers]];
-                                        include __DIR__ . '/../components/section-strings.php'; 
-                                    ?>
-                                <?php endif; ?>
-                                
-                                <?php if (!empty($woodwindPlayers) || !empty($brassPlayers)): ?>
-                                    <?php 
-                                        include __DIR__ . '/../components/section-winds.php'; 
-                                    ?>
-                                <?php endif; ?>
-                                
-                                <?php if (!empty($percussionPlayers)): ?>
-                                    <?php 
-                                        include __DIR__ . '/../components/section-percussion.php'; 
-                                    ?>
-                                <?php endif; ?>
-                                
-                                <?php if (!empty($otherPlayers)): ?>
-                                    <?php 
-                                        include __DIR__ . '/../components/section-other.php'; 
-                                    ?>
-                                <?php endif; ?>
+                                <?php 
+                                // Use the dynamically grouped section players from above
+                                foreach ($sectionPlayers as $sectionId => $players) {
+                                    // Only render section if there are players
+                                    if (!empty($players)) {
+                                        include __DIR__ . '/../components/dynamic-section-component.php';
+                                    }
+                                }
+                                ?>
                             </ul>
                         </div>
                     </li>
