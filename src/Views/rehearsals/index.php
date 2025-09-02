@@ -41,7 +41,9 @@
                     // Convert group keys to smart display
                     $smartDisplay = new \App\Core\SmartGroupDisplay();
                     $groupsText = $smartDisplay->generateDescription($groupKeys);
-                    $groupsDisplay = str_replace(", ", "<br>", $groupsText);
+                    
+                    // Keep comma-separated list and let CSS handle line breaks
+                    $groupsDisplay = $groupsText;
                 ?>
                 
                 <div class="rehearsal-card" style="<?= !empty($rehearsal['color']) ? 'border-left-color: ' . $rehearsal['color'] . ';' : '' ?>">
