@@ -49,16 +49,15 @@ function generateGroupCheckboxes($groups, $level = 0, $formData = [], $parentCla
         
         $html .= '<div class="' . implode(' ', $classes) . '">' . "\n";
         
-        // All checkboxes use the same structure - no special handling for tutti
-        if ($level === 0 && $groupId === 'tutti') {
-            // Tutti checkbox - check both is_tutti and groups[] for backward compatibility
-            $isTuttiChecked = !empty($formData['is_tutti']) || in_array($groupId, $formData['groups'] ?? []);
-            $html .= '  <input type="checkbox" id="' . htmlspecialchars($groupId) . '" name="groups[]" value="' . htmlspecialchars($groupId) . '" ' . ($isTuttiChecked ? 'checked' : '') . '>' . "\n";
-        } else {
-            // Regular checkbox
-            $html .= '  <input type="checkbox" id="' . htmlspecialchars($groupId) . '" name="groups[]" value="' . htmlspecialchars($groupId) . '" ' . (in_array($groupId, $formData['groups'] ?? []) ? 'checked' : '') . '>' . "\n";
-        }
+        // Check if this group should be checked
+        $isChecked = in_array($groupId, $formData['groups'] ?? []);
         
+        // Render checkbox - tutti is just another group
+        $html .= '  <input type="checkbox" id="' . htmlspecialchars($groupId) . '" name="groups[]" value="' . htmlspecialchars($groupId) . '" ' . ($isChecked ? 'checked' : '') . '>' . "\n";
+        
+        // Removed legacy '!EXCLUDED!' hidden inputs; we submit only positive selections now
+        
+        // Render label normally
         $html .= '  <label for="' . htmlspecialchars($groupId) . '">' . htmlspecialchars($displayName) . '</label>' . "\n";
         $html .= '</div>' . "\n";
         
@@ -73,7 +72,7 @@ function generateGroupCheckboxes($groups, $level = 0, $formData = [], $parentCla
     return $html;
 }
 
-// Generate the complete form
+// Generate the complete form with cleaned form data, but keep original for exclusion logic
 echo generateGroupCheckboxes($config, 0, $formData ?? []);
 
 // Add some JavaScript for hierarchical functionality
@@ -111,10 +110,21 @@ function initializeHierarchicalCheckboxes() {
             for (let depth = checkboxesByDepth.length - 1; depth >= 0; depth--) {
                 if (checkboxesByDepth[depth]) {
                     checkboxesByDepth[depth].forEach(checkbox => {
-                        this.updateCheckboxState(checkbox);
+                        // Only update state if this checkbox has children and is not already checked
+                        // This preserves the initial checked state from the server
+                        if (this.findChildCheckboxes(checkbox).length > 0 && !checkbox.checked) {
+                            this.updateCheckboxState(checkbox);
+                        }
                     });
                 }
             }
+            
+            // Now ensure parent-child consistency: if a parent is checked, check all children
+            allCheckboxes.forEach(checkbox => {
+                if (checkbox.checked && this.findChildCheckboxes(checkbox).length > 0) {
+                    this.checkChildren(checkbox);
+                }
+            });
         },
         
         getDepthLevel: function(checkboxItem) {

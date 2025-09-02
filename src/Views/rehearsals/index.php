@@ -38,8 +38,10 @@
                         }
                     }
                     
-                    // Convert group keys to formatted display
-                    $groupsDisplay = str_replace("_", " ", implode("<br>", $groupKeys));
+                    // Convert group keys to smart display
+                    $smartDisplay = new \App\Core\SmartGroupDisplay();
+                    $groupsText = $smartDisplay->generateDescription($groupKeys);
+                    $groupsDisplay = str_replace(", ", "<br>", $groupsText);
                 ?>
                 
                 <div class="rehearsal-card" style="<?= !empty($rehearsal['color']) ? 'border-left-color: ' . $rehearsal['color'] . ';' : '' ?>">

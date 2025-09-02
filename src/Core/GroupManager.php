@@ -256,7 +256,7 @@ class GroupManager
     /**
      * Generate form options for group selection (hierarchical)
      */
-    public function generateHierarchicalFormOptions(array $groups = null, int $level = 0): string
+    public function generateHierarchicalFormOptions(?array $groups = null, int $level = 0): string
     {
         if ($groups === null) {
             $groups = $this->config;

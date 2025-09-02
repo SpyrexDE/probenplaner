@@ -73,7 +73,8 @@ function sortGroups($groups) {
             }
         }
         
-        $groupsText = str_replace("_", " ", implode(", ", $groupArray));
+        $smartDisplay = new \App\Core\SmartGroupDisplay();
+        $groupsText = $smartDisplay->generateDescription($groupArray);
         
         // Prepare time display
         $start_time_prom = isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, 5) : '??:??';

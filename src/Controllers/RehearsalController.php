@@ -89,23 +89,10 @@ class RehearsalController extends Controller
             // Date is already in Y-m-d format from the date input field
             // No need to convert
             
-            // Process groups data
-            $groups = [];
+            // Process groups data using the new processor
             $rehearsalType = $_POST['rehearsal_type'] ?? '';
-            $groupsSelected = $_POST['groups'] ?? [];
-            $isTutti = isset($_POST['is_tutti']) && $_POST['is_tutti'] === '1';
-            
-            if (!empty($rehearsalType)) {
-                $groups[$rehearsalType] = 0;
-            }
-            if ($isTutti) {
-                $groups['Tutti'] = 0;
-            }
-            
-            // Add selected groups
-            foreach ($groupsSelected as $group) {
-                $groups[$group] = 0;
-            }
+            $finalGroups = \App\Core\RehearsalGroupProcessor::processGroups($_POST);
+            $groupValidationErrors = \App\Core\RehearsalGroupProcessor::validateGroups($finalGroups);
             
             // Check if it's a small group rehearsal
             $isSmallGroup = isset($_POST['is_small_group']) && $_POST['is_small_group'] === '1';
@@ -134,9 +121,8 @@ class RehearsalController extends Controller
                 $errors[] = 'Location is required';
             }
             
-            if (empty($groups)) {
-                $errors[] = 'At least one group must be selected';
-            }
+            // Add group validation errors
+            $errors = array_merge($errors, $groupValidationErrors);
             
             if (empty($errors)) {
                 // Save rehearsal
@@ -155,12 +141,7 @@ class RehearsalController extends Controller
                     $rehearsalData['color'] = $color;
                 }
                 
-                // Remove rehearsal type from groups since it's now a separate field
-                $filteredGroups = array_values(array_filter(array_keys($groups), function($group) use ($rehearsalType) {
-                    return $group !== $rehearsalType;
-                }));
-                
-                $result = $this->rehearsalModel->create($rehearsalData, $filteredGroups);
+                $result = $this->rehearsalModel->create($rehearsalData, $finalGroups);
                 
                 if ($result && !is_array($result)) {
                     $this->setFlash('success', 'Rehearsal created successfully');
@@ -190,9 +171,8 @@ class RehearsalController extends Controller
                     'location' => $location,
                     'color' => $color,
                     'rehearsal_type' => $rehearsalType,
-                    'groups' => $groupsSelected,
-                    'is_small_group' => $isSmallGroup,
-                    'is_tutti' => $isTutti
+                    'groups' => $finalGroups,
+                    'is_small_group' => $isSmallGroup
                 ]
             ]);
         } else {
@@ -208,8 +188,7 @@ class RehearsalController extends Controller
                     'color' => Constants::COLOR_WHITE,
                     'rehearsal_type' => '',
                     'groups' => [],
-                    'is_small_group' => false,
-                    'is_tutti' => false
+                    'is_small_group' => false
                 ]
             ]);
         }
@@ -263,23 +242,10 @@ class RehearsalController extends Controller
             // Date is already in Y-m-d format from the date input field
             // No need to convert
             
-            // Process groups data
-            $groups = [];
+            // Process groups data using the new processor
             $rehearsalType = $_POST['rehearsal_type'] ?? '';
-            $groupsSelected = $_POST['groups'] ?? [];
-            $isTutti = isset($_POST['is_tutti']) && $_POST['is_tutti'] === '1';
-            
-            if (!empty($rehearsalType)) {
-                $groups[$rehearsalType] = 0;
-            }
-            if ($isTutti) {
-                $groups['Tutti'] = 0;
-            }
-            
-            // Add selected groups
-            foreach ($groupsSelected as $group) {
-                $groups[$group] = 0;
-            }
+            $finalGroups = \App\Core\RehearsalGroupProcessor::processGroups($_POST);
+            $groupValidationErrors = \App\Core\RehearsalGroupProcessor::validateGroups($finalGroups);
             
             // Check if it's a small group rehearsal
             $isSmallGroup = isset($_POST['is_small_group']) && $_POST['is_small_group'] === '1';
@@ -308,9 +274,8 @@ class RehearsalController extends Controller
                 $errors[] = 'Location is required';
             }
             
-            if (empty($groups)) {
-                $errors[] = 'At least one group must be selected';
-            }
+            // Add group validation errors
+            $errors = array_merge($errors, $groupValidationErrors);
             
             if (empty($errors)) {
                 // Update rehearsal
@@ -327,12 +292,7 @@ class RehearsalController extends Controller
                     $updateData['color'] = $color;
                 }
                 
-                // Remove rehearsal type from groups since it's now a separate field
-                $filteredGroups = array_values(array_filter(array_keys($groups), function($group) use ($rehearsalType) {
-                    return $group !== $rehearsalType;
-                }));
-                
-                $result = $this->rehearsalModel->updateRehearsal($rehearsalId, $updateData, $filteredGroups);
+                $result = $this->rehearsalModel->updateRehearsal($rehearsalId, $updateData, $finalGroups);
                 
                 if ($result === true) {
                     $this->setFlash('success', 'Rehearsal updated successfully');
@@ -358,9 +318,8 @@ class RehearsalController extends Controller
                     'location' => $location,
                     'color' => $color,
                     'rehearsal_type' => $rehearsalType,
-                    'groups' => $groupsSelected,
-                    'is_small_group' => $isSmallGroup,
-                    'is_tutti' => $isTutti
+                    'groups' => $finalGroups,
+                    'is_small_group' => $isSmallGroup
                 ]
             ]);
         } else {
@@ -377,7 +336,9 @@ class RehearsalController extends Controller
             $rehearsalType = $rehearsal['type'] ?? 'Probe';
             $groups = $rehearsal['groups'] ?? [];
             
-            $isTutti = in_array('Tutti', $groups);
+            // Use the proper form data generation to handle tutti-with-exclusions
+            $formData = \App\Core\RehearsalGroupProcessor::generateFormData($groups);
+            
             // Display the form
             $this->render('rehearsals/edit', [
                 'currentPage' => 'rehearsals',
@@ -390,9 +351,8 @@ class RehearsalController extends Controller
                     'location' => $rehearsal['location'],
                     'color' => $rehearsal['color'] ?? '',
                     'rehearsal_type' => $rehearsalType,
-                    'groups' => $rehearsal['groups'] ?? [],
-                    'is_small_group' => $rehearsal['is_small_group'] ?? false,
-                    'is_tutti' => $isTutti
+                    'groups' => $formData['groups'],
+                    'is_small_group' => $rehearsal['is_small_group'] ?? false
                 ]
             ]);
         }

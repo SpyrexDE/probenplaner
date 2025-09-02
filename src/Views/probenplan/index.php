@@ -48,9 +48,8 @@
                                     <td>
                                         <?php 
                                         if (isset($rehearsal['groups']) && is_array($rehearsal['groups'])) {
-                                            echo implode(', ', array_map(function($group) {
-                                                return str_replace('_', ' ', $group);
-                                            }, $rehearsal['groups']));
+                                            $smartDisplay = new \App\Core\SmartGroupDisplay();
+                                            echo htmlspecialchars($smartDisplay->generateDescription($rehearsal['groups']));
                                         }
                                         ?>
                                     </td>
