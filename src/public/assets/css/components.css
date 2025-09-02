@@ -1292,6 +1292,7 @@
   margin-right: var(--space-3);
   accent-color: var(--color-primary);
   cursor: pointer;
+  pointer-events: none; /* Prevent direct checkbox clicks */
 }
 
 .checkbox-item label {
@@ -1301,6 +1302,7 @@
   user-select: none;
   flex: 1;
   padding: var(--space-1) 0;
+  pointer-events: none; /* Prevent direct label clicks */
 }
 
 /* Handle disabled state */

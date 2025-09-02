@@ -132,15 +132,32 @@ function initializeHierarchicalCheckboxes() {
             return depth;
         },
         
-        bindEventListeners: function() {
-            const checkboxes = document.querySelectorAll('input[type="checkbox"][name="groups[]"]');
-            
-            checkboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', (e) => {
-                    this.handleCheckboxChange(e.target);
-                });
-            });
-        },
+            bindEventListeners: function() {
+      const checkboxes = document.querySelectorAll('input[type="checkbox"][name="groups[]"]');
+      
+      checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+          this.handleCheckboxChange(e.target);
+        });
+      });
+      
+      // Add click handlers for entire checkbox items
+      const checkboxItems = document.querySelectorAll('.checkbox-item');
+      checkboxItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+          // Don't trigger if clicking directly on checkbox or label
+          if (e.target.tagName === 'INPUT' || e.target.tagName === 'LABEL') {
+            return;
+          }
+          
+          const checkbox = item.querySelector('input[type="checkbox"]');
+          if (checkbox) {
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        });
+      });
+    },
         
         handleCheckboxChange: function(checkbox) {
             if (checkbox.checked) {
