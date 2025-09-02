@@ -602,8 +602,6 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
      
      // Function to load user statistics
      window.loadUserStats = function() {
-         console.log('Loading user stats...');
-         
          // Use the proper API endpoint instead of scraping HTML
          fetch('/api/user-stats', {
              method: 'GET',
@@ -619,46 +617,11 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
          })
          .then(data => {
              if (data.success && data.stats) {
-                 console.log('Stats loaded via API:', data.stats);
                  updateStatsDisplay(data.stats);
              } else {
                  console.error('API returned error:', data.error || 'Unknown error');
-                 // This suggests a PHP error - try the test endpoint
-                 console.log('Trying test endpoint to debug API issues...');
-                 fetch('/api/test')
-                     .then(testResponse => testResponse.text())
-                     .then(testText => {
-                         console.log('Test endpoint response:', testText);
-                         if (testText.includes('API is working')) {
-                             console.log('API is working, issue is with getUserStats endpoint');
-                         } else {
-                             console.log('API has fundamental issues');
-                         }
-                     })
-                     .catch(testError => {
-                         console.error('Test endpoint also failed:', testError);
-                     });
-                 
-                 // Try the minimal stats endpoint as a fallback
-                 console.log('Trying minimal stats endpoint as fallback...');
-                 fetch('/api/minimal-stats')
-                     .then(fallbackResponse => fallbackResponse.json())
-                     .then(fallbackData => {
-                         if (fallbackData.success && fallbackData.stats) {
-                             console.log('Minimal stats endpoint worked, using fallback data:', fallbackData.stats);
-                             updateStatsDisplay(fallbackData.stats);
-                         } else {
-                             console.log('Minimal stats endpoint failed too');
-                             updateStatsDisplay({ attending: 0, not_attending: 0, no_response: 0, total: 0 });
-                         }
-                     })
-                     .catch(fallbackError => {
-                         console.error('Minimal stats endpoint also failed:', fallbackError);
-                         updateStatsDisplay({ attending: 0, not_attending: 0, no_response: 0, total: 0 });
-                     });
-                 
-                 // Don't fall through to the default fallback
-                 return;
+                 // Fallback to zero stats
+                 updateStatsDisplay({ attending: 0, not_attending: 0, no_response: 0, total: 0 });
              }
          })
          .catch(error => {
@@ -733,7 +696,6 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
     // Also update stats when page becomes visible (e.g., after tab switch)
     document.addEventListener('visibilitychange', function() {
         if (!document.hidden && typeof window.loadUserStats === 'function') {
-            console.log('Page became visible, updating stats...');
             setTimeout(function() {
                 window.loadUserStats();
             }, 200);

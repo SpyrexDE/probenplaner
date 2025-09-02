@@ -43,8 +43,7 @@
                             $currentType = str_replace('*', '', $user['type']);
                         }
                         
-                        // Add hidden field with current type for debugging (outside the recursive function)
-                        echo '<input type="hidden" id="debug_current_type" value="' . htmlspecialchars($currentType) . '">';
+                        echo '<input type="hidden" id="current_type" value="' . htmlspecialchars($currentType) . '">';
                         ?>
                         <select class="form-input" id="group_type" name="group_type" required>
                             <option value="">Bitte Instrument / Stimmgruppe wählen</option>
@@ -129,7 +128,7 @@ $(document).ready(function(){
     });
     
     // Ensure the correct option is selected
-    const currentType = $('#debug_current_type').val();
+    const currentType = $('#current_type').val();
     if (currentType) {
         // Find the option that matches the current type
         $('#group_type option').each(function() {
@@ -181,9 +180,6 @@ $(document).ready(function(){
     
     // Handle form submission
     $('form').submit(function() {
-        // Log type selection for debugging
-
-        
         // Make sure a type is selected
         if (!$('#group_type').val()) {
             alert('Bitte wählen Sie eine Stimmgruppe aus.');

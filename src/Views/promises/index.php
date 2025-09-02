@@ -169,7 +169,6 @@ $(document).ready(function() {
         
         // Update sidebar stats immediately for better UX
         if (typeof window.loadUserStats === 'function') {
-            console.log('Updating sidebar stats after attending change...');
             setTimeout(function() {
                 window.loadUserStats();
             }, 100);
@@ -207,7 +206,6 @@ $(document).ready(function() {
             
             // Update sidebar stats immediately for better UX
             if (typeof window.loadUserStats === 'function') {
-                console.log('Updating sidebar stats after direct decline...');
                 setTimeout(function() {
                     window.loadUserStats();
                 }, 100);
@@ -248,7 +246,6 @@ $(document).ready(function() {
             
             // Update sidebar stats after note change
             if (typeof window.loadUserStats === 'function') {
-                console.log('Updating sidebar stats after note change...');
                 setTimeout(function() {
                     window.loadUserStats();
                 }, 100);
@@ -313,7 +310,6 @@ $(document).ready(function() {
                     
                     // Update sidebar stats after successful promise update
                     if (typeof window.loadUserStats === 'function') {
-                        console.log('Updating sidebar stats after promise change...');
                         setTimeout(function() {
                             window.loadUserStats();
                         }, 100); // Small delay to ensure UI is updated
