@@ -79,9 +79,8 @@ class SmartGroupDisplay
             return $displayName;
         }
         
-        // Normalize input - remove duplicates and sort
+        // Normalize input - remove duplicates but preserve order
         $selectedGroups = array_unique($selectedGroups);
-        sort($selectedGroups);
         
         // NEW: Find the most concise representation using tree compression
         $compressedDescription = $this->compressTreeRepresentation($selectedGroups);
@@ -743,14 +742,20 @@ class SmartGroupDisplay
             return null;
         }
         
-        // Skip section-level groups that represent themselves (like Schlagwerk, Andere)
+        // Skip individual instruments and section-level groups that represent themselves
         // These should not be used as roots for exclusions
         $group = $this->groupManager->getGroup($rootId);
-        if ($group && ($group['type'] ?? '') === 'section') {
-            // Check if this section has children - if not, it represents itself
-            $children = $this->groupManager->getChildren($rootId);
-            if (empty($children)) {
-                return null; // This section represents itself, not a group to exclude from
+        if ($group) {
+            $groupType = $group['type'] ?? '';
+            if ($groupType === 'instrument') {
+                return null; // Individual instruments cannot be used as roots for exclusions
+            }
+            if ($groupType === 'section') {
+                // Check if this section has children - if not, it represents itself
+                $children = $this->groupManager->getChildren($rootId);
+                if (empty($children)) {
+                    return null; // This section represents itself, not a group to exclude from
+                }
             }
         }
         
@@ -845,38 +850,26 @@ class SmartGroupDisplay
                 // No additional handling needed
             } elseif (empty($individualInstrumentsOutside) && !empty($sectionGroupsOutside)) {
                 // Only section groups - add them with "und"
-                if (count($sectionGroupsOutside) === 1) {
-                    $sectionDescription = $this->groupManager->getDisplayName($sectionGroupsOutside[0]);
-                } else {
-                    // Sort section groups based on their position in selectedGroups
-                    usort($sectionGroupsOutside, function($a, $b) use ($selectedGroups) {
-                        $posA = array_search($a, $selectedGroups);
-                        $posB = array_search($b, $selectedGroups);
-                        return $posA <=> $posB;
-                    });
-                    
-                    $sectionNames = array_map(fn($id) => $this->groupManager->getDisplayName($id), $sectionGroupsOutside);
-                    $last = array_pop($sectionNames);
-                    $sectionDescription = implode(', ', $sectionNames) . ' ' . $this->language['and'] . ' ' . $last;
-                }
+                // Sort section groups based on their position in selectedGroups
+                usort($sectionGroupsOutside, function($a, $b) use ($selectedGroups) {
+                    $posA = array_search($a, $selectedGroups);
+                    $posB = array_search($b, $selectedGroups);
+                    return $posA <=> $posB;
+                });
+                
+                $sectionDescription = $this->generateSimpleList($sectionGroupsOutside);
                 $description .= ' ' . $this->language['and'] . ' ' . $sectionDescription;
             } else {
                 // Both individual instruments and section groups
                 // Individual instruments already handled with "aber mit", now add section groups
-                if (count($sectionGroupsOutside) === 1) {
-                    $sectionDescription = $this->groupManager->getDisplayName($sectionGroupsOutside[0]);
-                } else {
-                    // Sort section groups based on their position in selectedGroups
-                    usort($sectionGroupsOutside, function($a, $b) use ($selectedGroups) {
-                        $posA = array_search($a, $selectedGroups);
-                        $posB = array_search($b, $selectedGroups);
-                        return $posA <=> $posB;
-                    });
-                    
-                    $sectionNames = array_map(fn($id) => $this->groupManager->getDisplayName($id), $sectionGroupsOutside);
-                    $last = array_pop($sectionNames);
-                    $sectionDescription = implode(', ', $sectionNames) . ' ' . $this->language['and'] . ' ' . $last;
-                }
+                // Sort section groups based on their position in selectedGroups
+                usort($sectionGroupsOutside, function($a, $b) use ($selectedGroups) {
+                    $posA = array_search($a, $selectedGroups);
+                    $posB = array_search($b, $selectedGroups);
+                    return $posA <=> $posB;
+                });
+                
+                $sectionDescription = $this->generateSimpleList($sectionGroupsOutside);
                 $description .= ', ' . $sectionDescription;
             }
         }
