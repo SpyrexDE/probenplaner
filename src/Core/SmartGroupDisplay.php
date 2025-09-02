@@ -429,6 +429,16 @@ class SmartGroupDisplay
             ];
         }
         
+        // Strategy 3: Find multiple exclusion patterns (e.g., "A ohne X und B ohne Y")
+        $multipleExclusionsCandidate = $this->findMultipleExclusionPatterns($selectedGroups);
+        if ($multipleExclusionsCandidate) {
+            $candidates[] = [
+                'description' => $multipleExclusionsCandidate,
+                'strategy' => 'multiple_exclusions',
+                'score' => $this->calculateCompressionScore($multipleExclusionsCandidate)
+            ];
+        }
+        
         // Strategy 3: Compress individual sections
         $compressedGroups = $this->compressSections($selectedGroups);
         if ($compressedGroups !== $selectedGroups) {
@@ -451,8 +461,8 @@ class SmartGroupDisplay
         // 2. Lower score (more concise)
         // 3. Must be better than original
         usort($candidates, function($a, $b) use ($originalScore) {
-            // Strategy preference
-            $strategyOrder = ['single_root' => 3, 'composite' => 2, 'compressed_sections' => 1];
+            // Strategy preference - prioritize multiple exclusions over single root when meaningful
+            $strategyOrder = ['multiple_exclusions' => 4, 'single_root' => 3, 'composite' => 2, 'compressed_sections' => 1];
             $aStrategy = $strategyOrder[$a['strategy']] ?? 0;
             $bStrategy = $strategyOrder[$b['strategy']] ?? 0;
             
@@ -504,21 +514,47 @@ class SmartGroupDisplay
         }
         
         // Sort candidates by multiple criteria:
-        // 1. Higher specificity (more specific roots preferred)
-        // 2. Higher coverage (better match)
-        // 3. Lower score (more concise)
+        // 1. Quality of description (prefer descriptions that mention missing instruments)
+        // 2. Meaningful exclusion patterns (prefer specific section exclusions over general ones)
+        // 3. Higher specificity (more specific roots preferred)
+        // 4. Higher coverage (better match)
+        // 5. Lower score (more concise)
         usort($candidates, function($a, $b) {
-            // First priority: specificity (higher is better)
+            // First priority: quality of description (prefer descriptions that mention missing instruments)
+            $aHasExclusions = strpos($a['description'], $this->language['without']) !== false;
+            $bHasExclusions = strpos($b['description'], $this->language['without']) !== false;
+            if ($aHasExclusions !== $bHasExclusions) {
+                return $bHasExclusions <=> $aHasExclusions; // Prefer descriptions with exclusions
+            }
+            
+            // Second priority: meaningful exclusion patterns
+            // Prefer specific section exclusions (like "Holzbläser ohne Flöte") over general ones
+            $aIsSpecificSection = $this->isSpecificSectionExclusion($a['description']);
+            $bIsSpecificSection = $this->isSpecificSectionExclusion($b['description']);
+            if ($aIsSpecificSection !== $bIsSpecificSection) {
+                return $bIsSpecificSection <=> $aIsSpecificSection; // Prefer specific section exclusions
+            }
+            
+            // If both are specific section exclusions, prefer the one with fewer excluded items
+            if ($aIsSpecificSection && $bIsSpecificSection) {
+                $aExclusionScore = $this->calculateSpecificSectionExclusionScore($a['description']);
+                $bExclusionScore = $this->calculateSpecificSectionExclusionScore($b['description']);
+                if ($aExclusionScore !== $bExclusionScore) {
+                    return $aExclusionScore <=> $bExclusionScore; // Lower is better
+                }
+            }
+            
+            // Third priority: specificity (higher is better)
             if ($a['specificity'] !== $b['specificity']) {
                 return $b['specificity'] <=> $a['specificity'];
             }
             
-            // Second priority: coverage (higher is better)
+            // Fourth priority: coverage (higher is better)
             if (abs($a['coverage'] - $b['coverage']) > 0.1) {
                 return $b['coverage'] <=> $a['coverage'];
             }
             
-            // Third priority: score (lower is better)
+            // Fifth priority: score (lower is better)
             return $a['score'] <=> $b['score'];
         });
         
@@ -543,6 +579,86 @@ class SmartGroupDisplay
         
         $intersection = array_intersect($rootInstruments, $selectedInstruments);
         return count($intersection) / count($rootInstruments);
+    }
+    
+    /**
+     * Check if a description represents a specific section exclusion (like "Holzbläser ohne Flöte")
+     */
+    private function isSpecificSectionExclusion(string $description): bool
+    {
+        // Look for patterns like "Holzbläser ohne X" or "Blechbläser ohne X"
+        // These are more meaningful than general exclusions like "Streicher ohne X und Y"
+        $specificSections = ['Holzbläser', 'Blechbläser', 'Streicher', 'Schlagwerk'];
+        
+        foreach ($specificSections as $section) {
+            // Check for patterns that start with the section name
+            if (strpos($description, $section . ' ' . $this->language['without']) === 0) {
+                // Check if it's a single exclusion (more specific) vs multiple exclusions
+                $exclusionCount = substr_count($description, $this->language['without']);
+                if ($exclusionCount === 1) {
+                    return true; // This is a specific section exclusion
+                }
+            }
+            
+            // Check for patterns that contain the section name with exclusion in the middle
+            // Like "Other groups und Holzbläser ohne Flöte"
+            if (strpos($description, ' ' . $this->language['and'] . ' ' . $section . ' ' . $this->language['without']) !== false) {
+                // Check if it's a single exclusion (more specific) vs multiple exclusions
+                $exclusionCount = substr_count($description, $this->language['without']);
+                if ($exclusionCount === 1) {
+                    return true; // This is a specific section exclusion
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Calculate the quality score for a specific section exclusion (lower = better)
+     */
+    private function calculateSpecificSectionExclusionScore(string $description): int
+    {
+        // Prefer single instrument exclusions over multiple instrument exclusions
+        // "Holzbläser ohne Flöte" is better than "Streicher ohne Violine 1 und Kontrabass"
+        
+        $specificSections = ['Holzbläser', 'Blechbläser', 'Streicher', 'Schlagwerk'];
+        
+        foreach ($specificSections as $section) {
+            // Check for patterns that start with the section name
+            if (strpos($description, $section . ' ' . $this->language['without']) === 0) {
+                // Count how many items are being excluded
+                $exclusionPart = substr($description, strlen($section . ' ' . $this->language['without']));
+                // Split by comma and "und" to get individual items
+                $excludedItems = preg_split('/[,]?\s+und\s+|[,\s]+/', $exclusionPart);
+                $excludedItems = array_map('trim', $excludedItems);
+                $excludedItems = array_filter($excludedItems, function($item) {
+                    return !empty($item) && $item !== $this->language['and'];
+                });
+                
+                return count($excludedItems); // Lower is better
+            }
+            
+            // Check for patterns that contain the section name with exclusion in the middle
+            if (strpos($description, ' ' . $this->language['and'] . ' ' . $section . ' ' . $this->language['without']) !== false) {
+                // Extract the exclusion part
+                $pattern = ' ' . $this->language['and'] . ' ' . $section . ' ' . $this->language['without'] . ' ';
+                $pos = strpos($description, $pattern);
+                if ($pos !== false) {
+                    $exclusionPart = substr($description, $pos + strlen($pattern));
+                    // Split by comma and "und" to get individual items
+                    $excludedItems = preg_split('/[,]?\s+und\s+|[,\s]+/', $exclusionPart);
+                    $excludedItems = array_map('trim', $excludedItems);
+                    $excludedItems = array_filter($excludedItems, function($item) {
+                        return !empty($item) && $item !== $this->language['and'];
+                    });
+                    
+                    return count($excludedItems); // Lower is better
+                }
+            }
+        }
+        
+        return 999; // High penalty for non-specific exclusions
     }
     
     /**
@@ -571,6 +687,120 @@ class SmartGroupDisplay
         }
         
         return $depth;
+    }
+    
+    /**
+     * Find multiple exclusion patterns (e.g., "A ohne X und B ohne Y")
+     */
+    private function findMultipleExclusionPatterns(array $selectedGroups): ?string
+    {
+        // Look for cases where we have multiple meaningful exclusion patterns
+        // Like "Holzbläser ohne Flöte" AND "Blechbläser ohne Horn"
+        
+        $specificSections = ['Holzbläser', 'Blechbläser', 'Streicher', 'Schlagwerk'];
+        $exclusionPatterns = [];
+        
+        foreach ($specificSections as $section) {
+            $result = $this->tryDescribeAsRootWithExclusions($selectedGroups, $section);
+            if ($result && $this->isSpecificSectionExclusion($result)) {
+                // Extract just the exclusion part (e.g., "Holzbläser ohne Flöte")
+                $exclusionPart = $this->extractExclusionPart($result, $section);
+                if ($exclusionPart) {
+                    $exclusionPatterns[] = $exclusionPart;
+                }
+            }
+        }
+        
+        // If we have multiple meaningful exclusion patterns, combine them
+        if (count($exclusionPatterns) >= 2) {
+            // Find the remaining groups that aren't covered by these exclusions
+            $remainingGroups = $this->findRemainingGroupsForMultipleExclusions($selectedGroups, $exclusionPatterns);
+            
+            if (!empty($remainingGroups)) {
+                $remainingDescription = $this->generateSimpleList($remainingGroups);
+                $exclusionsDescription = implode(' und ', $exclusionPatterns);
+                return $remainingDescription . ' und ' . $exclusionsDescription;
+            } else {
+                return implode(' und ', $exclusionPatterns);
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Extract the exclusion part from a description (e.g., "Holzbläser ohne Flöte" from "Other groups und Holzbläser ohne Flöte")
+     */
+    private function extractExclusionPart(string $description, string $section): ?string
+    {
+        // Look for patterns that start with the section name
+        if (strpos($description, $section . ' ' . $this->language['without']) === 0) {
+            return $section . ' ' . $this->language['without'] . ' ' . substr($description, strlen($section . ' ' . $this->language['without']));
+        }
+        
+        // Look for patterns that contain the section name with exclusion in the middle
+        $pattern = ' ' . $this->language['and'] . ' ' . $section . ' ' . $this->language['without'] . ' ';
+        $pos = strpos($description, $pattern);
+        if ($pos !== false) {
+            $exclusionPart = substr($description, $pos + strlen($pattern));
+            // Find the end of the exclusion (before the next "und" or end of string)
+            $endPos = strpos($exclusionPart, ' ' . $this->language['and'] . ' ');
+            if ($endPos !== false) {
+                $exclusionPart = substr($exclusionPart, 0, $endPos);
+            }
+            return $section . ' ' . $this->language['without'] . ' ' . $exclusionPart;
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Find remaining groups that aren't covered by the exclusion patterns
+     */
+    private function findRemainingGroupsForMultipleExclusions(array $selectedGroups, array $exclusionPatterns): array
+    {
+        $remainingGroups = [];
+        
+        foreach ($selectedGroups as $groupId) {
+            $isCovered = false;
+            
+            foreach ($exclusionPatterns as $pattern) {
+                // Check if this group is covered by any of the exclusion patterns
+                if ($this->isGroupCoveredByExclusionPattern($groupId, $pattern)) {
+                    $isCovered = true;
+                    break;
+                }
+            }
+            
+            if (!$isCovered) {
+                $remainingGroups[] = $groupId;
+            }
+        }
+        
+        return $remainingGroups;
+    }
+    
+    /**
+     * Check if a group is covered by an exclusion pattern
+     */
+    private function isGroupCoveredByExclusionPattern(string $groupId, string $pattern): bool
+    {
+        // Extract the section and excluded items from the pattern
+        // Pattern format: "Section ohne item1, item2"
+        $specificSections = ['Holzbläser', 'Blechbläser', 'Streicher', 'Schlagwerk'];
+        
+        foreach ($specificSections as $section) {
+            if (strpos($pattern, $section . ' ' . $this->language['without']) === 0) {
+                // Check if the group is part of this section
+                $groupInstruments = $this->getAllInstrumentsInGroup($groupId);
+                $sectionInstruments = $this->getAllInstrumentsInGroup($section);
+                
+                $intersection = array_intersect($groupInstruments, $sectionInstruments);
+                return !empty($intersection);
+            }
+        }
+        
+        return false;
     }
     
     /**
@@ -795,6 +1025,16 @@ class SmartGroupDisplay
             return null;
         }
         
+        // Validate that the exclusion doesn't exclude instruments that are actually selected
+        foreach ($missingGroups as $missingGroup) {
+            $missingGroupInstruments = $this->getAllInstrumentsInGroup($missingGroup);
+            $intersection = array_intersect($missingGroupInstruments, $selectedInstruments);
+            if (!empty($intersection)) {
+                // This exclusion would exclude instruments that are actually selected - invalid
+                return null;
+            }
+        }
+        
         $rootName = $this->groupManager->getDisplayName($rootId);
         $missingDescription = $this->generateSimpleList($missingGroups);
         
@@ -824,53 +1064,41 @@ class SmartGroupDisplay
             }
         }
         
-        // Build description based on what we have outside the root
+        // Build description with new structure: "Other groups und Root ohne missing"
         if (empty($individualInstrumentsOutside) && empty($sectionGroupsOutside)) {
             // Simple case: just exclusions within the root
             $description = $rootName . ' ' . $this->language['without'] . ' ' . $missingDescription;
-        } elseif (!empty($individualInstrumentsOutside) && empty($sectionGroupsOutside)) {
-            // Only individual instruments outside - use "aber mit" structure
-            $individualGroups = $this->findGroupsForInstruments($individualInstrumentsOutside, 'tutti');
-            $individualDescription = $this->generateSimpleList($individualGroups);
-            $description = $rootName . ' ' . $this->language['without'] . ' ' . $missingDescription . ' ' . $this->language['but'] . ' mit ' . $individualDescription;
-        } elseif (empty($individualInstrumentsOutside) && !empty($sectionGroupsOutside)) {
-            // Only section groups outside - use "und" structure
-            $description = $rootName . ' ' . $this->language['without'] . ' ' . $missingDescription;
         } else {
-            // Both individual instruments and section groups outside - use "aber mit" for individuals, "und" for sections
-            $individualGroups = $this->findGroupsForInstruments($individualInstrumentsOutside, 'tutti');
-            $individualDescription = $this->generateSimpleList($individualGroups);
-            $description = $rootName . ' ' . $this->language['without'] . ' ' . $missingDescription . ' ' . $this->language['but'] . ' mit ' . $individualDescription;
-        }
-        
-        // Handle additional instruments outside the root
-        if (!empty($individualInstrumentsOutside) || !empty($sectionGroupsOutside)) {
-            if (!empty($individualInstrumentsOutside) && empty($sectionGroupsOutside)) {
-                // Only individual instruments - already handled with "aber mit" above
-                // No additional handling needed
-            } elseif (empty($individualInstrumentsOutside) && !empty($sectionGroupsOutside)) {
-                // Only section groups - add them with "und"
+            // We have groups outside the root - restructure to "Other groups und Root ohne missing"
+            $outsideGroups = [];
+            
+            // Add individual instruments outside
+            if (!empty($individualInstrumentsOutside)) {
+                $individualGroups = $this->findGroupsForInstruments($individualInstrumentsOutside, 'tutti');
+                $outsideGroups = array_merge($outsideGroups, $individualGroups);
+            }
+            
+            // Add section groups outside
+            if (!empty($sectionGroupsOutside)) {
                 // Sort section groups based on their position in selectedGroups
                 usort($sectionGroupsOutside, function($a, $b) use ($selectedGroups) {
                     $posA = array_search($a, $selectedGroups);
                     $posB = array_search($b, $selectedGroups);
                     return $posA <=> $posB;
                 });
-                
-                $sectionDescription = $this->generateSimpleList($sectionGroupsOutside);
-                $description .= ' ' . $this->language['and'] . ' ' . $sectionDescription;
+                $outsideGroups = array_merge($outsideGroups, $sectionGroupsOutside);
+            }
+            
+            // Remove duplicates and preserve order
+            $outsideGroups = array_values(array_unique($outsideGroups));
+            
+            if (!empty($outsideGroups)) {
+                // Add the root group to the list for proper comma formatting
+                $allGroups = array_merge($outsideGroups, [$rootId]);
+                $allGroupsDescription = $this->generateSimpleList($allGroups);
+                $description = $allGroupsDescription . ' ' . $this->language['without'] . ' ' . $missingDescription;
             } else {
-                // Both individual instruments and section groups
-                // Individual instruments already handled with "aber mit", now add section groups
-                // Sort section groups based on their position in selectedGroups
-                usort($sectionGroupsOutside, function($a, $b) use ($selectedGroups) {
-                    $posA = array_search($a, $selectedGroups);
-                    $posB = array_search($b, $selectedGroups);
-                    return $posA <=> $posB;
-                });
-                
-                $sectionDescription = $this->generateSimpleList($sectionGroupsOutside);
-                $description .= ', ' . $sectionDescription;
+                $description = $rootName . ' ' . $this->language['without'] . ' ' . $missingDescription;
             }
         }
         
@@ -1141,9 +1369,21 @@ class SmartGroupDisplay
             $score -= 3; // Small bonus for compositional expressions
         }
         
-        // Penalty for very broad exclusions from large groups
+        // Heavy penalty for very broad exclusions from large groups
         if (strpos($description, 'Tutti') === 0 && strpos($description, $this->language['without']) !== false) {
-            $score += 2; // Small penalty for starting with "Tutti ohne"
+            $score += 50; // Heavy penalty for starting with "Tutti ohne" - prefer specific sections
+        }
+        
+        // Handle multiple exclusion patterns
+        $ohneCount = substr_count($description, $this->language['without']);
+        if ($ohneCount > 1) {
+            // Check if these are meaningful multiple exclusions (like "Holzbläser ohne Flöte und Blechbläser ohne Horn")
+            $meaningfulMultipleExclusions = $this->isMeaningfulMultipleExclusions($description);
+            if ($meaningfulMultipleExclusions) {
+                $score -= 10; // Bonus for meaningful multiple exclusions
+            } else {
+                $score += 15; // Penalty for overly complex descriptions
+            }
         }
         
         return $score;
@@ -1173,5 +1413,29 @@ class SmartGroupDisplay
         $analysis['final_description'] = $this->generateDescription($selectedGroups);
         
         return $analysis;
+    }
+    
+    /**
+     * Check if a description contains meaningful multiple exclusions
+     */
+    private function isMeaningfulMultipleExclusions(string $description): bool
+    {
+        // Look for patterns like "Holzbläser ohne Flöte und Blechbläser ohne Horn"
+        // These are meaningful because they represent specific missing instruments from different sections
+        
+        $specificSections = ['Holzbläser', 'Blechbläser', 'Streicher', 'Schlagwerk'];
+        $exclusionPatterns = [];
+        
+        foreach ($specificSections as $section) {
+            // Count how many times this section appears with "ohne"
+            $pattern = $section . ' ' . $this->language['without'];
+            $count = substr_count($description, $pattern);
+            if ($count > 0) {
+                $exclusionPatterns[] = $section;
+            }
+        }
+        
+        // If we have multiple different sections with exclusions, it's meaningful
+        return count($exclusionPatterns) >= 2;
     }
 }

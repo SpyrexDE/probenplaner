@@ -189,6 +189,7 @@ class RehearsalGroupProcessor
     /**
      * Remove redundant parent-child selections
      * If both a parent and all its children are selected, keep only the parent
+     * BUT preserve individual instruments for smart display algorithm
      */
     private static function removeRedundantSelections(array $groups, GroupManager $groupManager): array
     {
@@ -206,9 +207,19 @@ class RehearsalGroupProcessor
                 $childIds = array_map(fn($child) => $child['id'], $children);
                 
                 // If this group is a child of the other group, don't include it
+                // BUT preserve individual instruments (type: 'instrument') for smart display
                 if (in_array($group, $childIds)) {
-                    $shouldInclude = false;
-                    break;
+                    $groupData = $groupManager->getGroup($group);
+                    $groupType = $groupData['type'] ?? '';
+                    
+                    // Preserve individual instruments - they're needed for smart display algorithm
+                    if ($groupType === 'instrument') {
+                        $shouldInclude = true;
+                        break;
+                    } else {
+                        $shouldInclude = false;
+                        break;
+                    }
                 }
             }
             
