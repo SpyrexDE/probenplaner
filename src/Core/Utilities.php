@@ -8,49 +8,48 @@ namespace App\Core;
 class Utilities
 {
     /**
-     * Format a username for display with appropriate icons
-     * (adds crown symbol for group leaders and star for small group members)
+     * Generate user badges for role and small group indicators
      * 
-     * @param string $username User's name
-     * @param string $role User's role (leader, member, conductor)
-     * @param bool $isSmallGroup Whether user is in a small group
-     * @return string Formatted username with icons
+     * @param array $user User data array containing role and is_small_group
+     * @return string HTML string with modern badge-style badges
      */
-    public static function formatUsername($username, $role = 'member', $isSmallGroup = false) 
-    {
-        $formattedName = htmlspecialchars($username);
-        
-        // Add crown for group leaders
-        if ($role === 'leader') {
-            $formattedName .= ' ♚';
-        }
-        
-        // Add star for small group members
-        if ($isSmallGroup) {
-            $formattedName .= ' *';
-        }
-        
-        return $formattedName;
-    }
-    
-    /**
-     * Display a properly formatted username with role and small group indicators
-     * (can be used in views)
-     * 
-     * @param array $user User data array containing username, role, and is_small_group
-     * @return string Formatted username with role and small group indicators
-     */
-    public static function displayUserName($user)
+    public static function generateUserBadges($user)
     {
         if (!is_array($user)) {
             return '';
         }
         
-        $username = $user['username'] ?? '';
-        $role = $user['role'] ?? 'member';
-        $isSmallGroup = isset($user['is_small_group']) && $user['is_small_group'] ? true : false;
+        $badges = [];
         
-        return self::formatUsername($username, $role, $isSmallGroup);
+        // Add crown badge for section leaders (Stimmführer)
+        if (isset($user['role']) && $user['role'] === 'leader') {
+            $badges[] = '<span class="user-badge" title="Stimmführer"><i class="fas fa-crown"></i></span>';
+        }
+        
+        // Add small group badge for small group members (Kleingruppe)
+        if (isset($user['is_small_group']) && $user['is_small_group']) {
+            $badges[] = '<span class="user-badge" title="Kleingruppe"><i class="fas fa-user-friends"></i></span>';
+        }
+        
+        return implode('', $badges);
+    }
+    
+    /**
+     * Display a username with role and small group badges
+     * 
+     * @param array $user User data array containing username, role, and is_small_group
+     * @return string Formatted username with badges
+     */
+    public static function displayUserNameWithBadges($user)
+    {
+        if (!is_array($user)) {
+            return '';
+        }
+        
+        $username = htmlspecialchars($user['username'] ?? '');
+        $badges = self::generateUserBadges($user);
+        
+        return $username . $badges;
     }
     
     /**
@@ -129,4 +128,5 @@ class Utilities
             return $date; // Return original if parsing fails
         }
     }
+
 } 

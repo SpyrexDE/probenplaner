@@ -3,6 +3,31 @@
  * Reusable styled components using the theming system
  */
 
+/* === USER BADGES === */
+.user-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 16px;
+  border-radius: 6px;
+  background: linear-gradient(30deg, var(--color-bg-secondary), var(--color-primary-200));
+  margin-left: 3px;
+  font-size: 8px;
+  color: var(--color-primary);
+  box-shadow: none;
+  filter: saturate(0.5);
+  vertical-align: text-bottom;
+}
+
+.user-badge i {
+  line-height: 1;
+  background: linear-gradient(30deg, var(--color-primary-200), var(--color-primary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 /* === REHEARSAL CARD COMPONENT === */
 .rehearsal-card {
   background-color: var(--color-bg-primary);

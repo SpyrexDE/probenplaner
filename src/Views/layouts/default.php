@@ -160,7 +160,16 @@ if (isset($_SESSION['username'])): ?>
                         <?= strtoupper(substr($_SESSION['username'] ?? 'U', 0, 1)) ?>
                     </div>
                     <div class="sidebar-info">
-                        <div class="sidebar-name"><?= $_SESSION['username'] ?? 'User' ?></div>
+                        <div class="sidebar-name">
+                            <?= $_SESSION['username'] ?? 'User' ?>
+                            <?php 
+                            $userData = [
+                                'role' => $_SESSION['role'] ?? 'member',
+                                'is_small_group' => $_SESSION['is_small_group'] ?? false
+                            ];
+                            echo \App\Core\Utilities::generateUserBadges($userData);
+                            ?>
+                        </div>
                         <div class="sidebar-details">
                             <?php 
                             $parts = [];
@@ -177,17 +186,7 @@ if (isset($_SESSION['username'])): ?>
                                 $parts[] = str_replace('_', ' ', $_SESSION['type']);
                             }
                             
-                            // Roles (abbreviated)
-                            $roles = [];
-                            if (isset($_SESSION['role']) && $_SESSION['role'] === 'leader') {
-                                $roles[] = 'SF';
-                            }
-                            if (isset($_SESSION['is_small_group']) && $_SESSION['is_small_group']) {
-                                $roles[] = 'KG';
-                            }
-                            if (!empty($roles)) {
-                                $parts[] = '<span class="roles">' . implode('•', $roles) . '</span>';
-                            }
+
                             
                             echo implode(' · ', $parts);
                             ?>
