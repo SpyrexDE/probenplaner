@@ -34,9 +34,80 @@ foreach ($rehearsalsForStats as $rehearsal) {
 $overallAttendanceRate = $totalPromises > 0 ? ($totalAttending / $totalPromises) * 100 : 0;
 $overallResponseRate = $totalPromises > 0 ? (($totalAttending + $totalNotAttending) / $totalPromises) * 100 : 0;
 
-// Determine trends (this would ideally come from historical data)
-$attendanceTrend = 'positive'; // This should be calculated from historical data
-$responseTrend = 'positive';
+// Calculate real trends by comparing current period vs previous period
+$attendanceTrend = 'neutral';
+$responseTrend = 'neutral';
+$attendanceTrendValue = 0;
+$responseTrendValue = 0;
+
+// Get more historical data for trend calculation (last 20 rehearsals)
+$rehearsalsForTrends = array_slice($rehearsals ?? [], -20);
+$currentPeriodRehearsals = array_slice($rehearsalsForTrends, -10); // Last 10
+$previousPeriodRehearsals = array_slice($rehearsalsForTrends, 0, 10); // Previous 10
+
+if (count($currentPeriodRehearsals) >= 5 && count($previousPeriodRehearsals) >= 5) {
+    // Calculate current period averages
+    $currentAttendanceTotal = 0;
+    $currentResponseTotal = 0;
+    $currentTotalPromises = 0;
+    
+    foreach ($currentPeriodRehearsals as $rehearsal) {
+        $rehearsalId = $rehearsal['id'];
+        if (isset($stats[$rehearsalId])) {
+            $attending = $stats[$rehearsalId]['attending'] ?? 0;
+            $notAttending = $stats[$rehearsalId]['not_attending'] ?? 0;
+            $noResponse = $stats[$rehearsalId]['no_response'] ?? 0;
+            $total = $attending + $notAttending + $noResponse;
+            
+            if ($total > 0) {
+                $currentAttendanceTotal += ($attending / $total) * 100;
+                $currentResponseTotal += (($attending + $notAttending) / $total) * 100;
+                $currentTotalPromises++;
+            }
+        }
+    }
+    
+    // Calculate previous period averages
+    $previousAttendanceTotal = 0;
+    $previousResponseTotal = 0;
+    $previousTotalPromises = 0;
+    
+    foreach ($previousPeriodRehearsals as $rehearsal) {
+        $rehearsalId = $rehearsal['id'];
+        if (isset($stats[$rehearsalId])) {
+            $attending = $stats[$rehearsalId]['attending'] ?? 0;
+            $notAttending = $stats[$rehearsalId]['not_attending'] ?? 0;
+            $noResponse = $stats[$rehearsalId]['no_response'] ?? 0;
+            $total = $attending + $notAttending + $noResponse;
+            
+            if ($total > 0) {
+                $previousAttendanceTotal += ($attending / $total) * 100;
+                $previousResponseTotal += (($attending + $notAttending) / $total) * 100;
+                $previousTotalPromises++;
+            }
+        }
+    }
+    
+    // Calculate trend values
+    if ($currentTotalPromises > 0 && $previousTotalPromises > 0) {
+        $currentAttendanceAvg = $currentAttendanceTotal / $currentTotalPromises;
+        $previousAttendanceAvg = $previousAttendanceTotal / $previousTotalPromises;
+        $currentResponseAvg = $currentResponseTotal / $currentTotalPromises;
+        $previousResponseAvg = $previousResponseTotal / $previousTotalPromises;
+        
+        // Attendance trend
+        $attendanceTrendValue = $currentAttendanceAvg - $previousAttendanceAvg;
+        if (abs($attendanceTrendValue) > 0.5) { // Only show trend if change is significant
+            $attendanceTrend = $attendanceTrendValue > 0 ? 'positive' : 'negative';
+        }
+        
+        // Response trend
+        $responseTrendValue = $currentResponseAvg - $previousResponseAvg;
+        if (abs($responseTrendValue) > 0.5) { // Only show trend if change is significant
+            $responseTrend = $responseTrendValue > 0 ? 'positive' : 'negative';
+        }
+    }
+}
 
 ?>
 
@@ -132,8 +203,13 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                 <div class="analytics-chart" id="attendance-chart"></div>
                 <div class="analytics-subtitle"><?= ($showOld ?? false) ? 'Durchschnittliche Teilnahme der letzten 10 eingetragenen Proben' : 'Durchschnittliche Teilnahme für anstehende Proben' ?></div>
                 <div class="analytics-trend">
-                    <i class="fas fa-arrow-up"></i>
-                    <span>+2.3% vs. letzter Monat</span>
+                    <?php if ($attendanceTrend !== 'neutral'): ?>
+                        <i class="fas fa-arrow-<?= $attendanceTrend === 'positive' ? 'up' : 'down' ?>"></i>
+                        <span><?= $attendanceTrend === 'positive' ? '+' : '' ?><?= number_format($attendanceTrendValue, 1) ?>% vs. vorherigen 10 Proben</span>
+                    <?php else: ?>
+                        <i class="fas fa-minus"></i>
+                        <span>Änderung <0.5% vs. vorherigen 10 Proben</span>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -153,8 +229,13 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                 <div class="analytics-chart" id="response-chart"></div>
                 <div class="analytics-subtitle"><?= ($showOld ?? false) ? 'Durchschnittliche Rückmeldungsquote der letzten 10 eingetragenen Proben' : 'Durchschnittliche Rückmeldungsquote für anstehende Proben' ?></div>
                 <div class="analytics-trend">
-                    <i class="fas fa-arrow-up"></i>
-                    <span>+1.8% vs. letzter Monat</span>
+                    <?php if ($responseTrend !== 'neutral'): ?>
+                        <i class="fas fa-arrow-<?= $responseTrend === 'positive' ? 'up' : 'down' ?>"></i>
+                        <span><?= $responseTrend === 'positive' ? '+' : '' ?><?= number_format($responseTrendValue, 1) ?>% vs. vorherigen 10 Proben</span>
+                    <?php else: ?>
+                        <i class="fas fa-minus"></i>
+                        <span>Änderung <0.5% vs. vorherigen 10 Proben</span>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
