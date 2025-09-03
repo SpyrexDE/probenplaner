@@ -708,7 +708,7 @@ function updateUIForCurrentRoute() {
     const currentRoute = window.location.pathname;
     
     // Determine if buttons should be shown based on route
-    const showHistoryButton = currentRoute.startsWith('/promises');
+    const showHistoryButton = currentRoute.startsWith('/promises') || currentRoute.startsWith('/rehearsals');
     
     // Show help button on main feature pages
     const helpRelevantPaths = ['/promises', '/promises/leader', '/promises/admin', 

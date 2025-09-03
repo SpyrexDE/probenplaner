@@ -1,11 +1,11 @@
 <?php
 /**
- * Rehearsal Module Definition
+ * Rehearsal Testing Module Definition
  */
 
 return [
     'name' => 'Rehearsal Testing',
-    'icon' => '📅',
-    'description' => 'Create and manage rehearsals for testing',
+    'icon' => '📊',
+    'description' => 'Generate rehearsals with different attendance patterns to test the smart deviation detector',
     'priority' => 50,
 ]; 

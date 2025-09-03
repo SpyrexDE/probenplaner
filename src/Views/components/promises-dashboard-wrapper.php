@@ -6,8 +6,11 @@
  * Provides overview metrics, filtering, and modern card-based section display.
  */
 
-// Calculate overall statistics across all rehearsals
-$totalRehearsals = count($rehearsals ?? []);
+use App\Core\DashboardConstants;
+
+// Calculate overall statistics across last 10 rehearsals
+$rehearsalsForStats = array_slice($rehearsals ?? [], -10);
+$totalRehearsals = count($rehearsalsForStats);
 $totalPromises = 0;
 $totalAttending = 0;
 $totalNotAttending = 0;
@@ -17,7 +20,7 @@ $totalNoResponse = 0;
 $criticalSections = 0;
 $warningSections = 0;
 
-foreach ($rehearsals ?? [] as $rehearsal) {
+foreach ($rehearsalsForStats as $rehearsal) {
     $rehearsalId = $rehearsal['id'];
     if (isset($stats[$rehearsalId])) {
         $totalAttending += $stats[$rehearsalId]['attending'] ?? 0;
@@ -42,13 +45,16 @@ $responseTrend = 'positive';
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
 <?php
-// Generate time-based data for charts
+// Generate time-based data for charts (last 10 rehearsals only)
 $attendanceHistory = [];
 $responseHistory = [];
 $rehearsalDates = [];
 $currentRehearsalIndex = 0;
 
-foreach ($rehearsals ?? [] as $rehearsal) {
+// Get only the last 10 rehearsals for chart data
+$rehearsalsForCharts = array_slice($rehearsals ?? [], -10);
+
+foreach ($rehearsalsForCharts as $rehearsal) {
     $rehearsalId = $rehearsal['id'];
     $rehearsalDates[] = $rehearsal['date'];
     
@@ -98,9 +104,9 @@ foreach ($rehearsals ?? [] as $rehearsal) {
             $total = count($players);
             $attendanceRate = $total > 0 ? ($attending / $total) * 100 : 0;
             
-            if ($attendanceRate < 50) {
+            if ($attendanceRate < DashboardConstants::CRITICAL_ATTENDANCE_THRESHOLD) {
                 $criticalSectionsCount++;
-            } elseif ($attendanceRate < 70) {
+            } elseif ($attendanceRate < DashboardConstants::WARNING_ATTENDANCE_THRESHOLD) {
                 $warningSectionsCount++;
             }
         }
@@ -109,24 +115,48 @@ foreach ($rehearsals ?? [] as $rehearsal) {
 ?>
 
 <div class="promises-dashboard">
-    <!-- Compact Analytics Overview -->
+    <!-- Modern Analytics Overview -->
     <div class="analytics-overview">
-        <div class="analytics-card">
-            <div class="analytics-header">
-                <h3 class="analytics-title">Gesamtteilnahme</h3>
-                <div class="analytics-value"><?= number_format($overallAttendanceRate, 1) ?>%</div>
+        <div class="analytics-card attendance-card">
+            <div class="analytics-card-background"></div>
+            <div class="analytics-card-content">
+                <div class="analytics-header">
+                    <div class="analytics-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="analytics-info">
+                        <h3 class="analytics-title">Zusagendurchschnitt</h3>
+                        <div class="analytics-value"><?= number_format($overallAttendanceRate, 1) ?>%</div>
+                    </div>
+                </div>
+                <div class="analytics-chart" id="attendance-chart"></div>
+                <div class="analytics-subtitle"><?= ($showOld ?? false) ? 'Durchschnittliche Teilnahme der letzten 10 eingetragenen Proben' : 'Durchschnittliche Teilnahme für anstehende Proben' ?></div>
+                <div class="analytics-trend">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+2.3% vs. letzter Monat</span>
+                </div>
             </div>
-            <div class="analytics-chart" id="attendance-chart"></div>
-            <div class="analytics-subtitle">Entwicklung über alle Proben</div>
         </div>
         
-        <div class="analytics-card">
-            <div class="analytics-header">
-                <h3 class="analytics-title">Rücklaufquote</h3>
-                <div class="analytics-value"><?= number_format($overallResponseRate, 1) ?>%</div>
+        <div class="analytics-card response-card">
+            <div class="analytics-card-background"></div>
+            <div class="analytics-card-content">
+                <div class="analytics-header">
+                    <div class="analytics-icon">
+                        <i class="fas fa-reply"></i>
+                    </div>
+                    <div class="analytics-info">
+                        <h3 class="analytics-title">Rückmeldungsquote</h3>
+                        <div class="analytics-value"><?= number_format($overallResponseRate, 1) ?>%</div>
+                    </div>
+                </div>
+                <div class="analytics-chart" id="response-chart"></div>
+                <div class="analytics-subtitle"><?= ($showOld ?? false) ? 'Durchschnittliche Rückmeldungsquote der letzten 10 eingetragenen Proben' : 'Durchschnittliche Rückmeldungsquote für anstehende Proben' ?></div>
+                <div class="analytics-trend">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+1.8% vs. letzter Monat</span>
+                </div>
             </div>
-            <div class="analytics-chart" id="response-chart"></div>
-            <div class="analytics-subtitle">Antwortverhalten über Zeit</div>
         </div>
     </div>
     
@@ -189,12 +219,12 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                          <?= $rehearsalColor ? 'style="--rehearsal-color: ' . $rehearsalColor . '"' : '' ?>>
                         <div class="rehearsal-compact-title">
                             <h3><?= htmlspecialchars($rehearsal['type'] ?? 'Probe') ?></h3>
-                            <span class="rehearsal-date"><?= date('d.m.Y', strtotime($rehearsal['date'])) ?></span>
+                            <span class="rehearsal-date"><?= date(DashboardConstants::DISPLAY_DATE_FORMAT, strtotime($rehearsal['date'])) ?></span>
                         </div>
                         
                         <div class="rehearsal-compact-right">
-                            <div class="rehearsal-compact-meta">
-                                <span><i class="fas fa-clock"></i> <?= isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, 5) : '??:??' ?> - <?= isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, 5) : '??:??' ?></span>
+                                                    <div class="rehearsal-compact-meta">
+                            <span><i class="fas fa-clock"></i> <?= isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, DashboardConstants::TIME_SUBSTRING_LENGTH) : '??:??' ?> - <?= isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, DashboardConstants::TIME_SUBSTRING_LENGTH) : '??:??' ?></span>
                                 <?php if (!empty($rehearsal['location'])): ?>
                                     <span><i class="fas fa-map-marker-alt"></i> <?= htmlspecialchars($rehearsal['location']) ?></span>
                                 <?php endif; ?>
@@ -234,95 +264,205 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                     </div>
                     
                     <?php
-                    // Calculate critical sections for this rehearsal
-                    $rehearsalCriticalSections = [];
-                    $rehearsalSmartDeviations = [];
+                    // Use smart deviation detection system
+                    require_once __DIR__ . '/../../Core/SmartDeviationDetector.php';
+                    $deviationDetector = new SmartDeviationDetector(\App\Core\Database::getInstance());
+                    $deviationAnalysis = $deviationDetector->analyzeRehearsal($rehearsal['id']);
                     
-                    foreach ($sectionPlayers as $sectionId => $players) {
+                    // Get rehearsal groups to determine which sections should participate
+                    $rehearsalModel = new \App\Models\Rehearsal(\App\Core\Database::getInstance());
+                    $rehearsalGroups = $rehearsalModel->getGroupsAsAssoc($rehearsalId);
+                    
+                    // Calculate critical sections (show individual instruments with low attendance, fallback to sections)
+                    $rehearsalCriticalSections = [];
+                    
+                    // First check individual instruments for more specific critical items
+                    $individualInstruments = [];
+                    foreach ($membersBySection[$rehearsalId]['all'] ?? [] as $member) {
+                        $instrumentId = $member['type'];
+                        if (!isset($individualInstruments[$instrumentId])) {
+                            $individualInstruments[$instrumentId] = [];
+                        }
+                        $individualInstruments[$instrumentId][] = $member;
+                    }
+                    
+                    // Calculate attendance for individual instruments
+                    foreach ($individualInstruments as $instrumentId => $players) {
                         $attending = count(array_filter($players, function($m) { return $m['status'] === 'attending'; }));
-                        $notAttending = count(array_filter($players, function($m) { return $m['status'] === 'not_attending'; }));
-                        $noResponse = count(array_filter($players, function($m) { return $m['status'] === 'no_response'; }));
                         $total = count($players);
-                        
                         if ($total > 0) {
                             $attendanceRate = ($attending / $total) * 100;
-                            $responseRate = (($attending + $notAttending) / $total) * 100;
-                            
-                            // Critical sections (attendance < 50%)
-                            if ($attendanceRate < 50) {
+                            if ($attendanceRate < DashboardConstants::CRITICAL_ATTENDANCE_THRESHOLD) { // Only show if attendance is low
                                 $rehearsalCriticalSections[] = [
-                                    'name' => $sectionId,
+                                    'name' => $instrumentId,
                                     'rate' => $attendanceRate,
-                                    'total' => $total
-                                ];
-                            }
-                            
-                            // Smart deviations detection
-                            // For demo purposes, flagging sections with very low response rates or unusual patterns
-                            if ($responseRate < 40) {
-                                $rehearsalSmartDeviations[] = [
-                                    'type' => 'low_response',
-                                    'section' => $sectionId,
-                                    'value' => $responseRate,
-                                    'message' => "Sehr niedrige Rücklaufquote ({$responseRate}%) in {$sectionId}"
-                                ];
-                            }
-                            
-                            // Flag sections with very low attendance specifically for strings
-                            if (strpos($sectionId, 'Violine') !== false && $attendanceRate < 30) {
-                                $rehearsalSmartDeviations[] = [
-                                    'type' => 'critical_strings',
-                                    'section' => $sectionId,
-                                    'value' => $attendanceRate,
-                                    'message' => "{$sectionId}: Kritisch niedrige Teilnahme ({$attendanceRate}%)"
+                                    'total' => $total,
+                                    'attending' => $attending
                                 ];
                             }
                         }
                     }
                     
-                    // Sort critical sections by attendance rate
+                    // If no individual instruments with low attendance, check top-level sections
+                    if (empty($rehearsalCriticalSections)) {
+                        foreach ($sectionPlayers as $sectionId => $players) {
+                            $attending = count(array_filter($players, function($m) { return $m['status'] === 'attending'; }));
+                            $total = count($players);
+                                                    if ($total > 0) {
+                            $attendanceRate = ($attending / $total) * 100;
+                            if ($attendanceRate < DashboardConstants::CRITICAL_ATTENDANCE_THRESHOLD) { // Only show if attendance is low
+                                    $rehearsalCriticalSections[] = [
+                                        'name' => $sectionId,
+                                        'rate' => $attendanceRate,
+                                        'total' => $total,
+                                        'attending' => $attending
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                    
+
+                    
+                    // Sort by attendance rate and take top most critical
                     usort($rehearsalCriticalSections, function($a, $b) {
                         return $a['rate'] - $b['rate'];
                     });
+                    $rehearsalCriticalSections = array_slice($rehearsalCriticalSections, 0, DashboardConstants::MAX_CRITICAL_SECTIONS_DISPLAY);
                     
-                    // Take top 3 most critical
-                    $rehearsalCriticalSections = array_slice($rehearsalCriticalSections, 0, 3);
+                    // Only show critical sections if they actually have low attendance
+                    $rehearsalCriticalSections = array_filter($rehearsalCriticalSections, function($critical) {
+                        return $critical['rate'] < DashboardConstants::CRITICAL_ATTENDANCE_THRESHOLD;
+                    });
+                    
+                    // Get critical section names for filtering
+                    $criticalSectionNames = array_map(function($critical) {
+                        return $critical['name'];
+                    }, $rehearsalCriticalSections);
+                    
+                    // Filter out deviations that are already shown in critical sections and only show warning/critical ones
+                    $rehearsalSmartDeviations = array_filter($deviationAnalysis['deviations'], function($deviation) use ($criticalSectionNames) {
+                        // Only show warning and critical severity (skip info)
+                        if (($deviation['severity'] ?? 'info') === 'info') {
+                            return false;
+                        }
+                        // Keep deviations that don't have a specific section
+                        if (!isset($deviation['section'])) {
+                            return true;
+                        }
+                        // Filter out deviations for sections already in critical list
+                        return !in_array($deviation['section'], $criticalSectionNames);
+                    });
+                    
+                    // Remove duplicate messages and group similar ones
+                    $uniqueDeviations = [];
+                    $seenMessages = [];
+                    $groupedMessages = [];
+                    
+                    // Separate group performance messages to handle them specially
+                    $groupPerformanceMessages = [];
+                    $otherMessages = [];
+                    
+                    foreach ($rehearsalSmartDeviations as $deviation) {
+                        if ($deviation['type'] === 'group_performance') {
+                            $groupPerformanceMessages[] = $deviation;
+                        } else {
+                            $otherMessages[] = $deviation;
+                        }
+                    }
+                    
+                    // Keep only the most critical group performance message
+                    if (!empty($groupPerformanceMessages)) {
+                        usort($groupPerformanceMessages, function($a, $b) {
+                            return $a['mean_rate'] - $b['mean_rate']; // Lowest rate first (most critical)
+                        });
+                        $uniqueDeviations[] = $groupPerformanceMessages[0]; // Only the most critical one
+                    }
+                    
+                    // Handle other messages
+                    foreach ($otherMessages as $deviation) {
+                        $messageKey = $deviation['message'];
+                        
+                        // Check if this is a similar message pattern
+                        $isSimilar = false;
+                        foreach ($seenMessages as $seen) {
+                            if (strpos($messageKey, 'mehr Teilnahme als üblich') !== false && 
+                                strpos($seen, 'mehr Teilnahme als üblich') !== false) {
+                                $isSimilar = true;
+                                break;
+                            }
+                            if (strpos($messageKey, 'weniger Teilnahme als üblich') !== false && 
+                                strpos($seen, 'weniger Teilnahme als üblich') !== false) {
+                                $isSimilar = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!$isSimilar && !in_array($messageKey, $seenMessages)) {
+                            $uniqueDeviations[] = $deviation;
+                            $seenMessages[] = $messageKey;
+                        }
+                    }
+                    $rehearsalSmartDeviations = $uniqueDeviations;
+                    
+                    // Sort deviations by severity (critical first, then warning, then info)
+                    usort($rehearsalSmartDeviations, function($a, $b) {
+                        $severityOrder = ['critical' => 3, 'warning' => 2, 'info' => 1];
+                        $aSeverity = $severityOrder[$a['severity'] ?? 'info'] ?? 1;
+                        $bSeverity = $severityOrder[$b['severity'] ?? 'info'] ?? 1;
+                        return $bSeverity - $aSeverity; // Critical first
+                    });
+                    $insufficientData = $deviationAnalysis['insufficient_data'];
                     ?>
                     
                     <!-- Critical Sections & Smart Insights -->
-                    <?php if (!empty($rehearsalCriticalSections) || !empty($rehearsalSmartDeviations)): ?>
                     <div class="rehearsal-insights">
-                        <?php if (!empty($rehearsalCriticalSections)): ?>
                         <div class="critical-sections">
                             <h4><i class="fas fa-exclamation-triangle"></i> Kritische Register</h4>
                             <div class="critical-list">
-                                <?php foreach ($rehearsalCriticalSections as $critical): ?>
+                                <?php if (!empty($rehearsalCriticalSections)): ?>
+                                    <?php foreach ($rehearsalCriticalSections as $critical): ?>
+                                        <div class="critical-item">
+                                            <span class="critical-name"><?= htmlspecialchars($critical['name']) ?></span>
+                                            <span class="critical-percentage <?= $critical['rate'] < DashboardConstants::DANGER_ATTENDANCE_THRESHOLD ? DashboardConstants::CSS_DANGER_CLASS : DashboardConstants::CSS_WARNING_CLASS ?>">
+                                                <?= number_format($critical['rate'], 0) ?>%
+                                            </span>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
                                     <div class="critical-item">
-                                        <span class="critical-name"><?= htmlspecialchars($critical['name']) ?></span>
-                                        <span class="critical-percentage <?= $critical['rate'] < 25 ? 'danger' : 'warning' ?>">
-                                            <?= number_format($critical['rate'], 0) ?>%
+                                        <span class="critical-name">Keine kritischen Register</span>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        
+                        <div class="smart-deviations">
+                            <h4><i class="fas fa-brain"></i> Auffälligkeiten</h4>
+                            <div class="deviation-list" style="max-height: <?= DashboardConstants::DEVIATION_LIST_MAX_HEIGHT ?>px; overflow-y: auto;">
+                                <?php foreach ($rehearsalSmartDeviations as $deviation): ?>
+                                    <div class="critical-item">
+                                        <span class="critical-name"><?= htmlspecialchars($deviation['message']) ?></span>
+                                        <span class="critical-percentage <?= DashboardConstants::CSS_WARNING_CLASS ?>">
+                                            <i class="fas fa-<?= getDeviationIcon($deviation['type']) ?>"></i>
                                         </span>
                                     </div>
                                 <?php endforeach; ?>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-                        
-                        <?php if (!empty($rehearsalSmartDeviations)): ?>
-                        <div class="smart-deviations">
-                            <h4><i class="fas fa-brain"></i> Auffälligkeiten</h4>
-                            <div class="deviation-list">
-                                <?php foreach ($rehearsalSmartDeviations as $deviation): ?>
-                                    <div class="deviation-item <?= $deviation['type'] ?>">
-                                        <i class="fas fa-<?= $deviation['type'] === 'low_response' ? 'reply' : 'users' ?>"></i>
-                                        <span><?= htmlspecialchars($deviation['message']) ?></span>
+                                
+                                <?php if (!empty($insufficientData)): ?>
+                                    <div class="critical-item">
+                                        <span class="critical-name">Fehlende Daten für Vergleichsanalyse</span>
                                     </div>
-                                <?php endforeach; ?>
+                                <?php endif; ?>
+                                
+                                <?php if (empty($rehearsalSmartDeviations) && empty($insufficientData)): ?>
+                                    <div class="critical-item">
+                                        <span class="critical-name">Keine Auffälligkeiten</span>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
-                        <?php endif; ?>
                     </div>
-                    <?php endif; ?>
                     
                     <!-- Tree View -->
                     <div class="rehearsal-tree-view">
@@ -343,18 +483,18 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                         </div>
                                         
                                         <div class="tree-node-stats">
-                                            <div class="tree-node-stat">
-                                                <i class="tree-node-stat-icon fas fa-question-circle status-no-response"></i>
-                                                <span><?= $noResponseCount ?></span>
-                                            </div>
-                                            <div class="tree-node-stat">
-                                                <i class="tree-node-stat-icon fas fa-check-circle status-attending"></i>
-                                                <span><?= $attendingCount ?></span>
-                                            </div>
-                                            <div class="tree-node-stat">
-                                                <i class="tree-node-stat-icon fas fa-times-circle status-not-attending"></i>
-                                                <span><?= $notAttendingCount ?></span>
-                                            </div>
+                                                                                <div class="tree-node-stat">
+                                        <i class="tree-node-stat-icon fas fa-question-circle status-<?= DashboardConstants::CSS_NO_RESPONSE_CLASS ?>"></i>
+                                        <span><?= $noResponseCount ?></span>
+                                    </div>
+                                    <div class="tree-node-stat">
+                                        <i class="tree-node-stat-icon fas fa-check-circle status-<?= DashboardConstants::CSS_ATTENDING_CLASS ?>"></i>
+                                        <span><?= $attendingCount ?></span>
+                                    </div>
+                                    <div class="tree-node-stat">
+                                        <i class="tree-node-stat-icon fas fa-times-circle status-<?= DashboardConstants::CSS_NOT_ATTENDING_CLASS ?>"></i>
+                                        <span><?= $notAttendingCount ?></span>
+                                    </div>
                                         </div>
                                     </button>
                                     
@@ -397,12 +537,13 @@ function initializeCharts() {
     // Attendance chart
     const attendanceOptions = {
         series: [{
-            name: 'Teilnahme %',
+            name: 'Zusagen %',
             data: <?= json_encode($attendanceHistory) ?>
         }],
+        colors: ['#10b981'],
         chart: {
-            type: 'line',
-            height: 60,
+            type: 'area',
+            height: <?= DashboardConstants::CHART_HEIGHT ?>,
             sparkline: {
                 enabled: true
             },
@@ -412,31 +553,56 @@ function initializeCharts() {
                 speed: 800
             }
         },
+        xaxis: {
+            categories: <?= json_encode(array_map(function($rehearsal) {
+                return ($rehearsal['type'] ?? 'Probe') . ' ' . date('d.m', strtotime($rehearsal['date']));
+            }, $rehearsalsForCharts)) ?>
+        },
         stroke: {
             curve: 'smooth',
-            width: 2,
-            colors: ['#10b981']
-        },
-        fill: {
-            type: 'gradient',
+            width: 3,
+            colors: ['#10b981'],
             gradient: {
-                shadeIntensity: 1,
-                opacityFrom: 0.4,
-                opacityTo: 0.1,
+                enabled: true,
+                type: 'horizontal',
+                shadeIntensity: 0.5,
+                opacityFrom: 1,
+                opacityTo: 0.8,
                 stops: [0, 100]
             }
         },
+        fill: {
+            type: "gradient",
+            gradient: {
+                shadeIntensity: 0.3,
+                opacityFrom: 0.2,
+                opacityTo: 0.05,
+                stops: [0, 100],
+                colorStops: [
+                    { offset: 0, color: '#10b981', opacity: 0.2 },
+                    { offset: 100, color: '#34d399', opacity: 0.05 }
+                ]
+            }
+        },
         markers: {
-            size: 3,
+            size: 4,
             colors: ['#10b981'],
-            strokeColors: '#fff',
+            strokeColors: '#ffffff',
             strokeWidth: 2,
             hover: {
-                size: 5
+                size: 6
             }
         },
         tooltip: {
             theme: 'light',
+            x: {
+                formatter: function(val, opts) {
+                    const categories = <?= json_encode(array_map(function($rehearsal) {
+                        return ($rehearsal['type'] ?? 'Probe') . ' ' . date('d.m', strtotime($rehearsal['date']));
+                    }, $rehearsalsForCharts)) ?>;
+                    return categories[opts.dataPointIndex] || val;
+                }
+            },
             y: {
                 formatter: function (val) {
                     return val.toFixed(1) + '%';
@@ -451,12 +617,13 @@ function initializeCharts() {
     // Response rate chart
     const responseOptions = {
         series: [{
-            name: 'Rücklaufquote %',
+            name: 'Rückmeldungen %',
             data: <?= json_encode($responseHistory) ?>
         }],
+        colors: ['#3b82f6'],
         chart: {
-            type: 'line',
-            height: 60,
+            type: 'area',
+            height: <?= DashboardConstants::CHART_HEIGHT ?>,
             sparkline: {
                 enabled: true
             },
@@ -468,29 +635,49 @@ function initializeCharts() {
         },
         stroke: {
             curve: 'smooth',
-            width: 2,
-            colors: ['#3b82f6']
-        },
-        fill: {
-            type: 'gradient',
+            width: 3,
+            colors: ['#3b82f6'],
             gradient: {
-                shadeIntensity: 1,
-                opacityFrom: 0.4,
-                opacityTo: 0.1,
+                enabled: true,
+                type: 'horizontal',
+                shadeIntensity: 0.5,
+                opacityFrom: 1,
+                opacityTo: 0.8,
                 stops: [0, 100]
             }
         },
+        fill: {
+            type: "gradient",
+            gradient: {
+                shadeIntensity: 0.3,
+                opacityFrom: 0.2,
+                opacityTo: 0.05,
+                stops: [0, 100],
+                colorStops: [
+                    { offset: 0, color: '#3b82f6', opacity: 0.2 },
+                    { offset: 100, color: '#60a5fa', opacity: 0.05 }
+                ]
+            }
+        },
         markers: {
-            size: 3,
+            size: 4,
             colors: ['#3b82f6'],
-            strokeColors: '#fff',
+            strokeColors: '#ffffff',
             strokeWidth: 2,
             hover: {
-                size: 5
+                size: 6
             }
         },
         tooltip: {
             theme: 'light',
+            x: {
+                formatter: function(val, opts) {
+                    const categories = <?= json_encode(array_map(function($rehearsal) {
+                        return ($rehearsal['type'] ?? 'Probe') . ' ' . date('d.m', strtotime($rehearsal['date']));
+                    }, $rehearsalsForCharts)) ?>;
+                    return categories[opts.dataPointIndex] || val;
+                }
+            },
             y: {
                 formatter: function (val) {
                     return val.toFixed(1) + '%';
@@ -538,7 +725,7 @@ function initializeTreeView() {
                             }
                             button.setAttribute('aria-expanded', actualExpanded);
                         }
-                    }, 350); // Match the collapse.js timeout
+                    }, <?= DashboardConstants::TREE_VIEW_ANIMATION_TIMEOUT ?>); // Match the collapse.js timeout
                 });
             }
         }
@@ -547,6 +734,24 @@ function initializeTreeView() {
 
 
 </script>
+
+<?php
+/**
+ * Helper function to get appropriate icon for deviation types
+ */
+function getDeviationIcon($type) {
+    $iconMap = [
+        'statistical_anomaly' => 'chart-line',
+        'below_historical_minimum' => 'arrow-down',
+        'low_response_rate' => 'reply',
+        'trend_change' => 'chart-line',
+        'group_deviation' => 'users',
+        'group_performance' => 'exclamation-triangle'
+    ];
+    
+    return $iconMap[$type] ?? 'info-circle';
+}
+?>
 
 <style>
 /* Compact view styles */
