@@ -344,15 +344,26 @@ class SmartDeviationDetector {
     }
     
     /**
-     * Get parent groups for analysis
+     * Get parent groups for analysis using GroupManager
      */
     private function getParentGroups() {
-        // This would be configured based on your orchestra structure
-        return [
-            'Streicher' => ['Violine 1', 'Violine 2', 'Viola', 'Cello', 'Kontrabass'],
-            'Bläser' => ['Flöte', 'Oboe', 'Klarinette', 'Fagott', 'Horn', 'Trompete', 'Posaune', 'Tuba'],
-            'Schlagwerk' => ['Schlagwerk', 'Pauken', 'Harpfe']
-        ];
+        $parentGroups = [];
+        
+        // Get all sections dynamically from the GroupManager
+        $allSections = $this->groupManager->getAllSections();
+        
+        // Only include top-level sections under tutti
+        foreach ($allSections as $section) {
+            $parent = $this->groupManager->getParent($section['id']);
+            if ($parent && $parent['id'] === 'tutti') {
+                $instruments = $this->groupManager->getInstrumentsByGroup($section['id']);
+                if (!empty($instruments)) {
+                    $parentGroups[$section['display_name']] = $instruments;
+                }
+            }
+        }
+        
+        return $parentGroups;
     }
     
     /**

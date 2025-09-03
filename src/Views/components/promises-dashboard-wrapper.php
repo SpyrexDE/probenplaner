@@ -201,7 +201,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                     </div>
                 </div>
                 <div class="analytics-chart" id="attendance-chart"></div>
-                <div class="analytics-subtitle"><?= ($showOld ?? false) ? 'Durchschnittliche Teilnahme der letzten 10 eingetragenen Proben' : 'Durchschnittliche Teilnahme für anstehende Proben' ?></div>
+                <div class="analytics-subtitle"><?= ($showOld ?? false) ? 'Durchschnittliche Teilnahme der letzten 10 eingetragenen Proben' : 'Durchschnittliche Teilnahme für die anstehenden 10 Proben' ?></div>
                 <div class="analytics-trend">
                     <?php if ($attendanceTrend !== 'neutral'): ?>
                         <i class="fas fa-arrow-<?= $attendanceTrend === 'positive' ? 'up' : 'down' ?>"></i>
@@ -227,7 +227,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                     </div>
                 </div>
                 <div class="analytics-chart" id="response-chart"></div>
-                <div class="analytics-subtitle"><?= ($showOld ?? false) ? 'Durchschnittliche Rückmeldungsquote der letzten 10 eingetragenen Proben' : 'Durchschnittliche Rückmeldungsquote für anstehende Proben' ?></div>
+                <div class="analytics-subtitle"><?= ($showOld ?? false) ? 'Durchschnittliche Rückmeldungsquote der letzten 10 eingetragenen Proben' : 'Durchschnittliche Rückmeldungsquote für die anstehenden 10 Proben' ?></div>
                 <div class="analytics-trend">
                     <?php if ($responseTrend !== 'neutral'): ?>
                         <i class="fas fa-arrow-<?= $responseTrend === 'positive' ? 'up' : 'down' ?>"></i>
