@@ -382,6 +382,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
     </div>
 </div>
 
+<script src="/assets/js/promises-shared.js"></script>
 <script>
 // Dashboard interaction handlers
 document.addEventListener('DOMContentLoaded', function() {
@@ -515,16 +516,29 @@ function initializeTreeView() {
                 icon.classList.remove('expanded');
                 target.classList.remove('show');
                 
-                // Add click handler to update arrow - ONLY toggle, don't double-check
+                // Let Bootstrap handle collapse, but make arrow immediate
                 button.addEventListener('click', function(e) {
-                    // Toggle arrow state immediately and permanently
-                    if (target.classList.contains('show')) {
-                        // Currently expanded, will collapse
-                        icon.classList.remove('expanded');
-                    } else {
-                        // Currently collapsed, will expand
-                        icon.classList.add('expanded');
-                    }
+                    // Toggle arrow state immediately
+                    icon.classList.toggle('expanded');
+                    
+                    // Set aria-expanded immediately
+                    const isExpanded = icon.classList.contains('expanded');
+                    button.setAttribute('aria-expanded', isExpanded);
+                    
+                    // Let the default collapse behavior handle the content
+                    // but sync arrow state after transition completes
+                    setTimeout(() => {
+                        const actualExpanded = target.classList.contains('show');
+                        if (actualExpanded !== isExpanded) {
+                            // Sync arrow with actual state if they don't match
+                            if (actualExpanded) {
+                                icon.classList.add('expanded');
+                            } else {
+                                icon.classList.remove('expanded');
+                            }
+                            button.setAttribute('aria-expanded', actualExpanded);
+                        }
+                    }, 350); // Match the collapse.js timeout
                 });
             }
         }

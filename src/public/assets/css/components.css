@@ -1852,10 +1852,10 @@
   font-size: var(--font-size-base);
   width: 20px;
   text-align: center;
-  transition: all var(--transition-base);
+  transition: color var(--transition-base);
 }
 
-.tree-node-expanded .tree-node-icon {
+.tree-node-icon.expanded {
   color: var(--color-primary);
   transform: rotate(90deg);
 }

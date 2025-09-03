@@ -405,7 +405,9 @@ class PromiseController extends Controller
                         'username' => $user['username'],
                         'type' => $user['type'],
                         'status' => $status,
-                        'note' => $note
+                        'note' => $note,
+                        'role' => $user['role'] ?? null,
+                        'is_small_group' => $user['is_small_group'] ?? false
                     ];
                     
                     $membersBySection[$rehearsalId]['all'][] = $memberInfo;

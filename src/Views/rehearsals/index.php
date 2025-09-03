@@ -15,7 +15,6 @@
             include __DIR__ . '/../components/empty-state.php';
         ?>
     <?php else: ?>
-        <div class="rehearsal-grid">
             <?php foreach ($rehearsals as $rehearsal): ?>
                 <?php 
                     $rehearsalId = $rehearsal['id'];
@@ -69,7 +68,6 @@
                     </div>
                 </div>
             <?php endforeach; ?>
-        </div>
     <?php endif; ?>
     
          <a href="/rehearsals/create" class="fixed bottom-5 right-5 bg-primary text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:scale-110 transition-transform">

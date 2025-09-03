@@ -551,15 +551,23 @@
   overflow: hidden;
 }
 
-/* Fix collapse functionality - override any conflicting visibility rules */
+/* Fix collapse functionality - support smooth transitions */
 .rehearsal-tree-view .collapse {
-  display: none !important;
+  display: none;
   visibility: visible !important;
+  transition: all var(--transition-base);
 }
 
 .rehearsal-tree-view .collapse.show {
-  display: block !important;
+  display: block;
   visibility: visible !important;
+}
+
+.rehearsal-tree-view .collapse.collapsing {
+  display: block;
+  height: 0;
+  overflow: hidden;
+  transition: height var(--transition-base);
 }
 
 /* Clean tree styling */
@@ -625,9 +633,9 @@
   padding-left: var(--space-6);
 }
 
-/* Arrow rotation */
+/* Arrow rotation - instant for responsive feel */
 .rehearsal-tree-view .tree-node-icon {
-  transition: transform var(--transition-base);
+  transition: none;
 }
 
 .rehearsal-tree-view .tree-node-icon.expanded {

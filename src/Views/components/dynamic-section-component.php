@@ -257,23 +257,13 @@ $sectionElementId = $sectionId . $rehearsalId;
                     return $aOrder - $bOrder;
                 });
                 
-                if ($sectionId === 'Andere') {
-                    // For "Andere", show instrument type in parentheses
-                    foreach ($players as $player):
-                        $member = $player;
-                        $status = $player['status'];
-                        $additionalInfo = ' (' . str_replace('_', ' ', $player['type']) . ')';
-                        include __DIR__ . '/user-item.php';
-                    endforeach;
-                } else {
-                    // Regular simple section
-                    foreach ($players as $player):
-                        $member = $player;
-                        $status = $player['status'];
-                        $additionalInfo = ''; // Clear any previous additionalInfo
-                        include __DIR__ . '/user-item.php';
-                    endforeach;
-                }
+                // Simple section - show users directly
+                foreach ($players as $player):
+                    $member = $player;
+                    $status = $player['status'];
+                    $additionalInfo = '';
+                    include __DIR__ . '/user-item.php';
+                endforeach;
             }
             ?>
         </ul>
