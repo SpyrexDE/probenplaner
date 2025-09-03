@@ -31,7 +31,7 @@ $sectionElementId = $sectionId . $rehearsalId;
 ?>
 
 <li class="tree-node tree-depth-1">
-    <button class="tree-node-header" data-toggle="collapse" href="#<?= $sectionElementId ?>" aria-expanded="false" aria-controls="<?= $sectionElementId ?>">
+    <button class="tree-node-header" data-toggle="collapse" data-target="#<?= $sectionElementId ?>" aria-expanded="false" aria-controls="<?= $sectionElementId ?>">
         <i class="tree-node-icon fas fa-chevron-right"></i>
         
         <div class="tree-node-title">
@@ -54,7 +54,7 @@ $sectionElementId = $sectionId . $rehearsalId;
         </div>
     </button>
     
-    <div id="<?= $sectionElementId ?>" class="tree-node-content collapsed">
+    <div id="<?= $sectionElementId ?>" class="tree-node-content collapse">
         <ul class="tree-list">
             <?php
             // Get section structure to organize instruments
@@ -80,7 +80,7 @@ $sectionElementId = $sectionId . $rehearsalId;
                             $subSectionElementId = str_replace(['ö', 'ü', 'ä', ' '], ['oe', 'ue', 'ae', ''], $subSection['id']) . $rehearsalId;
                 ?>
                 <li class="tree-node tree-depth-2">
-                    <button class="tree-node-header" data-toggle="collapse" href="#<?= $subSectionElementId ?>" aria-expanded="false" aria-controls="<?= $subSectionElementId ?>">
+                    <button class="tree-node-header" data-toggle="collapse" data-target="#<?= $subSectionElementId ?>" aria-expanded="false" aria-controls="<?= $subSectionElementId ?>">
                         <i class="tree-node-icon fas fa-chevron-right"></i>
                         
                         <div class="tree-node-title">
@@ -103,7 +103,7 @@ $sectionElementId = $sectionId . $rehearsalId;
                         </div>
                     </button>
                     
-                    <div id="<?= $subSectionElementId ?>" class="tree-node-content collapsed">
+                    <div id="<?= $subSectionElementId ?>" class="tree-node-content collapse">
                         <ul class="tree-list">
                             <?php
                             // Group players by instrument type
@@ -127,7 +127,7 @@ $sectionElementId = $sectionId . $rehearsalId;
                                 $instrumentElementId = str_replace(['ö', 'ü', 'ä', ' '], ['oe', 'ue', 'ae', ''], $instrumentName) . $rehearsalId;
                             ?>
                             <li class="tree-node tree-depth-3">
-                                <button class="tree-node-header" data-toggle="collapse" href="#<?= $instrumentElementId ?>" aria-expanded="false" aria-controls="<?= $instrumentElementId ?>">
+                                <button class="tree-node-header" data-toggle="collapse" data-target="#<?= $instrumentElementId ?>" aria-expanded="false" aria-controls="<?= $instrumentElementId ?>">
                                     <i class="tree-node-icon fas fa-chevron-right"></i>
                                     
                                     <div class="tree-node-title">
@@ -150,7 +150,7 @@ $sectionElementId = $sectionId . $rehearsalId;
                                     </div>
                                 </button>
                                 
-                                <div id="<?= $instrumentElementId ?>" class="tree-node-content collapsed">
+                                <div id="<?= $instrumentElementId ?>" class="tree-node-content collapse">
                                     <ul class="tree-list">
                                         <?php 
                                         // Sort users by status: not_attending first, then attending, then no_response
@@ -193,7 +193,7 @@ $sectionElementId = $sectionId . $rehearsalId;
                             $instrumentElementId = str_replace(['ö', 'ü', 'ä', ' '], ['oe', 'ue', 'ae', ''], $subSection['id']) . $rehearsalId;
                         ?>
                         <li class="tree-node tree-depth-2">
-                            <button class="tree-node-header" data-toggle="collapse" href="#<?= $instrumentElementId ?>" aria-expanded="false" aria-controls="<?= $instrumentElementId ?>">
+                            <button class="tree-node-header" data-toggle="collapse" data-target="#<?= $instrumentElementId ?>" aria-expanded="false" aria-controls="<?= $instrumentElementId ?>">
                                 <i class="tree-node-icon fas fa-chevron-right"></i>
                                 
                                 <div class="tree-node-title">
@@ -216,7 +216,7 @@ $sectionElementId = $sectionId . $rehearsalId;
                                 </div>
                             </button>
                             
-                            <div id="<?= $instrumentElementId ?>" class="tree-node-content collapsed">
+                            <div id="<?= $instrumentElementId ?>" class="tree-node-content collapse">
                                 <ul class="tree-list">
                                     <?php
                                     // Sort users by status: not_attending first, then attending, then no_response

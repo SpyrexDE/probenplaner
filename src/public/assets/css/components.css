@@ -1954,25 +1954,7 @@
   position: relative;
 }
 
-.tree-node-content > .tree-list > .tree-node::before {
-  content: '';
-  position: absolute;
-  left: -2px;
-  top: 0;
-  bottom: 50%;
-  width: 2px;
-  background: linear-gradient(180deg, var(--color-border) 0%, transparent 100%);
-}
 
-.tree-node-content > .tree-list > .tree-node::after {
-  content: '';
-  position: absolute;
-  left: -2px;
-  top: 50%;
-  width: var(--space-4);
-  height: 2px;
-  background-color: var(--color-border);
-}
 
 /* Tree User Item */
 .tree-user-item {

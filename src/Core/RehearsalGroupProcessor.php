@@ -36,10 +36,6 @@ class RehearsalGroupProcessor
             
             $group = trim($group);
             
-            // Ignore legacy exclusion markers from old forms
-            if (strpos($group, '!EXCLUDED!') === 0 || strpos($group, '!') === 0) {
-                continue;
-            }
             
             // Find correct group ID from config (case-insensitive)
             $foundGroup = self::findGroupId($group, $groupManager);
