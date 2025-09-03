@@ -375,7 +375,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                             $attendanceRate = ($attending / $total) * 100;
                             if ($attendanceRate < DashboardConstants::CRITICAL_ATTENDANCE_THRESHOLD) { // Only show if attendance is low
                                 $rehearsalCriticalSections[] = [
-                                    'name' => $instrumentId,
+                                    'name' => $groupManager->getDisplayName($instrumentId),
                                     'rate' => $attendanceRate,
                                     'total' => $total,
                                     'attending' => $attending
@@ -393,7 +393,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                             $attendanceRate = ($attending / $total) * 100;
                             if ($attendanceRate < DashboardConstants::CRITICAL_ATTENDANCE_THRESHOLD) { // Only show if attendance is low
                                     $rehearsalCriticalSections[] = [
-                                        'name' => $sectionId,
+                                        'name' => $groupManager->getDisplayName($sectionId),
                                         'rate' => $attendanceRate,
                                         'total' => $total,
                                         'attending' => $attending
