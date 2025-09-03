@@ -7,20 +7,38 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeViewToggle();
 });
 
-// Initialize collapse controls for folder icons
+// Initialize collapse controls for tree nodes
 function initializeCollapseControls() {
-    const folderIcons = document.querySelectorAll('.tree a[data-toggle="collapse"]');
-    folderIcons.forEach(icon => {
-        icon.addEventListener('click', function() {
+    const treeHeaders = document.querySelectorAll('.tree-node-header[data-toggle="collapse"]');
+    treeHeaders.forEach(header => {
+        header.addEventListener('click', function() {
             const expanded = this.getAttribute('aria-expanded') === 'true';
-            this.setAttribute('aria-expanded', !expanded);
+            const newExpanded = !expanded;
+            this.setAttribute('aria-expanded', newExpanded);
             
-            // Trigger our vanilla collapse component
+            // Toggle the parent tree node expanded class
+            const treeNode = this.closest('.tree-node');
+            if (treeNode) {
+                treeNode.classList.toggle('tree-node-expanded', newExpanded);
+            }
+            
+            // Get target content element
             const targetId = this.getAttribute('href');
             if (targetId) {
                 const target = document.querySelector(targetId);
-                if (target && target.collapseInstance) {
-                    target.collapseInstance.toggle();
+                if (target) {
+                    // Toggle content visibility
+                    if (newExpanded) {
+                        target.classList.remove('collapsed');
+                        target.classList.add('expanded', 'expanding');
+                        // Remove expanding class after animation
+                        setTimeout(() => {
+                            target.classList.remove('expanding');
+                        }, 200);
+                    } else {
+                        target.classList.remove('expanded', 'expanding');
+                        target.classList.add('collapsed');
+                    }
                 }
             }
         });

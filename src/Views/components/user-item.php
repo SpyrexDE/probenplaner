@@ -33,16 +33,20 @@ switch ($memberStatus) {
 }
 ?>
 
-<li class="flex items-center justify-between py-2 px-3 text-sm">
-    <span class="flex items-center flex-1">
-        <i class=" text-xs mr-2 text-muted"><?= icon('user', 'text-gray-600') ?>></i> 
-        <span class="font-medium"><?= $username ?><?= $userBadges ?></span>
+<li class="tree-user-item userSpan">
+    <i class="tree-user-item-icon fas fa-user"></i>
+    
+    <div class="tree-user-item-content">
+        <span class="tree-user-item-name"><?= $username ?><?= $userBadges ?></span>
         <?php if ($additionalInfo): ?>
-            <span class="text-muted ml-1"><?= $additionalInfo ?></span>
+            <span class="tree-user-item-info"><?= $additionalInfo ?></span>
         <?php endif; ?>
         <?php if (!empty($note)): ?>
-            <span class="text-subtle ml-2">- <?= $note ?></span>
+            <span class="tree-user-item-note">- <?= $note ?></span>
         <?php endif; ?>
-    </span>
-    <i class="<?= $iconClass ?> text-sm ml-2" style="color: <?= $iconColor ?>;"></i>
+    </div>
+    
+    <div class="tree-user-item-status">
+        <i class="tree-user-item-status-icon <?= $iconClass ?> status-<?= $memberStatus ?>"></i>
+    </div>
 </li>

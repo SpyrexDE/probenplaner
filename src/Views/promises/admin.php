@@ -24,11 +24,23 @@
                 $sectionPlayers = [];
 
                 if (!empty($membersBySection[$rehearsalId]['all'])) {
-                    // Group players by section dynamically
-                    foreach ($groupManager->getAllSections() as $sectionId => $sectionData) {
+                    // Get only the top-level sections under 'tutti' to avoid showing subsections at root level
+                    $tuttiGroup = $groupManager->getGroup('tutti');
+                    $topLevelSections = [];
+                    
+                    if ($tuttiGroup && isset($tuttiGroup['children'])) {
+                        foreach ($tuttiGroup['children'] as $childKey => $child) {
+                            if (($child['type'] ?? '') === 'section') {
+                                $topLevelSections[$child['id']] = $child;
+                            }
+                        }
+                    }
+                    
+                    // Group players by top-level section only
+                    foreach ($topLevelSections as $sectionId => $sectionData) {
                         $sectionPlayers[$sectionId] = [];
                         
-                    foreach ($membersBySection[$rehearsalId]['all'] as $member) {
+                        foreach ($membersBySection[$rehearsalId]['all'] as $member) {
                             if ($groupManager->isUserInGroup($member['type'], $sectionId)) {
                                 $sectionPlayers[$sectionId][] = $member;
                             }
@@ -37,13 +49,13 @@
                 }
             ?>
             
-            <div class="tree">
-                <ul class="pl-1">
-                    <li>
+            <div class="tree-view">
+                <ul class="tree-list">
+                    <li class="tree-node tree-depth-0">
                         <?php include __DIR__ . '/../components/rehearsal-header.php'; ?>
                         
-                        <div id="Orchester<?= $rehearsalId ?>" class="collapse">
-                            <ul>
+                        <div id="Orchester<?= $rehearsalId ?>" class="tree-node-content collapsed">
+                            <ul class="tree-list">
                                         <?php 
                                 // Use dynamic section components
                                 foreach ($sectionPlayers as $sectionId => $players) {

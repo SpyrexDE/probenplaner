@@ -42,24 +42,38 @@ if ($isSmallGroup) {
 }
 ?>
 
-<span class="tree-item-span">
-    <a class="text-black no-underline" 
-       style="border-left-color: <?= !empty($rehearsal['color']) ? $rehearsal['color'] : '#ffffff' ?>;" 
-       data-toggle="collapse" 
-       href="#<?= htmlspecialchars($collapseTarget) ?>" 
-       aria-expanded="false" 
-       aria-controls="<?= htmlspecialchars($collapseTarget) ?>">
-        <i class="collapsed"><i ><?= icon('folder', 'text-gray-600') ?>></i></i>
-        <i class="expanded"><i class="far fa-folder-open"></i></i> 
-        <?= htmlspecialchars($rehearsal['date_formatted'] ?? $date) ?> - <?= htmlspecialchars($time_display) ?>
+<button class="tree-node-header" 
+        data-toggle="collapse" 
+        href="#<?= htmlspecialchars($collapseTarget) ?>" 
+        aria-expanded="false" 
+        aria-controls="<?= htmlspecialchars($collapseTarget) ?>">
+    <?php if (!empty($rehearsal['color'])): ?>
+        <div class="tree-node-color" style="background-color: <?= htmlspecialchars($rehearsal['color']) ?>;"></div>
+    <?php endif; ?>
+    
+    <i class="tree-node-icon fas fa-chevron-right"></i>
+    
+    <div class="tree-node-title">
+        <span class="tree-node-title-text">
+            <?= htmlspecialchars($rehearsal['date_formatted'] ?? $date) ?> - <?= htmlspecialchars($time_display) ?>
+        </span>
         <?php if (!empty($rehearsalType)): ?>
-            - <?= htmlspecialchars($rehearsalType) ?>
+            <span class="tree-node-subtitle"><?= htmlspecialchars($rehearsalType) ?></span>
         <?php endif; ?>
-    </a>
-    <a class="rightfloatet"><?= $notAttendingCount ?></a>
-    <i class=" treeIcon rightfloatet"><?= icon('times-circle', 'text-gray-600') ?>></i>
-    <a class="rightfloatet"><?= $attendingCount ?></a>
-    <i class=" treeIcon rightfloatet"><?= icon('check-circle', 'text-gray-600') ?>></i>
-    <a class="rightfloatet"><?= $noResponseCount ?></a>
-    <i class=" treeIcon rightfloatet"><?= icon('question-circle', 'text-gray-600') ?>></i>
-</span>
+    </div>
+    
+    <div class="tree-node-stats">
+        <div class="tree-node-stat">
+            <i class="tree-node-stat-icon fas fa-question-circle status-no-response"></i>
+            <span><?= $noResponseCount ?></span>
+        </div>
+        <div class="tree-node-stat">
+            <i class="tree-node-stat-icon fas fa-check-circle status-attending"></i>
+            <span><?= $attendingCount ?></span>
+        </div>
+        <div class="tree-node-stat">
+            <i class="tree-node-stat-icon fas fa-times-circle status-not-attending"></i>
+            <span><?= $notAttendingCount ?></span>
+        </div>
+    </div>
+</button>

@@ -41,11 +41,22 @@
                 
                 // Group by sections dynamically using GroupManager
                 $groupManager = new \App\Core\GroupManager();
-                $allSections = $groupManager->getAllSections();
+                
+                // Get only the top-level sections under 'tutti' to avoid showing subsections at root level
+                $tuttiGroup = $groupManager->getGroup('tutti');
+                $topLevelSections = [];
                 $sectionPlayers = [];
                 
-                // Initialize section arrays dynamically
-                foreach ($allSections as $sectionId => $sectionData) {
+                if ($tuttiGroup && isset($tuttiGroup['children'])) {
+                    foreach ($tuttiGroup['children'] as $childKey => $child) {
+                        if (($child['type'] ?? '') === 'section') {
+                            $topLevelSections[$child['id']] = $child;
+                        }
+                    }
+                }
+                
+                // Initialize section arrays for top-level sections only
+                foreach ($topLevelSections as $sectionId => $sectionData) {
                     $sectionPlayers[$sectionId] = [];
                 }
                 
@@ -73,10 +84,10 @@
                     
                     $memberWithStatus = array_merge($member, ['status' => $memberStatus]);
                     
-                    // Dynamically determine which sections this member belongs to
+                    // Dynamically determine which top-level sections this member belongs to
                     $userType = $groupManager->resolveAlias($member['type'] ?? '');
                     
-                    foreach ($allSections as $sectionId => $sectionData) {
+                    foreach ($topLevelSections as $sectionId => $sectionData) {
                         if ($groupManager->isUserInGroup($userType, $sectionId)) {
                             $sectionPlayers[$sectionId][] = $memberWithStatus;
                         }
@@ -85,39 +96,58 @@
             ?>
             
             <!-- Simple View (Default) -->
-            <div class="simple-view tree">
-                <ul class="pl-1">
-                    <li>
+            <div class="simple-view tree-view">
+                <ul class="tree-list">
+                    <li class="tree-node tree-depth-0">
                         <?php include __DIR__ . '/../components/rehearsal-header.php'; ?>
                         
-                        <div id="Orchester<?= $rehearsalId ?>" class="collapse">
-                            <ul>
-                                <?php if (!empty($memberPromises[$rehearsalId]['not_attending'])): ?>
-                                    <?php foreach($memberPromises[$rehearsalId]['not_attending'] as $member): ?>
-                                        <?php 
-                                            $status = 'not_attending';
-                                            include __DIR__ . '/../components/user-item.php'; 
-                                        ?>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
+                        <div id="Orchester<?= $rehearsalId ?>" class="tree-node-content collapsed">
+                            <ul class="tree-list">
+                                <?php 
+                                // Combine all users and sort by status
+                                $allUsers = [];
                                 
-                                <?php if (!empty($memberPromises[$rehearsalId]['attending'])): ?>
-                                    <?php foreach($memberPromises[$rehearsalId]['attending'] as $member): ?>
-                                        <?php 
-                                            $status = 'attending';
-                                            include __DIR__ . '/../components/user-item.php'; 
-                                        ?>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
+                                // Add not attending users
+                                if (!empty($memberPromises[$rehearsalId]['not_attending'])) {
+                                    foreach($memberPromises[$rehearsalId]['not_attending'] as $member) {
+                                        $member['status'] = 'not_attending';
+                                        $allUsers[] = $member;
+                                    }
+                                }
                                 
-                                <?php if (!empty($memberPromises[$rehearsalId]['no_response'])): ?>
-                                    <?php foreach($memberPromises[$rehearsalId]['no_response'] as $member): ?>
-                                        <?php 
-                                            $status = 'no_response';
-                                            include __DIR__ . '/../components/user-item.php'; 
-                                        ?>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
+                                // Add attending users
+                                if (!empty($memberPromises[$rehearsalId]['attending'])) {
+                                    foreach($memberPromises[$rehearsalId]['attending'] as $member) {
+                                        $member['status'] = 'attending';
+                                        $allUsers[] = $member;
+                                    }
+                                }
+                                
+                                // Add no response users
+                                if (!empty($memberPromises[$rehearsalId]['no_response'])) {
+                                    foreach($memberPromises[$rehearsalId]['no_response'] as $member) {
+                                        $member['status'] = 'no_response';
+                                        $allUsers[] = $member;
+                                    }
+                                }
+                                
+                                // Sort users by status: not_attending first, then attending, then no_response
+                                usort($allUsers, function($a, $b) {
+                                    $statusOrder = ['not_attending' => 0, 'attending' => 1, 'no_response' => 2];
+                                    $aOrder = $statusOrder[$a['status']] ?? 3;
+                                    $bOrder = $statusOrder[$b['status']] ?? 3;
+                                    if ($aOrder === $bOrder) {
+                                        return strcasecmp($a['username'] ?? '', $b['username'] ?? ''); // Secondary sort by username
+                                    }
+                                    return $aOrder - $bOrder;
+                                });
+                                
+                                // Display all users in sorted order
+                                foreach($allUsers as $member): 
+                                    $status = $member['status'];
+                                    include __DIR__ . '/../components/user-item.php'; 
+                                endforeach; ?>
+                            
                             </ul>
                         </div>
                     </li>
@@ -126,16 +156,16 @@
             
             <?php if (!empty($leadersCanViewAllSections)): ?>
             <!-- Sectional View (Hidden by default) -->
-            <div class="sectional-view tree hidden">
-                <ul class="pl-1">
-                    <li>
+            <div class="sectional-view tree-view hidden">
+                <ul class="tree-list">
+                    <li class="tree-node tree-depth-0">
                         <?php 
                             $collapseTarget = "Orchester" . $rehearsalId . "Sec";
                             include __DIR__ . '/../components/rehearsal-header.php'; 
                         ?>
                         
-                        <div id="Orchester<?= $rehearsalId ?>Sec" class="collapse">
-                            <ul>
+                        <div id="Orchester<?= $rehearsalId ?>Sec" class="tree-node-content collapsed">
+                            <ul class="tree-list">
                                 <?php 
                                 // Use the dynamically grouped section players from above
                                 foreach ($sectionPlayers as $sectionId => $players) {

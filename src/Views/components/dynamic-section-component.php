@@ -30,27 +30,40 @@ $sectionNoResponse = count(array_filter($players, function($m) { return $m['stat
 $sectionElementId = $sectionId . $rehearsalId;
 ?>
 
-<li>
-    <span class="tree-item-span">
-        <a class="text-black no-underline" data-toggle="collapse" href="#<?= $sectionElementId ?>" aria-expanded="false" aria-controls="<?= $sectionElementId ?>">
-            <i class="collapsed"><i ><?= icon('folder', 'text-gray-600') ?>></i></i>
-            <i class="expanded"><i class="far fa-folder-open"></i></i> <?= htmlspecialchars($sectionDisplayName) ?>
-        </a>
-        <a class="rightfloatet"><?= $sectionNotAttending ?></a>
-        <i class=" treeIcon rightfloatet"><?= icon('times-circle', 'text-gray-600') ?>></i>
-        <a class="rightfloatet"><?= $sectionAttending ?></a>
-        <i class=" treeIcon rightfloatet"><?= icon('check-circle', 'text-gray-600') ?>></i>
-        <a class="rightfloatet"><?= $sectionNoResponse ?></a>
-        <i class=" treeIcon rightfloatet"><?= icon('question-circle', 'text-gray-600') ?>></i>
-    </span>
+<li class="tree-node tree-depth-1">
+    <button class="tree-node-header" data-toggle="collapse" href="#<?= $sectionElementId ?>" aria-expanded="false" aria-controls="<?= $sectionElementId ?>">
+        <i class="tree-node-icon fas fa-chevron-right"></i>
+        
+        <div class="tree-node-title">
+            <span class="tree-node-title-text"><?= htmlspecialchars($sectionDisplayName) ?></span>
+        </div>
+        
+        <div class="tree-node-stats">
+            <div class="tree-node-stat">
+                <i class="tree-node-stat-icon fas fa-question-circle status-no-response"></i>
+                <span><?= $sectionNoResponse ?></span>
+            </div>
+            <div class="tree-node-stat">
+                <i class="tree-node-stat-icon fas fa-check-circle status-attending"></i>
+                <span><?= $sectionAttending ?></span>
+            </div>
+            <div class="tree-node-stat">
+                <i class="tree-node-stat-icon fas fa-times-circle status-not-attending"></i>
+                <span><?= $sectionNotAttending ?></span>
+            </div>
+        </div>
+    </button>
     
-    <div id="<?= $sectionElementId ?>" class="collapse">
-        <ul>
+    <div id="<?= $sectionElementId ?>" class="tree-node-content collapsed">
+        <ul class="tree-list">
             <?php
             // Get section structure to organize instruments
             $sectionTree = $groupManager->getTreeForComponent($sectionId);
             
-            if (isset($sectionTree['children']) && is_array($sectionTree['children'])) {
+            // Debug: check what we got for this section
+            // error_log("Section $sectionId tree: " . print_r($sectionTree, true));
+            
+            if (isset($sectionTree['children']) && is_array($sectionTree['children']) && !empty($sectionTree['children'])) {
                 // This section has sub-sections (hierarchical structure)
                 foreach ($sectionTree['children'] as $subSectionKey => $subSection):
                     if ($subSection['type'] === 'section' && isset($subSection['children'])):
@@ -66,22 +79,32 @@ $sectionElementId = $sectionId . $rehearsalId;
                             $subSectionNoResponse = count(array_filter($subSectionPlayers, function($m) { return $m['status'] === 'no_response'; }));
                             $subSectionElementId = str_replace(['ö', 'ü', 'ä', ' '], ['oe', 'ue', 'ae', ''], $subSection['id']) . $rehearsalId;
                 ?>
-                <li>
-                    <span class="tree-item-span">
-                        <a class="text-black no-underline" data-toggle="collapse" href="#<?= $subSectionElementId ?>" aria-expanded="false" aria-controls="<?= $subSectionElementId ?>">
-                            <i class="collapsed"><i ><?= icon('folder', 'text-gray-600') ?>></i></i>
-                            <i class="expanded"><i class="far fa-folder-open"></i></i> <?= htmlspecialchars($subSection['display_name']) ?>
-                        </a>
-                        <a class="rightfloatet"><?= $subSectionNotAttending ?></a>
-                        <i class=" treeIcon rightfloatet"><?= icon('times-circle', 'text-gray-600') ?>></i>
-                        <a class="rightfloatet"><?= $subSectionAttending ?></a>
-                        <i class=" treeIcon rightfloatet"><?= icon('check-circle', 'text-gray-600') ?>></i>
-                        <a class="rightfloatet"><?= $subSectionNoResponse ?></a>
-                        <i class=" treeIcon rightfloatet"><?= icon('question-circle', 'text-gray-600') ?>></i>
-                    </span>
+                <li class="tree-node tree-depth-2">
+                    <button class="tree-node-header" data-toggle="collapse" href="#<?= $subSectionElementId ?>" aria-expanded="false" aria-controls="<?= $subSectionElementId ?>">
+                        <i class="tree-node-icon fas fa-chevron-right"></i>
+                        
+                        <div class="tree-node-title">
+                            <span class="tree-node-title-text"><?= htmlspecialchars($subSection['display_name']) ?></span>
+                        </div>
+                        
+                        <div class="tree-node-stats">
+                            <div class="tree-node-stat">
+                                <i class="tree-node-stat-icon fas fa-question-circle status-no-response"></i>
+                                <span><?= $subSectionNoResponse ?></span>
+                            </div>
+                            <div class="tree-node-stat">
+                                <i class="tree-node-stat-icon fas fa-check-circle status-attending"></i>
+                                <span><?= $subSectionAttending ?></span>
+                            </div>
+                            <div class="tree-node-stat">
+                                <i class="tree-node-stat-icon fas fa-times-circle status-not-attending"></i>
+                                <span><?= $subSectionNotAttending ?></span>
+                            </div>
+                        </div>
+                    </button>
                     
-                    <div id="<?= $subSectionElementId ?>" class="collapse">
-                        <ul>
+                    <div id="<?= $subSectionElementId ?>" class="tree-node-content collapsed">
+                        <ul class="tree-list">
                             <?php
                             // Group players by instrument type
                             $instrumentGroups = [];
@@ -103,23 +126,45 @@ $sectionElementId = $sectionId . $rehearsalId;
                                 $noResponse = count(array_filter($instrumentPlayers, function($m) { return $m['status'] === 'no_response'; }));
                                 $instrumentElementId = str_replace(['ö', 'ü', 'ä', ' '], ['oe', 'ue', 'ae', ''], $instrumentName) . $rehearsalId;
                             ?>
-                            <li>
-                                <span class="tree-item-span">
-                                    <a class="text-black no-underline" data-toggle="collapse" href="#<?= $instrumentElementId ?>" aria-expanded="false" aria-controls="<?= $instrumentElementId ?>">
-                                        <i class="collapsed"><i ><?= icon('folder', 'text-gray-600') ?>></i></i>
-                                        <i class="expanded"><i class="far fa-folder-open"></i></i> <?= htmlspecialchars($instrumentName) ?>
-                                    </a>
-                                    <a class="rightfloatet"><?= $notAttending ?></a>
-                                    <i class=" treeIcon rightfloatet"><?= icon('times-circle', 'text-gray-600') ?>></i>
-                                    <a class="rightfloatet"><?= $attending ?></a>
-                                    <i class=" treeIcon rightfloatet"><?= icon('check-circle', 'text-gray-600') ?>></i>
-                                    <a class="rightfloatet"><?= $noResponse ?></a>
-                                    <i class=" treeIcon rightfloatet"><?= icon('question-circle', 'text-gray-600') ?>></i>
-                                </span>
+                            <li class="tree-node tree-depth-3">
+                                <button class="tree-node-header" data-toggle="collapse" href="#<?= $instrumentElementId ?>" aria-expanded="false" aria-controls="<?= $instrumentElementId ?>">
+                                    <i class="tree-node-icon fas fa-chevron-right"></i>
+                                    
+                                    <div class="tree-node-title">
+                                        <span class="tree-node-title-text"><?= htmlspecialchars($instrumentName) ?></span>
+                                    </div>
+                                    
+                                    <div class="tree-node-stats">
+                                        <div class="tree-node-stat">
+                                            <i class="tree-node-stat-icon fas fa-question-circle status-no-response"></i>
+                                            <span><?= $noResponse ?></span>
+                                        </div>
+                                        <div class="tree-node-stat">
+                                            <i class="tree-node-stat-icon fas fa-check-circle status-attending"></i>
+                                            <span><?= $attending ?></span>
+                                        </div>
+                                        <div class="tree-node-stat">
+                                            <i class="tree-node-stat-icon fas fa-times-circle status-not-attending"></i>
+                                            <span><?= $notAttending ?></span>
+                                        </div>
+                                    </div>
+                                </button>
                                 
-                                <div id="<?= $instrumentElementId ?>" class="collapse">
-                                    <ul>
-                                        <?php foreach ($instrumentPlayers as $player): ?>
+                                <div id="<?= $instrumentElementId ?>" class="tree-node-content collapsed">
+                                    <ul class="tree-list">
+                                        <?php 
+                                        // Sort users by status: not_attending first, then attending, then no_response
+                                        usort($instrumentPlayers, function($a, $b) {
+                                            $statusOrder = ['not_attending' => 0, 'attending' => 1, 'no_response' => 2];
+                                            $aOrder = $statusOrder[$a['status']] ?? 3;
+                                            $bOrder = $statusOrder[$b['status']] ?? 3;
+                                            if ($aOrder === $bOrder) {
+                                                return strcasecmp($a['username'] ?? '', $b['username'] ?? ''); // Secondary sort by username
+                                            }
+                                            return $aOrder - $bOrder;
+                                        });
+                                        
+                                        foreach ($instrumentPlayers as $player): ?>
                                             <?php 
                                                 $member = $player;
                                                 $status = $player['status'];
@@ -136,20 +181,82 @@ $sectionElementId = $sectionId . $rehearsalId;
                 <?php 
                         endif;
                     elseif ($subSection['type'] === 'instrument'):
-                        // Direct instrument under this section
+                        // Direct instrument under this section - create a collapsible instrument node
                         $instrumentPlayers = array_filter($players, function($p) use ($subSection, $groupManager) {
                             return $groupManager->resolveAlias($p['type']) === $subSection['id'];
                         });
                         
-                        foreach ($instrumentPlayers as $player):
-                            $member = $player;
-                            $status = $player['status'];
-                            include __DIR__ . '/user-item.php';
-                        endforeach;
+                        if (!empty($instrumentPlayers)):
+                            $attending = count(array_filter($instrumentPlayers, function($m) { return $m['status'] === 'attending'; }));
+                            $notAttending = count(array_filter($instrumentPlayers, function($m) { return $m['status'] === 'not_attending'; }));
+                            $noResponse = count(array_filter($instrumentPlayers, function($m) { return $m['status'] === 'no_response'; }));
+                            $instrumentElementId = str_replace(['ö', 'ü', 'ä', ' '], ['oe', 'ue', 'ae', ''], $subSection['id']) . $rehearsalId;
+                        ?>
+                        <li class="tree-node tree-depth-2">
+                            <button class="tree-node-header" data-toggle="collapse" href="#<?= $instrumentElementId ?>" aria-expanded="false" aria-controls="<?= $instrumentElementId ?>">
+                                <i class="tree-node-icon fas fa-chevron-right"></i>
+                                
+                                <div class="tree-node-title">
+                                    <span class="tree-node-title-text"><?= htmlspecialchars($subSection['display_name']) ?></span>
+                                </div>
+                                
+                                <div class="tree-node-stats">
+                                    <div class="tree-node-stat">
+                                        <i class="tree-node-stat-icon fas fa-question-circle status-no-response"></i>
+                                        <span><?= $noResponse ?></span>
+                                    </div>
+                                    <div class="tree-node-stat">
+                                        <i class="tree-node-stat-icon fas fa-check-circle status-attending"></i>
+                                        <span><?= $attending ?></span>
+                                    </div>
+                                    <div class="tree-node-stat">
+                                        <i class="tree-node-stat-icon fas fa-times-circle status-not-attending"></i>
+                                        <span><?= $notAttending ?></span>
+                                    </div>
+                                </div>
+                            </button>
+                            
+                            <div id="<?= $instrumentElementId ?>" class="tree-node-content collapsed">
+                                <ul class="tree-list">
+                                    <?php
+                                    // Sort users by status: not_attending first, then attending, then no_response
+                                    usort($instrumentPlayers, function($a, $b) {
+                                        $statusOrder = ['not_attending' => 0, 'attending' => 1, 'no_response' => 2];
+                                        $aOrder = $statusOrder[$a['status']] ?? 3;
+                                        $bOrder = $statusOrder[$b['status']] ?? 3;
+                                        if ($aOrder === $bOrder) {
+                                            return strcasecmp($a['username'] ?? '', $b['username'] ?? ''); // Secondary sort by username
+                                        }
+                                        return $aOrder - $bOrder;
+                                    });
+                                    
+                                    foreach ($instrumentPlayers as $player): ?>
+                                        <?php 
+                                            $member = $player;
+                                            $status = $player['status'];
+                                            $additionalInfo = ''; // Clear any previous additionalInfo
+                                            include __DIR__ . '/user-item.php'; 
+                                        ?>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
+                        </li>
+                        <?php endif;
                     endif;
                 endforeach;
             } else {
                 // Simple section with direct instruments (like Schlagwerk, Andere)
+                // Sort users by status: not_attending first, then attending, then no_response
+                usort($players, function($a, $b) {
+                    $statusOrder = ['not_attending' => 0, 'attending' => 1, 'no_response' => 2];
+                    $aOrder = $statusOrder[$a['status']] ?? 3;
+                    $bOrder = $statusOrder[$b['status']] ?? 3;
+                    if ($aOrder === $bOrder) {
+                        return strcasecmp($a['username'] ?? '', $b['username'] ?? ''); // Secondary sort by username
+                    }
+                    return $aOrder - $bOrder;
+                });
+                
                 if ($sectionId === 'Andere') {
                     // For "Andere", show instrument type in parentheses
                     foreach ($players as $player):
@@ -163,6 +270,7 @@ $sectionElementId = $sectionId . $rehearsalId;
                     foreach ($players as $player):
                         $member = $player;
                         $status = $player['status'];
+                        $additionalInfo = ''; // Clear any previous additionalInfo
                         include __DIR__ . '/user-item.php';
                     endforeach;
                 }
