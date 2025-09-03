@@ -151,8 +151,8 @@ $(document).ready(function() {
         disableRehearsalButtons(id);
         
         // Toggle selection
-        $(this).removeClass('deselected');
-        $(this).siblings('.crossBtn').addClass('deselected');
+        $(this).removeClass('deselected').addClass('selected');
+        $(this).siblings('.crossBtn').removeClass('selected').addClass('deselected');
         
         // Update UI
         var container = $(this).closest('.rehearsal-card');
@@ -186,8 +186,8 @@ $(document).ready(function() {
         disableRehearsalButtons(id);
         
         // Toggle selection
-        $(this).removeClass('deselected');
-        $(this).siblings('.checkBtn').addClass('deselected');
+        $(this).removeClass('deselected').addClass('selected');
+        $(this).siblings('.checkBtn').removeClass('selected').addClass('deselected');
         
         // Update UI
         var container = $(this).closest('.rehearsal-card');
