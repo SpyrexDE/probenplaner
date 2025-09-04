@@ -316,9 +316,20 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                     <!-- Compact Rehearsal Header -->
                     <div class="rehearsal-compact-header <?= $rehearsalColor ? 'has-color' : '' ?>" 
                          <?= $rehearsalColor ? 'style="--rehearsal-color: ' . $rehearsalColor . '"' : '' ?>>
-                        <div class="rehearsal-compact-title">
-                            <h3><?= htmlspecialchars($rehearsal['type'] ?? 'Probe') ?></h3>
-                            <span class="rehearsal-date"><?= date(DashboardConstants::DISPLAY_DATE_FORMAT, strtotime($rehearsal['date'])) ?></span>
+                        <div class="rehearsal-modern-title">
+                            <?php
+                            // Get German weekday abbreviations
+                            $germanWeekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+                            $dayOfWeek = date('w', strtotime($rehearsal['date']));
+                            $weekdayShort = $germanWeekdays[$dayOfWeek];
+                            ?>
+                            <div class="rehearsal-date-display">
+                                <div class="weekday-letter"><?= strtoupper($weekdayShort) ?></div>
+                                <div class="date-info">
+                                    <div class="date-text"><?= date('d.m.Y', strtotime($rehearsal['date'])) ?></div>
+                                    <div class="date-subtitle"><?= htmlspecialchars($rehearsal['type'] ?? 'Probe') ?></div>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="rehearsal-compact-right">
@@ -884,6 +895,93 @@ function getDeviationIcon($type) {
 ?>
 
 <style>
+/* Modern rehearsal date display */
+.rehearsal-modern-title {
+    flex: 1;
+    min-width: 35%;
+    max-width: 40%;
+}
+
+.rehearsal-date-display {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 10px 0;
+}
+
+.weekday-letter {
+    font-size: 56px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    position: relative;
+    text-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+.weekday-letter::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 2px;
+    opacity: 0.6;
+}
+
+.date-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.date-text {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.date-subtitle {
+    font-size: 16px;
+    font-weight: 600;
+    color: #667eea;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0;
+    line-height: 1.2;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .rehearsal-date-display {
+        gap: 15px;
+    }
+    
+    .weekday-letter {
+        font-size: 44px;
+    }
+    
+    .date-text {
+        font-size: 20px;
+    }
+    
+    .date-subtitle {
+        font-size: 14px;
+    }
+    
+    .rehearsal-modern-title {
+        min-width: 40%;
+        max-width: 45%;
+    }
+}
+
 /* Compact view styles */
 .promises-dashboard.compact-view .sections-grid {
     grid-template-columns: 1fr;
