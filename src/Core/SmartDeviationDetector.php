@@ -76,6 +76,7 @@ class SmartDeviationDetector {
         
         // Test for various types of deviations
         $deviations = array_merge($deviations, $this->detectAttendanceDeviations($currentData, $stats, $sectionId));
+        $deviations = array_merge($deviations, $this->detectResponseRateDeviations($currentData, $stats, $sectionId));
         $deviations = array_merge($deviations, $this->detectPatternDeviations($currentData, $historicalData, $sectionId));
         
 
@@ -96,17 +97,48 @@ class SmartDeviationDetector {
      * Analyze patterns across parent groups (e.g., "Streicher", "Bläser")
      */
     private function analyzeParentGroupPatterns($rehearsalId) {
-        $parentGroups = $this->getParentGroups();
         $deviations = [];
         
-        foreach ($parentGroups as $parentGroupName => $parentGroup) {
-            $analysis = $this->analyzeParentGroup($parentGroupName, $parentGroup, $rehearsalId);
-            if (!empty($analysis['deviations'])) {
-                $deviations = array_merge($deviations, $analysis['deviations']);
+        // Calculate overall tutti attendance instead of individual parent groups
+        $overallAttendance = $this->calculateOverallAttendance($rehearsalId);
+        
+        if ($overallAttendance['total_people'] > 0) {
+            $attendanceRate = ($overallAttendance['total_attending'] / $overallAttendance['total_people']) * 100;
+            
+            if ($attendanceRate < \App\Core\DashboardConstants::GROUP_PERFORMANCE_THRESHOLD) {
+                $deviations[] = [
+                    'type' => 'overall_performance',
+                    'severity' => 'critical',
+                    'attendance_rate' => $attendanceRate,
+                    'message' => "Nur " . number_format($attendanceRate, 0) . "% Teilnahme in allen Registern"
+                ];
             }
         }
         
         return ['deviations' => $deviations];
+    }
+    
+    /**
+     * Calculate overall attendance across all sections in a rehearsal
+     */
+    private function calculateOverallAttendance($rehearsalId) {
+        $stmt = $this->db->prepare("
+            SELECT 
+                COUNT(up.id) as total_people,
+                SUM(CASE WHEN up.status = 'yes' THEN 1 ELSE 0 END) as total_attending
+            FROM user_promises up
+            WHERE up.rehearsal_id = ?
+        ");
+        
+        $stmt->bind_param('i', $rehearsalId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $data = $result->fetch_assoc();
+        
+        return [
+            'total_people' => (int)$data['total_people'],
+            'total_attending' => (int)$data['total_attending']
+        ];
     }
     
     /**
@@ -180,19 +212,36 @@ class SmartDeviationDetector {
             return $row['total_players'] > 0 ? ($row['attending'] / $row['total_players']) * 100 : 0;
         }, $historicalData);
         
-        $mean = array_sum($attendanceRates) / count($attendanceRates);
-        $variance = array_sum(array_map(function($x) use ($mean) {
-            return pow($x - $mean, 2);
+        $responseRates = array_map(function($row) {
+            return $row['total_players'] > 0 ? (($row['attending'] + $row['not_attending']) / $row['total_players']) * 100 : 0;
+        }, $historicalData);
+        
+        // Calculate attendance statistics
+        $attendanceMean = array_sum($attendanceRates) / count($attendanceRates);
+        $attendanceVariance = array_sum(array_map(function($x) use ($attendanceMean) {
+            return pow($x - $attendanceMean, 2);
         }, $attendanceRates)) / count($attendanceRates);
-        $std = sqrt($variance);
+        $attendanceStd = sqrt($attendanceVariance);
+        
+        // Calculate response rate statistics
+        $responseMean = array_sum($responseRates) / count($responseRates);
+        $responseVariance = array_sum(array_map(function($x) use ($responseMean) {
+            return pow($x - $responseMean, 2);
+        }, $responseRates)) / count($responseRates);
+        $responseStd = sqrt($responseVariance);
         
         return [
-            'mean' => $mean,
-            'std' => $std,
-            'variance' => $variance,
+            'mean' => $attendanceMean,
+            'std' => $attendanceStd,
+            'variance' => $attendanceVariance,
             'count' => count($attendanceRates),
             'min' => min($attendanceRates),
-            'max' => max($attendanceRates)
+            'max' => max($attendanceRates),
+            'response_mean' => $responseMean,
+            'response_std' => $responseStd,
+            'response_variance' => $responseVariance,
+            'response_min' => min($responseRates),
+            'response_max' => max($responseRates)
         ];
     }
     
@@ -240,19 +289,42 @@ class SmartDeviationDetector {
     }
     
     /**
-     * Detect response rate deviations
+     * Detect response rate deviations using statistical tests
      */
     private function detectResponseRateDeviations($currentData, $stats, $sectionId) {
         $deviations = [];
         
-        // Low response rate detection
-        if ($currentData['response_rate'] < 60) {
+        if ($stats['response_std'] > 0) {
+            $zScore = abs(($currentData['response_rate'] - $stats['response_mean']) / $stats['response_std']);
+            
+            if ($zScore > $this->zScoreThreshold) {
+                $direction = $currentData['response_rate'] > $stats['response_mean'] ? 'höher' : 'niedriger';
+                $percentageDiff = abs($currentData['response_rate'] - $stats['response_mean']);
+                // Only show significant deviations
+                if ($percentageDiff > \App\Core\DashboardConstants::PERCENTAGE_DIFFERENCE_THRESHOLD) {
+                    $deviations[] = [
+                        'type' => 'response_rate_anomaly',
+                        'severity' => $zScore > \App\Core\DashboardConstants::CRITICAL_Z_SCORE_THRESHOLD ? 'critical' : 'warning',
+                        'z_score' => $zScore,
+                        'current_rate' => $currentData['response_rate'],
+                        'historical_mean' => $stats['response_mean'],
+                        'section' => $sectionId,
+                        'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($percentageDiff, 0) . "% " . ($direction === 'niedriger' ? 'weniger' : 'mehr') . " Rückmeldungen als üblich"
+                    ];
+                }
+            }
+        }
+        
+        // Detect if response rate is below historical minimum
+        if ($currentData['response_rate'] < $stats['response_min']) {
+            $percentageDiff = $stats['response_min'] - $currentData['response_rate'];
             $deviations[] = [
-                'type' => 'low_response_rate',
-                'severity' => $currentData['response_rate'] < 40 ? 'critical' : 'warning',
-                'response_rate' => $currentData['response_rate'],
+                'type' => 'below_historical_response_minimum',
+                'severity' => 'warning',
+                'current_rate' => $currentData['response_rate'],
+                'historical_min' => $stats['response_min'],
                 'section' => $sectionId,
-                'message' => $this->groupManager->getDisplayName($sectionId) . ": Nur " . number_format($currentData['response_rate'], 0) . "% Rückmeldungen"
+                'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($percentageDiff, 0) . "% weniger Rückmeldungen als je zuvor"
             ];
         }
         
@@ -343,85 +415,4 @@ class SmartDeviationDetector {
         return $relevantSections;
     }
     
-    /**
-     * Get parent groups for analysis using GroupManager
-     */
-    private function getParentGroups() {
-        $parentGroups = [];
-        
-        // Get all sections dynamically from the GroupManager
-        $allSections = $this->groupManager->getAllSections();
-        
-        // Only include top-level sections under tutti
-        foreach ($allSections as $section) {
-            $parent = $this->groupManager->getParent($section['id']);
-            if ($parent && $parent['id'] === 'tutti') {
-                $instruments = $this->groupManager->getInstrumentsByGroup($section['id']);
-                if (!empty($instruments)) {
-                    $parentGroups[$section['display_name']] = $instruments;
-                }
-            }
-        }
-        
-        return $parentGroups;
-    }
-    
-    /**
-     * Analyze a parent group for patterns
-     */
-    private function analyzeParentGroup($parentGroupName, $parentGroup, $rehearsalId) {
-        $deviations = [];
-        $sectionRates = [];
-        
-        foreach ($parentGroup as $section) {
-            $currentData = $this->getCurrentAttendanceData($section, $rehearsalId);
-            if ($currentData['total'] > 0) {
-                $sectionRates[$section] = $currentData['attendance_rate'];
-            }
-        }
-        
-        if (count($sectionRates) > 1) {
-            $meanRate = array_sum($sectionRates) / count($sectionRates);
-            $stdRate = sqrt(array_sum(array_map(function($rate) use ($meanRate) {
-                return pow($rate - $meanRate, 2);
-            }, $sectionRates)) / count($sectionRates));
-            
-            // Detect if entire group is performing poorly
-            if ($meanRate < \App\Core\DashboardConstants::GROUP_PERFORMANCE_THRESHOLD) {
-                $deviations[] = [
-                    'type' => 'group_performance',
-                    'severity' => 'critical',
-                    'group' => $parentGroupName,
-                    'mean_rate' => $meanRate,
-                    'message' => "Nur " . number_format($meanRate, 0) . "% Teilnahme in allen Registern"
-                ];
-            }
-            
-            // Only detect individual section deviations if the group is not critically low
-            // This prevents contradictory messages like "0% group attendance" but "52% more individual attendance"
-            if ($meanRate >= \App\Core\DashboardConstants::GROUP_DEVIATION_MIN_RATE) {
-                            // Detect sections that deviate significantly from the group mean
-            foreach ($sectionRates as $section => $rate) {
-                if ($stdRate > 0) {
-                    $zScore = abs(($rate - $meanRate) / $stdRate);
-                    if ($zScore > \App\Core\DashboardConstants::GROUP_DEVIATION_Z_SCORE) {
-                            $direction = $rate > $meanRate ? 'höher' : 'niedriger';
-                            $percentageDiff = abs($rate - $meanRate);
-                            $deviations[] = [
-                                'type' => 'group_deviation',
-                                'severity' => 'warning',
-                                'section' => $section,
-                                'group_mean' => $meanRate,
-                                'section_rate' => $rate,
-                                'z_score' => $zScore,
-                                'message' => $this->groupManager->getDisplayName($section) . " weicht von der Gruppenleistung ab: " . number_format($rate, 0) . "% vs. Gruppenmittel " . number_format($meanRate, 1) . "%"
-                            ];
-                        }
-                    }
-                }
-            }
-        }
-        
-        return ['deviations' => $deviations];
-    }
 }

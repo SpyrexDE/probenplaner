@@ -141,6 +141,20 @@ $testPatterns = [
             </div>
             
             <div class="form-group">
+                <label for="severity">Severity Multiplier: <span id="severity-value">1.0</span></label>
+                <input type="range" name="severity" id="severity" class="form-range" min="0.5" max="2.0" step="0.1" value="1.0" style="width: 100%;">
+                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>0.5 (Mild)</span>
+                    <span>1.0 (Normal)</span>
+                    <span>2.0 (Extreme)</span>
+                </div>
+                <small class="form-text text-muted">Controls how extreme the selected pattern should be applied</small>
+                <div id="adjusted-pattern-info" class="mt-2 p-2 bg-gray-100 rounded text-sm" style="display: none;">
+                    <div id="adjusted-values"></div>
+                </div>
+            </div>
+            
+            <div class="form-group">
                 <label>Number of Rehearsals:</label>
                 <input type="number" name="num_rehearsals" class="form-input" value="10" min="1" max="20" required>
                 <small class="form-text text-muted">Generate 1-20 rehearsals for testing (more = better statistics)</small>
@@ -229,19 +243,97 @@ $testPatterns = [
 <?php endif; ?>
 
 <script>
-// Update pattern description when selection changes
-document.getElementById('pattern').addEventListener('change', function() {
-    const patternKey = this.value;
-    const descriptionElement = document.getElementById('pattern-description');
+const patterns = <?= json_encode($testPatterns) ?>;
+
+function calculateAdjustedPattern(patternKey, severity) {
+    if (!patternKey || !patterns[patternKey]) return null;
     
-    if (patternKey) {
-        const patterns = <?= json_encode($testPatterns) ?>;
-        const pattern = patterns[patternKey];
-        descriptionElement.textContent = pattern.description;
+    const pattern = patterns[patternKey];
+    const adjusted = {...pattern};
+    
+    // Adjust attendance range
+    const rangeCenter = (pattern.attendance_range[0] + pattern.attendance_range[1]) / 2;
+    const rangeSpread = pattern.attendance_range[1] - pattern.attendance_range[0];
+    const newSpread = rangeSpread * severity;
+    
+    adjusted.attendance_range = [
+        Math.max(0, Math.round(rangeCenter - newSpread / 2)),
+        Math.min(100, Math.round(rangeCenter + newSpread / 2))
+    ];
+    
+    // Adjust standard deviation
+    adjusted.std_dev = Math.round(pattern.std_dev * severity);
+    
+    // Adjust problem range if exists
+    if (pattern.problem_range) {
+        const problemCenter = (pattern.problem_range[0] + pattern.problem_range[1]) / 2;
+        const problemSpread = pattern.problem_range[1] - pattern.problem_range[0];
+        const newProblemSpread = problemSpread * severity;
+        
+        adjusted.problem_range = [
+            Math.max(0, Math.round(problemCenter - newProblemSpread / 2)),
+            Math.min(100, Math.round(problemCenter + newProblemSpread / 2))
+        ];
+    }
+    
+    // Adjust no response rate if exists
+    if (pattern.no_response_rate) {
+        adjusted.no_response_rate = Math.min(1, pattern.no_response_rate * severity);
+    }
+    
+    return adjusted;
+}
+
+function updatePatternDisplay() {
+    const patternKey = document.getElementById('pattern').value;
+    const severityValue = parseFloat(document.getElementById('severity').value);
+    
+    // Update severity display
+    document.getElementById('severity-value').textContent = severityValue.toFixed(1);
+    
+    // Update pattern description
+    const descriptionElement = document.getElementById('pattern-description');
+    const adjustedInfoElement = document.getElementById('adjusted-pattern-info');
+    const adjustedValuesElement = document.getElementById('adjusted-values');
+    
+    if (patternKey && patterns[patternKey]) {
+        const originalPattern = patterns[patternKey];
+        const adjustedPattern = calculateAdjustedPattern(patternKey, severityValue);
+        
+        descriptionElement.textContent = originalPattern.description;
+        
+        // Show adjusted values if severity != 1.0
+        if (Math.abs(severityValue - 1.0) > 0.05) {
+            let adjustedInfo = '';
+            adjustedInfo += `<strong>Adjusted Values (${severityValue}x):</strong><br>`;
+            adjustedInfo += `<strong>Attendance Range:</strong> ${adjustedPattern.attendance_range[0]}-${adjustedPattern.attendance_range[1]}% (was ${originalPattern.attendance_range[0]}-${originalPattern.attendance_range[1]}%)<br>`;
+            adjustedInfo += `<strong>Std Dev:</strong> ${adjustedPattern.std_dev}% (was ${originalPattern.std_dev}%)`;
+            
+            if (adjustedPattern.problem_range) {
+                adjustedInfo += `<br><strong>Problem Range:</strong> ${adjustedPattern.problem_range[0]}-${adjustedPattern.problem_range[1]}% (was ${originalPattern.problem_range[0]}-${originalPattern.problem_range[1]}%)`;
+            }
+            
+            if (adjustedPattern.no_response_rate) {
+                adjustedInfo += `<br><strong>No Response Rate:</strong> ${Math.round(adjustedPattern.no_response_rate * 100)}% (was ${Math.round(originalPattern.no_response_rate * 100)}%)`;
+            }
+            
+            adjustedValuesElement.innerHTML = adjustedInfo;
+            adjustedInfoElement.style.display = 'block';
+        } else {
+            adjustedInfoElement.style.display = 'none';
+        }
     } else {
         descriptionElement.textContent = '';
+        adjustedInfoElement.style.display = 'none';
     }
-});
+}
+
+// Add event listeners
+document.getElementById('pattern').addEventListener('change', updatePatternDisplay);
+document.getElementById('severity').addEventListener('input', updatePatternDisplay);
+
+// Initialize display on page load
+document.addEventListener('DOMContentLoaded', updatePatternDisplay);
 </script>
 
 <?php endif; ?> 

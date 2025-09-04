@@ -29,12 +29,17 @@ if (empty($_POST['days_between']) || !is_numeric($_POST['days_between']) || $_PO
     return ['message' => 'Please enter valid days between rehearsals', 'messageType' => 'error'];
 }
 
+if (!isset($_POST['severity']) || !is_numeric($_POST['severity']) || $_POST['severity'] < 0.5 || $_POST['severity'] > 2.0) {
+    return ['message' => 'Please provide a valid severity multiplier (0.5-2.0)', 'messageType' => 'error'];
+}
+
 // Get input values
 $orchestraId = (int)$_POST['orchestra_id'];
 $pattern = $_POST['pattern'];
 $numRehearsals = min((int)$_POST['num_rehearsals'], 20); // Cap at 20 for safety
 $startDate = $_POST['start_date'];
 $daysBetween = (int)$_POST['days_between'];
+$severity = (float)$_POST['severity'];
 
 // Verify orchestra exists
 $stmt = $conn->prepare("SELECT id, name FROM orchestras WHERE id = ?");
@@ -124,6 +129,45 @@ if (!isset($testPatterns[$pattern])) {
 }
 
 $selectedPattern = $testPatterns[$pattern];
+
+// Apply severity multiplier to pattern
+function applySeverityToPattern($pattern, $severity) {
+    $adjusted = $pattern;
+    
+    // Adjust attendance range
+    $rangeCenter = ($pattern['attendance_range'][0] + $pattern['attendance_range'][1]) / 2;
+    $rangeSpread = $pattern['attendance_range'][1] - $pattern['attendance_range'][0];
+    $newSpread = $rangeSpread * $severity;
+    
+    $adjusted['attendance_range'] = [
+        max(0, round($rangeCenter - $newSpread / 2)),
+        min(100, round($rangeCenter + $newSpread / 2))
+    ];
+    
+    // Adjust standard deviation
+    $adjusted['std_dev'] = round($pattern['std_dev'] * $severity);
+    
+    // Adjust problem range if exists
+    if (isset($pattern['problem_range'])) {
+        $problemCenter = ($pattern['problem_range'][0] + $pattern['problem_range'][1]) / 2;
+        $problemSpread = $pattern['problem_range'][1] - $pattern['problem_range'][0];
+        $newProblemSpread = $problemSpread * $severity;
+        
+        $adjusted['problem_range'] = [
+            max(0, round($problemCenter - $newProblemSpread / 2)),
+            min(100, round($problemCenter + $newProblemSpread / 2))
+        ];
+    }
+    
+    // Adjust no response rate if exists
+    if (isset($pattern['no_response_rate'])) {
+        $adjusted['no_response_rate'] = min(1, $pattern['no_response_rate'] * $severity);
+    }
+    
+    return $adjusted;
+}
+
+$selectedPattern = applySeverityToPattern($selectedPattern, $severity);
 
 // Group users by type
 $usersByType = [];
@@ -216,9 +260,12 @@ try {
             foreach ($typeUsers as $user) {
                 $rehearsalStats['total_users']++;
                 
-                // Randomly decide if this user responds at all (5-15% chance of no response)
-                $noResponseChance = rand(5, 15); // 5-15% chance
-                if (rand(1, 100) <= $noResponseChance) {
+                // Determine no response chance based on pattern
+                $baseNoResponseChance = isset($selectedPattern['no_response_rate']) 
+                    ? $selectedPattern['no_response_rate'] * 100 
+                    : rand(5, 15); // 5-15% default if not specified
+                    
+                if (rand(1, 100) <= $baseNoResponseChance) {
                     // User doesn't respond at all - no promise record created
                     $rehearsalStats['no_response']++;
                     continue; // Skip to next user
@@ -266,7 +313,7 @@ try {
     $conn->commit();
     
     return [
-        'message' => "Successfully generated {$numRehearsals} rehearsals with '{$selectedPattern['name']}' pattern",
+        'message' => "Successfully generated {$numRehearsals} rehearsals with '{$testPatterns[$pattern]['name']}' pattern (severity: {$severity}x)",
         'messageType' => 'success',
         'data' => [
             'rehearsals_generated' => $numRehearsals,
