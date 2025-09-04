@@ -47,9 +47,34 @@ class RehearsalGroupProcessor
         // Remove duplicates, preserve order
         $cleanedGroups = array_values(array_unique($cleanedGroups));
         
-        // If 'tutti' is selected, just return ['tutti'] (ignore all the child selections)
-        if (in_array('tutti', $cleanedGroups)) {
-            return ['tutti'];
+        // Get the root group dynamically
+        $rootGroup = null;
+        $allGroups = $groupManager->getAllGroups();
+        
+        // Find the special group that affects all users
+        foreach ($allGroups as $group) {
+            if (($group['type'] ?? '') === 'special' && 
+                isset($group['special_rules']['affects_all']) && 
+                $group['special_rules']['affects_all'] === true) {
+                $rootGroup = $group;
+                break;
+            }
+        }
+        
+        // Fallback: find the first group with no parent (top-level)
+        if (!$rootGroup) {
+            foreach ($allGroups as $group) {
+                $parent = $groupManager->getParent($group['id']);
+                if (!$parent) {
+                    $rootGroup = $group;
+                    break;
+                }
+            }
+        }
+        
+        // If root group is selected, just return [rootGroupId] (ignore all the child selections)
+        if ($rootGroup && in_array($rootGroup['id'], $cleanedGroups)) {
+            return [$rootGroup['id']];
         }
         
         // Remove redundant parent-child selections
@@ -106,30 +131,7 @@ class RehearsalGroupProcessor
             return ['groups' => []];
         }
         
-        // Handle legacy format with exclusions (expand to positive selections)
-        if (count($rehearsalGroups) > 1 && strpos($rehearsalGroups[0], '!') !== 0) {
-            $rootGroup = $rehearsalGroups[0];
-            $excludedGroups = [];
-            
-            foreach (array_slice($rehearsalGroups, 1) as $group) {
-                if (strpos($group, '!') === 0) {
-                    $excludedGroups[] = substr($group, 1);
-                }
-            }
-            
-            if (!empty($excludedGroups)) {
-                // Legacy format: expand to individual selections
-                $groupManager = new GroupManager();
-                $allRootGroups = self::getAllGroupsForRoot($rootGroup, $groupManager);
-                $formGroups = array_values(array_diff($allRootGroups, array_merge($excludedGroups, [$rootGroup])));
-                
-                return [
-                    'groups' => $formGroups
-                ];
-            }
-        }
-        
-        // Otherwise, return exactly what was stored
+        // Return exactly what was stored - tutti is just another group
         return [
             'groups' => $rehearsalGroups
         ];
@@ -143,8 +145,33 @@ class RehearsalGroupProcessor
     {
         $allGroups = [];
         
-        if ($rootId === 'tutti') {
-            // For tutti, include all sections and instruments
+        // Get the root group dynamically
+        $rootGroup = null;
+        $allGroups = $groupManager->getAllGroups();
+        
+        // Find the special group that affects all users
+        foreach ($allGroups as $group) {
+            if (($group['type'] ?? '') === 'special' && 
+                isset($group['special_rules']['affects_all']) && 
+                $group['special_rules']['affects_all'] === true) {
+                $rootGroup = $group;
+                break;
+            }
+        }
+        
+        // Fallback: find the first group with no parent (top-level)
+        if (!$rootGroup) {
+            foreach ($allGroups as $group) {
+                $parent = $groupManager->getParent($group['id']);
+                if (!$parent) {
+                    $rootGroup = $group;
+                    break;
+                }
+            }
+        }
+        
+        if ($rootGroup && $rootId === $rootGroup['id']) {
+            // For root group, include all sections and instruments
             $allSections = $groupManager->getAllSections();
             foreach ($allSections as $sectionId => $sectionData) {
                 $allGroups[] = $sectionId;
@@ -156,8 +183,8 @@ class RehearsalGroupProcessor
                 $allGroups[] = $instrumentId;
             }
             
-            // Include the tutti checkbox itself
-            $allGroups[] = 'tutti';
+            // Include the root group itself
+            $allGroups[] = $rootGroup['id'];
         } else {
             // For other roots, get the immediate children only (sections and instruments)
             $descendants = $groupManager->getDescendants($rootId);
@@ -170,17 +197,7 @@ class RehearsalGroupProcessor
         return array_unique($allGroups);
     }
     
-    /**
-     * Handle explicit tutti selection
-     */
-    private static function handleExplicitTutti(array $groups, GroupManager $groupManager): array
-    {
-        // Deprecated: explicit tutti handling is simplified via isFullTuttiCoverage
-        if (count($groups) === 1 && $groups[0] === 'tutti') {
-            return ['tutti'];
-        }
-        return $groups;
-    }
+
 
     /**
      * Remove redundant parent-child selections

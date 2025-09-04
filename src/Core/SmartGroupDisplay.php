@@ -73,6 +73,15 @@ class SmartGroupDisplay
     }
     
     /**
+     * Get the dynamic root group ID (fallback for when root group is not found)
+     */
+    private function getDynamicRootId(): string
+    {
+        $rootGroup = $this->getRootGroup();
+        return $rootGroup ? $rootGroup['id'] : 'tutti'; // Keep 'tutti' as ultimate fallback
+    }
+    
+    /**
      * Get main sections (direct children of root group)
      */
     private function getMainSections(): array
@@ -183,36 +192,11 @@ class SmartGroupDisplay
             return '';
         }
         
-        // Handle special root-with-exclusions format (generic for any root)
-        if (count($selectedGroups) > 1 && strpos($selectedGroups[0], '!') !== 0) {
-            $rootGroup = $selectedGroups[0];
-            $excludedGroups = [];
-            $regularGroups = [];
-            
-            foreach (array_slice($selectedGroups, 1) as $group) {
-                if (strpos($group, '!') === 0) {
-                    // This is an excluded group (missing from root)
-                    $excludedGroups[] = substr($group, 1); // Remove the '!' prefix
-                } else {
-                    $regularGroups[] = $group;
-                }
-            }
-            
-            // If we have exclusions, generate "Root ohne X"
-            if (!empty($excludedGroups)) {
-                $rootDisplayName = $this->groupManager->getDisplayName($rootGroup);
-                $description = $rootDisplayName;
-                
-                if (!empty($excludedGroups)) {
-                    $description .= ' ' . $this->language['without'] . ' ';
-                    $description .= $this->generateSimpleList($excludedGroups);
-                }
-                if (!empty($regularGroups)) {
-                    $description .= ' ' . $this->language['but'] . ' ';
-                    $description .= $this->generateSimpleList($regularGroups);
-                }
-                return $description;
-            }
+        // Handle single root group
+        if (count($selectedGroups) === 1) {
+            $singleGroup = $selectedGroups[0];
+            $displayName = $this->groupManager->getDisplayName($singleGroup);
+            return $displayName;
         }
         
         // Handle single root group
@@ -1322,8 +1306,7 @@ class SmartGroupDisplay
             } else {
                 // Root is complete but we have additional instruments outside - create unified list
                 $rootName = $this->groupManager->getDisplayName($rootId);
-                $rootGroup = $this->getRootGroup();
-                $rootGroupId = $rootGroup ? $rootGroup['id'] : 'tutti'; // fallback to 'tutti' if no root found
+                $rootGroupId = $this->getDynamicRootId();
                 $outsideGroups = $this->findGroupsForInstruments($instrumentsOutsideRoot, $rootGroupId);
                 
                 $allItems = [$rootName];
@@ -1394,8 +1377,7 @@ class SmartGroupDisplay
             
             // Add individual instruments outside
             if (!empty($individualInstrumentsOutside)) {
-                $rootGroup = $this->getRootGroup();
-                $rootGroupId = $rootGroup ? $rootGroup['id'] : 'tutti'; // fallback to 'tutti' if no root found
+                $rootGroupId = $this->getDynamicRootId();
                 $individualGroups = $this->findGroupsForInstruments($individualInstrumentsOutside, $rootGroupId);
                 $outsideGroups = array_merge($outsideGroups, $individualGroups);
             }
@@ -1711,7 +1693,7 @@ class SmartGroupDisplay
         
         // Heavy penalty for very broad exclusions from large groups
         $rootGroup = $this->getRootGroup();
-        $rootDisplayName = $rootGroup ? $rootGroup['display_name'] : 'Tutti'; // fallback if no root found
+        $rootDisplayName = $rootGroup ? $rootGroup['display_name'] : $this->getDynamicRootId();
         if (strpos($description, $rootDisplayName) === 0 && strpos($description, $this->language['without']) !== false) {
             $score += 50; // Heavy penalty for starting with root group exclusions - prefer specific sections
         }

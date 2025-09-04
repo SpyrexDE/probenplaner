@@ -569,12 +569,35 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                             <ul class="tree-list">
                                 <?php
                                 // Get the root group dynamically
-                                $rootGroup = $groupManager->getGroup('tutti');
+                                $allGroups = $groupManager->getAllGroups();
+                                $rootGroup = null;
+                                
+                                // Find the special group that affects all users
+                                foreach ($allGroups as $group) {
+                                    if (($group['type'] ?? '') === 'special' && 
+                                        isset($group['special_rules']['affects_all']) && 
+                                        $group['special_rules']['affects_all'] === true) {
+                                        $rootGroup = $group;
+                                        break;
+                                    }
+                                }
+                                
+                                // Fallback: find the first group with no parent (top-level)
+                                if (!$rootGroup) {
+                                    foreach ($allGroups as $group) {
+                                        $parent = $groupManager->getParent($group['id']);
+                                        if (!$parent) {
+                                            $rootGroup = $group;
+                                            break;
+                                        }
+                                    }
+                                }
+                                
                                 $rootDisplayName = $rootGroup['display_name'] ?? 'Tutti';
                                 ?>
-                                <!-- Main root node (tutti) -->
+                                <!-- Main root node -->
                                 <li class="tree-node tree-depth-0">
-                                    <button class="tree-node-header" data-toggle="collapse" data-target="#tutti-<?= $rehearsalId ?>" aria-expanded="false" aria-controls="tutti-<?= $rehearsalId ?>">
+                                    <button class="tree-node-header" data-toggle="collapse" data-target="#root-<?= $rehearsalId ?>" aria-expanded="false" aria-controls="root-<?= $rehearsalId ?>">
                                         <i class="tree-node-icon fas fa-chevron-right"></i>
                                         
                                         <div class="tree-node-title">
@@ -597,7 +620,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                         </div>
                                     </button>
                                     
-                                    <div id="tutti-<?= $rehearsalId ?>" class="tree-node-content collapse">
+                                    <div id="root-<?= $rehearsalId ?>" class="tree-node-content collapse">
                                         <ul class="tree-list">
                                             <?php foreach ($sectionPlayers as $sectionId => $players): ?>
                                                 <?php

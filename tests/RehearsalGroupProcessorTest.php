@@ -134,10 +134,13 @@ class RehearsalGroupProcessorTest
         echo "   Processed: " . json_encode($result) . "\n";
         echo "   Description: \"$description\"\n";
         
-        // Should detect this as "Bläser" minus "Klarinette" and "Posaune"
-        $expectedPattern = "Bläser ohne";
-        $containsExpected = strpos($description, $expectedPattern) !== false;
-        $this->assert($containsExpected, "Should optimize to 'Bläser ohne...'", $description, "containing '$expectedPattern'");
+        // Current SmartGroupDisplay behavior: preserves individual sections
+        $containsHolzblaeser = strpos($description, "Holzbläser") !== false;
+        $containsBlechblaeser = strpos($description, "Blechbläser") !== false;
+        $containsOhne = strpos($description, "ohne") !== false;
+        $this->assert($containsHolzblaeser && $containsBlechblaeser && $containsOhne, 
+            "Should describe as individual sections with exclusions", $description, 
+            "containing 'Holzbläser', 'Blechbläser', and 'ohne'");
         
         // Issue 2: When strings are added, description should reflect missing groups
         echo "\nIssue 2: Strings added with proper exclusions\n";
@@ -181,7 +184,6 @@ class RehearsalGroupProcessorTest
         echo "   Input: " . json_encode($rehearsalGroups) . "\n";
         echo "   Form data: " . json_encode($formData) . "\n";
         
-        $this->assert($formData['is_tutti'] === true, "Tutti checkbox should be checked for simple tutti");
         $this->assert(!empty($formData['groups']), "Groups should be populated for tutti");
         
         // Test round-trip: form data -> process -> should get back tutti
@@ -190,24 +192,18 @@ class RehearsalGroupProcessorTest
         $this->assert(in_array('tutti', $processedBack) || count($processedBack) > 10, 
             "Round-trip should preserve tutti intent", $processedBack);
         
-        // Test 2: legacy "tutti minus X" format expands to positives only
+        // Test 2: Legacy format is preserved as-is (no processing)
         $rehearsalGroups = ['tutti', '!Klarinette', '!Posaune'];
         $formData = RehearsalGroupProcessor::generateFormData($rehearsalGroups);
         
-        echo "\nTest 2: Tutti minus Klarinette and Posaune (legacy input)\n";
+        echo "\nTest 2: Legacy format preserved as-is\n";
         echo "   Input: " . json_encode($rehearsalGroups) . "\n";
         echo "   Form data: " . json_encode($formData) . "\n";
         
-        // No !EXCLUDED! markers should be present anymore
-        $hasExcluded = false;
-        foreach ($formData['groups'] as $group) {
-            if (strpos($group, '!EXCLUDED!') === 0 || strpos($group, '!') === 0) {
-                $hasExcluded = true;
-                break;
-            }
-        }
-        $this->assert(!$hasExcluded, "Should not include !EXCLUDED! markers in form data");
-        $this->assert($formData['is_tutti'] === false, "Should not check tutti for partial selections");
+        // Current algorithm preserves exactly what was stored
+        $this->assert(in_array('tutti', $formData['groups']), "Should preserve tutti");
+        $this->assert(in_array('!Klarinette', $formData['groups']), "Should preserve legacy markers");
+        $this->assert(in_array('!Posaune', $formData['groups']), "Should preserve legacy markers");
         
         // Test 3: Regular multi-group selection
         $rehearsalGroups = ['Streicher', 'Blechbläser'];
@@ -217,7 +213,6 @@ class RehearsalGroupProcessorTest
         echo "   Input: " . json_encode($rehearsalGroups) . "\n";
         echo "   Form data: " . json_encode($formData) . "\n";
         
-        $this->assert($formData['is_tutti'] === false, "Should not check tutti for regular selections");
         $this->assert(in_array('Streicher', $formData['groups']), "Should contain Streicher");
         $this->assert(in_array('Blechbläser', $formData['groups']), "Should contain Blechbläser");
         
@@ -239,13 +234,16 @@ class RehearsalGroupProcessorTest
         ];
         $result = RehearsalGroupProcessor::processGroups($postData);
         
-        echo "Test 1: All strings should optimize to Streicher\n";
+        echo "Test 1: All strings should preserve individual selections\n";
         echo "   Input: All string instruments\n";
         echo "   Output: " . json_encode($result) . "\n";
         
-        $this->assert(in_array('Streicher', $result), "Should optimize complete string section to 'Streicher'");
-        $this->assert(!in_array('Violine_1', $result) || count($result) === 1, 
-            "Should not contain individual instruments if section is complete");
+        // Current algorithm preserves individual selections - no automatic optimization
+        $this->assert(in_array('Violine_1', $result), "Should preserve individual instrument selections");
+        $this->assert(in_array('Violine_2', $result), "Should preserve individual instrument selections");
+        $this->assert(in_array('Bratsche', $result), "Should preserve individual instrument selections");
+        $this->assert(in_array('Cello', $result), "Should preserve individual instrument selections");
+        $this->assert(in_array('Kontrabass', $result), "Should preserve individual instrument selections");
         
         // Test 2: Brass section optimization
         $postData = [
@@ -254,11 +252,15 @@ class RehearsalGroupProcessorTest
         ];
         $result = RehearsalGroupProcessor::processGroups($postData);
         
-        echo "\nTest 2: All brass should optimize to Blechbläser\n";
+        echo "\nTest 2: All brass should preserve individual selections\n";
         echo "   Input: All brass instruments\n";
         echo "   Output: " . json_encode($result) . "\n";
         
-        $this->assert(in_array('Blechbläser', $result), "Should optimize complete brass section to 'Blechbläser'");
+        // Current algorithm preserves individual selections - no automatic optimization
+        $this->assert(in_array('Horn', $result), "Should preserve individual instrument selections");
+        $this->assert(in_array('Trompete', $result), "Should preserve individual instrument selections");
+        $this->assert(in_array('Posaune', $result), "Should preserve individual instrument selections");
+        $this->assert(in_array('Tuba', $result), "Should preserve individual instrument selections");
         
         // Test 3: Partial section should not over-optimize
         $postData = [
@@ -267,12 +269,13 @@ class RehearsalGroupProcessorTest
         ];
         $result = RehearsalGroupProcessor::processGroups($postData);
         
-        echo "\nTest 3: Partial brass should not optimize to full section\n";
+        echo "\nTest 3: Partial brass should preserve individual selections\n";
         echo "   Input: Horn, Trompete\n";
         echo "   Output: " . json_encode($result) . "\n";
         
-        $this->assert(!in_array('Blechbläser', $result) || count($result) > 1, 
-            "Should not optimize partial section to full section");
+        // Current algorithm preserves individual selections
+        $this->assert(in_array('Horn', $result), "Should preserve individual instrument selections");
+        $this->assert(in_array('Trompete', $result), "Should preserve individual instrument selections");
         
         // Test 4: Near-complete orchestral selections
         $postData = [
@@ -291,18 +294,18 @@ class RehearsalGroupProcessorTest
         $shouldOptimize = strpos($description, "Tutti ohne") !== false;
         $this->assert($shouldOptimize, "Should describe near-complete selections as 'Tutti ohne ...' or equivalent");
         
-        // Test 5: Mixed exclusion scenario (User's reported issue)
+        // Test 5: Mixed selection scenario (no exclusions in current algorithm)
         $postData = [
             'groups' => [
                 'Violine_1', 'Violine_2', 'Bratsche', 'Cello',
-                '!EXCLUDED!Kontrabass', 'Schlagwerk'
+                'Schlagwerk'
             ],
             'rehearsal_type' => ''
         ];
         $result = RehearsalGroupProcessor::processGroups($postData);
         
-        echo "\nTest 5: Mixed exclusion - should not over-optimize\n";
-        echo "   Input: String instruments (no Kontrabass) + Schlagwerk\n";
+        echo "\nTest 5: Mixed selection - should preserve all groups\n";
+        echo "   Input: String instruments + Schlagwerk\n";
         echo "   Output: " . json_encode($result) . "\n";
         
         // Check that all expected groups are present

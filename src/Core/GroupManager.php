@@ -253,56 +253,7 @@ class GroupManager
         return null;
     }
     
-    /**
-     * Generate form options for group selection (hierarchical)
-     */
-    public function generateHierarchicalFormOptions(?array $groups = null, int $level = 0): string
-    {
-        if ($groups === null) {
-            $groups = $this->config;
-        }
-        
-        $html = '';
-        
-        foreach ($groups as $key => $group) {
-            if (!is_array($group) || !isset($group['id'])) {
-                continue;
-            }
-            
-            $indent = str_repeat('  ', $level);
-            $levelClass = $level === 0 ? 'checkbox-group' : ($level === 1 ? 'checkbox-group sub-group' : 'checkbox-group sub-sub-group');
-            
-            if ($level > 0) {
-                $html .= $indent . '<div class="checkbox-item">' . "\n";
-                $html .= $indent . '  <input type="checkbox" id="' . htmlspecialchars($group['id']) . '" name="groups[]" value="' . htmlspecialchars($group['id']) . '" <?= in_array(\'' . htmlspecialchars($group['id']) . '\', $formData[\'groups\'] ?? []) ? \'checked\' : \'\' ?>>' . "\n";
-                $html .= $indent . '  <label for="' . htmlspecialchars($group['id']) . '">' . htmlspecialchars($group['display_name']) . '</label>' . "\n";
-                $html .= $indent . '</div>' . "\n";
-            } else {
-                // Special handling for tutti checkbox
-                if ($group['id'] === 'tutti' || ($group['type'] ?? '') === 'special') {
-                    $html .= '<div class="checkbox-group">' . "\n";
-                    $html .= '  <div class="checkbox-item">' . "\n";
-                    $html .= '    <input name="is_tutti" type="checkbox" id="' . htmlspecialchars($group['id']) . '" value="1" <?= !empty($formData[\'is_tutti\']) ? \'checked\' : \'\' ?>>' . "\n";
-                    $html .= '    <label for="' . htmlspecialchars($group['id']) . '">' . htmlspecialchars($group['display_name']) . '</label>' . "\n";
-                    $html .= '  </div>' . "\n";
-                    $html .= '</div>' . "\n";
-                }
-            }
-            
-            // Process children
-            if (isset($group['children']) && is_array($group['children'])) {
-                if ($level > 0) {
-                    $html .= $indent . '<div class="' . $levelClass . '">' . "\n";
-                }
-                $html .= $this->generateHierarchicalFormOptions($group['children'], $level + 1);
-                if ($level > 0) {
-                    $html .= $indent . '</div>' . "\n";
-                }
-            }
-        }
-        
-        return $html;
-    }
+
     
     /**
      * Get display name for a group, with fallback to ID
