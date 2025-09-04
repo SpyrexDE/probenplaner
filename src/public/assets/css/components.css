@@ -75,47 +75,230 @@
 .rehearsal-card-info {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
-.rehearsal-card-primary {
+.rehearsal-card-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--space-1);
+  gap: var(--space-4);
 }
 
-.rehearsal-card-secondary {
+.rehearsal-weekday {
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--color-primary);
+  line-height: 1;
+  min-width: 40px;
+  text-align: center;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+  text-shadow: 0 2px 4px rgba(71, 140, 244, 0.3);
+}
+
+.rehearsal-weekday::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 2px;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  border-radius: 1px;
+  opacity: 0.6;
+}
+
+.rehearsal-main-info {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  opacity: 0.8;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
 }
 
-.rehearsal-date-time {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
+.rehearsal-date {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
+  line-height: 1.2;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-.rehearsal-type {
+.rehearsal-type-badge {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--color-primary-100);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-base);
+  display: inline-block;
+  width: fit-content;
+  border: 1px solid var(--color-primary-200);
+}
+
+.rehearsal-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.rehearsal-time-location {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
   font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
   font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-  margin-left: var(--space-2);
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  max-width: 50%;
 }
 
 .rehearsal-time {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-bg-secondary);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.rehearsal-time::before {
+  content: '🕐';
+  font-size: 14px;
+  opacity: 0.7;
 }
 
 .rehearsal-location {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-bg-secondary);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.rehearsal-location::before {
+  content: '📍';
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.rehearsal-groups {
   font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  margin-left: var(--space-2);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-primary-100) 100%);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-primary-200);
+  box-shadow: 0 1px 3px rgba(71, 140, 244, 0.1);
+}
+
+.rehearsal-groups::before {
+  content: '👥';
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+/* Responsive design for rehearsal cards */
+@media (max-width: 768px) {
+  .rehearsal-card-header {
+    gap: var(--space-3);
+  }
+  
+  .rehearsal-weekday {
+    font-size: 28px;
+    min-width: 35px;
+  }
+  
+  .rehearsal-date {
+    font-size: var(--font-size-base);
+  }
+  
+  .rehearsal-type-badge {
+    font-size: 10px;
+    padding: 2px var(--space-2);
+  }
+  
+  .rehearsal-time-location {
+    gap: var(--space-2);
+  }
+  
+  .rehearsal-time,
+  .rehearsal-location {
+    padding: var(--space-1) var(--space-2);
+    gap: var(--space-1);
+  }
+  
+  .rehearsal-time::before,
+  .rehearsal-location::before,
+  .rehearsal-groups::before {
+    font-size: 12px;
+  }
+  
+  .rehearsal-groups {
+    padding: var(--space-1) var(--space-2);
+  }
+  
+  .rehearsal-card {
+    padding: var(--space-3) var(--space-4);
+  }
+}
+
+@media (max-width: 480px) {
+  .rehearsal-card-header {
+    gap: var(--space-2);
+  }
+  
+  .rehearsal-weekday {
+    font-size: 24px;
+    min-width: 30px;
+  }
+  
+  .rehearsal-date {
+    font-size: var(--font-size-sm);
+  }
+  
+  .rehearsal-type-badge {
+    font-size: 9px;
+    padding: 1px var(--space-1);
+  }
+  
+  .rehearsal-time,
+  .rehearsal-location {
+    padding: 2px var(--space-1);
+    gap: 2px;
+    font-size: var(--font-size-xs);
+  }
+  
+  .rehearsal-time::before,
+  .rehearsal-location::before,
+  .rehearsal-groups::before {
+    font-size: 10px;
+  }
+  
+  .rehearsal-groups {
+    padding: 2px var(--space-1);
+    font-size: var(--font-size-xs);
+  }
+  
+  .rehearsal-card {
+    padding: var(--space-2) var(--space-3);
+  }
 }
 
 .rehearsal-note-dot {
@@ -912,14 +1095,17 @@
     gap: var(--space-2);
   }
 
-  .rehearsal-card-primary,
-  .rehearsal-card-secondary {
+  .rehearsal-card-header {
     flex-direction: column;
     align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .rehearsal-details {
     gap: var(--space-1);
   }
 
-  .rehearsal-type,
+  .rehearsal-groups,
   .rehearsal-location {
     margin-left: 0;
   }

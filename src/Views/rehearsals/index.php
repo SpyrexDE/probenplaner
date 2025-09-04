@@ -48,13 +48,37 @@
                 <div class="rehearsal-card" style="<?= !empty($rehearsal['color']) ? 'border-left-color: ' . $rehearsal['color'] . ';' : '' ?>">
                     <div class="rehearsal-card-content">
                         <div class="rehearsal-card-info">
-                            <div class="rehearsal-card-primary">
-                                <span class="rehearsal-date-time"><?= htmlspecialchars($rehearsal['date_formatted'] ?? $date) ?></span>
-                                <span class="rehearsal-type"><?= $groupsDisplay ?></span>
+                            <div class="rehearsal-card-header">
+                                <?php
+                                // Get German weekday abbreviations
+                                $germanWeekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+                                $dayOfWeek = date('w', strtotime($rehearsal['date']));
+                                $weekdayShort = $germanWeekdays[$dayOfWeek];
+                                
+                                // Determine rehearsal type
+                                $rehearsalType = 'Probe';
+                                if (in_array('Registerprobe', $groupKeys)) {
+                                    $rehearsalType = 'Registerprobe';
+                                } elseif (in_array('Konzert', $groupKeys)) {
+                                    $rehearsalType = 'Konzert';
+                                } elseif (in_array('Generalprobe', $groupKeys)) {
+                                    $rehearsalType = 'Generalprobe';
+                                } elseif (in_array('Konzertreise', $groupKeys)) {
+                                    $rehearsalType = 'Konzertreise';
+                                }
+                                ?>
+                                <div class="rehearsal-weekday"><?= strtoupper($weekdayShort) ?></div>
+                                <div class="rehearsal-main-info">
+                                    <div class="rehearsal-date"><?= htmlspecialchars($rehearsal['date_formatted'] ?? $date) ?></div>
+                                    <div class="rehearsal-type-badge"><?= htmlspecialchars($rehearsalType) ?></div>
+                                </div>
                             </div>
-                            <div class="rehearsal-card-secondary">
-                                <span class="rehearsal-time"><?= htmlspecialchars($time_display) ?></span>
-                                <span class="rehearsal-location"><?= htmlspecialchars($location) ?></span>
+                            <div class="rehearsal-details">
+                                <div class="rehearsal-time-location">
+                                    <span class="rehearsal-time"><?= htmlspecialchars($time_display) ?></span>
+                                    <span class="rehearsal-location"><?= htmlspecialchars($location) ?></span>
+                                </div>
+                                <div class="rehearsal-groups"><?= $groupsDisplay ?></div>
                             </div>
                         </div>
                         <div class="rehearsal-actions">

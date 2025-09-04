@@ -25,6 +25,12 @@ class SmartDeviationDetector {
             'summary' => []
         ];
         
+        // Analyze parent group patterns first (general overall info)
+        $parentGroupAnalysis = $this->analyzeParentGroupPatterns($rehearsalId);
+        if (!empty($parentGroupAnalysis['deviations'])) {
+            $results['deviations'] = array_merge($results['deviations'], $parentGroupAnalysis['deviations']);
+        }
+        
         // Get all sections for this rehearsal
         $sections = $this->getRehearsalSections($rehearsalId);
         
@@ -43,12 +49,6 @@ class SmartDeviationDetector {
                     'required' => $this->minDataPoints
                 ];
             }
-        }
-        
-        // Analyze parent group patterns
-        $parentGroupAnalysis = $this->analyzeParentGroupPatterns($rehearsalId);
-        if (!empty($parentGroupAnalysis['deviations'])) {
-            $results['deviations'] = array_merge($results['deviations'], $parentGroupAnalysis['deviations']);
         }
         
         return $results;
@@ -99,18 +99,28 @@ class SmartDeviationDetector {
     private function analyzeParentGroupPatterns($rehearsalId) {
         $deviations = [];
         
-        // Calculate overall tutti attendance instead of individual parent groups
-        $overallAttendance = $this->calculateOverallAttendance($rehearsalId);
+        // Calculate overall tutti attendance and response rates
+        $overallData = $this->calculateOverallAttendance($rehearsalId);
         
-        if ($overallAttendance['total_people'] > 0) {
-            $attendanceRate = ($overallAttendance['total_attending'] / $overallAttendance['total_people']) * 100;
-            
-            if ($attendanceRate < \App\Core\DashboardConstants::GROUP_PERFORMANCE_THRESHOLD) {
+        if ($overallData['total_people'] > 0) {
+            // Check overall attendance rate
+            if ($overallData['attendance_rate'] < \App\Core\DashboardConstants::GROUP_PERFORMANCE_THRESHOLD) {
                 $deviations[] = [
                     'type' => 'overall_performance',
                     'severity' => 'critical',
-                    'attendance_rate' => $attendanceRate,
-                    'message' => "Nur " . number_format($attendanceRate, 0) . "% Teilnahme in allen Registern"
+                    'attendance_rate' => $overallData['attendance_rate'],
+                    'message' => "Nur " . number_format($overallData['attendance_rate'], 0) . "% Teilnahme in allen Registern"
+                ];
+            }
+            
+            // Check overall response rate
+            if ($overallData['response_rate'] < \App\Core\DashboardConstants::LOW_RESPONSE_RATE_THRESHOLD) {
+                $severity = $overallData['response_rate'] < \App\Core\DashboardConstants::CRITICAL_RESPONSE_RATE_THRESHOLD ? 'critical' : 'warning';
+                $deviations[] = [
+                    'type' => 'overall_response_rate',
+                    'severity' => $severity,
+                    'response_rate' => $overallData['response_rate'],
+                    'message' => "Nur " . number_format($overallData['response_rate'], 0) . "% Rückmeldungen in allen Registern"
                 ];
             }
         }
@@ -119,13 +129,15 @@ class SmartDeviationDetector {
     }
     
     /**
-     * Calculate overall attendance across all sections in a rehearsal
+     * Calculate overall attendance and response rates across all sections in a rehearsal
      */
     private function calculateOverallAttendance($rehearsalId) {
         $stmt = $this->db->prepare("
             SELECT 
                 COUNT(up.id) as total_people,
-                SUM(CASE WHEN up.status = 'yes' THEN 1 ELSE 0 END) as total_attending
+                SUM(CASE WHEN up.status = 'yes' THEN 1 ELSE 0 END) as total_attending,
+                SUM(CASE WHEN up.status = 'no' THEN 1 ELSE 0 END) as total_not_attending,
+                SUM(CASE WHEN up.status = 'maybe' THEN 1 ELSE 0 END) as total_no_response
             FROM user_promises up
             WHERE up.rehearsal_id = ?
         ");
@@ -135,9 +147,17 @@ class SmartDeviationDetector {
         $result = $stmt->get_result();
         $data = $result->fetch_assoc();
         
+        $totalPeople = (int)$data['total_people'];
+        $totalAttending = (int)$data['total_attending'];
+        $totalNotAttending = (int)$data['total_not_attending'];
+        $totalResponded = $totalAttending + $totalNotAttending;
+        
         return [
-            'total_people' => (int)$data['total_people'],
-            'total_attending' => (int)$data['total_attending']
+            'total_people' => $totalPeople,
+            'total_attending' => $totalAttending,
+            'total_responded' => $totalResponded,
+            'attendance_rate' => $totalPeople > 0 ? ($totalAttending / $totalPeople) * 100 : 0,
+            'response_rate' => $totalPeople > 0 ? ($totalResponded / $totalPeople) * 100 : 0
         ];
     }
     
