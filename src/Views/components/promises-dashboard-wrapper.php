@@ -8,103 +8,116 @@
 
 use App\Core\DashboardConstants;
 
-// Calculate overall statistics across last 10 rehearsals
-$rehearsalsForStats = array_slice($rehearsals ?? [], -10);
-$totalRehearsals = count($rehearsalsForStats);
-$totalPromises = 0;
-$totalAttending = 0;
-$totalNotAttending = 0;
-$totalNoResponse = 0;
+// Only calculate statistics if not showing old rehearsals
+$showOld = $showOld ?? false;
 
-// Critical sections counter
-$criticalSections = 0;
-$warningSections = 0;
-
-foreach ($rehearsalsForStats as $rehearsal) {
-    $rehearsalId = $rehearsal['id'];
-    if (isset($stats[$rehearsalId])) {
-        $totalAttending += $stats[$rehearsalId]['attending'] ?? 0;
-        $totalNotAttending += $stats[$rehearsalId]['not_attending'] ?? 0;
-        $totalNoResponse += $stats[$rehearsalId]['no_response'] ?? 0;
-        $totalPromises += ($stats[$rehearsalId]['attending'] ?? 0) + ($stats[$rehearsalId]['not_attending'] ?? 0) + ($stats[$rehearsalId]['no_response'] ?? 0);
-    }
-}
-
-// Calculate percentages
-$overallAttendanceRate = $totalPromises > 0 ? ($totalAttending / $totalPromises) * 100 : 0;
-$overallResponseRate = $totalPromises > 0 ? (($totalAttending + $totalNotAttending) / $totalPromises) * 100 : 0;
-
-// Calculate real trends by comparing current period vs previous period
+// Initialize variables with default values
+$overallAttendanceRate = 0;
+$overallResponseRate = 0;
 $attendanceTrend = 'neutral';
 $responseTrend = 'neutral';
 $attendanceTrendValue = 0;
 $responseTrendValue = 0;
 
-// Get more historical data for trend calculation (last 20 rehearsals)
-$rehearsalsForTrends = array_slice($rehearsals ?? [], -20);
-$currentPeriodRehearsals = array_slice($rehearsalsForTrends, -10); // Last 10
-$previousPeriodRehearsals = array_slice($rehearsalsForTrends, 0, 10); // Previous 10
+if (!$showOld) {
+    // Calculate overall statistics across last 10 rehearsals
+    $rehearsalsForStats = array_slice($rehearsals ?? [], -10);
+    $totalRehearsals = count($rehearsalsForStats);
+    $totalPromises = 0;
+    $totalAttending = 0;
+    $totalNotAttending = 0;
+    $totalNoResponse = 0;
 
-if (count($currentPeriodRehearsals) >= 5 && count($previousPeriodRehearsals) >= 5) {
-    // Calculate current period averages
-    $currentAttendanceTotal = 0;
-    $currentResponseTotal = 0;
-    $currentTotalPromises = 0;
-    
-    foreach ($currentPeriodRehearsals as $rehearsal) {
+    // Critical sections counter
+    $criticalSections = 0;
+    $warningSections = 0;
+
+    foreach ($rehearsalsForStats as $rehearsal) {
         $rehearsalId = $rehearsal['id'];
         if (isset($stats[$rehearsalId])) {
-            $attending = $stats[$rehearsalId]['attending'] ?? 0;
-            $notAttending = $stats[$rehearsalId]['not_attending'] ?? 0;
-            $noResponse = $stats[$rehearsalId]['no_response'] ?? 0;
-            $total = $attending + $notAttending + $noResponse;
-            
-            if ($total > 0) {
-                $currentAttendanceTotal += ($attending / $total) * 100;
-                $currentResponseTotal += (($attending + $notAttending) / $total) * 100;
-                $currentTotalPromises++;
-            }
+            $totalAttending += $stats[$rehearsalId]['attending'] ?? 0;
+            $totalNotAttending += $stats[$rehearsalId]['not_attending'] ?? 0;
+            $totalNoResponse += $stats[$rehearsalId]['no_response'] ?? 0;
+            $totalPromises += ($stats[$rehearsalId]['attending'] ?? 0) + ($stats[$rehearsalId]['not_attending'] ?? 0) + ($stats[$rehearsalId]['no_response'] ?? 0);
         }
     }
-    
-    // Calculate previous period averages
-    $previousAttendanceTotal = 0;
-    $previousResponseTotal = 0;
-    $previousTotalPromises = 0;
-    
-    foreach ($previousPeriodRehearsals as $rehearsal) {
-        $rehearsalId = $rehearsal['id'];
-        if (isset($stats[$rehearsalId])) {
-            $attending = $stats[$rehearsalId]['attending'] ?? 0;
-            $notAttending = $stats[$rehearsalId]['not_attending'] ?? 0;
-            $noResponse = $stats[$rehearsalId]['no_response'] ?? 0;
-            $total = $attending + $notAttending + $noResponse;
-            
-            if ($total > 0) {
-                $previousAttendanceTotal += ($attending / $total) * 100;
-                $previousResponseTotal += (($attending + $notAttending) / $total) * 100;
-                $previousTotalPromises++;
+
+    // Calculate percentages
+    $overallAttendanceRate = $totalPromises > 0 ? ($totalAttending / $totalPromises) * 100 : 0;
+    $overallResponseRate = $totalPromises > 0 ? (($totalAttending + $totalNotAttending) / $totalPromises) * 100 : 0;
+
+    // Calculate real trends by comparing current period vs previous period
+    $attendanceTrend = 'neutral';
+    $responseTrend = 'neutral';
+    $attendanceTrendValue = 0;
+    $responseTrendValue = 0;
+
+    // Get more historical data for trend calculation (last 20 rehearsals)
+    $rehearsalsForTrends = array_slice($rehearsals ?? [], -20);
+    $currentPeriodRehearsals = array_slice($rehearsalsForTrends, -10); // Last 10
+    $previousPeriodRehearsals = array_slice($rehearsalsForTrends, 0, 10); // Previous 10
+
+    if (count($currentPeriodRehearsals) >= 5 && count($previousPeriodRehearsals) >= 5) {
+        // Calculate current period averages
+        $currentAttendanceTotal = 0;
+        $currentResponseTotal = 0;
+        $currentTotalPromises = 0;
+        
+        foreach ($currentPeriodRehearsals as $rehearsal) {
+            $rehearsalId = $rehearsal['id'];
+            if (isset($stats[$rehearsalId])) {
+                $attending = $stats[$rehearsalId]['attending'] ?? 0;
+                $notAttending = $stats[$rehearsalId]['not_attending'] ?? 0;
+                $noResponse = $stats[$rehearsalId]['no_response'] ?? 0;
+                $total = $attending + $notAttending + $noResponse;
+                
+                if ($total > 0) {
+                    $currentAttendanceTotal += ($attending / $total) * 100;
+                    $currentResponseTotal += (($attending + $notAttending) / $total) * 100;
+                    $currentTotalPromises++;
+                }
             }
         }
-    }
-    
-    // Calculate trend values
-    if ($currentTotalPromises > 0 && $previousTotalPromises > 0) {
-        $currentAttendanceAvg = $currentAttendanceTotal / $currentTotalPromises;
-        $previousAttendanceAvg = $previousAttendanceTotal / $previousTotalPromises;
-        $currentResponseAvg = $currentResponseTotal / $currentTotalPromises;
-        $previousResponseAvg = $previousResponseTotal / $previousTotalPromises;
         
-        // Attendance trend
-        $attendanceTrendValue = $currentAttendanceAvg - $previousAttendanceAvg;
-        if (abs($attendanceTrendValue) > 0.5) { // Only show trend if change is significant
-            $attendanceTrend = $attendanceTrendValue > 0 ? 'positive' : 'negative';
+        // Calculate previous period averages
+        $previousAttendanceTotal = 0;
+        $previousResponseTotal = 0;
+        $previousTotalPromises = 0;
+        
+        foreach ($previousPeriodRehearsals as $rehearsal) {
+            $rehearsalId = $rehearsal['id'];
+            if (isset($stats[$rehearsalId])) {
+                $attending = $stats[$rehearsalId]['attending'] ?? 0;
+                $notAttending = $stats[$rehearsalId]['not_attending'] ?? 0;
+                $noResponse = $stats[$rehearsalId]['no_response'] ?? 0;
+                $total = $attending + $notAttending + $noResponse;
+                
+                if ($total > 0) {
+                    $previousAttendanceTotal += ($attending / $total) * 100;
+                    $previousResponseTotal += (($attending + $notAttending) / $total) * 100;
+                    $previousTotalPromises++;
+                }
+            }
         }
         
-        // Response trend
-        $responseTrendValue = $currentResponseAvg - $previousResponseAvg;
-        if (abs($responseTrendValue) > 0.5) { // Only show trend if change is significant
-            $responseTrend = $responseTrendValue > 0 ? 'positive' : 'negative';
+        // Calculate trend values
+        if ($currentTotalPromises > 0 && $previousTotalPromises > 0) {
+            $currentAttendanceAvg = $currentAttendanceTotal / $currentTotalPromises;
+            $previousAttendanceAvg = $previousAttendanceTotal / $previousTotalPromises;
+            $currentResponseAvg = $currentResponseTotal / $currentTotalPromises;
+            $previousResponseAvg = $previousResponseTotal / $previousTotalPromises;
+            
+            // Attendance trend
+            $attendanceTrendValue = $currentAttendanceAvg - $previousAttendanceAvg;
+            if (abs($attendanceTrendValue) > 0.5) { // Only show trend if change is significant
+                $attendanceTrend = $attendanceTrendValue > 0 ? 'positive' : 'negative';
+            }
+            
+            // Response trend
+            $responseTrendValue = $currentResponseAvg - $previousResponseAvg;
+            if (abs($responseTrendValue) > 0.5) { // Only show trend if change is significant
+                $responseTrend = $responseTrendValue > 0 ? 'positive' : 'negative';
+            }
         }
     }
 }
@@ -122,30 +135,33 @@ $responseHistory = [];
 $rehearsalDates = [];
 $currentRehearsalIndex = 0;
 
-// Get only the last 10 rehearsals for chart data
-$rehearsalsForCharts = array_slice($rehearsals ?? [], -10);
+// Only process chart data if not showing old rehearsals
+if (!$showOld) {
+    // Get only the last 10 rehearsals for chart data
+    $rehearsalsForCharts = array_slice($rehearsals ?? [], -10);
 
-foreach ($rehearsalsForCharts as $rehearsal) {
-    $rehearsalId = $rehearsal['id'];
-    $rehearsalDates[] = $rehearsal['date'];
-    
-    if (isset($stats[$rehearsalId])) {
-        $attending = $stats[$rehearsalId]['attending'] ?? 0;
-        $notAttending = $stats[$rehearsalId]['not_attending'] ?? 0;
-        $noResponse = $stats[$rehearsalId]['no_response'] ?? 0;
-        $total = $attending + $notAttending + $noResponse;
+    foreach ($rehearsalsForCharts as $rehearsal) {
+        $rehearsalId = $rehearsal['id'];
+        $rehearsalDates[] = $rehearsal['date'];
         
-        $attendanceRate = $total > 0 ? ($attending / $total) * 100 : 0;
-        $responseRate = $total > 0 ? (($attending + $notAttending) / $total) * 100 : 0;
+        if (isset($stats[$rehearsalId])) {
+            $attending = $stats[$rehearsalId]['attending'] ?? 0;
+            $notAttending = $stats[$rehearsalId]['not_attending'] ?? 0;
+            $noResponse = $stats[$rehearsalId]['no_response'] ?? 0;
+            $total = $attending + $notAttending + $noResponse;
+            
+            $attendanceRate = $total > 0 ? ($attending / $total) * 100 : 0;
+            $responseRate = $total > 0 ? (($attending + $notAttending) / $total) * 100 : 0;
+            
+            $attendanceHistory[] = round($attendanceRate, 1);
+            $responseHistory[] = round($responseRate, 1);
+        } else {
+            $attendanceHistory[] = 0;
+            $responseHistory[] = 0;
+        }
         
-        $attendanceHistory[] = round($attendanceRate, 1);
-        $responseHistory[] = round($responseRate, 1);
-    } else {
-        $attendanceHistory[] = 0;
-        $responseHistory[] = 0;
+        $currentRehearsalIndex++;
     }
-    
-    $currentRehearsalIndex++;
 }
 
 // Calculate critical sections
@@ -186,7 +202,8 @@ foreach ($rehearsals ?? [] as $rehearsal) {
 ?>
 
 <div class="promises-dashboard">
-    <!-- Modern Analytics Overview -->
+    <!-- Modern Analytics Overview - Only show when not viewing old rehearsals -->
+    <?php if (!$showOld): ?>
     <div class="analytics-overview">
         <div class="analytics-card attendance-card">
             <div class="analytics-card-background"></div>
@@ -201,7 +218,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                     </div>
                 </div>
                 <div class="analytics-chart" id="attendance-chart"></div>
-                <div class="analytics-subtitle"><?= ($showOld ?? false) ? 'Durchschnittliche Teilnahme der letzten 10 eingetragenen Proben' : 'Durchschnittliche Teilnahme für die anstehenden 10 Proben' ?></div>
+                <div class="analytics-subtitle">Durchschnittliche Teilnahme für die anstehenden 10 Proben</div>
                 <div class="analytics-trend">
                     <?php if ($attendanceTrend !== 'neutral'): ?>
                         <i class="fas fa-arrow-<?= $attendanceTrend === 'positive' ? 'up' : 'down' ?>"></i>
@@ -227,7 +244,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                     </div>
                 </div>
                 <div class="analytics-chart" id="response-chart"></div>
-                <div class="analytics-subtitle"><?= ($showOld ?? false) ? 'Durchschnittliche Rückmeldungsquote der letzten 10 eingetragenen Proben' : 'Durchschnittliche Rückmeldungsquote für die anstehenden 10 Proben' ?></div>
+                <div class="analytics-subtitle">Durchschnittliche Rückmeldungsquote für die anstehenden 10 Proben</div>
                 <div class="analytics-trend">
                     <?php if ($responseTrend !== 'neutral'): ?>
                         <i class="fas fa-arrow-<?= $responseTrend === 'positive' ? 'up' : 'down' ?>"></i>
@@ -240,6 +257,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
             </div>
         </div>
     </div>
+    <?php endif; ?>
     
     <!-- Rehearsals Container -->
     <div class="rehearsals-container">
@@ -615,6 +633,9 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeCharts() {
+    <?php if (!$showOld): ?>
+    // Only initialize charts when not showing old rehearsals
+    
     // Attendance chart
     const attendanceOptions = {
         series: [{
@@ -637,7 +658,7 @@ function initializeCharts() {
         xaxis: {
             categories: <?= json_encode(array_map(function($rehearsal) {
                 return ($rehearsal['type'] ?? 'Probe') . ' ' . date('d.m', strtotime($rehearsal['date']));
-            }, $rehearsalsForCharts)) ?>
+            }, $rehearsalsForCharts ?? [])) ?>
         },
         stroke: {
             curve: 'smooth',
@@ -680,7 +701,7 @@ function initializeCharts() {
                 formatter: function(val, opts) {
                     const categories = <?= json_encode(array_map(function($rehearsal) {
                         return ($rehearsal['type'] ?? 'Probe') . ' ' . date('d.m', strtotime($rehearsal['date']));
-                    }, $rehearsalsForCharts)) ?>;
+                    }, $rehearsalsForCharts ?? [])) ?>;
                     return categories[opts.dataPointIndex] || val;
                 }
             },
@@ -692,8 +713,10 @@ function initializeCharts() {
         }
     };
     
-    const attendanceChart = new ApexCharts(document.querySelector("#attendance-chart"), attendanceOptions);
-    attendanceChart.render();
+    if (document.querySelector("#attendance-chart")) {
+        const attendanceChart = new ApexCharts(document.querySelector("#attendance-chart"), attendanceOptions);
+        attendanceChart.render();
+    }
     
     // Response rate chart
     const responseOptions = {
@@ -755,7 +778,7 @@ function initializeCharts() {
                 formatter: function(val, opts) {
                     const categories = <?= json_encode(array_map(function($rehearsal) {
                         return ($rehearsal['type'] ?? 'Probe') . ' ' . date('d.m', strtotime($rehearsal['date']));
-                    }, $rehearsalsForCharts)) ?>;
+                    }, $rehearsalsForCharts ?? [])) ?>;
                     return categories[opts.dataPointIndex] || val;
                 }
             },
@@ -767,8 +790,11 @@ function initializeCharts() {
         }
     };
     
-    const responseChart = new ApexCharts(document.querySelector("#response-chart"), responseOptions);
-    responseChart.render();
+    if (document.querySelector("#response-chart")) {
+        const responseChart = new ApexCharts(document.querySelector("#response-chart"), responseOptions);
+        responseChart.render();
+    }
+    <?php endif; ?>
 }
 
 function initializeTreeView() {
