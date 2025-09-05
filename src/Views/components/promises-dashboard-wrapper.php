@@ -606,8 +606,125 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                     }
                                 }
                                 
+                                // Check if this is leader-only view
+                                $isLeaderOnlyView = isset($isLeaderOnlyView) && $isLeaderOnlyView;
                                 $rootDisplayName = $rootGroup['display_name'] ?? 'Tutti';
+                                
+                                // Debug the frontend rendering
+                                if (isset($sectionPlayers['all'])) {
+                                } else {
+                                }
+                                
+                                // For leader-only view, show leader's section as root
+                                if ($isLeaderOnlyView && !empty($leaderResolvedType)) {
+                                    $groupManager = new \App\Core\GroupManager();
+                                    $rootDisplayName = $groupManager->getDisplayName($leaderResolvedType);
+                                    
+                                    // In leader-only view, find players under the correct section key
+                                    $players = [];
+                                    $sectionId = 'all';
+                                    
+                                    // Try different possible keys where the filtered players might be stored
+                                    if (!empty($sectionPlayers['all'])) {
+                                        $players = $sectionPlayers['all'];
+                                        $sectionId = 'all';
+                                    } else {
+                                        // Look through available section keys to find players for leader's section
+                                        
+                                        // Check if data exists under "Streicher" key (leader's parent section)
+                                        if (!empty($sectionPlayers['Streicher']) && is_array($sectionPlayers['Streicher'])) {
+                                            $players = $sectionPlayers['Streicher'];
+                                            $sectionId = 'Streicher';
+                                        } else {
+                                            // Look through all available section keys to find non-empty one
+                                            foreach ($sectionPlayers as $key => $sectionData) {
+                                                if (!empty($sectionData) && is_array($sectionData)) {
+                                                    $players = $sectionData;
+                                                    $sectionId = $key;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    if (!empty($players)) {
+                                        
+                                        // Calculate section stats
+                                        $sectionAttending = count(array_filter($players, function($m) { return $m['status'] === 'attending'; }));
+                                        $sectionNotAttending = count(array_filter($players, function($m) { return $m['status'] === 'not_attending'; }));
+                                        $sectionNoResponse = count(array_filter($players, function($m) { return $m['status'] === 'no_response'; }));
                                 ?>
+                                <!-- Leader section as root node -->
+                                <li class="tree-node tree-depth-0">
+                                    <button class="tree-node-header" data-toggle="collapse" data-target="#leader-root-<?= $rehearsalId ?>" aria-expanded="false" aria-controls="leader-root-<?= $rehearsalId ?>">
+                                        <i class="tree-node-icon fas fa-chevron-right"></i>
+                                        
+                                        <div class="tree-node-title">
+                                            <span class="tree-node-title-text"><?= htmlspecialchars($rootDisplayName) ?></span>
+                                        </div>
+                                        
+                                        <div class="tree-node-stats">
+                                            <div class="tree-node-stat">
+                                                <i class="tree-node-stat-icon fas fa-question-circle status-<?= DashboardConstants::CSS_NO_RESPONSE_CLASS ?>"></i>
+                                                <span><?= $sectionNoResponse ?></span>
+                                            </div>
+                                            <div class="tree-node-stat">
+                                                <i class="tree-node-stat-icon fas fa-check-circle status-<?= DashboardConstants::CSS_ATTENDING_CLASS ?>"></i>
+                                                <span><?= $sectionAttending ?></span>
+                                            </div>
+                                            <div class="tree-node-stat">
+                                                <i class="tree-node-stat-icon fas fa-times-circle status-<?= DashboardConstants::CSS_NOT_ATTENDING_CLASS ?>"></i>
+                                                <span><?= $sectionNotAttending ?></span>
+                                            </div>
+                                        </div>
+                                    </button>
+                                    
+                                    <div id="leader-root-<?= $rehearsalId ?>" class="tree-node-content collapse">
+                                        <ul class="tree-list">
+                                            <?php
+                                            // For leader-only view, show players directly without section grouping
+                                            if (!empty($players)) {
+                                                // Sort players by status: not_attending first, then attending, then no_response
+                                                usort($players, function($a, $b) {
+                                                    $statusOrder = ['not_attending' => 0, 'attending' => 1, 'no_response' => 2];
+                                                    $aOrder = $statusOrder[$a['status']] ?? 3;
+                                                    $bOrder = $statusOrder[$b['status']] ?? 3;
+                                                    if ($aOrder === $bOrder) {
+                                                        return strcasecmp($a['username'] ?? '', $b['username'] ?? '');
+                                                    }
+                                                    return $aOrder - $bOrder;
+                                                });
+                                                
+                                                foreach ($players as $player): ?>
+                                                    <?php 
+                                                        $member = $player;
+                                                        $status = $player['status'];
+                                                        $additionalInfo = '';
+                                                        include __DIR__ . '/user-item.php'; 
+                                                    ?>
+                                                <?php endforeach;
+                                            } else {
+                                                echo '<li class="tree-user-item">Keine Mitglieder gefunden</li>';
+                                            } ?>
+                                        </ul>
+                                    </div>
+                                </li>
+                                <?php
+                                    } else {
+                                        // No players found, show empty state
+                                        ?>
+                                        <li class="tree-node tree-depth-0">
+                                            <div class="tree-node-header">
+                                                <div class="tree-node-title">
+                                                    <span class="tree-node-title-text"><?= htmlspecialchars($rootDisplayName) ?> - Keine Mitglieder</span>
+                                                </div>
+                                            </div>
+                                        </li>
+                                        <?php
+                                    }
+                                } else {
+                                    // Normal view with tutti as root
+                                    ?>
                                 <!-- Main root node -->
                                 <li class="tree-node tree-depth-0">
                                     <button class="tree-node-header" data-toggle="collapse" data-target="#root-<?= $rehearsalId ?>" aria-expanded="false" aria-controls="root-<?= $rehearsalId ?>">
@@ -618,18 +735,18 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                         </div>
                                         
                                         <div class="tree-node-stats">
-                                                                                <div class="tree-node-stat">
-                                        <i class="tree-node-stat-icon fas fa-question-circle status-<?= DashboardConstants::CSS_NO_RESPONSE_CLASS ?>"></i>
-                                        <span><?= $noResponseCount ?></span>
-                                    </div>
-                                    <div class="tree-node-stat">
-                                        <i class="tree-node-stat-icon fas fa-check-circle status-<?= DashboardConstants::CSS_ATTENDING_CLASS ?>"></i>
-                                        <span><?= $attendingCount ?></span>
-                                    </div>
-                                    <div class="tree-node-stat">
-                                        <i class="tree-node-stat-icon fas fa-times-circle status-<?= DashboardConstants::CSS_NOT_ATTENDING_CLASS ?>"></i>
-                                        <span><?= $notAttendingCount ?></span>
-                                    </div>
+                                            <div class="tree-node-stat">
+                                                <i class="tree-node-stat-icon fas fa-question-circle status-<?= DashboardConstants::CSS_NO_RESPONSE_CLASS ?>"></i>
+                                                <span><?= $noResponseCount ?></span>
+                                            </div>
+                                            <div class="tree-node-stat">
+                                                <i class="tree-node-stat-icon fas fa-check-circle status-<?= DashboardConstants::CSS_ATTENDING_CLASS ?>"></i>
+                                                <span><?= $attendingCount ?></span>
+                                            </div>
+                                            <div class="tree-node-stat">
+                                                <i class="tree-node-stat-icon fas fa-times-circle status-<?= DashboardConstants::CSS_NOT_ATTENDING_CLASS ?>"></i>
+                                                <span><?= $notAttendingCount ?></span>
+                                            </div>
                                         </div>
                                     </button>
                                     
@@ -647,6 +764,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                         </ul>
                                     </div>
                                 </li>
+                                <?php } ?>
                             </ul>
                         </div>
                     </div>
