@@ -532,6 +532,11 @@ class PromiseController extends Controller
         // Get all users in the current orchestra
         $users = $this->userModel->getOrchestraMembers($_SESSION['orchestra_id']);
         
+        // Get orchestra settings
+        $orchestraModel = new \App\Models\Orchestra();
+        $orchestra = $orchestraModel->findById($_SESSION['orchestra_id']);
+        $showRehearsalInsights = !empty($orchestra['show_rehearsal_insights']);
+        
         // Initialize GroupManager for dynamic section handling
         $groupManager = new \App\Core\GroupManager();
         $allSections = $groupManager->getAllSections();
@@ -613,7 +618,8 @@ class PromiseController extends Controller
             'rehearsals' => $rehearsals,
             'stats' => $stats,
             'membersBySection' => $membersBySection,
-            'showOld' => $showOld
+            'showOld' => $showOld,
+            'showRehearsalInsights' => $showRehearsalInsights
         ]);
     }
 } 

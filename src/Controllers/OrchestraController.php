@@ -315,12 +315,16 @@ class OrchestraController extends Controller
         // Leaders can view all sections toggle
         $leadersCanViewAll = isset($_POST['leaders_can_view_all_sections']) ? 1 : 0;
         
+        // Show rehearsal insights toggle
+        $showRehearsalInsights = isset($_POST['show_rehearsal_insights']) ? 1 : 0;
+        
         // Update orchestra
         $result = $this->orchestraModel->update($_SESSION['orchestra_id'], [
             'name' => $name,
             'token' => $token,
             'leader_pw' => $leaderPassword,
-            'leaders_can_view_all_sections' => $leadersCanViewAll
+            'leaders_can_view_all_sections' => $leadersCanViewAll,
+            'show_rehearsal_insights' => $showRehearsalInsights
         ]);
         
         if ($result) {

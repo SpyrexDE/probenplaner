@@ -525,8 +525,8 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                     $insufficientData = $deviationAnalysis['insufficient_data'];
                     ?>
                     
-                    <!-- Critical Sections & Smart Insights - Hidden for leaders -->
-                    <?php if (!($isLeader ?? false)): ?>
+                    <!-- Critical Sections & Smart Insights - Hidden for leaders and when disabled -->
+                    <?php if (!($isLeader ?? false) && ($showRehearsalInsights ?? false)): ?>
                     <div class="rehearsal-insights">
                         <div class="critical-sections">
                             <h4><i class="fas fa-exclamation-triangle"></i> Kritische Register</h4>
