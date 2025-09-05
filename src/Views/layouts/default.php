@@ -249,8 +249,8 @@ if (isset($_SESSION['username'])): ?>
                     ];
                 } elseif (isset($_SESSION['role']) && $_SESSION['role'] === 'leader') {
                     $menu = [
-                        ['label' => 'Rückmeldungen', 'href' => '/promises/leader', 'page' => 'leader', 'icon' => 'fas fa-chart-bar'],
                         ['label' => 'Meine Meldungen', 'href' => '/promises', 'page' => 'promises', 'icon' => 'fas fa-clipboard-check'],
+                        ['label' => 'Rückmeldungen', 'href' => '/promises/leader', 'page' => 'leader', 'icon' => 'fas fa-chart-bar'],
                         ['label' => 'Probenplan', 'href' => '/probenplan', 'page' => 'probenplan', 'icon' => 'fas fa-list'],
                         ['label' => 'Profil bearbeiten', 'href' => '/profile', 'page' => 'profile', 'icon' => 'fas fa-user-cog'],
                         ['label' => 'Logout', 'href' => '/logout', 'page' => null, 'icon' => 'fas fa-sign-out-alt'],

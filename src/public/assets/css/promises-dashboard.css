@@ -32,9 +32,9 @@
   min-height: 280px;
 }
 
-.analytics-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+
+.analytics-card:focus-within {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1) !important;
 }
 
 .analytics-card-background {
@@ -47,9 +47,6 @@
   transition: opacity 0.3s ease;
 }
 
-.analytics-card:hover .analytics-card-background {
-  opacity: 0.08;
-}
 
 .attendance-card .analytics-card-background {
   background: linear-gradient(135deg, #10b981 0%, #34d399 50%, #6ee7b7 100%);
@@ -289,9 +286,9 @@
   overflow: hidden;
 }
 
-.metric-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+
+.metric-card:focus-within {
+  box-shadow: var(--shadow-lg) !important;
 }
 
 .metric-card::before {
@@ -416,9 +413,9 @@
   transition: all var(--transition-base);
 }
 
-.rehearsal-compact:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-lg);
+
+.rehearsal-compact:focus-within {
+  box-shadow: var(--shadow-lg) !important;
 }
 
 .rehearsal-compact-header {
@@ -966,9 +963,9 @@
   overflow: hidden;
 }
 
-.section-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+
+.section-card:focus-within {
+  box-shadow: var(--shadow-md) !important;
 }
 
 .section-card.expandable {
@@ -1115,9 +1112,9 @@
   border: 1px solid transparent;
 }
 
-.player-item:hover {
-  background: var(--color-bg-tertiary);
-  transform: translateX(2px);
+
+.player-item:focus-within {
+  background: var(--color-bg-tertiary) !important;
 }
 
 .player-status-icon {

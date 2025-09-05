@@ -42,6 +42,10 @@ function sortGroups($groups) {
 
 
 <div class="container-app">
+    <div class="text-center mb-6">
+        <h1 class="page-title">Rückmeldungen</h1>
+    </div>
+    
     <?php if (empty($rehearsals)): ?>
         <?php 
             $title = 'Keine Proben gefunden';

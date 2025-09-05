@@ -46,12 +46,6 @@
   min-height: 36px;
 }
 
-.rehearsal-card:hover {
-  border-color: var(--color-border);
-  border-left-color: var(--color-primary);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
-}
 
 .rehearsal-card.status-attending {
   border-left: 4px solid var(--color-success);
@@ -273,13 +267,11 @@
 .action-btn:hover {
   border-color: var(--color-primary);
   background-color: var(--color-primary-50);
-  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
 .action-btn:hover img {
   filter: brightness(1);
-  transform: scale(1.1);
 }
 
 .action-btn:active {
@@ -2298,9 +2290,6 @@
   box-shadow: var(--shadow-sm) !important;
 }
 
-.rehearsal-card:hover {
-  box-shadow: var(--shadow-md) !important;
-}
 
 .confirmation-card {
   box-shadow: var(--shadow-lg) !important;
@@ -2315,9 +2304,6 @@
   box-shadow: var(--shadow-sm) !important;
 }
 
-.rehearsal-card:hover:focus-within {
-  box-shadow: var(--shadow-md) !important;
-}
 
 .confirmation-card:focus-within {
   box-shadow: var(--shadow-lg) !important;
@@ -2351,10 +2337,10 @@
   transition: all var(--transition-base);
 }
 
-.modern-card:hover {
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1), 0 15px 35px rgba(0, 0, 0, 0.07);
-  transform: translateY(-1px);
+.modern-card:focus-within {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px rgba(0, 0, 0, 0.1) !important;
 }
+
 
 .modern-card-header {
   background: linear-gradient(135deg, var(--color-gray-50) 0%, var(--color-white) 100%);
@@ -2536,9 +2522,22 @@
   transform: translateY(-1px);
 }
 
-.btn-icon {
+.btn-icon-content {
   width: 16px;
   height: 16px;
+}
+
+/* Icon styles for buttons */
+.btn-modern .btn-icon {
+  width: auto;
+  height: auto;
+  padding: 0;
+  margin-right: var(--space-2);
+  font-size: inherit;
+}
+
+.btn-modern .btn-icon:last-child {
+  margin-right: 0;
 }
 
 .danger-zone-content {

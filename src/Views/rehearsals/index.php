@@ -1,11 +1,10 @@
 <?php $this->layout('layouts/default', ['title' => 'Termine', 'currentPage' => $currentPage ?? 'rehearsals']) ?>
 
-<div class="container-app">
-    <div class="page-header">
+<div class="container-app pb-20">
+    <div class="text-center mb-6">
         <h1 class="page-title">Termine</h1>
-        <p class="page-subtitle">Verwalte alle Proben und Konzerte</p>
     </div>
-
+    
     <?php if (empty($rehearsals)): ?>
         <?php 
             $title = 'Keine Termine gefunden';

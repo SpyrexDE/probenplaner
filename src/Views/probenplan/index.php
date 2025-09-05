@@ -1,7 +1,7 @@
 <div class="max-w-7xl mx-auto px-4 mt-4">
     <div class="w-full">
-        <div class="w-full text-center">
-            <h1>Probenplan</h1>
+        <div class="w-full text-center mb-6">
+            <h1 class="page-title">Probenplan</h1>
             <h5>Stand: <?= date("d.m.Y") ?></h5>
             
             <div class="flex flex-wrap gap-2 mb-6 justify-center">
