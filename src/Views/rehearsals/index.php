@@ -24,22 +24,16 @@
                     $time_display = $start_time . ' - ' . $end_time;
                     $location = $rehearsal['location'] ?? 'TBA';
                     
-                    // Determine rehearsal groups
+                    // Determine rehearsal groups using modern system
                     $groupKeys = $rehearsal['groups'] ?? [];
                     
-                    // Check if it's a small group
-                    $isSmallGroup = isset($rehearsal['is_small_group']) && $rehearsal['is_small_group'] == 1;
-                    
-                    // Add * suffix to group names if it's a small group
-                    if ($isSmallGroup) {
-                        foreach ($groupKeys as &$group) {
-                            $group .= '*';
-                        }
-                    }
-                    
-                    // Convert group keys to smart display
+                    // Generate smart display text with integrated Kleingruppe handling
                     $smartDisplay = new \App\Core\SmartGroupDisplay();
-                    $groupsText = $smartDisplay->generateDescription($groupKeys);
+                    $groupsText = $smartDisplay->generateDescription(
+                        $groupKeys, 
+                        $rehearsal, 
+                        false // Not admin view
+                    );
                     
                     // Keep comma-separated list and let CSS handle line breaks
                     $groupsDisplay = $groupsText;

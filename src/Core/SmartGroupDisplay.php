@@ -181,22 +181,35 @@ class SmartGroupDisplay
     }
     
     /**
-     * Generate smart description for selected groups
+     * Generate smart description for selected groups with rehearsal context
+     * 
+     * @param array $selectedGroups Array of selected group IDs
+     * @param array|null $rehearsal Optional rehearsal data for context (e.g., small group status)
+     * @param bool $isAdminView Whether this is an admin view
+     * @return string Natural language description
+     */
+    public function generateDescription(array $selectedGroups, ?array $rehearsal = null, bool $isAdminView = false): string
+    {
+        $baseDescription = $this->generateBaseDescription($selectedGroups);
+        
+        // Apply Kleingruppe prefix if this is a small group rehearsal
+        if ($rehearsal && \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal)) {
+            return \App\Core\RehearsalTypeManager::LABEL_KLEINGRUPPE . ': ' . $baseDescription;
+        }
+        
+        return $baseDescription;
+    }
+    
+    /**
+     * Generate base smart description for selected groups (without context)
      * 
      * @param array $selectedGroups Array of selected group IDs
      * @return string Natural language description
      */
-    public function generateDescription(array $selectedGroups): string
+    public function generateBaseDescription(array $selectedGroups): string
     {
         if (empty($selectedGroups)) {
             return '';
-        }
-        
-        // Handle single root group
-        if (count($selectedGroups) === 1) {
-            $singleGroup = $selectedGroups[0];
-            $displayName = $this->groupManager->getDisplayName($singleGroup);
-            return $displayName;
         }
         
         // Handle single root group
@@ -1734,7 +1747,7 @@ class SmartGroupDisplay
             ];
         }
         
-        $analysis['final_description'] = $this->generateDescription($selectedGroups);
+        $analysis['final_description'] = $this->generateBaseDescription($selectedGroups);
         
         return $analysis;
     }

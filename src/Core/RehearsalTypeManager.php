@@ -1,0 +1,98 @@
+<?php
+namespace App\Core;
+
+/**
+ * Rehearsal Type Manager
+ * 
+ * Modern, scalable system for handling rehearsal types and small group logic.
+ * Replaces legacy hardcoded strings and magic numbers with maintainable constants.
+ */
+class RehearsalTypeManager
+{
+    // Rehearsal Type Constants
+    public const TYPE_PROBE = 'Probe';
+    public const TYPE_REGISTERPROBE = 'Registerprobe';
+    public const TYPE_KONZERT = 'Konzert';
+    public const TYPE_GENERALPROBE = 'Generalprobe';
+    public const TYPE_KONZERTREISE = 'Konzertreise';
+    
+    // Small Group Constants
+    public const SMALL_GROUP_ENABLED = 1;
+    public const SMALL_GROUP_DISABLED = 0;
+    
+    // Display Labels
+    public const LABEL_KLEINGRUPPE = 'Kleingruppe';
+    public const LABEL_KLEINGRUPPENPROBE = 'Kleingruppenprobe';
+    
+    /**
+     * Check if a rehearsal is a small group rehearsal
+     */
+    public static function isSmallGroupRehearsal(array $rehearsal): bool
+    {
+        return isset($rehearsal['is_small_group']) && 
+               (int)$rehearsal['is_small_group'] === self::SMALL_GROUP_ENABLED;
+    }
+    
+    /**
+     * Check if a user is in a small group
+     */
+    public static function isUserInSmallGroup(array $user): bool
+    {
+        return isset($user['is_small_group']) && 
+               (int)$user['is_small_group'] === self::SMALL_GROUP_ENABLED;
+    }
+    
+    /**
+     * Get rehearsal type from database field
+     */
+    public static function getRehearsalType(array $rehearsal): string
+    {
+        return $rehearsal['type'] ?? self::TYPE_PROBE;
+    }
+    
+    /**
+     * Check if rehearsal type should be displayed (not default "Probe")
+     */
+    public static function shouldDisplayType(string $type): bool
+    {
+        return $type !== self::TYPE_PROBE;
+    }
+    
+    /**
+     * Check if user should see this rehearsal based on small group logic
+     */
+    public static function canUserSeeRehearsal(array $user, array $rehearsal): bool
+    {
+        $userIsSmallGroup = self::isUserInSmallGroup($user);
+        $rehearsalIsSmallGroup = self::isSmallGroupRehearsal($rehearsal);
+        
+        // If it's a small group rehearsal, only small group users should see it
+        if ($rehearsalIsSmallGroup && !$userIsSmallGroup) {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Get all valid rehearsal types
+     */
+    public static function getAllTypes(): array
+    {
+        return [
+            self::TYPE_PROBE,
+            self::TYPE_REGISTERPROBE,
+            self::TYPE_KONZERT,
+            self::TYPE_GENERALPROBE,
+            self::TYPE_KONZERTREISE,
+        ];
+    }
+    
+    /**
+     * Validate rehearsal type
+     */
+    public static function isValidType(string $type): bool
+    {
+        return in_array($type, self::getAllTypes());
+    }
+}

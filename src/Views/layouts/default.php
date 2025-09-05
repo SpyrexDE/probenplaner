@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
     <title><?= isset($_SESSION['orchestra_name']) ? $_SESSION['orchestra_name'] : (isset($title) ? $title : APP_NAME) ?></title>
     
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Aldrich&family=Goldman:wght@400;700&family=Kantumruy+Pro:ital,wght@0,100..700;1,100..700&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Sansation:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap" rel="stylesheet">
+    
     <!-- Theme and Component Styles -->
     <link rel="stylesheet" href="/assets/css/theme.css">
     <link rel="stylesheet" href="/assets/css/components.css">
@@ -286,9 +291,9 @@ if (isset($_SESSION['username'])): ?>
     </div>
 <?php else: ?>
 <?php 
-// Hide topbar on login and register pages
+// Hide topbar on login, register, and admin verify pages
 $hideNavbar = false;
-if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'register')) {
+if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'register' || $currentPage === 'create_orchestra')) {
     $hideNavbar = true;
 }
 ?>

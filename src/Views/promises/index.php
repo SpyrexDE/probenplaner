@@ -60,21 +60,16 @@ function sortGroups($groups) {
             $note = $promises[$rehearsal['id']]['note'];
         }
         
-        // Get group information
+                                        // Get group information
         $groupArray = $rehearsal['groups'] ?? [];
         
-        // Check if it's a small group
-        $isSmallGroup = isset($rehearsal['is_small_group']) && $rehearsal['is_small_group'] == 1;
-        
-        // Add * suffix to group names if it's a small group
-        if ($isSmallGroup) {
-            foreach ($groupArray as &$group) {
-                $group .= '*';
-            }
-        }
-        
+        // Generate smart display text with integrated Kleingruppe handling
         $smartDisplay = new \App\Core\SmartGroupDisplay();
-        $groupsText = $smartDisplay->generateDescription($groupArray);
+        $groupsText = $smartDisplay->generateDescription(
+            $groupArray, 
+            $rehearsal, 
+            false // Not admin view
+        );
         
         // Prepare time display
         $start_time_prom = isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, 5) : '??:??';
@@ -101,33 +96,41 @@ function sortGroups($groups) {
                         $dayOfWeek = date('w', strtotime($rehearsal['date']));
                         $weekdayShort = $germanWeekdays[$dayOfWeek];
                         
-                        // Determine rehearsal type
-                        $rehearsalType = 'Probe';
-                        if (in_array('Registerprobe', $groupArray)) {
-                            $rehearsalType = 'Registerprobe';
-                        } elseif (in_array('Konzert', $groupArray)) {
-                            $rehearsalType = 'Konzert';
-                        } elseif (in_array('Generalprobe', $groupArray)) {
-                            $rehearsalType = 'Generalprobe';
-                        } elseif (in_array('Konzertreise', $groupArray)) {
-                            $rehearsalType = 'Konzertreise';
-                        }
+                        // Get rehearsal type using modern manager
+                        $rehearsalType = \App\Core\RehearsalTypeManager::getRehearsalType($rehearsal);
+                        
+                        // Check if we should show the rehearsal type badge
+                        $showRehearsalType = \App\Core\RehearsalTypeManager::shouldDisplayType($rehearsalType);
+                        
+                        // Check if location is different from normal rehearsal
+                        $normalLocation = 'Probenraum'; // Default normal rehearsal location
+                        $showLocation = !empty($rehearsal['location']) && 
+                                       $rehearsal['location'] !== $normalLocation &&
+                                       strtolower($rehearsal['location']) !== strtolower($normalLocation);
                         ?>
-                        <div class="rehearsal-weekday"><?= strtoupper($weekdayShort) ?></div>
                         <div class="rehearsal-main-info">
-                            <div class="rehearsal-date"><?= htmlspecialchars($rehearsal['date_formatted'] ?? $rehearsal['date']) ?></div>
-                            <div class="rehearsal-type-badge"><?= htmlspecialchars($rehearsalType) ?></div>
+                            <div class="rehearsal-content-row">
+                                <div class="rehearsal-weekday"><?= strtoupper($weekdayShort) ?></div>
+                                <div class="rehearsal-datetime-block">
+                                    <div class="rehearsal-date">
+                                        <?= htmlspecialchars($rehearsal['date_formatted'] ?? $rehearsal['date']) ?>
+                                    </div>
+                                    <div class="rehearsal-time-container">
+                                        <div class="rehearsal-time stretch-text"><?= htmlspecialchars($time_display_prom) ?></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="rehearsal-badges">
+                                <?php if ($showRehearsalType): ?>
+                                    <div class="rehearsal-type-badge"><?= htmlspecialchars($rehearsalType) ?></div>
+                                <?php endif; ?>
+                                <div class="rehearsal-section-badge"><?= $groupsText ?></div>
+                                <?php if ($showLocation): ?>
+                                    <div class="rehearsal-location-badge"><?= htmlspecialchars($rehearsal['location']) ?></div>
+                                <?php endif; ?>
+                            </div>
                         </div>
-                    </div>
-                    <div class="rehearsal-details">
-                        <div class="rehearsal-time-location">
-                            <span class="rehearsal-time"><?= htmlspecialchars($time_display_prom) ?></span>
-                            <span class="rehearsal-location"><?= htmlspecialchars($rehearsal['location']) ?></span>
-                        </div>
-                        <div class="rehearsal-groups">
-                            <?= $groupsText ?>
-                            <span class="rehearsal-note-dot <?= !empty($note) ? 'visible' : '' ?>"></span>
-                        </div>
+                        <span class="rehearsal-note-dot <?= !empty($note) ? 'visible' : '' ?>"></span>
                     </div>
                 </div>
                 <div class="rehearsal-actions">
@@ -379,4 +382,28 @@ $(document).ready(function() {
         $('.rehearsal-card').has('#' + id).find('.action-btn').removeClass('disabled loading');
     }
 });
+
+// Stretch text functionality for time display
+function stretchTexts() {
+    document.querySelectorAll('.stretch-text').forEach(el => {
+        // Get the date element from the same datetime block
+        const datetimeBlock = el.closest('.rehearsal-datetime-block');
+        const dateElement = datetimeBlock.querySelector('.rehearsal-date');
+        
+        if (dateElement) {
+            // Set time container width to match date width
+            const dateWidth = dateElement.offsetWidth;
+            el.parentElement.style.width = dateWidth + 'px';
+            
+            // Apply stretching
+            el.style.transform = 'translateY(-50%)';
+            const scale = el.parentElement.offsetWidth / el.offsetWidth;
+            el.style.transform = `translateY(-50%) scaleX(${scale})`;
+        }
+    });
+}
+
+// Run on load and resize
+window.addEventListener('load', stretchTexts);
+window.addEventListener('resize', stretchTexts);
 </script>

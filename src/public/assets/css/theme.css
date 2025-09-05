@@ -159,7 +159,7 @@
   --breakpoint-md: 768px;
   --breakpoint-lg: 1024px;
   --breakpoint-xl: 1280px;
-  --breakpoint-sidebar: 1200px;
+  --breakpoint-sidebar: 800px;
 }
 
 /* === GLOBAL BASE STYLES === */
@@ -810,25 +810,6 @@ label, .form-label {
 }
 
 /* Responsive utilities */
-@media (max-width: 768px) {
-  :root {
-    --space-4: 0.75rem;
-    --space-6: 1rem;
-    --card-padding: var(--space-4);
-  }
+/* Mobile styles removed for consistent design */
 
-  .container-fluid-themed {
-    padding: var(--space-1) var(--space-1) var(--space-16);
-  }
-}
-
-@media (max-width: 480px) {
-  .page-title {
-    font-size: var(--font-size-2xl);
-  }
-  
-  .btn-base {
-    padding: var(--space-2) var(--space-3);
-    font-size: var(--font-size-sm);
-  }
-}
+/* Mobile styles removed for consistent design */

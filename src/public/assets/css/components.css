@@ -36,14 +36,14 @@
   border-left: 4px solid var(--color-gray-300);
   border-radius: var(--radius-lg);
   margin: var(--space-2) 0;
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-3) var(--space-4);
   transition: all var(--transition-base);
   position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-3);
   box-shadow: var(--shadow-sm);
-  min-height: 72px;
+  min-height: 36px;
 }
 
 .rehearsal-card:hover {
@@ -77,17 +77,19 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 0;
 }
 
 .rehearsal-card-header {
   display: flex;
-  align-items: center;
-  gap: var(--space-4);
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-bottom: var(--space-1);
+  width: 100%;
 }
 
 .rehearsal-weekday {
-  font-size: 32px;
+  font-size: 24px;
   font-weight: 900;
   color: var(--color-primary);
   line-height: 1;
@@ -99,6 +101,10 @@
   background-clip: text;
   position: relative;
   text-shadow: 0 2px 4px rgba(71, 140, 244, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: var(--space-3);
 }
 
 .rehearsal-weekday::after {
@@ -117,8 +123,21 @@
 .rehearsal-main-info {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
   flex: 1;
+  min-width: 0;
+}
+
+.rehearsal-content-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.rehearsal-datetime-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 .rehearsal-date {
@@ -126,180 +145,87 @@
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
   line-height: 1.2;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  width: fit-content;
 }
 
 .rehearsal-type-badge {
-  font-size: var(--font-size-xs);
+  font-size: 10px;
   font-weight: var(--font-weight-semibold);
-  color: var(--color-primary);
+  color: #7c3aed;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: var(--color-primary-100);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-base);
+  letter-spacing: 0.3px;
+  background: #ede9fe;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
   display: inline-block;
   width: fit-content;
-  border: 1px solid var(--color-primary-200);
+  border: 1px solid #c4b5fd;
+  margin-right: var(--space-1);
 }
 
-.rehearsal-details {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.rehearsal-time-location {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-primary);
-  font-weight: var(--font-weight-medium);
+.rehearsal-time-container {
+  height: 18px;
+  overflow: hidden;
+  position: relative;
+  margin-top: -2px;
+  width: 100%;
 }
 
 .rehearsal-time {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  background: var(--color-bg-secondary);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border-light);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.rehearsal-time::before {
-  content: '🕐';
-  font-size: 14px;
-  opacity: 0.7;
-}
-
-.rehearsal-location {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  background: var(--color-bg-secondary);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border-light);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.rehearsal-location::before {
-  content: '📍';
-  font-size: 14px;
-  opacity: 0.7;
-}
-
-.rehearsal-groups {
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-  word-wrap: break-word;
-  overflow-wrap: break-word;
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  font-family: 'Kantumruy Pro', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  white-space: nowrap;
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  transform-origin: left center;
+}
+
+/* Location now displayed as badge only when different from normal */
+
+.rehearsal-section-badge {
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  background: var(--color-gray-100);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  display: inline-block;
+  width: fit-content;
+  border: 1px solid var(--color-gray-200);
+}
+
+.rehearsal-location-badge {
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  background: var(--color-blue-100);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  display: inline-block;
+  width: fit-content;
+  border: 1px solid var(--color-blue-200);
+}
+
+.rehearsal-badges {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-primary-100) 100%);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-primary-200);
-  box-shadow: 0 1px 3px rgba(71, 140, 244, 0.1);
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+  flex-wrap: wrap;
 }
 
-.rehearsal-groups::before {
-  content: '👥';
-  font-size: 14px;
-  opacity: 0.8;
-}
 
-/* Responsive design for rehearsal cards */
-@media (max-width: 768px) {
-  .rehearsal-card-header {
-    gap: var(--space-3);
-  }
-  
-  .rehearsal-weekday {
-    font-size: 28px;
-    min-width: 35px;
-  }
-  
-  .rehearsal-date {
-    font-size: var(--font-size-base);
-  }
-  
-  .rehearsal-type-badge {
-    font-size: 10px;
-    padding: 2px var(--space-2);
-  }
-  
-  .rehearsal-time-location {
-    gap: var(--space-2);
-  }
-  
-  .rehearsal-time,
-  .rehearsal-location {
-    padding: var(--space-1) var(--space-2);
-    gap: var(--space-1);
-  }
-  
-  .rehearsal-time::before,
-  .rehearsal-location::before,
-  .rehearsal-groups::before {
-    font-size: 12px;
-  }
-  
-  .rehearsal-groups {
-    padding: var(--space-1) var(--space-2);
-  }
-  
-  .rehearsal-card {
-    padding: var(--space-3) var(--space-4);
-  }
-}
-
-@media (max-width: 480px) {
-  .rehearsal-card-header {
-    gap: var(--space-2);
-  }
-  
-  .rehearsal-weekday {
-    font-size: 24px;
-    min-width: 30px;
-  }
-  
-  .rehearsal-date {
-    font-size: var(--font-size-sm);
-  }
-  
-  .rehearsal-type-badge {
-    font-size: 9px;
-    padding: 1px var(--space-1);
-  }
-  
-  .rehearsal-time,
-  .rehearsal-location {
-    padding: 2px var(--space-1);
-    gap: 2px;
-    font-size: var(--font-size-xs);
-  }
-  
-  .rehearsal-time::before,
-  .rehearsal-location::before,
-  .rehearsal-groups::before {
-    font-size: 10px;
-  }
-  
-  .rehearsal-groups {
-    padding: 2px var(--space-1);
-    font-size: var(--font-size-xs);
-  }
-  
-  .rehearsal-card {
-    padding: var(--space-2) var(--space-3);
-  }
-}
+/* Mobile styles removed for consistent design */
 
 .rehearsal-note-dot {
   width: 8px;
@@ -456,7 +382,7 @@
   background-color: var(--color-gray-400);
 }
 
-@media (min-width: 1200px) {
+@media (min-width: 800px) {
   .sidebar {
     transform: translateX(0);
     position: fixed;
@@ -834,8 +760,17 @@
   pointer-events: auto;
 }
 
+#wrapper.toggled .top-nav-left {
+  display: none;
+}
+
+#wrapper.toggled .top-nav-actions {
+  display: flex;
+  margin-left: auto;
+}
+
 /* Mobile sidebar behavior */
-@media (max-width: 1199px) {
+@media (max-width: 799px) {
   .sidebar {
     transform: translateX(-100%);
   }
@@ -979,6 +914,57 @@
   margin-top: var(--space-2);
 }
 
+/* === ADMIN VERIFY PAGE === */
+.admin-verify-back {
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  z-index: 10;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-gray-600);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-base);
+  transition: all var(--transition-fast);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.back-link:hover {
+  color: var(--color-primary);
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.back-link i {
+  font-size: var(--font-size-xs);
+}
+
+.verify-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  text-align: center;
+  margin: 0 0 var(--space-3) 0;
+}
+
+.verify-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+  text-align: center;
+  margin: 0 0 var(--space-6) 0;
+  line-height: 1.5;
+}
+
 .auth-link {
   display: inline-block;
   font-size: var(--font-size-sm);
@@ -1031,100 +1017,7 @@
 }
 
 /* === RESPONSIVE DESIGN === */
-@media (max-width: 768px) {
-  .rehearsal-card {
-    margin: var(--space-1) 0;
-    padding: var(--space-3);
-    gap: var(--space-3);
-  }
-
-  .rehearsal-card-content {
-    gap: var(--space-3);
-  }
-
-  .rehearsal-actions {
-    gap: var(--space-2);
-  }
-
-  .action-btn {
-    width: 48px;
-    height: 48px;
-    border-radius: var(--radius-md);
-  }
-
-  .action-btn img {
-    width: 26px;
-    height: 26px;
-  }
-
-  .rehearsal-date-time {
-    font-size: var(--font-size-sm);
-  }
-
-  .rehearsal-type {
-    font-size: var(--font-size-xs);
-  }
-
-  .rehearsal-time,
-  .rehearsal-location {
-    font-size: var(--font-size-xs);
-  }
-
-  .container-fluid-themed {
-    padding: var(--space-1) var(--space-1) var(--space-16);
-  }
-
-  .login-container {
-    padding-bottom: 10vh;
-  }
-
-  .login-logo img {
-    max-width: 150px;
-    max-height: 90px;
-  }
-}
-
-@media (max-width: 480px) {
-  .rehearsal-card {
-    padding: var(--space-2) var(--space-3);
-    gap: var(--space-2);
-    margin: var(--space-1) 0;
-  }
-
-  .rehearsal-card-content {
-    gap: var(--space-2);
-  }
-
-  .rehearsal-card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-2);
-  }
-
-  .rehearsal-details {
-    gap: var(--space-1);
-  }
-
-  .rehearsal-groups,
-  .rehearsal-location {
-    margin-left: 0;
-  }
-
-  .rehearsal-actions {
-    gap: var(--space-1);
-  }
-
-  .action-btn {
-    width: 44px;
-    height: 44px;
-    border-radius: var(--radius-base);
-  }
-
-  .action-btn img {
-    width: 24px;
-    height: 24px;
-  }
-}
+/* Mobile styles removed for consistent design */
 
 /* Sidebar Overlay */
 .sidebar-overlay {
@@ -1141,14 +1034,14 @@
   pointer-events: none;
 }
 
-@media (max-width: 1199px) {
+@media (max-width: 799px) {
   .sidebar-overlay {
     opacity: 0;
     pointer-events: none;
   }
 }
 
-@media (min-width: 1200px) {
+@media (min-width: 800px) {
   .top-nav-menu-toggle {
     display: none;
   }

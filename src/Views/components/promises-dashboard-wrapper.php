@@ -202,8 +202,8 @@ foreach ($rehearsals ?? [] as $rehearsal) {
 ?>
 
 <div class="promises-dashboard">
-    <!-- Modern Analytics Overview - Only show when not viewing old rehearsals -->
-    <?php if (!$showOld): ?>
+    <!-- Modern Analytics Overview - Only show when not viewing old rehearsals and not for leaders -->
+    <?php if (!$showOld && !($isLeader ?? false)): ?>
     <div class="analytics-overview">
         <div class="analytics-card attendance-card">
             <div class="analytics-card-background"></div>
@@ -342,7 +342,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                     <i class="fas fa-users"></i>
                                     <?php
                                     $smartDisplay = new \App\Core\SmartGroupDisplay();
-                                    echo htmlspecialchars($smartDisplay->generateDescription($rehearsal['groups'] ?? []));
+                                    echo htmlspecialchars($smartDisplay->generateDescription($rehearsal['groups'] ?? [], $rehearsal, false));
                                     ?>
                                 </span>
                             </div>
@@ -525,7 +525,8 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                     $insufficientData = $deviationAnalysis['insufficient_data'];
                     ?>
                     
-                    <!-- Critical Sections & Smart Insights -->
+                    <!-- Critical Sections & Smart Insights - Hidden for leaders -->
+                    <?php if (!($isLeader ?? false)): ?>
                     <div class="rehearsal-insights">
                         <div class="critical-sections">
                             <h4><i class="fas fa-exclamation-triangle"></i> Kritische Register</h4>
@@ -573,6 +574,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                             </div>
                         </div>
                     </div>
+                    <?php endif; ?>
                     
                     <!-- Tree View -->
                     <div class="rehearsal-tree-view">

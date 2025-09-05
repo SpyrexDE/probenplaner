@@ -74,7 +74,7 @@
                 <div class="checkbox-group">
                     <div class="checkbox-item">
                         <input type="checkbox" id="is_small_group" name="is_small_group" value="1" <?= !empty($formData['is_small_group']) ? 'checked' : '' ?>>
-                        <label for="is_small_group">Kleingruppe</label>
+                        <label for="is_small_group"><?= \App\Core\RehearsalTypeManager::LABEL_KLEINGRUPPE ?></label>
                     </div>
                 </div>
                 

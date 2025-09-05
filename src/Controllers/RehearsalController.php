@@ -95,7 +95,7 @@ class RehearsalController extends Controller
             $groupValidationErrors = \App\Core\RehearsalGroupProcessor::validateGroups($finalGroups);
             
             // Check if it's a small group rehearsal
-            $isSmallGroup = isset($_POST['is_small_group']) && $_POST['is_small_group'] === '1';
+            $isSmallGroup = isset($_POST['is_small_group']) && $_POST['is_small_group'] === (string)\App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED;
             
             // Validate input
             $errors = [];
@@ -248,7 +248,7 @@ class RehearsalController extends Controller
             $groupValidationErrors = \App\Core\RehearsalGroupProcessor::validateGroups($finalGroups);
             
             // Check if it's a small group rehearsal
-            $isSmallGroup = isset($_POST['is_small_group']) && $_POST['is_small_group'] === '1';
+            $isSmallGroup = isset($_POST['is_small_group']) && $_POST['is_small_group'] === (string)\App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED;
             
             // Validate input
             $errors = [];

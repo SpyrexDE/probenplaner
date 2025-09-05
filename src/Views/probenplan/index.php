@@ -49,7 +49,7 @@
                                         <?php 
                                         if (isset($rehearsal['groups']) && is_array($rehearsal['groups'])) {
                                             $smartDisplay = new \App\Core\SmartGroupDisplay();
-                                            echo htmlspecialchars($smartDisplay->generateDescription($rehearsal['groups']));
+                                            echo htmlspecialchars($smartDisplay->generateDescription($rehearsal['groups'], $rehearsal, false));
                                         }
                                         ?>
                                     </td>

@@ -56,9 +56,10 @@ class PromiseController extends Controller
         // Get show old parameter
         $showOld = isset($_GET['showOld']);
         
-        // Get rehearsals for the user's type
+        // Get rehearsals for the user's type using modern system
         $userType = $_SESSION['type'];
-        $isSmallGroup = isset($_SESSION['is_small_group']) && $_SESSION['is_small_group'];
+        $user = ['is_small_group' => $_SESSION['is_small_group'] ?? \App\Core\RehearsalTypeManager::SMALL_GROUP_DISABLED];
+        $isSmallGroup = \App\Core\RehearsalTypeManager::isUserInSmallGroup($user);
         $rehearsals = $this->rehearsalModel->getForUser($userType, $_SESSION['orchestra_id'], $showOld, $isSmallGroup);
         
         // Get user's promises from the user_promises table
@@ -119,8 +120,9 @@ class PromiseController extends Controller
         // Clean up section name for database queries
         $sectionName = str_replace(' ', '_', $userType);
         
-        // Get rehearsals for the section
-        $isSmallGroup = isset($_SESSION['is_small_group']) && $_SESSION['is_small_group'];
+        // Get rehearsals for the section using modern system
+        $user = ['is_small_group' => $_SESSION['is_small_group'] ?? \App\Core\RehearsalTypeManager::SMALL_GROUP_DISABLED];
+        $isSmallGroup = \App\Core\RehearsalTypeManager::isUserInSmallGroup($user);
         $rehearsals = $this->rehearsalModel->getForUser($sectionName, $_SESSION['orchestra_id'], $showOld, $isSmallGroup);
         
         // Get orchestra to check settings (leaders can view all sections?)
@@ -140,7 +142,77 @@ class PromiseController extends Controller
             return $role !== 'conductor';
         }));
         
-        // Get promises for each member and organize by rehearsal
+        // Initialize GroupManager for dynamic section handling
+        $groupManager = new \App\Core\GroupManager();
+        $allSections = $groupManager->getAllSections();
+        
+        // Calculate statistics for each rehearsal (similar to admin view)
+        $stats = [];
+        $membersBySection = [];
+        
+        foreach ($rehearsals as $rehearsal) {
+            $rehearsalId = $rehearsal['id'];
+            $stats[$rehearsalId] = [
+                'attending' => 0,
+                'not_attending' => 0,
+                'no_response' => 0
+            ];
+            
+            // Initialize sections dynamically from configuration
+            $membersBySection[$rehearsalId] = ['all' => []];
+            foreach ($allSections as $sectionId => $sectionData) {
+                $membersBySection[$rehearsalId][$sectionId] = [];
+            }
+            
+            // Determine which users apply to this rehearsal using modern system
+            $groups = $this->rehearsalModel->getGroupsAsAssoc($rehearsal['id']);
+            $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal);
+            
+            foreach ($members as $member) {
+                $isSmallGroup = isset($member['is_small_group']) && $member['is_small_group'];
+                if ($this->rehearsalModel->isUserInRehearsalGroup($member['type'], $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
+                    $userPromises = $this->userModel->getPromises($member['id']);
+                    $found = false;
+                    $status = 'no_response';
+                    $note = '';
+                    
+                    foreach ($userPromises as $promise) {
+                        if ($promise['rehearsal_id'] == $rehearsalId) {
+                            $status = $promise['attending'] ? 'attending' : 'not_attending';
+                            $note = $promise['note'];
+                            $found = true;
+                            break;
+                        }
+                    }
+                    
+                    // Update statistics
+                    $stats[$rehearsalId][$status]++;
+                    
+                    // Add user to the appropriate section
+                    $memberInfo = [
+                        'username' => $member['username'],
+                        'type' => $member['type'],
+                        'status' => $status,
+                        'note' => $note,
+                        'role' => $member['role'] ?? null,
+                        'is_small_group' => $member['is_small_group'] ?? false
+                    ];
+                    
+                    $membersBySection[$rehearsalId]['all'][] = $memberInfo;
+                    
+                    // Dynamically determine which sections this user belongs to
+                    $userType = $groupManager->resolveAlias($member['type']);
+                    
+                    foreach ($allSections as $sectionId => $sectionData) {
+                        if ($groupManager->isUserInGroup($userType, $sectionId)) {
+                            $membersBySection[$rehearsalId][$sectionId][] = $memberInfo;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Get promises for each member and organize by rehearsal (for backward compatibility)
         $memberPromises = [];
         
         foreach ($rehearsals as $rehearsal) {
@@ -177,13 +249,35 @@ class PromiseController extends Controller
             }
         }
         
+        // Get leader's section information for filtering
+        $groupManager = new \App\Core\GroupManager();
+        $leaderResolvedType = $groupManager->resolveAlias($userType);
+        $leaderSectionInfo = $groupManager->getSectionForInstrument($leaderResolvedType);
+        $leaderSectionId = $leaderSectionInfo ?? $leaderResolvedType;
+        
+        // Get all possible section names for better matching
+        $leaderSectionNames = [];
+        if ($leaderSectionId) {
+            $leaderSectionNames[] = $leaderSectionId;
+            $leaderSectionNames[] = $groupManager->getDisplayName($leaderSectionId);
+        }
+        if ($leaderResolvedType !== $leaderSectionId) {
+            $leaderSectionNames[] = $leaderResolvedType;
+            $leaderSectionNames[] = $groupManager->getDisplayName($leaderResolvedType);
+        }
+        
         // Render view
         $this->render('promises/leader', [
             'currentPage' => 'leader',
             'rehearsals' => $rehearsals,
+            'stats' => $stats,
+            'membersBySection' => $membersBySection,
             'memberPromises' => $memberPromises,
             'showOld' => $showOld,
-            'leadersCanViewAllSections' => $leadersCanViewAll
+            'leadersCanViewAllSections' => $leadersCanViewAll,
+            'leaderSection' => $leaderSectionId, // Pass the leader's section ID for filtering
+            'leaderSectionDisplayName' => $groupManager->getDisplayName($leaderSectionId), // Pass display name for better matching
+            'leaderSectionNames' => $leaderSectionNames // Pass all possible names for matching
         ]);
     }
     
@@ -371,9 +465,9 @@ class PromiseController extends Controller
                 $membersBySection[$rehearsalId][$sectionId] = [];
             }
             
-            // Determine which users apply to this rehearsal
+            // Determine which users apply to this rehearsal using modern system
             $groups = $this->rehearsalModel->getGroupsAsAssoc($rehearsal['id']);
-            $rehearsalIsSmallGroup = isset($rehearsal['is_small_group']) && $rehearsal['is_small_group'] == 1;
+            $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal);
             
             foreach ($users as $user) {
                 // Skip conductors - they shouldn't be displayed in the attendance list

@@ -49,50 +49,52 @@ function initializeCollapseControls() {
 function initializeUserClickHandlers() {
     const userSpans = document.querySelectorAll('.userSpan');
     userSpans.forEach(span => {
-        span.style.cursor = 'pointer';
-        
-        span.addEventListener('click', function(e) {
-            // Prevent click from affecting parent elements
-            e.stopPropagation();
+        if (span) {
+            span.style.cursor = 'pointer';
             
-            // Extract user information
-            const username = this.innerText.split('-')[0].trim();
-            const stats = getUserStats(username);
-            
-            // Show SweetAlert with user statistics
-            Swal.fire({
-                title: username,
-                html: `
-                    <div style="text-align: center; margin-bottom: 15px;">
-                        <div style="display: inline-block; margin: 0 10px;">
-                            <i class="fas fa-check-circle" style="color: #50dc36; font-size: 24px;"></i>
-                            <div><strong>${stats.attending}</strong></div>
+            span.addEventListener('click', function(e) {
+                // Prevent click from affecting parent elements
+                e.stopPropagation();
+                
+                // Extract user information
+                const username = this.innerText.split('-')[0].trim();
+                const stats = getUserStats(username);
+                
+                // Show SweetAlert with user statistics
+                Swal.fire({
+                    title: username,
+                    html: `
+                        <div style="text-align: center; margin-bottom: 15px;">
+                            <div style="display: inline-block; margin: 0 10px;">
+                                <i class="fas fa-check-circle" style="color: #50dc36; font-size: 24px;"></i>
+                                <div><strong>${stats.attending}</strong></div>
+                            </div>
+                            <div style="display: inline-block; margin: 0 10px;">
+                                <i class="fas fa-times-circle" style="color: #dc3836; font-size: 24px;"></i>
+                                <div><strong>${stats.notAttending}</strong></div>
+                            </div>
+                            <div style="display: inline-block; margin: 0 10px;">
+                                <i class="fas fa-question-circle" style="color: gray; font-size: 24px;"></i>
+                                <div><strong>${stats.noResponse}</strong></div>
+                            </div>
                         </div>
-                        <div style="display: inline-block; margin: 0 10px;">
-                            <i class="fas fa-times-circle" style="color: #dc3836; font-size: 24px;"></i>
-                            <div><strong>${stats.notAttending}</strong></div>
-                        </div>
-                        <div style="display: inline-block; margin: 0 10px;">
-                            <i class="fas fa-question-circle" style="color: gray; font-size: 24px;"></i>
-                            <div><strong>${stats.noResponse}</strong></div>
-                        </div>
-                    </div>
-                `,
-                showCancelButton: true,
-                showDenyButton: true,
-                confirmButtonText: 'Passwort zurücksetzen',
-                confirmButtonColor: '#3085d6',
-                denyButtonText: 'Account löschen',
-                denyButtonColor: '#d33',
-                cancelButtonText: 'Abbrechen',
-            }).then((result) => {
-                if (result.isDenied) {
-                    deleteAccount(username);
-                } else if (result.isConfirmed) {
-                    resetPassword(username);
-                }
+                    `,
+                    showCancelButton: true,
+                    showDenyButton: true,
+                    confirmButtonText: 'Passwort zurücksetzen',
+                    confirmButtonColor: '#3085d6',
+                    denyButtonText: 'Account löschen',
+                    denyButtonColor: '#d33',
+                    cancelButtonText: 'Abbrechen',
+                }).then((result) => {
+                    if (result.isDenied) {
+                        deleteAccount(username);
+                    } else if (result.isConfirmed) {
+                        resetPassword(username);
+                    }
+                });
             });
-        });
+        }
     });
 }
 
@@ -283,11 +285,15 @@ function initializeViewToggle() {
     // Toggle views
     function toggleViews(showSectional) {
         simpleViews.forEach(view => {
-            view.style.display = showSectional ? 'none' : 'block';
+            if (view) {
+                view.style.display = showSectional ? 'none' : 'block';
+            }
         });
         
         sectionalViews.forEach(view => {
-            view.style.display = showSectional ? 'block' : 'none';
+            if (view) {
+                view.style.display = showSectional ? 'block' : 'none';
+            }
         });
         
         updateLabels(showSectional);
@@ -311,9 +317,11 @@ function initializeViewToggle() {
         
         // Add smooth transition effect
         const container = document.querySelector('.container-fluid');
-        container.style.opacity = '0.7';
-        setTimeout(() => {
-            container.style.opacity = '1';
-        }, 200);
+        if (container) {
+            container.style.opacity = '0.7';
+            setTimeout(() => {
+                container.style.opacity = '1';
+            }, 200);
+        }
     });
 }

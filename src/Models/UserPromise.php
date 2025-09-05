@@ -116,7 +116,7 @@ class UserPromise extends Model
             
             // Check if user is relevant for this rehearsal
             $isSmallGroup = isset($user['is_small_group']) && $user['is_small_group'];
-            $rehearsalIsSmallGroup = isset($rehearsal['is_small_group']) && $rehearsal['is_small_group'] == 1;
+            $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal);
             if ($rehearsalModel->isUserInRehearsalGroup($user['type'], $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
                 $stats['total']++;
                 

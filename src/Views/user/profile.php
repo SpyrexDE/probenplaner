@@ -40,7 +40,7 @@
                         // Ensure type is correctly retrieved, falling back to empty string
                         $currentType = '';
                         if (isset($user['type']) && !empty($user['type'])) {
-                            $currentType = str_replace('*', '', $user['type']);
+                            $currentType = $user['type'];
                         }
                         
                         echo '<input type="hidden" id="current_type" value="' . htmlspecialchars($currentType) . '">';
@@ -70,8 +70,8 @@
                     
                     <div class="form-group">
                         <div class="custom-checkbox mb-4">
-                            <input type="checkbox" id="small_group" name="small_group" <?php echo (isset($user['is_small_group']) && $user['is_small_group']) ? 'checked' : ''; ?>>
-                            <label for="small_group">Kleingruppe</label>
+                            <input type="checkbox" id="small_group" name="small_group" <?php echo \App\Core\RehearsalTypeManager::isUserInSmallGroup($user) ? 'checked' : ''; ?>>
+                            <label for="small_group"><?= \App\Core\RehearsalTypeManager::LABEL_KLEINGRUPPE ?></label>
                             <i class=" text-gray-500 cursor-pointer hover:text-primary ml-2" id="smallGroupTip"><?= icon('question-circle', 'text-gray-600') ?></i>
                         </div>
                     </div>

@@ -51,10 +51,11 @@ class ApiController extends Controller
             ];
 
             foreach ($rehearsals as $rehearsal) {
-                // Check if user is relevant for this rehearsal
+                // Check if user is relevant for this rehearsal using modern system
                 $groups = $this->rehearsalModel->getGroupsAsAssoc($rehearsal['id']);
-                $isSmallGroup = isset($_SESSION['is_small_group']) && $_SESSION['is_small_group'];
-                $rehearsalIsSmallGroup = isset($rehearsal['is_small_group']) && $rehearsal['is_small_group'] == 1;
+                $user = ['is_small_group' => $_SESSION['is_small_group'] ?? \App\Core\RehearsalTypeManager::SMALL_GROUP_DISABLED];
+                $isSmallGroup = \App\Core\RehearsalTypeManager::isUserInSmallGroup($user);
+                $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal);
                 
                 if ($this->rehearsalModel->isUserInRehearsalGroup($_SESSION['type'] ?? '', $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
                     $stats['total']++;

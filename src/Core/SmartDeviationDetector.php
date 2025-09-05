@@ -103,13 +103,21 @@ class SmartDeviationDetector {
         $overallData = $this->calculateOverallAttendance($rehearsalId);
         
         if ($overallData['total_people'] > 0) {
+            // Get rehearsal details to determine context for messages
+            $rehearsalModel = new \App\Models\Rehearsal();
+            $rehearsal = $rehearsalModel->findById($rehearsalId);
+            $isSmallGroup = $rehearsal && \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal);
+            
+            // Determine appropriate context text
+            $contextText = $isSmallGroup ? "in der Kleingruppe" : "in allen Registern";
+            
             // Check overall attendance rate
             if ($overallData['attendance_rate'] < \App\Core\DashboardConstants::GROUP_PERFORMANCE_THRESHOLD) {
                 $deviations[] = [
                     'type' => 'overall_performance',
                     'severity' => 'critical',
                     'attendance_rate' => $overallData['attendance_rate'],
-                    'message' => "Nur " . number_format($overallData['attendance_rate'], 0) . "% Teilnahme in allen Registern"
+                    'message' => "Nur " . number_format($overallData['attendance_rate'], 0) . "% Teilnahme " . $contextText
                 ];
             }
             
@@ -120,7 +128,7 @@ class SmartDeviationDetector {
                     'type' => 'overall_response_rate',
                     'severity' => $severity,
                     'response_rate' => $overallData['response_rate'],
-                    'message' => "Nur " . number_format($overallData['response_rate'], 0) . "% Rückmeldungen in allen Registern"
+                    'message' => "Nur " . number_format($overallData['response_rate'], 0) . "% Rückmeldungen " . $contextText
                 ];
             }
         }
@@ -130,34 +138,33 @@ class SmartDeviationDetector {
     
     /**
      * Calculate overall attendance and response rates across all sections in a rehearsal
+     * Now considers small group restrictions properly
      */
     private function calculateOverallAttendance($rehearsalId) {
-        $stmt = $this->db->prepare("
-            SELECT 
-                COUNT(up.id) as total_people,
-                SUM(CASE WHEN up.status = 'yes' THEN 1 ELSE 0 END) as total_attending,
-                SUM(CASE WHEN up.status = 'no' THEN 1 ELSE 0 END) as total_not_attending,
-                SUM(CASE WHEN up.status = 'maybe' THEN 1 ELSE 0 END) as total_no_response
-            FROM user_promises up
-            WHERE up.rehearsal_id = ?
-        ");
+        // Get rehearsal details to check if it's a small group rehearsal
+        $rehearsalModel = new \App\Models\Rehearsal();
+        $rehearsal = $rehearsalModel->findById($rehearsalId);
         
-        $stmt->bind_param('i', $rehearsalId);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $data = $result->fetch_assoc();
+        if (!$rehearsal) {
+            return [
+                'total_people' => 0,
+                'total_attending' => 0,
+                'total_responded' => 0,
+                'attendance_rate' => 0,
+                'response_rate' => 0
+            ];
+        }
         
-        $totalPeople = (int)$data['total_people'];
-        $totalAttending = (int)$data['total_attending'];
-        $totalNotAttending = (int)$data['total_not_attending'];
-        $totalResponded = $totalAttending + $totalNotAttending;
+        // Use the UserPromise model's getPromiseStats which properly handles small group logic
+        $userPromiseModel = new \App\Models\UserPromise();
+        $stats = $userPromiseModel->getPromiseStats($rehearsalId, $rehearsal['orchestra_id']);
         
         return [
-            'total_people' => $totalPeople,
-            'total_attending' => $totalAttending,
-            'total_responded' => $totalResponded,
-            'attendance_rate' => $totalPeople > 0 ? ($totalAttending / $totalPeople) * 100 : 0,
-            'response_rate' => $totalPeople > 0 ? ($totalResponded / $totalPeople) * 100 : 0
+            'total_people' => $stats['total'],
+            'total_attending' => $stats['attending'],
+            'total_responded' => $stats['attending'] + $stats['not_attending'],
+            'attendance_rate' => $stats['total'] > 0 ? ($stats['attending'] / $stats['total']) * 100 : 0,
+            'response_rate' => $stats['total'] > 0 ? (($stats['attending'] + $stats['not_attending']) / $stats['total']) * 100 : 0
         ];
     }
     

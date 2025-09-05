@@ -42,20 +42,147 @@ document.addEventListener('DOMContentLoaded', function() {
                 showLeaderSectionsOnly();
             }
         });
+        
+        // Initialize to show only leader's section by default
+        // Add a small delay to ensure DOM is fully loaded
+        setTimeout(() => {
+            console.log('Initializing leader view...');
+            console.log('Leader section:', '<?= $leaderSection ?? '' ?>');
+            console.log('Leader display name:', '<?= $leaderSectionDisplayName ?? '' ?>');
+            console.log('All leader section names:', <?= json_encode($leaderSectionNames ?? []) ?>);
+            showLeaderSectionsOnly();
+        }, 100);
     }
 });
 
 function showAllSections() {
+    // Show all section cards
     document.querySelectorAll('.section-card').forEach(card => {
         card.style.display = 'block';
+    });
+    
+    // Show all tree nodes (sections in tree view)
+    document.querySelectorAll('.tree-node').forEach(node => {
+        node.style.display = 'block';
+        // Remove aria-hidden to ensure accessibility
+        node.removeAttribute('aria-hidden');
+    });
+    
+    // Show all overview bars (rehearsal stats)
+    document.querySelectorAll('.rehearsal-stats-container').forEach(container => {
+        container.style.display = 'block';
     });
 }
 
 function showLeaderSectionsOnly() {
-    // This would need to be implemented based on leader's sections
-    // For now, show all sections
-    document.querySelectorAll('.section-card').forEach(card => {
-        card.style.display = 'block';
+    // Remove focus from any focused elements in tree nodes before hiding
+    document.querySelectorAll('.tree-node button:focus').forEach(button => {
+        button.blur();
     });
+    
+    // Hide all section cards first
+    document.querySelectorAll('.section-card').forEach(card => {
+        card.style.display = 'none';
+    });
+    
+    // Hide all tree nodes first (including root)
+    document.querySelectorAll('.tree-node').forEach(node => {
+        node.style.display = 'none';
+        // Set aria-hidden to ensure accessibility compliance
+        node.setAttribute('aria-hidden', 'true');
+    });
+    
+    // Hide all overview bars first
+    document.querySelectorAll('.rehearsal-stats-container').forEach(container => {
+        container.style.display = 'none';
+    });
+    
+    // Show only the leader's section
+    const leaderSection = '<?= $leaderSection ?? '' ?>';
+    const leaderSectionDisplayName = '<?= $leaderSectionDisplayName ?? '' ?>';
+    const leaderSectionNames = <?= json_encode($leaderSectionNames ?? []) ?>;
+    
+    if (leaderSection || leaderSectionDisplayName || leaderSectionNames.length > 0) {
+        // Find section cards that match the leader's section
+        document.querySelectorAll('.section-card').forEach(card => {
+            const sectionName = card.querySelector('.section-name');
+            if (sectionName) {
+                const nameText = sectionName.textContent.toLowerCase();
+                let shouldShow = false;
+                
+                // Check against all possible leader section names
+                for (const leaderName of leaderSectionNames) {
+                    const leaderNameLower = leaderName.toLowerCase();
+                    if (nameText.includes(leaderNameLower) || 
+                        leaderNameLower.includes(nameText) ||
+                        nameText === leaderNameLower) {
+                        shouldShow = true;
+                        break;
+                    }
+                }
+                
+                if (shouldShow) {
+                    card.style.display = 'block';
+                }
+            }
+        });
+        
+        // Find tree nodes that match the leader's section (depth 1 and 2)
+        document.querySelectorAll('.tree-node').forEach(node => {
+            const titleText = node.querySelector('.tree-node-title-text');
+            if (titleText) {
+                const nameText = titleText.textContent.toLowerCase();
+                let shouldShow = false;
+                
+                // Check against all possible leader section names
+                for (const leaderName of leaderSectionNames) {
+                    const leaderNameLower = leaderName.toLowerCase();
+                    if (nameText.includes(leaderNameLower) || 
+                        leaderNameLower.includes(nameText) ||
+                        nameText === leaderNameLower) {
+                        shouldShow = true;
+                        break;
+                    }
+                }
+                
+                if (shouldShow) {
+                    node.style.display = 'block';
+                    // Remove aria-hidden to ensure accessibility
+                    node.removeAttribute('aria-hidden');
+                }
+            }
+        });
+        
+        // Find overview bars that match the leader's section
+        document.querySelectorAll('.rehearsal-stats-container').forEach(container => {
+            // For overview bars, we need to check if this rehearsal has members from the leader's section
+            const rehearsalCard = container.closest('.rehearsal-compact');
+            if (rehearsalCard) {
+                // Check if any section cards in this rehearsal are visible (match leader's section)
+                const sectionCards = rehearsalCard.querySelectorAll('.section-card');
+                let hasVisibleSections = false;
+                
+                sectionCards.forEach(card => {
+                    const sectionName = card.querySelector('.section-name');
+                    if (sectionName) {
+                        const nameText = sectionName.textContent.toLowerCase();
+                        for (const leaderName of leaderSectionNames) {
+                            const leaderNameLower = leaderName.toLowerCase();
+                            if (nameText.includes(leaderNameLower) || 
+                                leaderNameLower.includes(nameText) ||
+                                nameText === leaderNameLower) {
+                                hasVisibleSections = true;
+                                break;
+                            }
+                        }
+                    }
+                });
+                
+                if (hasVisibleSections) {
+                    container.style.display = 'block';
+                }
+            }
+        });
+    }
 }
 </script>

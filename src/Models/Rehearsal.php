@@ -152,7 +152,7 @@ class Rehearsal extends Model
         if ($result) {
             while ($row = $result->fetch_assoc()) {
                 $groups = $this->getGroupsAsAssoc($row['id']);
-                $rehearsalIsSmallGroup = isset($row['is_small_group']) && $row['is_small_group'] == 1;
+                $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($row);
                 
                 if ($this->isUserInRehearsalGroup($userType, $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
                     $row['date_formatted'] = \App\Core\Utilities::formatDate($row['date']);
@@ -199,8 +199,11 @@ class Rehearsal extends Model
      */
     public function isUserInRehearsalGroup(string $userType, bool $isSmallGroup, $groups, bool $rehearsalIsSmallGroup = false): bool
     {
-        // If it's a small group rehearsal, only users with is_small_group should attend
-        if ($rehearsalIsSmallGroup && !$isSmallGroup) {
+        // Use modern RehearsalTypeManager for small group logic
+        $user = ['is_small_group' => $isSmallGroup ? \App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED : \App\Core\RehearsalTypeManager::SMALL_GROUP_DISABLED];
+        $rehearsal = ['is_small_group' => $rehearsalIsSmallGroup ? \App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED : \App\Core\RehearsalTypeManager::SMALL_GROUP_DISABLED];
+        
+        if (!\App\Core\RehearsalTypeManager::canUserSeeRehearsal($user, $rehearsal)) {
             return false;
         }
         
@@ -423,7 +426,7 @@ class Rehearsal extends Model
             while ($row = $result->fetch_assoc()) {
                 $groups = $this->getGroupsAsAssoc($row['id']);
                 $isSmallGroup = isset($userGroups['is_small_group']) && $userGroups['is_small_group'];
-                $rehearsalIsSmallGroup = isset($row['is_small_group']) && $row['is_small_group'] == 1;
+                $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($row);
                 
                 if ($this->isUserInRehearsalGroup($userType, $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
                     // Format the date in a user-friendly format

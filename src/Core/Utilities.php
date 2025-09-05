@@ -26,9 +26,9 @@ class Utilities
             $badges[] = '<span class="user-badge" title="Stimmführer"><i class="fas fa-crown"></i></span>';
         }
         
-        // Add small group badge for small group members (Kleingruppe)
-        if (isset($user['is_small_group']) && $user['is_small_group']) {
-            $badges[] = '<span class="user-badge" title="Kleingruppe"><i class="fas fa-user-friends"></i></span>';
+        // Add small group badge for small group members using modern system
+        if (\App\Core\RehearsalTypeManager::isUserInSmallGroup($user)) {
+            $badges[] = '<span class="user-badge" title="' . \App\Core\RehearsalTypeManager::LABEL_KLEINGRUPPE . '"><i class="fas fa-user-friends"></i></span>';
         }
         
         return implode('', $badges);

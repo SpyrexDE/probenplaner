@@ -9,37 +9,25 @@
  * @param string $collapseTarget - Target ID for collapse functionality
  */
 
+use App\Core\RehearsalTypeManager;
+
 $rehearsalId = $rehearsal['id'];
 $date = $rehearsal['date_formatted'] ?? $rehearsal['date'];
 $start_time = isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, 5) : '??:??';
 $end_time = isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, 5) : '??:??';
 $time_display = $start_time . ' - ' . $end_time;
 
-// Determine rehearsal type
+// Get rehearsal type using modern system
+$rehearsalType = RehearsalTypeManager::getRehearsalType($rehearsal);
+
+// Generate groups display with integrated Kleingruppe handling
 $groupKeys = $rehearsal['groups'] ?? [];
-$rehearsalType = '';
-
-// Add * suffix to group names if it's a small group
-$isSmallGroup = isset($rehearsal['is_small_group']) && $rehearsal['is_small_group'] == 1;
-if ($isSmallGroup) {
-    foreach ($groupKeys as &$group) {
-        $group .= '*';
-    }
-}
-
-if (in_array('Registerprobe', $groupKeys)) {
-    $rehearsalType = 'Registerprobe';
-} elseif (in_array('Konzert', $groupKeys)) {
-    $rehearsalType = 'Konzert';
-} elseif (in_array('Generalprobe', $groupKeys)) {
-    $rehearsalType = 'Generalprobe';
-} elseif (in_array('Konzertreise', $groupKeys)) {
-    $rehearsalType = 'Konzertreise';
-}
-
-if ($isSmallGroup) {
-    $rehearsalType .= isset($isAdmin) && $isAdmin ? ' (Kleingruppenprobe)' : ' (Kleingruppe)';
-}
+$smartDisplay = new \App\Core\SmartGroupDisplay();
+$groupsText = $smartDisplay->generateDescription(
+    $groupKeys, 
+    $rehearsal, 
+    isset($isAdmin) && $isAdmin
+);
 ?>
 
 <button class="tree-node-header" 
