@@ -71,79 +71,18 @@ function sortGroups($groups) {
             false // Not admin view
         );
         
-        // Prepare time display
-        $start_time_prom = isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, 5) : '??:??';
-        $end_time_prom = isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, 5) : '??:??';
-        $time_display_prom = $start_time_prom . ' - ' . $end_time_prom;
-        
-        // Determine color class
-        $colorClass = 'status-pending'; // Default for pending
-        
-        if ($status === 'attending') {
-            $colorClass = 'status-attending';
-        } else if ($status === 'not_attending') {
-            $colorClass = 'status-not_attending';
-        }
         ?>
         
-        <div class="rehearsal-card status-<?= $status ?>" style="<?= !empty($rehearsal['color']) ? 'border-left-color: ' . $rehearsal['color'] . ';' : '' ?>">
-            <div class="rehearsal-card-content">
-                <div class="rehearsal-card-info">
-                    <div class="rehearsal-card-header">
-                        <?php
-                        // Get German weekday abbreviations
-                        $germanWeekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-                        $dayOfWeek = date('w', strtotime($rehearsal['date']));
-                        $weekdayShort = $germanWeekdays[$dayOfWeek];
-                        
-                        // Get rehearsal type using modern manager
-                        $rehearsalType = \App\Core\RehearsalTypeManager::getRehearsalType($rehearsal);
-                        
-                        // Check if we should show the rehearsal type badge
-                        $showRehearsalType = \App\Core\RehearsalTypeManager::shouldDisplayType($rehearsalType);
-                        
-                        // Check if location is different from normal rehearsal
-                        $normalLocation = 'Probenraum'; // Default normal rehearsal location
-                        $showLocation = !empty($rehearsal['location']) && 
-                                       $rehearsal['location'] !== $normalLocation &&
-                                       strtolower($rehearsal['location']) !== strtolower($normalLocation);
-                        ?>
-                        <div class="rehearsal-main-info">
-                            <div class="rehearsal-content-row">
-                                <div class="rehearsal-weekday"><?= strtoupper($weekdayShort) ?></div>
-                                <div class="rehearsal-datetime-block">
-                                    <div class="rehearsal-date">
-                                        <?= htmlspecialchars($rehearsal['date_formatted'] ?? $rehearsal['date']) ?>
-                                    </div>
-                                    <div class="rehearsal-time-container">
-                                        <div class="rehearsal-time stretch-text"><?= htmlspecialchars($time_display_prom) ?></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="rehearsal-badges">
-                                <?php if ($showRehearsalType): ?>
-                                    <div class="rehearsal-type-badge"><?= htmlspecialchars($rehearsalType) ?></div>
-                                <?php endif; ?>
-                                <div class="rehearsal-section-badge"><?= $groupsText ?></div>
-                                <?php if ($showLocation): ?>
-                                    <div class="rehearsal-location-badge"><?= htmlspecialchars($rehearsal['location']) ?></div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                        <span class="rehearsal-note-dot <?= !empty($note) ? 'visible' : '' ?>"></span>
-                    </div>
-                </div>
-                <div class="rehearsal-actions">
-                    <button type="button" id="<?= $rehearsal['id'] ?>" class="checkBtn action-btn <?= $status !== 'attending' ? 'deselected' : 'selected' ?>">
-                        <img src="/assets/img/icons8_checked_checkbox_48px_2.png" alt="Zusagen">
-                    </button>
-                    <button type="button" id="<?= $rehearsal['id'] ?>" class="crossBtn action-btn cross-btn <?= $status !== 'not_attending' ? 'deselected' : 'selected' ?>">
-                        <img src="/assets/img/icons8_close_window_48px_1.png" alt="Absagen">
-                    </button>
-                </div>
-            </div>
-            <input type="hidden" id="note<?= $rehearsal['id'] ?>" value="<?= htmlspecialchars($note) ?>">
-        </div>
+        <?php 
+        // Set options for the rehearsal card component
+        $context = 'promises';
+        $options = [
+            'status' => $status,
+            'note' => $note,
+            'showButtons' => true
+        ];
+        include __DIR__ . '/../components/rehearsal-card.php';
+        ?>
     <?php endforeach; ?>
     <?php endif; ?>
 </div>

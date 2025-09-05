@@ -16,75 +16,15 @@
         ?>
     <?php else: ?>
             <?php foreach ($rehearsals as $rehearsal): ?>
-                <?php 
-                    $rehearsalId = $rehearsal['id'];
-                    $date = $rehearsal['date_formatted'] ?? $rehearsal['date'];
-                    $start_time = isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, 5) : '??:??';
-                    $end_time = isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, 5) : '??:??';
-                    $time_display = $start_time . ' - ' . $end_time;
-                    $location = $rehearsal['location'] ?? 'TBA';
-                    
-                    // Determine rehearsal groups using modern system
-                    $groupKeys = $rehearsal['groups'] ?? [];
-                    
-                    // Generate smart display text with integrated Kleingruppe handling
-                    $smartDisplay = new \App\Core\SmartGroupDisplay();
-                    $groupsText = $smartDisplay->generateDescription(
-                        $groupKeys, 
-                        $rehearsal, 
-                        false // Not admin view
-                    );
-                    
-                    // Keep comma-separated list and let CSS handle line breaks
-                    $groupsDisplay = $groupsText;
-                ?>
                 
-                <div class="rehearsal-card" style="<?= !empty($rehearsal['color']) ? 'border-left-color: ' . $rehearsal['color'] . ';' : '' ?>">
-                    <div class="rehearsal-card-content">
-                        <div class="rehearsal-card-info">
-                            <div class="rehearsal-card-header">
-                                <?php
-                                // Get German weekday abbreviations
-                                $germanWeekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-                                $dayOfWeek = date('w', strtotime($rehearsal['date']));
-                                $weekdayShort = $germanWeekdays[$dayOfWeek];
-                                
-                                // Determine rehearsal type
-                                $rehearsalType = 'Probe';
-                                if (in_array('Registerprobe', $groupKeys)) {
-                                    $rehearsalType = 'Registerprobe';
-                                } elseif (in_array('Konzert', $groupKeys)) {
-                                    $rehearsalType = 'Konzert';
-                                } elseif (in_array('Generalprobe', $groupKeys)) {
-                                    $rehearsalType = 'Generalprobe';
-                                } elseif (in_array('Konzertreise', $groupKeys)) {
-                                    $rehearsalType = 'Konzertreise';
-                                }
-                                ?>
-                                <div class="rehearsal-weekday"><?= strtoupper($weekdayShort) ?></div>
-                                <div class="rehearsal-main-info">
-                                    <div class="rehearsal-date"><?= htmlspecialchars($rehearsal['date_formatted'] ?? $date) ?></div>
-                                    <div class="rehearsal-type-badge"><?= htmlspecialchars($rehearsalType) ?></div>
-                                </div>
-                            </div>
-                            <div class="rehearsal-details">
-                                <div class="rehearsal-time-location">
-                                    <span class="rehearsal-time"><?= htmlspecialchars($time_display) ?></span>
-                                    <span class="rehearsal-location"><?= htmlspecialchars($location) ?></span>
-                                </div>
-                                <div class="rehearsal-groups"><?= $groupsDisplay ?></div>
-                            </div>
-                        </div>
-                        <div class="rehearsal-actions">
-                            <button type="button" id="<?= $rehearsalId ?>" class="btn-icon btn-outline edit-btn">
-                                <i ><?= icon('edit', 'text-gray-600') ?></i>
-                            </button>
-                            <button type="button" id="<?= $rehearsalId ?>" class="btn-icon btn-danger delete-btn">
-                                <i ><?= icon('trash', 'text-white') ?></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <?php 
+                // Set options for the rehearsal card component
+                $context = 'rehearsals';
+                $options = [
+                    'showButtons' => true
+                ];
+                include __DIR__ . '/../components/rehearsal-card.php';
+                ?>
             <?php endforeach; ?>
     <?php endif; ?>
     
