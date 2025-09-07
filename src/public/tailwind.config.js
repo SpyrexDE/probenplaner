@@ -112,7 +112,6 @@ module.exports = {
       // Custom font families
       fontFamily: {
         'sans': ['Roboto', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
-        'brand': ['Fugaz One', 'cursive'],
         'mono': ['SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', 'Consolas', 'Courier New', 'monospace'],
       },
       

@@ -42,9 +42,6 @@ function sortGroups($groups) {
 
 
 <div class="container-app">
-    <div class="text-center mb-6">
-        <h1 class="page-title">Rückmeldungen</h1>
-    </div>
     
     <?php if (empty($rehearsals)): ?>
         <?php 
@@ -256,6 +253,7 @@ $(document).ready(function() {
         if (!window.promiseBeingUpdated) {
             $('#save-indicator').addClass('show');
             window.promiseBeingUpdated = true;
+            window.spinnerShowTime = Date.now(); // Track when spinner was shown
         }
         
         var update = window.updateQueue.shift();
@@ -299,8 +297,7 @@ $(document).ready(function() {
                 if (window.updateQueue.length > 0) {
                     processQueue();
                 } else {
-                    window.promiseBeingUpdated = false;
-                    $('#save-indicator').removeClass('show');
+                    hideSaveIndicatorWithDelay();
                 }
             },
             error: function(xhr, status, error) {
@@ -311,10 +308,20 @@ $(document).ready(function() {
                 enableRehearsalButtons(id);
                 
                 window.isProcessingQueue = false;
-                window.promiseBeingUpdated = false;
-                $('#save-indicator').removeClass('show');
+                hideSaveIndicatorWithDelay();
             }
         });
+    }
+    
+    function hideSaveIndicatorWithDelay() {
+        var minDisplayTime = 500; // 500ms minimum display time
+        var elapsed = Date.now() - (window.spinnerShowTime || 0);
+        var remainingTime = Math.max(0, minDisplayTime - elapsed);
+        
+        setTimeout(function() {
+            window.promiseBeingUpdated = false;
+            $('#save-indicator').removeClass('show');
+        }, remainingTime);
     }
     
     function disableRehearsalButtons(id) {

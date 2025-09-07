@@ -6,7 +6,6 @@
     <title>404 - Seite nicht gefunden | <?= APP_NAME ?></title>
     <!-- Bootstrap CSS removed - using custom components instead -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fugaz+One">
     <link rel="stylesheet" href="/assets/css/styles.css">
     <link rel="shortcut icon" href="/assets/img/tabIcon.png" type="image/x-icon">
 </head>

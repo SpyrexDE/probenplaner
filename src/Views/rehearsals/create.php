@@ -9,10 +9,6 @@
     </script>
     <?php endif; ?>
     
-    <div class="page-header">
-        <h1 class="page-title">Neuer Termin</h1>
-        <p class="page-subtitle">Erstelle eine neue Probe oder einen Konzerttermin</p>
-    </div>
     
     <div class="form-container">
         <form method="post" action="/rehearsals/create" class="form">

@@ -494,26 +494,12 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                         $uniqueDeviations[] = $groupPerformanceMessages[0]; // Only the most critical one
                     }
                     
-                    // Handle other messages
-                    foreach ($otherMessages as $deviation) {
+                    // Handle other messages - merge participation messages for same sections
+                    $mergedMessages = mergeParticipationMessages($otherMessages);
+                    
+                    foreach ($mergedMessages as $deviation) {
                         $messageKey = $deviation['message'];
-                        
-                        // Check if this is a similar message pattern
-                        $isSimilar = false;
-                        foreach ($seenMessages as $seen) {
-                            if (strpos($messageKey, 'mehr Teilnahme als üblich') !== false && 
-                                strpos($seen, 'mehr Teilnahme als üblich') !== false) {
-                                $isSimilar = true;
-                                break;
-                            }
-                            if (strpos($messageKey, 'weniger Teilnahme als üblich') !== false && 
-                                strpos($seen, 'weniger Teilnahme als üblich') !== false) {
-                                $isSimilar = true;
-                                break;
-                            }
-                        }
-                        
-                        if (!$isSimilar && !in_array($messageKey, $seenMessages)) {
+                        if (!in_array($messageKey, $seenMessages)) {
                             $uniqueDeviations[] = $deviation;
                             $seenMessages[] = $messageKey;
                         }
@@ -559,19 +545,13 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                 <?php foreach ($rehearsalSmartDeviations as $deviation): ?>
                                     <div class="critical-item">
                                         <span class="critical-name"><?= htmlspecialchars($deviation['message']) ?></span>
-                                        <span class="critical-percentage <?= DashboardConstants::CSS_WARNING_CLASS ?>">
+                                        <span class="critical-percentage <?= getDeviationCssClass($deviation['severity'] ?? 'warning') ?>">
                                             <i class="fas fa-<?= getDeviationIcon($deviation['type']) ?>"></i>
                                         </span>
                                     </div>
                                 <?php endforeach; ?>
                                 
-                                <?php if (!empty($insufficientData)): ?>
-                                    <div class="critical-item">
-                                        <span class="critical-name">Fehlende Daten für Vergleichsanalyse</span>
-                                    </div>
-                                <?php endif; ?>
-                                
-                                <?php if (empty($rehearsalSmartDeviations) && empty($insufficientData)): ?>
+                                <?php if (empty($rehearsalSmartDeviations)): ?>
                                     <div class="critical-item">
                                         <span class="critical-name">Keine Auffälligkeiten</span>
                                     </div>
@@ -1003,19 +983,134 @@ function initializeTreeView() {
 
 <?php
 /**
+ * Merge participation messages for the same section to avoid duplication
+ * Example: "Trompete: 14% mehr Teilnahme als je zuvor" + "Trompete: 23% mehr Teilnahme als früher" 
+ * becomes "Trompete: 23% mehr Teilnahme als früher (14% mehr als je zuvor!)"
+ */
+function mergeParticipationMessages($messages) {
+    $sectionGroups = [];
+    $otherMessages = [];
+    
+    // Group messages by section and type
+    foreach ($messages as $deviation) {
+        $message = $deviation['message'];
+        
+        // Check if this is a participation or response message
+        if (preg_match('/^([^:]+):\s*(\d+)%\s*(mehr|weniger)\s+(Teilnahme|Rückmeldungen)\s+als\s+(üblich|je zuvor|früher)/', $message, $matches)) {
+            $section = $matches[1];
+            $percentage = $matches[2];
+            $direction = $matches[3]; // mehr/weniger
+            $type = $matches[4]; // Teilnahme/Rückmeldungen
+            $comparison = $matches[5]; // üblich/je zuvor/früher
+            
+            if (!isset($sectionGroups[$section])) {
+                $sectionGroups[$section] = [];
+            }
+            if (!isset($sectionGroups[$section][$type])) {
+                $sectionGroups[$section][$type] = [];
+            }
+            if (!isset($sectionGroups[$section][$type][$direction])) {
+                $sectionGroups[$section][$type][$direction] = [];
+            }
+            
+            $sectionGroups[$section][$type][$direction][] = [
+                'deviation' => $deviation,
+                'percentage' => intval($percentage),
+                'comparison' => $comparison,
+                'message' => $message
+            ];
+        } else {
+            // Keep non-participation messages as-is
+            $otherMessages[] = $deviation;
+        }
+    }
+    
+    // Merge messages within each section/type/direction group
+    $mergedMessages = [];
+    foreach ($sectionGroups as $section => $types) {
+        foreach ($types as $type => $directions) {
+            foreach ($directions as $direction => $comparisons) {
+                if (count($comparisons) > 1) {
+                    // Prioritize "je zuvor" as primary message (historical records are most impactful)
+                    // Everything else goes in brackets
+                    $priority = ['je zuvor' => 3, 'früher' => 2, 'üblich' => 1];
+                    usort($comparisons, function($a, $b) use ($priority) {
+                        return ($priority[$b['comparison']] ?? 0) - ($priority[$a['comparison']] ?? 0);
+                    });
+                    
+                    // Use the highest priority comparison as primary, others as additional info
+                    $primary = $comparisons[0];
+                    $additionalInfo = [];
+                    
+                    for ($i = 1; $i < count($comparisons); $i++) {
+                        $additional = $comparisons[$i];
+                        $additionalInfo[] = $additional['percentage'] . '% ' . $direction . ' als ' . $additional['comparison'];
+                    }
+                    
+                    // Create merged message
+                    $mergedMessage = $section . ': ' . $primary['percentage'] . '% ' . $direction . ' ' . $type . ' als ' . $primary['comparison'];
+                    if (!empty($additionalInfo)) {
+                        $mergedMessage .= ' (' . implode(', ', $additionalInfo) . '!)';
+                    }
+                    
+                    // Use the deviation with the highest priority
+                    $mergedDeviation = $primary['deviation'];
+                    $mergedDeviation['message'] = $mergedMessage;
+                    $mergedMessages[] = $mergedDeviation;
+                } else {
+                    // Single message, keep as-is
+                    $mergedMessages[] = $comparisons[0]['deviation'];
+                }
+            }
+        }
+    }
+    
+    // Add back non-participation messages
+    return array_merge($mergedMessages, $otherMessages);
+}
+
+/**
  * Helper function to get appropriate icon for deviation types
  */
 function getDeviationIcon($type) {
     $iconMap = [
+        // Legacy types (now deprecated, but kept for backwards compatibility)
         'statistical_anomaly' => 'chart-line',
-        'below_historical_minimum' => 'arrow-down',
-        'low_response_rate' => 'reply',
         'trend_change' => 'chart-line',
+        
+        // Negative deviation types
+        'negative_statistical_anomaly' => 'chart-line',
+        'negative_response_rate_anomaly' => 'reply',
+        'negative_trend_change' => 'arrow-down',
+        'below_historical_minimum' => 'arrow-down',
+        'below_historical_response_minimum' => 'reply',
+        'low_response_rate' => 'reply',
         'group_deviation' => 'users',
-        'group_performance' => 'exclamation-triangle'
+        'group_performance' => 'exclamation-triangle',
+        
+        // Positive deviation types  
+        'positive_statistical_anomaly' => 'arrow-up',
+        'positive_response_rate_anomaly' => 'reply',
+        'positive_trend_change' => 'arrow-up', 
+        'above_historical_maximum' => 'arrow-up',
+        'above_historical_response_maximum' => 'reply'
     ];
     
     return $iconMap[$type] ?? 'info-circle';
+}
+
+/**
+ * Helper function to get appropriate CSS class for deviation severity levels
+ */
+function getDeviationCssClass($severity) {
+    $cssMap = [
+        'critical' => \App\Core\DashboardConstants::CSS_DANGER_CLASS,
+        'warning' => \App\Core\DashboardConstants::CSS_WARNING_CLASS,
+        'info' => \App\Core\DashboardConstants::CSS_WARNING_CLASS,
+        'positive' => 'positive'
+    ];
+    
+    return $cssMap[$severity] ?? \App\Core\DashboardConstants::CSS_WARNING_CLASS;
 }
 ?>
 

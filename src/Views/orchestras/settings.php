@@ -93,7 +93,7 @@
                                         Stimmführer dürfen alle Register sehen
                                     </label>
                                     <p class="modern-checkbox-description">
-                                        Stimmführer können alle Register in der Rückmeldungsübersicht einsehen
+                                        Stimmführer können alle Register in der Rückmeldungsübersicht einsehen. Das Proben-Insights-Feature ist davon ausgenommen.
                                     </p>
                                 </div>
                             </div>
@@ -116,7 +116,7 @@
                                         Proben-Insights anzeigen (Beta)
                                     </label>
                                     <p class="modern-checkbox-description">
-                                        Aktiviert erweiterte Analyse-Features für Proben-Rückmeldungen
+                                        Aktiviert erweiterte Analyse-Features für Proben-Rückmeldungen. Hilfreich für effektivere Proben-Planung.
                                     </p>
                                 </div>
                             </div>

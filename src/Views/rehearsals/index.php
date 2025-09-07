@@ -1,9 +1,6 @@
 <?php $this->layout('layouts/default', ['title' => 'Termine', 'currentPage' => $currentPage ?? 'rehearsals']) ?>
 
 <div class="container-app pb-20">
-    <div class="text-center mb-6">
-        <h1 class="page-title">Termine</h1>
-    </div>
     
     <?php if (empty($rehearsals)): ?>
         <?php 

@@ -620,9 +620,26 @@
   background: var(--color-error-50);
 }
 
+.critical-percentage.danger i {
+  color: var(--color-error);
+}
+
 .critical-percentage.warning {
   color: var(--color-warning-dark);
   background: var(--color-warning-100);
+}
+
+.critical-percentage.warning i {
+  color: #f59e0b;
+}
+
+.critical-percentage.positive {
+  color: #059669;
+  background: #d1fae5;
+}
+
+.critical-percentage.positive i {
+  color: #10b981;
 }
 
 

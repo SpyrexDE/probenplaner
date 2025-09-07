@@ -1,10 +1,6 @@
 <?php $this->layout('layouts/default', ['title' => 'Delete Rehearsal', 'currentPage' => $currentPage ?? 'rehearsals']) ?>
 
 <div class="container-app">
-    <div class="page-header">
-        <h1 class="page-title">Termin löschen</h1>
-        <p class="page-subtitle">Bestätige das Löschen dieses Termins</p>
-    </div>
     
     <div class="form-container">
         <div class="confirmation-card">

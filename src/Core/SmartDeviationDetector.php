@@ -282,13 +282,14 @@ class SmartDeviationDetector {
             $zScore = abs(($currentData['attendance_rate'] - $stats['mean']) / $stats['std']);
             
             if ($zScore > $this->zScoreThreshold) {
-                $direction = $currentData['attendance_rate'] > $stats['mean'] ? 'höher' : 'niedriger';
+                $isPositive = $currentData['attendance_rate'] > $stats['mean'];
+                $direction = $isPositive ? 'höher' : 'niedriger';
                 $percentageDiff = abs($currentData['attendance_rate'] - $stats['mean']);
                 // Only show significant deviations
                 if ($percentageDiff > \App\Core\DashboardConstants::PERCENTAGE_DIFFERENCE_THRESHOLD) {
                     $deviations[] = [
-                        'type' => 'statistical_anomaly',
-                        'severity' => $zScore > \App\Core\DashboardConstants::CRITICAL_Z_SCORE_THRESHOLD ? 'critical' : 'warning',
+                        'type' => $isPositive ? 'positive_statistical_anomaly' : 'negative_statistical_anomaly',
+                        'severity' => $isPositive ? 'positive' : ($zScore > \App\Core\DashboardConstants::CRITICAL_Z_SCORE_THRESHOLD ? 'critical' : 'warning'),
                         'z_score' => $zScore,
                         'current_rate' => $currentData['attendance_rate'],
                         'historical_mean' => $stats['mean'],
@@ -312,6 +313,19 @@ class SmartDeviationDetector {
                 ];
         }
         
+        // Detect if attendance is above historical maximum
+        if ($currentData['attendance_rate'] > $stats['max']) {
+            $percentageDiff = $currentData['attendance_rate'] - $stats['max'];
+            $deviations[] = [
+                'type' => 'above_historical_maximum',
+                'severity' => 'positive',
+                'current_rate' => $currentData['attendance_rate'],
+                'historical_max' => $stats['max'],
+                'section' => $sectionId,
+                'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($percentageDiff, 0) . "% mehr Teilnahme als je zuvor"
+            ];
+        }
+        
         return $deviations;
     }
     
@@ -325,13 +339,14 @@ class SmartDeviationDetector {
             $zScore = abs(($currentData['response_rate'] - $stats['response_mean']) / $stats['response_std']);
             
             if ($zScore > $this->zScoreThreshold) {
-                $direction = $currentData['response_rate'] > $stats['response_mean'] ? 'höher' : 'niedriger';
+                $isPositive = $currentData['response_rate'] > $stats['response_mean'];
+                $direction = $isPositive ? 'höher' : 'niedriger';
                 $percentageDiff = abs($currentData['response_rate'] - $stats['response_mean']);
                 // Only show significant deviations
                 if ($percentageDiff > \App\Core\DashboardConstants::PERCENTAGE_DIFFERENCE_THRESHOLD) {
                     $deviations[] = [
-                        'type' => 'response_rate_anomaly',
-                        'severity' => $zScore > \App\Core\DashboardConstants::CRITICAL_Z_SCORE_THRESHOLD ? 'critical' : 'warning',
+                        'type' => $isPositive ? 'positive_response_rate_anomaly' : 'negative_response_rate_anomaly',
+                        'severity' => $isPositive ? 'positive' : ($zScore > \App\Core\DashboardConstants::CRITICAL_Z_SCORE_THRESHOLD ? 'critical' : 'warning'),
                         'z_score' => $zScore,
                         'current_rate' => $currentData['response_rate'],
                         'historical_mean' => $stats['response_mean'],
@@ -352,6 +367,19 @@ class SmartDeviationDetector {
                 'historical_min' => $stats['response_min'],
                 'section' => $sectionId,
                 'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($percentageDiff, 0) . "% weniger Rückmeldungen als je zuvor"
+            ];
+        }
+        
+        // Detect if response rate is above historical maximum
+        if ($currentData['response_rate'] > $stats['response_max']) {
+            $percentageDiff = $currentData['response_rate'] - $stats['response_max'];
+            $deviations[] = [
+                'type' => 'above_historical_response_maximum',
+                'severity' => 'positive',
+                'current_rate' => $currentData['response_rate'],
+                'historical_max' => $stats['response_max'],
+                'section' => $sectionId,
+                'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($percentageDiff, 0) . "% mehr Rückmeldungen als je zuvor"
             ];
         }
         
@@ -379,10 +407,11 @@ class SmartDeviationDetector {
             
             $trendChange = abs($recentAvg - $olderAvg);
             if ($trendChange > \App\Core\DashboardConstants::TREND_CHANGE_THRESHOLD) {
-                $direction = $recentAvg > $olderAvg ? 'steigend' : 'fallend';
+                $isPositive = $recentAvg > $olderAvg;
+                $direction = $isPositive ? 'steigend' : 'fallend';
                 $deviations[] = [
-                    'type' => 'trend_change',
-                    'severity' => 'info',
+                    'type' => $isPositive ? 'positive_trend_change' : 'negative_trend_change',
+                    'severity' => $isPositive ? 'positive' : 'info',
                     'trend_change' => $trendChange,
                     'recent_avg' => $recentAvg,
                     'older_avg' => $olderAvg,

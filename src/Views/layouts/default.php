@@ -88,7 +88,6 @@
                     },
                     fontFamily: {
                         'sans': ['Roboto', 'sans-serif'],
-                        'brand': ['Fugaz One', 'cursive'],
                     },
                     spacing: {
                         '1': '0.25rem',
@@ -111,7 +110,6 @@
     
     <!-- Google Fonts -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,600,700">
-    <link href="https://fonts.googleapis.com/css2?family=Fugaz+One&display=swap" rel="stylesheet">
     
     <!-- Icon Fonts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css">
@@ -144,9 +142,6 @@ if (isset($_SESSION['username'])): ?>
                 <button class="top-nav-menu-toggle" id="menu-toggle" onclick="(function(){const w=document.getElementById('wrapper');if(w)w.classList.toggle('toggled');})();">
                     <i class="fa fa-bars"></i>
                 </button>
-                <a href="/" class="top-nav-brand">
-                    <?= APP_NAME ?>
-                </a>
             </div>
             <div class="top-nav-actions">
                 <?php 
@@ -333,9 +328,6 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
 <!-- Top Navigation for non-logged in users -->
 <nav class="top-nav">
     <div class="top-nav-left">
-        <a href="/" class="top-nav-brand">
-            <?= isset($_SESSION['orchestra_name']) ? $_SESSION['orchestra_name'] : APP_NAME ?>
-        </a>
     </div>
     <div class="top-nav-actions">
         <?php 

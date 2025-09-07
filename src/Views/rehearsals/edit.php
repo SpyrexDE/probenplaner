@@ -9,10 +9,6 @@
     </script>
     <?php endif; ?>
     
-    <div class="page-header">
-        <h1 class="page-title">Termin bearbeiten</h1>
-        <p class="page-subtitle">Ändere die Details der Probe oder des Konzerts</p>
-    </div>
     
     <div class="form-container">
         <form method="post" action="/rehearsals/edit/<?= $rehearsal['id'] ?>" class="form">
