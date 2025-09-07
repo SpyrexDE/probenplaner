@@ -595,7 +595,6 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                 $isLeaderOnlyView = isset($isLeaderOnlyView) && $isLeaderOnlyView;
                                 $rootDisplayName = $rootGroup['display_name'] ?? 'Tutti';
                                 
-                                // Debug the frontend rendering
                                 if (isset($sectionPlayers['all'])) {
                                 } else {
                                 }
@@ -685,6 +684,9 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                                         $member = $player;
                                                         $status = $player['status'];
                                                         $additionalInfo = '';
+                                                        if (!isset($member['note']) && isset($player['note'])) {
+                                                            $member['note'] = $player['note'];
+                                                        }
                                                         include __DIR__ . '/user-item.php'; 
                                                     ?>
                                                 <?php endforeach;

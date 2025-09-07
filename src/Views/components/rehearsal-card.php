@@ -91,8 +91,11 @@ if ($context === 'promises') {
                     </div>
                 </div>
                 
-                <?php if ($context === 'promises'): ?>
-                    <span class="rehearsal-note-dot <?= !empty($note) ? 'visible' : '' ?>"></span>
+                <?php if ($context === 'promises' && !empty($note)): ?>
+                    <div class="rehearsal-note-tag">
+                        <?= icon('quote-left', 'rehearsal-note-icon') ?>
+                        <span class="rehearsal-note-text"><?= htmlspecialchars($note) ?></span>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>
@@ -130,6 +133,7 @@ if ($context === 'promises') {
                 <?php endif; ?>
             </div>
         <?php endif; ?>
+        
     </div>
     
     <?php if ($context === 'promises'): ?>

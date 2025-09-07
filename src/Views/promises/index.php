@@ -107,6 +107,24 @@ $(document).ready(function() {
         }
     });
     
+    // Initialize note displays for existing notes on page load
+    $('.rehearsal-card input[id^="note"]').each(function() {
+        var noteInput = $(this);
+        var note = noteInput.val();
+        var rehearsalId = noteInput.attr('id').replace('note', '');
+        var container = $('.rehearsal-card').has('#note' + rehearsalId);
+        
+        if (note && note.trim() !== '') {
+            // Add note tag if not already present and card is declined  
+            if (container.hasClass('status-not_attending') && container.find('.rehearsal-note-tag').length === 0) {
+                var noteHtml = '<div class="rehearsal-note-tag">' +
+                               '<i class="fa-solid fa-quote-left rehearsal-note-icon"></i>' +
+                               '<span class="rehearsal-note-text">' + $('<div>').text(note).html() + '</span></div>';
+                container.find('.rehearsal-card-header').append(noteHtml);
+            }
+        }
+    });
+    
     // Handle attend/not attend button clicks
     $('.checkBtn').click(function() {
         if ($(this).hasClass('disabled')) {
@@ -126,8 +144,8 @@ $(document).ready(function() {
         var container = $(this).closest('.rehearsal-card');
         container.removeClass('status-not_attending status-pending').addClass('status-attending');
         
-        // Hide note dot
-        container.find('.note-dot').removeClass('visible');
+        // Remove note tag
+        container.find('.rehearsal-note-tag').remove();
         
         // Clear any existing note
         $('#note' + id).val('');
@@ -149,6 +167,14 @@ $(document).ready(function() {
         }
         
         var id = $(this).attr('id');
+        var container = $(this).closest('.rehearsal-card');
+        
+        // Check if already declined - if so, open note dialog for editing
+        if ($(this).hasClass('selected') && container.hasClass('status-not_attending')) {
+            var existingNote = $('#note' + id).val() || '';
+            showNoteDialog(id, existingNote);
+            return;
+        }
         
         // Disable buttons for this rehearsal
         disableRehearsalButtons(id);
@@ -158,27 +184,13 @@ $(document).ready(function() {
         $(this).siblings('.checkBtn').removeClass('selected').addClass('deselected');
         
         // Update UI
-        var container = $(this).closest('.rehearsal-card');
         container.removeClass('status-pending status-attending').addClass('status-not_attending');
         
         // Get existing note
-        var existingNote = $('#note' + id).val();
+        var existingNote = $('#note' + id).val() || '';
         
-        // Show note prompt if no note exists
-        if (!existingNote) {
-            showNoteDialog(id, '');
-        } else {
-            // Show existing note dot
-            container.find('.note-dot').addClass('visible');
-            queueUpdate("promise", id, false, existingNote);
-            
-            // Update sidebar stats immediately for better UX
-            if (typeof window.loadUserStats === 'function') {
-                setTimeout(function() {
-                    window.loadUserStats();
-                }, 100);
-            }
-        }
+        // Always show note dialog for new decline
+        showNoteDialog(id, existingNote);
     });
     
     // Note dialog function
@@ -200,10 +212,24 @@ $(document).ready(function() {
             }
         }).then((result) => {
             var note = '';
+            var container = $('.rehearsal-card').has('#' + id);
+            
             if (result.isConfirmed && result.value) {
                 note = result.value;
-                // Show note dot
-                $('.rehearsal-card').has('#' + id).find('.note-dot').addClass('visible');
+                
+                // Update or create note tag
+                var existingNoteTag = container.find('.rehearsal-note-tag');
+                if (existingNoteTag.length) {
+                    existingNoteTag.find('.rehearsal-note-text').text(note);
+                } else {
+                    var noteHtml = '<div class="rehearsal-note-tag">' +
+                                   '<i class="fa-solid fa-quote-left rehearsal-note-icon"></i>' +
+                                   '<span class="rehearsal-note-text">' + $('<div>').text(note).html() + '</span></div>';
+                    container.find('.rehearsal-card-header').append(noteHtml);
+                }
+            } else {
+                // Note was cleared or cancelled
+                container.find('.rehearsal-note-tag').remove();
             }
             
             // Update hidden field
@@ -226,7 +252,7 @@ $(document).ready(function() {
         var card = $(this);
         if (card.hasClass('status-not_attending')) {
             var id = card.find('.crossBtn').attr('id');
-            var currentNote = $('#note' + id).val();
+            var currentNote = $('#note' + id).val() || '';
             showNoteDialog(id, currentNote);
         }
     });

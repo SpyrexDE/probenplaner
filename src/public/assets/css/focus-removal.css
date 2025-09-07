@@ -10,7 +10,6 @@
 *:focus-visible,
 *:focus-within {
   outline: none !important;
-  box-shadow: none !important;
 }
 
 /* Remove focus rings from all interactive elements */
@@ -75,4 +74,25 @@ a:focus-visible,
 .action-btn:focus-visible:hover,
 .action-btn:focus-within:hover {
   box-shadow: var(--shadow-md) !important;
+}
+
+/* === TOP NAVIGATION EXCEPTIONS === */
+/* Preserve navigation bar drop shadow when focused */
+.top-nav:focus-within,
+.top-nav:focus,
+.top-nav:focus-visible {
+  box-shadow: 
+    0 2px 20px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    var(--shadow-md) !important;
+}
+
+/* Allow navigation buttons to be focused without breaking shadow */
+.top-nav *:focus,
+.top-nav *:focus-visible,
+.top-nav .top-nav-menu-toggle:focus,
+.top-nav .top-nav-icon:focus {
+  outline: none !important;
+  /* Don't remove box-shadow - let parent handle it */
+  box-shadow: inherit !important;
 }

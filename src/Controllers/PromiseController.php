@@ -346,7 +346,6 @@ class PromiseController extends Controller
             $leaderSectionNames[] = $groupManager->getDisplayName($leaderResolvedType);
         }
         
-        // Debug logging for troubleshooting
         if (!empty($rehearsals)) {
             $firstRehearsal = $rehearsals[0];
             $firstRehearsalId = $firstRehearsal['id'];
@@ -394,6 +393,7 @@ class PromiseController extends Controller
         // Get parameters
         $rehearsalId = isset($_POST['id']) ? intval($_POST['id']) : 0;
         $status = isset($_POST['status']) ? (bool)$_POST['status'] : false;
+        $note = isset($_POST['note']) ? trim($_POST['note']) : '';
         
         if ($rehearsalId <= 0) {
             header('Content-Type: application/json');
@@ -410,11 +410,6 @@ class PromiseController extends Controller
             echo json_encode(['success' => false, 'message' => 'Benutzer nicht gefunden', 'details' => 'Ihr Benutzerkonto wurde nicht gefunden. Bitte melden Sie sich erneut an.']);
             return;
         }
-        
-        // Get existing note if any from user_promises table
-        $promiseModel = new UserPromise();
-        $existingPromise = $promiseModel->findByUserAndRehearsal($user['id'], $rehearsalId);
-        $note = $existingPromise ? $existingPromise['note'] : '';
         
         // Update promise
         $result = $this->userModel->updatePromise($user['id'], $rehearsalId, $status, $note);

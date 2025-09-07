@@ -221,18 +221,31 @@
 
 /* Mobile styles removed for consistent design */
 
-.rehearsal-note-dot {
-  width: 8px;
-  height: 8px;
-  background-color: var(--color-error);
-  border-radius: var(--radius-full);
-  opacity: 0;
-  transition: opacity var(--transition-base);
-  margin-left: var(--space-2);
+.rehearsal-note-tag {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-3);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
 }
 
-.rehearsal-note-dot.visible {
-  opacity: 1;
+.rehearsal-card-header {
+  position: relative;
+}
+
+.rehearsal-note-icon {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.rehearsal-note-text {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-style: italic;
 }
 
 .rehearsal-actions {
@@ -676,28 +689,72 @@
   left: 0;
   right: 0;
   height: var(--navbar-height);
-  background-color: var(--color-bg-primary);
-  box-shadow: var(--shadow-sm);
+  background: linear-gradient(0deg, 
+    rgba(255, 255, 255, 0.95) 0%, 
+    rgba(248, 250, 255, 0.9) 50%, 
+    rgba(240, 245, 255, 0.85) 100%
+  );
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    0 2px 20px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    var(--shadow-md);
   z-index: var(--z-sticky);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 var(--space-5);
-  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-3) var(--space-5);
+  transition: all var(--transition-slow);
+}
+
+/* Ensure navigation shadow is preserved on button focus */
+.top-nav *:focus {
+  position: relative;
+  z-index: 1;
+}
+
+.top-nav:focus-within {
+  box-shadow: 
+    0 2px 20px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    var(--shadow-md);
 }
 
 .top-nav-left {
   display: flex;
   align-items: center;
+  gap: var(--space-4);
+}
+
+.top-nav-title {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #1a1a1a;
+  background: linear-gradient(135deg, #1a1a1a 0%, #4a5568 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  position: relative;
+  transition: all var(--transition-base);
 }
 
 .top-nav-menu-toggle {
   background: none;
   border: none;
   font-size: var(--font-size-xl);
-  color: var(--color-primary);
+  color: #1a1a1a;
+  background: linear-gradient(135deg, #1a1a1a 0%, #4a5568 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   cursor: pointer;
-  margin-right: var(--space-4);
   padding: var(--space-3);
   border-radius: var(--radius-base);
   transition: all var(--transition-base);
@@ -709,14 +766,29 @@
 }
 
 .top-nav-menu-toggle:hover {
-  background-color: var(--color-primary-100);
-  color: var(--color-primary-dark);
-  transform: scale(1.05);
+  background: rgba(0, 0, 0, 0.04);
+  color: #1a1a1a;
+  background: linear-gradient(135deg, #0f0f0f 0%, #2d3748 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transform: translateY(-1px);
 }
 
 .top-nav-menu-toggle:active {
-  transform: scale(0.95);
-  background-color: var(--color-primary-200);
+  transform: translateY(0);
+  background: linear-gradient(135deg, #000000 0%, #1a202c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.top-nav-menu-toggle:focus {
+  outline: none;
+}
+
+.top-nav-icon:focus {
+  outline: none;
 }
 
 
@@ -728,17 +800,34 @@
 
 .top-nav-icon {
   font-size: var(--font-size-xl);
-  color: var(--color-text-secondary);
+  color: #1a1a1a;
+  background: linear-gradient(135deg, #1a1a1a 0%, #4a5568 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   cursor: pointer;
-  transition: color var(--transition-base);
+  transition: all var(--transition-base);
   padding: var(--space-2);
   border-radius: var(--radius-base);
   width: auto !important;
 }
 
 .top-nav-icon:hover {
-  color: var(--color-primary);
-  background-color: var(--color-primary-50);
+  background: rgba(0, 0, 0, 0.04);
+  color: #1a1a1a;
+  background: linear-gradient(135deg, #0f0f0f 0%, #2d3748 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transform: translateY(-1px);
+}
+
+.top-nav-icon:active {
+  transform: translateY(0);
+  background: linear-gradient(135deg, #000000 0%, #1a202c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* === PAGE CONTENT === */
@@ -763,13 +852,71 @@
   pointer-events: auto;
 }
 
-#wrapper.toggled .top-nav-left {
-  display: none;
+/* Desktop behavior - sidebar always visible, so adjust nav position */
+@media (min-width: 800px) {
+  .top-nav {
+    left: var(--sidebar-width) !important;
+    width: calc(100% - var(--sidebar-width)) !important;
+    padding-left: var(--space-5) !important;
+    transition: left var(--transition-slow), width var(--transition-slow) !important;
+  }
+  
+  /* When manually toggled OFF on desktop, return nav to full width */
+  #wrapper.toggled .top-nav {
+    left: 0 !important;
+    width: 100% !important;
+  }
 }
 
+/* Mobile behavior - hide title when sidebar is open */
+@media (max-width: 799px) {
+  #wrapper.toggled .top-nav-left {
+    display: none;
+  }
+}
+
+/* Show actions on the right when sidebar is toggled */
 #wrapper.toggled .top-nav-actions {
   display: flex;
   margin-left: auto;
+}
+
+/* Ensure title is never hidden on desktop */
+@media (min-width: 800px) {
+  #wrapper.toggled .top-nav-left {
+    display: flex !important;
+  }
+}
+
+/* Mobile responsive behavior for navigation title */
+@media (max-width: 640px) {
+  .top-nav {
+    padding: var(--space-2) var(--space-4);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  
+  .top-nav-title {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+}
+
+@media (max-width: 480px) {
+  .top-nav {
+    padding: var(--space-2) var(--space-3);
+  }
+  
+  .top-nav-left {
+    gap: var(--space-3);
+  }
+  
+  .top-nav-title {
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0;
+  }
 }
 
 /* Mobile sidebar behavior */

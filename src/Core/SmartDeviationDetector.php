@@ -111,6 +111,16 @@ class SmartDeviationDetector {
             // Determine appropriate context text
             $contextText = $isSmallGroup ? "in der Kleingruppe" : "in allen Registern";
             
+            // Check if rehearsal is too far in the future for meaningful response rate analysis
+            $rehearsalDate = new \DateTime($rehearsal['date']);
+            $today = new \DateTime();
+            $daysDifference = $today->diff($rehearsalDate)->days;
+            $isFutureRehearsal = $rehearsalDate > $today;
+            
+            // Skip response rate analysis for rehearsals more than 14 days in the future
+            // as people typically haven't been notified or expected to respond yet
+            $skipResponseRateAnalysis = $isFutureRehearsal && $daysDifference > 14;
+            
             // Check overall attendance rate
             if ($overallData['attendance_rate'] < \App\Core\DashboardConstants::GROUP_PERFORMANCE_THRESHOLD) {
                 $deviations[] = [
@@ -121,8 +131,8 @@ class SmartDeviationDetector {
                 ];
             }
             
-            // Check overall response rate
-            if ($overallData['response_rate'] < \App\Core\DashboardConstants::LOW_RESPONSE_RATE_THRESHOLD) {
+            // Check overall response rate (but skip for distant future rehearsals)
+            if (!$skipResponseRateAnalysis && $overallData['response_rate'] < \App\Core\DashboardConstants::LOW_RESPONSE_RATE_THRESHOLD) {
                 $severity = $overallData['response_rate'] < \App\Core\DashboardConstants::CRITICAL_RESPONSE_RATE_THRESHOLD ? 'critical' : 'warning';
                 $deviations[] = [
                     'type' => 'overall_response_rate',
@@ -218,8 +228,12 @@ class SmartDeviationDetector {
         $data = $result->fetch_assoc();
         
         $total = $data['total_players'];
-        $attendanceRate = $total > 0 ? ($data['attending'] / $total) * 100 : 0;
-        $responseRate = $total > 0 ? (($data['attending'] + $data['not_attending']) / $total) * 100 : 0;
+        $totalResponded = $data['attending'] + $data['not_attending'];
+        
+        // Attendance rate should only consider people who actually responded (yes/no)
+        // People with no response or "maybe" are not counted in attendance rate
+        $attendanceRate = $totalResponded > 0 ? ($data['attending'] / $totalResponded) * 100 : 0;
+        $responseRate = $total > 0 ? ($totalResponded / $total) * 100 : 0;
         
         return [
             'total' => $total,
@@ -236,11 +250,13 @@ class SmartDeviationDetector {
      */
     private function calculateStatistics($historicalData) {
         $attendanceRates = array_map(function($row) {
-            return $row['total_players'] > 0 ? ($row['attending'] / $row['total_players']) * 100 : 0;
+            $totalResponded = $row['attending'] + $row['not_attending'];
+            return $totalResponded > 0 ? ($row['attending'] / $totalResponded) * 100 : 0;
         }, $historicalData);
         
         $responseRates = array_map(function($row) {
-            return $row['total_players'] > 0 ? (($row['attending'] + $row['not_attending']) / $row['total_players']) * 100 : 0;
+            $totalResponded = $row['attending'] + $row['not_attending'];
+            return $row['total_players'] > 0 ? ($totalResponded / $row['total_players']) * 100 : 0;
         }, $historicalData);
         
         // Calculate attendance statistics
@@ -392,32 +408,48 @@ class SmartDeviationDetector {
     private function detectPatternDeviations($currentData, $historicalData, $sectionId) {
         $deviations = [];
         
-        // Detect trend changes
-        if (count($historicalData) >= 8) {
-            $recentData = array_slice($historicalData, 0, 4);
-            $olderData = array_slice($historicalData, 4, 4);
+        // Detect trend changes - now properly including current rehearsal in the analysis
+        if (count($historicalData) >= 7) { // Need at least 7 historical + 1 current = 8 total
+            // Include current rehearsal in recent data for accurate trend analysis
+            $recentData = array_slice($historicalData, 0, 3); // Take 3 most recent historical
+            $olderData = array_slice($historicalData, 3, 4);  // Take next 4 older historical
             
-            $recentAvg = array_sum(array_map(function($row) {
-                return $row['total_players'] > 0 ? ($row['attending'] / $row['total_players']) * 100 : 0;
-            }, $recentData)) / count($recentData);
+            // Calculate recent average including current rehearsal
+            $recentRates = array_map(function($row) {
+                $totalResponded = $row['attending'] + $row['not_attending'];
+                return $totalResponded > 0 ? ($row['attending'] / $totalResponded) * 100 : 0;
+            }, $recentData);
+            $recentRates[] = $currentData['attendance_rate']; // Add current rehearsal
+            $recentAvg = array_sum($recentRates) / count($recentRates);
             
+            // Calculate older average
             $olderAvg = array_sum(array_map(function($row) {
-                return $row['total_players'] > 0 ? ($row['attending'] / $row['total_players']) * 100 : 0;
+                $totalResponded = $row['attending'] + $row['not_attending'];
+                return $totalResponded > 0 ? ($row['attending'] / $totalResponded) * 100 : 0;
             }, $olderData)) / count($olderData);
             
             $trendChange = abs($recentAvg - $olderAvg);
             if ($trendChange > \App\Core\DashboardConstants::TREND_CHANGE_THRESHOLD) {
                 $isPositive = $recentAvg > $olderAvg;
                 $direction = $isPositive ? 'steigend' : 'fallend';
-                $deviations[] = [
-                    'type' => $isPositive ? 'positive_trend_change' : 'negative_trend_change',
-                    'severity' => $isPositive ? 'positive' : 'info',
-                    'trend_change' => $trendChange,
-                    'recent_avg' => $recentAvg,
-                    'older_avg' => $olderAvg,
-                    'section' => $sectionId,
-                    'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($trendChange, 0) . "% " . ($direction === 'steigend' ? 'mehr' : 'weniger') . " Teilnahme als früher"
-                ];
+                
+                // Don't show positive trend messages when current attendance is 0%
+                // This prevents misleading messages like "38% more attendance than before" 
+                // when the current rehearsal actually has no attendees
+                $currentHasZeroAttendance = $currentData['attendance_rate'] == 0;
+                $shouldSkipPositiveTrend = $isPositive && $currentHasZeroAttendance;
+                
+                if (!$shouldSkipPositiveTrend) {
+                    $deviations[] = [
+                        'type' => $isPositive ? 'positive_trend_change' : 'negative_trend_change',
+                        'severity' => $isPositive ? 'positive' : 'info',
+                        'trend_change' => $trendChange,
+                        'recent_avg' => $recentAvg,
+                        'older_avg' => $olderAvg,
+                        'section' => $sectionId,
+                        'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($trendChange, 0) . "% " . ($direction === 'steigend' ? 'mehr' : 'weniger') . " Teilnahme als früher"
+                    ];
+                }
             }
         }
         

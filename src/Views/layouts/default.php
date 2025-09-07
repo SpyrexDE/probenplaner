@@ -33,7 +33,7 @@
     
     <!-- Theme and Component Styles -->
     <link rel="stylesheet" href="/assets/css/theme.css">
-    <link rel="stylesheet" href="/assets/css/components.css">
+    <link rel="stylesheet" href="/assets/css/components.css?v=<?= time() ?>">
     <link rel="stylesheet" href="/assets/css/focus-removal.css">
     
     <!-- Vanilla CSS Components -->
@@ -142,6 +142,9 @@ if (isset($_SESSION['username'])): ?>
                 <button class="top-nav-menu-toggle" id="menu-toggle" onclick="(function(){const w=document.getElementById('wrapper');if(w)w.classList.toggle('toggled');})();">
                     <i class="fa fa-bars"></i>
                 </button>
+                <div class="top-nav-title">
+                    Probenplaner
+                </div>
             </div>
             <div class="top-nav-actions">
                 <?php 
@@ -328,6 +331,9 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
 <!-- Top Navigation for non-logged in users -->
 <nav class="top-nav">
     <div class="top-nav-left">
+        <div class="top-nav-title">
+            Probenplaner
+        </div>
     </div>
     <div class="top-nav-actions">
         <?php 
@@ -380,25 +386,83 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
         if (currentRoute.startsWith('/promises/admin')) {
             // Director view of all promises/responses
             helpTitle = 'Hilfe - Rückmeldungen verwalten';
-            helpContent = '<p>Hier sehen Sie alle Rückmeldungen zu den Proben.</p>' +
-                          '<p>In der Tabelle werden die An-/Abmeldungen Ihrer Orchestermitglieder angezeigt.</p>' +
-                          '<p>Mit dem Filter oben können Sie die Anzeige auf bestimmte Instrumente oder Zeiträume beschränken.</p>' +
-                          '<p>Klicken Sie auf den Namen einer Person, um deren Notizen zu sehen.</p>';
+            helpContent = '<div style="text-align: left;">' +
+                          '<h4><i class="fas fa-table"></i> Übersicht</h4>' +
+                          '<p>Diese Seite zeigt alle Rückmeldungen zu den Proben in einer übersichtlichen Dashboard-Ansicht.</p>' +
+                          '<p><strong>Proben-Karten:</strong> Jede Probe wird als Karte mit Datum, Uhrzeit, Ort und Teilnahme-Statistiken angezeigt.</p>' +
+                          '<p><strong>Farbkodierung:</strong> Die Teilnahme-Balken sind farbkodiert - Grün für Zusagen, Rot für Absagen, Grau für fehlende Rückmeldungen.</p>' +
+                          
+                          '<h4><i class="fas fa-users"></i> Teilnehmer-Details</h4>' +
+                          '<p><strong>Aufklappbare Bereiche:</strong> Klicken Sie auf die Registerbezeichnungen (z.B. "Violine 1", "Blechbläser"), um die einzelnen Mitglieder zu sehen.</p>' +
+                          '<p><strong>Status-Icons:</strong> ✓ = Teilnahme, ✗ = Absage, ? = Keine Rückmeldung</p>' +
+                          '<p><strong>Notizen einsehen:</strong> Absage-Begründungen und Notizen werden direkt neben den Namen angezeigt (z.B. "Notiz: Krank" oder "Notiz: Terminkonflikt").</p>' +
+                          
+                          '<h4><i class="fas fa-brain"></i> Proben-Insights (Beta)</h4>' +
+                          '<p>Wenn in den Orchester-Einstellungen aktiviert, sehen Sie zusätzlich:</p>' +
+                          '<p><strong>Kritische Register:</strong> Register mit besonders niedriger Teilnahme werden hervorgehoben.</p>' +
+                          '<p><strong>Auffälligkeiten:</strong> Das System erkennt automatisch ungewöhnliche Muster:</p>' +
+                          '<ul style="margin-left: 20px;">' +
+                          '<li><strong>Teilnahme-Anomalien:</strong> Ungewöhnlich hohe/niedrige Teilnahme verglichen mit der Historie</li>' +
+                          '<li><strong>Rückmeldungs-Anomalien:</strong> Ungewöhnlich wenige Rückmeldungen in bestimmten Registern</li>' +
+                          '<li><strong>Trends:</strong> Langfristige Veränderungen der Teilnahme-Bereitschaft</li>' +
+                          '<li><strong>Rekorde:</strong> Neue Höchst- oder Tiefstände bei Teilnahme oder Rückmeldungen</li>' +
+                          '</ul>' +
+                          '<p><em>Diese Insights helfen dabei, Probleme frühzeitig zu erkennen und gezielt zu handeln.</em></p>' +
+                          
+                          '<h4><i class="fas fa-filter"></i> Navigation & Filter</h4>' +
+                          '<p><strong>Zeitraum-Filter:</strong> Mit dem Uhren-Symbol können Sie vergangene Proben ein-/ausblenden.</p>' +
+                          '<p><strong>Drucken:</strong> Nutzen Sie das Drucker-Symbol für eine druckfreundliche Ansicht.</p>' +
+                          '</div>';
         } 
         else if (currentRoute.startsWith('/promises/leader')) {
             // Group leader view of responses
             helpTitle = 'Hilfe - Gruppen-Rückmeldungen';
-            helpContent = '<p>Hier sehen Sie alle Rückmeldungen Ihrer Gruppe.</p>' +
-                          '<p>In der Tabelle werden die An-/Abmeldungen der Mitglieder Ihrer Instrumentengruppe angezeigt.</p>' +
-                          '<p>Klicken Sie auf den Namen einer Person, um deren Notizen zu sehen.</p>';
+            helpContent = '<div style="text-align: left;">' +
+                          '<h4><i class="fas fa-users"></i> Gruppen-Übersicht</h4>' +
+                          '<p>Als Stimmführer sehen Sie hier die Rückmeldungen Ihrer Instrumentengruppe in einer übersichtlichen Dashboard-Ansicht.</p>' +
+                          
+                          '<h4><i class="fas fa-list"></i> Proben-Karten</h4>' +
+                          '<p><strong>Probe-Informationen:</strong> Jede Probe wird als Karte mit Datum, Uhrzeit, Ort und Teilnahme-Statistiken Ihrer Gruppe angezeigt.</p>' +
+                          '<p><strong>Farbkodierung:</strong> Grün = Zusagen, Rot = Absagen, Grau = Fehlende Rückmeldungen</p>' +
+                          '<p><strong>Mitglieder-Details:</strong> Die Namen Ihrer Gruppenmitglieder sind mit ihrem Status aufgelistet.</p>' +
+                          '<p><strong>Status-Icons:</strong> ✓ = Teilnahme, ✗ = Absage, ? = Keine Rückmeldung</p>' +
+                          
+                          '<h4><i class="fas fa-comment-dots"></i> Notizen einsehen</h4>' +
+                          '<p>Absage-Begründungen und Notizen werden direkt neben den Mitgliedernamen angezeigt.</p>' +
+                          '<p>Dies hilft Ihnen, die Gründe für Absagen auf einen Blick zu erkennen und bei Bedarf Rücksprache zu halten.</p>' +
+                          
+                          '<h4><i class="fas fa-clock"></i> Navigation</h4>' +
+                          '<p><strong>Zeitraum-Filter:</strong> Mit dem Uhren-Symbol können Sie vergangene Proben ein-/ausblenden.</p>' +
+                          '<p><strong>Drucken:</strong> Das Drucker-Symbol erstellt eine druckfreundliche Übersicht.</p>' +
+                          
+                          '<p><em>Hinweis: Die erweiterten Proben-Insights sind für Stimmführer nicht sichtbar - diese stehen nur der Dirigentin/dem Dirigenten zur Verfügung.</em></p>' +
+                          '</div>';
         }
         else if (currentRoute.startsWith('/promises')) {
             // Individual member view of their promises
-            helpTitle = 'Hilfe - Meine Meldungen';
-            helpContent = '<p>Hier können Sie Ihre An- und Abmeldungen für kommende Proben verwalten.</p>' +
-                          '<p>Klicken Sie auf eine Probe in der Tabelle, um Ihre Teilnahme zu bestätigen oder abzusagen.</p>' +
-                          '<p>Bei einer Absage können Sie optional einen Grund angeben.</p>' +
-                          '<p>Vergangene Proben werden automatisch ausgeblendet.</p>';
+            helpTitle = 'Hilfe - Meine Rückmeldungen';
+            helpContent = '<div style="text-align: left;">' +
+                          '<h4><i class="fas fa-calendar-check"></i> Rückmeldungen verwalten</h4>' +
+                          '<p>Hier können Sie Ihre An- und Abmeldungen für kommende Proben verwalten. Die Proben werden in einer modernen Dashboard-Ansicht angezeigt.</p>' +
+                          
+                          '<h4><i class="fas fa-mouse-pointer"></i> Teilnahme bestätigen/absagen</h4>' +
+                          '<p><strong>Klicken zum Antworten:</strong> Klicken Sie auf eine beliebige Stelle einer Probe-Karte, um Ihre Teilnahme zu bestätigen oder abzusagen.</p>' +
+                          '<p><strong>Status-Anzeige:</strong> Ihre aktuelle Rückmeldung wird farblich hervorgehoben:</p>' +
+                          '<ul style="margin-left: 20px;">' +
+                          '<li><strong>Grün:</strong> Sie haben zugesagt</li>' +
+                          '<li><strong>Rot:</strong> Sie haben abgesagt</li>' +
+                          '<li><strong>Grau:</strong> Noch keine Rückmeldung</li>' +
+                          '</ul>' +
+                          
+                          '<h4><i class="fas fa-comment"></i> Notizen hinzufügen</h4>' +
+                          '<p><strong>Absage-Begründung:</strong> Bei einer Absage können Sie optional einen Grund angeben - dies hilft der Dirigentin/dem Dirigenten bei der Planung.</p>' +
+                          '<p><strong>Notizen bearbeiten:</strong> Sie können Ihre Notizen jederzeit nachträglich bearbeiten, indem Sie erneut auf die Probe klicken.</p>' +
+                          
+                          '<h4><i class="fas fa-eye"></i> Sichtbarkeit</h4>' +
+                          '<p><strong>Relevante Proben:</strong> Es werden nur Proben angezeigt, bei denen Ihr Instrument/Register benötigt wird.</p>' +
+                          '<p><strong>Zeitraum:</strong> Vergangene Proben werden automatisch ausgeblendet, um die Übersicht aktuell zu halten.</p>' +
+                          '<p><strong>Uhren-Symbol:</strong> Mit dem Uhren-Symbol können Sie trotzdem vergangene Proben einblenden.</p>' +
+                          '</div>';
         }
         else if (currentRoute.startsWith('/rehearsals')) {
             // Rehearsal management for directors
@@ -569,6 +633,7 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
      const wrapper = document.getElementById('wrapper');
      const sidebar = document.getElementById('sidebar-wrapper');
      const menuToggle = document.getElementById('menu-toggle');
+     
      
      // Primary toggle function
      function toggleSidebar() {
