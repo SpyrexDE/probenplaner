@@ -590,12 +590,18 @@
 
 .sidebar-nav {
   padding: var(--space-3) var(--space-2);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-nav-list {
   list-style: none;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .sidebar-nav-item {
@@ -2737,4 +2743,60 @@
   color: var(--color-text-secondary);
   line-height: var(--line-height-relaxed);
   margin: 0;
+}
+
+/* === PWA INSTALL CARD === */
+.sidebar-install-card {
+  margin: var(--space-2) var(--space-3) var(--space-3) var(--space-3);
+  background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-primary-100) 100%);
+  border: 1px solid var(--color-primary-200);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  margin-top: auto;
+}
+
+.sidebar-install-card:hover {
+  background: linear-gradient(135deg, var(--color-primary-100) 0%, var(--color-primary-200) 100%);
+  border-color: var(--color-primary-300);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(71, 140, 244, 0.15);
+}
+
+.sidebar-install-card:active {
+  transform: translateY(0);
+}
+
+.sidebar-install-content {
+  padding: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.sidebar-install-icon {
+  font-size: 16px;
+  color: var(--color-primary-600);
+  width: 18px;
+  text-align: center;
+}
+
+.sidebar-install-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-install-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-tight);
+  color: var(--color-primary-700);
+  margin-bottom: var(--space-1);
+}
+
+.sidebar-install-subtitle {
+  font-size: var(--font-size-xs);
+  color: var(--color-primary-600);
+  line-height: var(--line-height-tight);
+  opacity: 0.8;
 }

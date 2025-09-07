@@ -5,6 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
     <title><?= isset($_SESSION['orchestra_name']) ? $_SESSION['orchestra_name'] : (isset($title) ? $title : APP_NAME) ?></title>
     
+    <!-- PWA Meta Tags -->
+    <meta name="application-name" content="Probenplaner">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Probenplaner">
+    <meta name="description" content="App zum Probenmanagement des JSO Bremen">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#ffffff">
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/assets/img/Logo.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/assets/img/Logo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/img/Logo.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="/assets/img/Logo.png">
+    
+    <!-- Microsoft Tiles -->
+    <meta name="msapplication-TileColor" content="#478cf4">
+    <meta name="msapplication-TileImage" content="/assets/img/Logo.png">
+    <meta name="msapplication-config" content="/browserconfig.xml">
+    
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -99,7 +120,6 @@
     
     <!-- JavaScript Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script type="module" src="https://cdn.jsdelivr.net/npm/easy-pwa-js@1.0/dist/front.js"></script>
     <script src="/assets/js/jquery.min.js"></script>
     <script src="/assets/js/notifications.js"></script>
     
@@ -206,7 +226,7 @@ if (isset($_SESSION['username'])): ?>
                 <?php if (isset($_SESSION['type']) && $_SESSION['type'] === 'Dirigent'): ?>
                 <div class="sidebar-stats-header">
                     <div class="sidebar-stats-title">Probe</div>
-                    <div class="sidebar-stats-date" id="next-rehearsal-date">Lade...</div>
+                    <div class="sidebar-stats-date" id="next-rehearsal-date"></div>
                 </div>
                 <?php else: ?>
                 <div class="sidebar-stats-title">Meine Proben</div>
@@ -272,6 +292,17 @@ if (isset($_SESSION['username'])): ?>
                 ?>
                 </ul>
             </nav>
+            
+            <!-- PWA Install Card -->
+            <div id="pwa-install-card" class="sidebar-install-card" style="display: none;" onclick="installPWA()">
+                <div class="sidebar-install-content">
+                    <i class="sidebar-install-icon fas fa-download"></i>
+                    <div class="sidebar-install-text">
+                        <div class="sidebar-install-title">App installieren</div>
+                        <div class="sidebar-install-subtitle">Für bessere Performance</div>
+                    </div>
+                </div>
+            </div>
             
             <!-- Version Footer -->
             <div class="sidebar-footer">
@@ -604,39 +635,76 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
          }
      });
      
-     // Function to load user statistics
-     window.loadUserStats = function() {
-         // Use the proper API endpoint instead of scraping HTML
-         fetch('/api/user-stats', {
-             method: 'GET',
-             headers: {
-                 'Content-Type': 'application/json'
-             }
-         })
-         .then(response => {
-             if (!response.ok) {
-                 throw new Error(`HTTP error! status: ${response.status}`);
-             }
-             return response.json();
-         })
-         .then(data => {
-             if (data.success && data.stats) {
-                 updateStatsDisplay(data.stats);
-             } else {
-                 console.error('API returned error:', data.error || 'Unknown error');
-                 // Fallback to zero stats
-                 updateStatsDisplay({ attending: 0, not_attending: 0, no_response: 0, total: 0 });
-             }
-         })
-         .catch(error => {
-             console.error('Failed to load stats via API:', error);
-             // Fallback to zero stats
-             updateStatsDisplay({ attending: 0, not_attending: 0, no_response: 0, total: 0 });
-         });
+    // Function to load user statistics with retry mechanism
+    window.loadUserStats = function(retryCount = 0) {
+        const MAX_RETRIES = 2;
+        
+        // Set loading state first (but only on initial call, not retries)
+        if (retryCount === 0) {
+            setStatsLoadingState(true);
+        }
+        
+        // Use the proper API endpoint instead of scraping HTML
+        fetch('/api/user-stats', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success && data.stats) {
+                updateStatsDisplay(data.stats);
+                setStatsLoadingState(false);
+            } else {
+                console.error('API returned error:', data.error || 'Unknown error');
+                // Try again if we haven't exceeded max retries
+                if (retryCount < MAX_RETRIES) {
+                    setTimeout(() => window.loadUserStats(retryCount + 1), 1000 * (retryCount + 1));
+                } else {
+                    // Fallback to zero stats but indicate error state
+                    updateStatsDisplay({ attending: 0, not_attending: 0, no_response: 0, total: 0 }, true);
+                    setStatsLoadingState(false);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Failed to load stats via API:', error);
+            // Try again if we haven't exceeded max retries
+            if (retryCount < MAX_RETRIES) {
+                setTimeout(() => window.loadUserStats(retryCount + 1), 1000 * (retryCount + 1));
+            } else {
+                // Fallback to zero stats but indicate error state
+                updateStatsDisplay({ attending: 0, not_attending: 0, no_response: 0, total: 0 }, true);
+                setStatsLoadingState(false);
+            }
+        });
+    }
+     
+     // Function to set loading state for stats
+     function setStatsLoadingState(isLoading) {
+         const dateElement = document.getElementById('next-rehearsal-date');
+         const attendingText = document.getElementById('stats-attending');
+         const notAttendingText = document.getElementById('stats-not-attending');
+         const noResponseText = document.getElementById('stats-no-response');
+         
+         if (isLoading) {
+             // Show loading state
+             if (dateElement) dateElement.textContent = 'Lade...';
+             if (attendingText) attendingText.textContent = '-';
+             if (notAttendingText) notAttendingText.textContent = '-';
+             if (noResponseText) noResponseText.textContent = '-';
+         }
      }
      
      // Function to update stats display
-     function updateStatsDisplay(stats) {
+     function updateStatsDisplay(stats, isError = false) {
          const total = stats.total || 1; // Avoid division by zero
          const attendingPercent = ((stats.attending || 0) / total) * 100;
          const notAttendingPercent = ((stats.not_attending || 0) / total) * 100;
@@ -661,10 +729,10 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
          if (noResponseText) noResponseText.textContent = stats.no_response || 0;
 
          // If this is conductor stats, update the next rehearsal display
+         const dateElement = document.getElementById('next-rehearsal-date');
+         const titleElement = document.querySelector('.sidebar-stats-header .sidebar-stats-title');
+         
          if (stats.next_rehearsal) {
-             const dateElement = document.getElementById('next-rehearsal-date');
-             const titleElement = document.querySelector('.sidebar-stats-header .sidebar-stats-title');
-             
              if (dateElement) {
                  dateElement.textContent = stats.next_rehearsal.date_formatted || stats.next_rehearsal.date;
              }
@@ -674,6 +742,12 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
                  const rehearsalType = stats.next_rehearsal.type || 'Probe';
                  titleElement.textContent = rehearsalType;
              }
+         } else if (isError && dateElement) {
+             // Show error state for conductor view
+             dateElement.textContent = 'Fehler beim Laden';
+         } else if (dateElement && titleElement) {
+             // Clear loading text if no rehearsal and no error (conductor view)
+             dateElement.textContent = 'Keine Proben';
          }
      }
     
@@ -695,6 +769,7 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
     
     // Load user statistics for all logged-in users
     <?php if (isset($_SESSION['user_id'])): ?>
+    // Load stats immediately when page loads
     loadUserStats();
     
     // Also update stats when page becomes visible (e.g., after tab switch)
@@ -735,6 +810,106 @@ function updateUIForCurrentRoute() {
 
 // Update UI immediately when script loads
 updateUIForCurrentRoute();
+
+// PWA Service Worker Registration
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js', {
+            scope: '/'
+        }).then(function(registration) {
+            console.log('Service Worker registered successfully:', registration.scope);
+            
+            // Check for updates
+            registration.addEventListener('updatefound', function() {
+                const newWorker = registration.installing;
+                console.log('New Service Worker found:', newWorker);
+                
+                newWorker.addEventListener('statechange', function() {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        // New version available, show update notification
+                        if (window.Swal) {
+                            Swal.fire({
+                                title: 'Update verfügbar',
+                                text: 'Eine neue Version der App ist verfügbar. Möchten Sie jetzt aktualisieren?',
+                                icon: 'info',
+                                showCancelButton: true,
+                                confirmButtonText: 'Aktualisieren',
+                                cancelButtonText: 'Später',
+                                confirmButtonColor: '#478cf4'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    window.location.reload();
+                                }
+                            });
+                        } else {
+                            // Fallback if SweetAlert is not available
+                            if (confirm('Eine neue Version ist verfügbar. Jetzt aktualisieren?')) {
+                                window.location.reload();
+                            }
+                        }
+                    }
+                });
+            });
+        }).catch(function(error) {
+            console.log('Service Worker registration failed:', error);
+        });
+    });
+}
+
+// PWA Installation Prompt
+let deferredPrompt;
+const installCard = document.getElementById('pwa-install-card');
+
+window.addEventListener('beforeinstallprompt', function(e) {
+    // Prevent Chrome 67 and earlier from automatically showing the prompt
+    e.preventDefault();
+    // Stash the event so it can be triggered later
+    deferredPrompt = e;
+    // Show the install card
+    if (installCard) {
+        installCard.style.display = 'block';
+    }
+});
+
+function installPWA() {
+    if (deferredPrompt) {
+        // Show the install prompt
+        deferredPrompt.prompt();
+        // Wait for the user to respond to the prompt
+        deferredPrompt.userChoice.then(function(choiceResult) {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('User accepted the install prompt');
+            } else {
+                console.log('User dismissed the install prompt');
+            }
+            deferredPrompt = null;
+            if (installCard) {
+                installCard.style.display = 'none';
+            }
+        });
+    }
+}
+
+// Hide install card if app is already installed
+window.addEventListener('appinstalled', function() {
+    console.log('PWA was installed');
+    if (installCard) {
+        installCard.style.display = 'none';
+    }
+    deferredPrompt = null;
+    
+    // Show success message
+    if (window.notifySuccess) {
+        window.notifySuccess('App erfolgreich installiert!');
+    }
+});
+
+// Hide install card on mobile if already in standalone mode
+if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+    if (installCard) {
+        installCard.style.display = 'none';
+    }
+}
 </script>
 </body>
 </html> 

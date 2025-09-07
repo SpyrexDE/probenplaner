@@ -380,6 +380,24 @@ body {
   height: var(--button-height-lg);
 }
 
+/* Fix for icon buttons with colored styling */
+.btn-icon.btn-danger,
+.btn-icon.btn-primary,
+.btn-icon.btn-secondary,
+.btn-icon.btn-success,
+.btn-icon.btn-outline {
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Ensure icons inside icon buttons are properly sized */
+.btn-icon i {
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
 .btn-round {
   border-radius: var(--radius-full);
 }
