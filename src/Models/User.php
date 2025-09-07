@@ -201,35 +201,10 @@ class User extends Model
             
             // Validate password if it's being updated
             if (isset($data['password'])) {
-                // Only validate the password part, skip username validation
-                $password = $data['password'];
-                $passwordErrors = [];
-                
-                if (empty($password)) {
-                    $passwordErrors[] = "Passwort fehlt";
-                } else {
-                    // Password requirements
-                    $passwordValidationErrors = [];
-                    if (strlen($password) < 8) {
-                        $passwordValidationErrors[] = 'mindestens 8 Zeichen';
-                    }
-                    if (!preg_match('/[A-Z]/', $password)) {
-                        $passwordValidationErrors[] = 'mindestens ein Großbuchstabe';
-                    }
-                    if (!preg_match('/[a-z]/', $password)) {
-                        $passwordValidationErrors[] = 'mindestens ein Kleinbuchstabe';
-                    }
-                    if (!preg_match('/[0-9]/', $password)) {
-                        $passwordValidationErrors[] = 'mindestens eine Zahl';
-                    }
-                    
-                    if (!empty($passwordValidationErrors)) {
-                        $passwordErrors[] = "Das Passwort muss " . implode(', ', $passwordValidationErrors) . " enthalten";
-                    }
-                }
-                
-                if (!empty($passwordErrors)) {
-                    $validationErrors = array_merge($validationErrors, $passwordErrors);
+                // Use consistent validation through Validator class
+                $passwordValidation = \App\Core\Validator::validatePassword($data['password']);
+                if (!$passwordValidation['valid']) {
+                    $validationErrors = array_merge($validationErrors, $passwordValidation['errors']);
                 }
                 
                 // Hash the password before updating
@@ -420,32 +395,10 @@ class User extends Model
         
         // Validate password if provided
         if ($password !== null) {
-            if (empty($password)) {
-                $errors[] = "Passwort fehlt";
-            } else {
-                // Password requirements from AuthController
-                $passwordErrors = [];
-                if (strlen($password) < 8) {
-                    $passwordErrors[] = 'mindestens 8 Zeichen';
-                }
-                if (!preg_match('/[A-Z]/', $password)) {
-                    $passwordErrors[] = 'mindestens ein Großbuchstabe';
-                }
-                if (!preg_match('/[a-z]/', $password)) {
-                    $passwordErrors[] = 'mindestens ein Kleinbuchstabe';
-                }
-                if (!preg_match('/[0-9]/', $password)) {
-                    $passwordErrors[] = 'mindestens eine Zahl';
-                }
-                
-                if (!empty($passwordErrors)) {
-                    $errors[] = "Das Passwort muss " . implode(', ', $passwordErrors) . " enthalten";
-                }
-            }
-            
-            // Check if passwords match (if confirmation is provided)
-            if ($passwordConfirm !== null && $password !== $passwordConfirm) {
-                $errors[] = "Die Passwörter stimmen nicht überein";
+            // Use consistent validation through Validator class
+            $passwordValidation = \App\Core\Validator::validatePassword($password, $passwordConfirm);
+            if (!$passwordValidation['valid']) {
+                $errors = array_merge($errors, $passwordValidation['errors']);
             }
         }
         

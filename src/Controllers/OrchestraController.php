@@ -285,29 +285,56 @@ class OrchestraController extends Controller
             return;
         }
         
+        // CSRF protection
+        try {
+            $this->protectCSRF();
+        } catch (\Exception $e) {
+            $this->addAlert('Sicherheitsfehler!', $e->getMessage(), 'error');
+            $this->redirect('/orchestras/settings');
+            return;
+        }
+        
         // Check if form submitted
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/orchestras/settings');
             return;
         }
         
-        // Validate input
-        $name = isset($_POST['name']) ? trim($_POST['name']) : '';
-        $token = isset($_POST['token']) ? trim($_POST['token']) : '';
-        $leaderPassword = isset($_POST['leader_password']) ? trim($_POST['leader_password']) : '';
+        // Validate input and sanitize for UTF-8
+        $name = Validator::sanitizeUtf8($_POST['name'] ?? '');
+        $token = Validator::sanitizeUtf8($_POST['token'] ?? '');
+        $leaderPassword = Validator::sanitizeUtf8($_POST['leader_password'] ?? '');
         
-        if (empty($name) || empty($token) || empty($leaderPassword)) {
-            $this->addAlert('Fehler!', 'Alle Felder müssen ausgefüllt werden.', 'error');
-            $this->redirect('/orchestras/settings');
-            return;
-        }
+        // Validate required fields
+        $requiredValidation = Validator::validateRequired([
+            'name' => $name,
+            'token' => $token,
+            'leader_password' => $leaderPassword
+        ], ['name', 'token', 'leader_password']);
+        
+        // Validate individual fields
+        $tokenValidation = Validator::validateToken($token);
         
         // Get current orchestra
         $orchestra = $this->orchestraModel->findById($_SESSION['orchestra_id']);
         
         // Check token uniqueness (only if changed)
+        $tokenErrors = [];
         if ($token !== $orchestra['token'] && $this->orchestraModel->findByToken($token)) {
-            $this->addAlert('Fehler!', 'Dieser Token wird bereits verwendet.', 'error');
+            $tokenErrors[] = "Dieser Token wird bereits verwendet";
+        }
+        
+        // Merge all validations
+        $validation = Validator::mergeResults([
+            $requiredValidation,
+            $tokenValidation,
+            ['valid' => empty($tokenErrors), 'errors' => $tokenErrors]
+        ]);
+        
+        // If validation errors, show them
+        if (!$validation['valid']) {
+            $errorMsg = implode(", ", $validation['errors']);
+            $this->addAlert('Fehler!', $errorMsg, 'error');
             $this->redirect('/orchestras/settings');
             return;
         }

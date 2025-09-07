@@ -355,12 +355,7 @@ $(document).ready(function(){
                             
                             if(response.valid){
                                 $('#group_leader').prop('checked', true);
-                                Swal.fire({
-                                    title: 'Berechtigung erteilt!',
-                                    text: 'Du hast jetzt Stimmführer-Berechtigungen.',
-                                    icon: 'success',
-                                    confirmButtonColor: '#478cf4'
-                                });
+                                window.notifySuccess('Passwort akzeptiert');
                             } else {
                                 $('#group_leader').prop('checked', false);
                                 Swal.fire({

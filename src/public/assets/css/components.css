@@ -2559,6 +2559,14 @@
   gap: var(--space-6);
 }
 
+@media (max-width: 768px) {
+  .danger-zone-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-4);
+  }
+}
+
 .danger-zone-info {
   flex: 1;
 }
@@ -2644,6 +2652,26 @@
 .swal-cancel {
   border-radius: var(--radius-lg) !important;
   font-weight: var(--font-weight-semibold) !important;
+}
+
+/* Fix SweetAlert2 input width issues */
+.swal2-popup .swal2-input,
+.swal2-popup .swal2-textarea {
+  width: calc(100% - 20px) !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 0 auto !important;
+}
+
+/* Ensure SweetAlert2 container respects popup width */
+.swal2-popup {
+  box-sizing: border-box !important;
+}
+
+.swal2-popup .swal2-input:focus,
+.swal2-popup .swal2-textarea:focus {
+  box-shadow: 0 0 0 3px rgba(71, 140, 244, 0.1) !important;
+  border-color: var(--color-primary, #478cf4) !important;
 }
 
 /* Utility classes for spacing */

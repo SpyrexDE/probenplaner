@@ -25,6 +25,7 @@
             
             <div class="modern-card-body">
                 <form action="/orchestras/update" method="post" class="space-y-6">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
                     <!-- Basic Information -->
                     <div class="form-section">
                         <div class="form-group-modern">
