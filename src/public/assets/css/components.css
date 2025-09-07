@@ -302,8 +302,20 @@
   box-shadow: none;
 }
 
+.action-btn.deselected:hover {
+  opacity: 0.7;
+  background-color: var(--color-primary-50);
+  border-color: var(--color-primary-200);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
 .action-btn.deselected img {
   filter: grayscale(100%) brightness(0.7);
+}
+
+.action-btn.deselected:hover img {
+  filter: grayscale(50%) brightness(0.9);
 }
 
 .action-btn.disabled {

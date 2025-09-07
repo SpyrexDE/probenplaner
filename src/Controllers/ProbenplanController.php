@@ -49,12 +49,14 @@ class ProbenplanController extends Controller
             // Get only rehearsals relevant to the user
             $userType = $_SESSION['type'] ?? '';
             $userGroups = $_SESSION['groups'] ?? [];
+            $isSmallGroup = $_SESSION['is_small_group'] ?? false;
             
             $rehearsals = $this->rehearsalModel->getRelevantForUser(
                 $_SESSION['orchestra_id'],
                 $userType,
                 $userGroups,
-                $showOld
+                $showOld,
+                $isSmallGroup
             );
         } else {
             // Get all rehearsals

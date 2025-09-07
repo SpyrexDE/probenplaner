@@ -221,7 +221,7 @@ body {
 }
 
 /* Button Components */
-.btn-base, button, input[type="submit"], input[type="button"], input[type="reset"] {
+.btn-base {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -243,7 +243,8 @@ body {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.btn-base:hover, button:hover, input[type="submit"]:hover, input[type="button"]:hover, input[type="reset"]:hover {
+/* Only apply hover effects to buttons with explicit theme classes */
+.btn-base:hover {
   background: linear-gradient(135deg, var(--color-gray-50) 0%, var(--color-white) 100%);
   border-color: var(--color-primary-200);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);

@@ -67,5 +67,12 @@ a:focus-visible,
 .action-btn:focus-visible,
 .action-btn:focus-within {
   outline: none !important;
-  box-shadow: var(--shadow-sm) !important;
+  /* Don't override hover box-shadow */
+}
+
+/* Ensure action button hover effects work properly */
+.action-btn:focus:hover,
+.action-btn:focus-visible:hover,
+.action-btn:focus-within:hover {
+  box-shadow: var(--shadow-md) !important;
 }

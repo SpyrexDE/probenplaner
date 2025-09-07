@@ -404,9 +404,10 @@ class Rehearsal extends Model
      * @param string $userType User type/instrument
      * @param array $userGroups User's groups
      * @param bool $includeOld Whether to include past rehearsals
+     * @param bool $isSmallGroup Whether the user is in a small group
      * @return array
      */
-    public function getRelevantForUser($orchestraId, $userType, $userGroups = [], $includeOld = false)
+    public function getRelevantForUser($orchestraId, $userType, $userGroups = [], $includeOld = false, $isSmallGroup = false)
     {
         $orchestraId = (int)$orchestraId;
         $today = date('Y-m-d');
@@ -425,7 +426,6 @@ class Rehearsal extends Model
         if ($result) {
             while ($row = $result->fetch_assoc()) {
                 $groups = $this->getGroupsAsAssoc($row['id']);
-                $isSmallGroup = isset($userGroups['is_small_group']) && $userGroups['is_small_group'];
                 $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($row);
                 
                 if ($this->isUserInRehearsalGroup($userType, $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
