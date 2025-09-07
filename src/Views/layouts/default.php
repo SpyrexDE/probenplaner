@@ -811,15 +811,38 @@ function updateUIForCurrentRoute() {
 // Update UI immediately when script loads
 updateUIForCurrentRoute();
 
-// PWA Service Worker Registration
+// PWA Service Worker Registration with Version Control
 if ('serviceWorker' in navigator) {
+    // Store current app version from server (use tag for PWA stability)
+    window.APP_VERSION = '<?php echo Version::getTag(); ?>';
+    window.APP_ENV = '<?php echo APP_ENV; ?>';
+    
     window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/sw.js', {
-            scope: '/'
+        // Register dynamic service worker (no timestamp - let version handle updates)
+        const swUrl = '/dynamic-sw.php';
+        
+        navigator.serviceWorker.register(swUrl, {
+            scope: '/',
+            updateViaCache: 'none'  // Always check for SW updates
         }).then(function(registration) {
-            console.log('Service Worker registered successfully:', registration.scope);
+            console.log('Dynamic Service Worker registered:', registration.scope, 'Version:', window.APP_VERSION);
             
-            // Check for updates
+            // Check for updates immediately and periodically
+            function checkForUpdates() {
+                registration.update().then(() => {
+                    console.log('Service Worker update check completed');
+                });
+            }
+            
+            // Initial update check
+            checkForUpdates();
+            
+            // Periodic update checks every 30 seconds in production/test
+            if (window.APP_ENV !== 'development') {
+                setInterval(checkForUpdates, 30000);
+            }
+            
+            // Listen for service worker updates (only show notifications in production)
             registration.addEventListener('updatefound', function() {
                 const newWorker = registration.installing;
                 console.log('New Service Worker found:', newWorker);
@@ -830,30 +853,127 @@ if ('serviceWorker' in navigator) {
                         if (window.Swal) {
                             Swal.fire({
                                 title: 'Update verfügbar',
-                                text: 'Eine neue Version der App ist verfügbar. Möchten Sie jetzt aktualisieren?',
+                                text: 'Eine neue Version der App ist verfügbar. Die Seite wird neu geladen um die neueste Version zu laden.',
                                 icon: 'info',
                                 showCancelButton: true,
-                                confirmButtonText: 'Aktualisieren',
+                                confirmButtonText: 'Jetzt aktualisieren',
                                 cancelButtonText: 'Später',
-                                confirmButtonColor: '#478cf4'
+                                confirmButtonColor: '#478cf4',
+                                allowOutsideClick: false
                             }).then((result) => {
                                 if (result.isConfirmed) {
-                                    window.location.reload();
+                                    // Show loading state
+                                    Swal.fire({
+                                        title: 'Update wird durchgeführt...',
+                                        text: 'Bitte warten Sie, während die neue Version geladen wird.',
+                                        icon: 'info',
+                                        allowOutsideClick: false,
+                                        allowEscapeKey: false,
+                                        showConfirmButton: false,
+                                        willOpen: () => {
+                                            Swal.showLoading();
+                                        }
+                                    });
+                                    
+                                    // Request service worker to clear old caches
+                                    if (navigator.serviceWorker.controller) {
+                                        navigator.serviceWorker.controller.postMessage({
+                                            type: 'CLEAR_OLD_CACHES'
+                                        });
+                                    } else {
+                                        // Fallback if no service worker controller
+                                        window.location.reload(true);
+                                    }
                                 }
                             });
                         } else {
                             // Fallback if SweetAlert is not available
                             if (confirm('Eine neue Version ist verfügbar. Jetzt aktualisieren?')) {
-                                window.location.reload();
+                                // Request service worker to clear old caches
+                                if (navigator.serviceWorker.controller) {
+                                    navigator.serviceWorker.controller.postMessage({
+                                        type: 'CLEAR_OLD_CACHES'
+                                    });
+                                    // The reload will happen when we receive the CACHE_CLEARED message
+                                } else {
+                                    // Fallback if no service worker controller
+                                    window.location.reload(true);
+                                }
                             }
                         }
                     }
                 });
             });
+            
+            // Listen for messages from service worker
+            navigator.serviceWorker.addEventListener('message', event => {
+                if (event.data && event.data.type === 'VERSION_AVAILABLE') {
+                    console.log('New service worker version available:', event.data.version);
+                    // Version is available but caches are not cleared yet - user needs to confirm
+                } else if (event.data && event.data.type === 'CACHE_CLEARED') {
+                    console.log('Service Worker caches cleared:', event.data.success);
+                    
+                    if (event.data.success) {
+                        // Cache clearing successful, now reload to get fresh content
+                        console.log('Cache clearing successful, reloading page...');
+                        window.location.reload(true);
+                    } else {
+                        // Cache clearing failed, show error and reload anyway
+                        console.error('Cache clearing failed:', event.data.error);
+                        Swal.fire({
+                            title: 'Update-Fehler',
+                            text: 'Cache konnte nicht vollständig gelöscht werden, aber das Update wird trotzdem fortgesetzt.',
+                            icon: 'warning',
+                            confirmButtonText: 'OK',
+                            confirmButtonColor: '#478cf4'
+                        }).then(() => {
+                            window.location.reload(true);
+                        });
+                    }
+                }
+            });
+            
         }).catch(function(error) {
-            console.log('Service Worker registration failed:', error);
+            console.error('Service Worker registration failed:', error);
+            // In development, this is expected and okay
+            if (window.APP_ENV === 'development') {
+                console.log('Service Worker registration failed in development - this is normal');
+            }
+        });
+        
+        // Listen for service worker controller changes (when SW takes control)
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            console.log('Service Worker controller changed - new version is now active');
+            // Optional: Reload the page to use the new service worker
+            // window.location.reload();
         });
     });
+    
+    // Manual version check function (can be called from anywhere)
+    window.checkAppVersion = function() {
+        if (!navigator.serviceWorker.controller) {
+            console.log('No service worker controller available for version check');
+            return;
+        }
+        
+        const messageChannel = new MessageChannel();
+        messageChannel.port1.onmessage = function(event) {
+            if (event.data && event.data.type === 'VERSION_INFO') {
+                console.log('Current SW version:', event.data.version);
+                console.log('Client app version:', window.APP_VERSION);
+                
+                if (event.data.version !== window.APP_VERSION) {
+                    console.log('Version mismatch detected - triggering update');
+                    location.reload(true);
+                }
+            }
+        };
+        
+        navigator.serviceWorker.controller.postMessage(
+            { type: 'CHECK_VERSION' },
+            [messageChannel.port2]
+        );
+    };
 }
 
 // PWA Installation Prompt

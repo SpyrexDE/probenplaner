@@ -327,7 +327,12 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                 <div class="weekday-letter"><?= strtoupper($weekdayShort) ?></div>
                                 <div class="date-info">
                                     <div class="date-text"><?= date('d.m.Y', strtotime($rehearsal['date'])) ?></div>
-                                    <div class="date-subtitle"><?= htmlspecialchars($rehearsal['type'] ?? 'Probe') ?></div>
+                                    <div class="date-subtitle">
+                                    <?= htmlspecialchars($rehearsal['type'] ?? 'Probe') ?>
+                                    <?php if ($rehearsal['is_small_group'] ?? false): ?>
+                                        <span style="color: #6b7280;"> (Kleingruppe)</span>
+                                    <?php endif; ?>
+                                </div>
                                 </div>
                             </div>
                         </div>

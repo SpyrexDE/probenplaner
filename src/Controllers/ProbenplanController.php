@@ -71,13 +71,17 @@ class ProbenplanController extends Controller
             $days[] = Utilities::getGermanDayAbbreviation($date);
         }
         
+        // Get user role
+        $userRole = $_SESSION['role'] ?? '';
+        
         // Render view
         $this->render('probenplan/index', [
             'currentPage' => 'probenplan',
             'rehearsals' => $rehearsals,
             'days' => $days,
             'personalized' => $personalized,
-            'showOld' => $showOld
+            'showOld' => $showOld,
+            'userRole' => $userRole
         ]);
     }
 } 

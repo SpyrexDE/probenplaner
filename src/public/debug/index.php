@@ -133,7 +133,7 @@ $helpers = [
         <!-- Simple navigation -->
         <nav style="min-width: 200px;">
             <small style="color: #666; margin-bottom: 10px; display: block;">
-                <?= htmlspecialchars(\App\Core\Version::getShortVersion()) ?>
+                <?= htmlspecialchars(\App\Core\Version::getDetailedVersion()) ?>
             </small>
             <p class="status-<?= $dbConnection ? 'ok' : 'error' ?>">
                 Database: <?= $dbConnection ? 'Connected' : 'Disconnected' ?>
