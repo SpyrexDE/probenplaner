@@ -142,8 +142,27 @@ if (isset($_SESSION['username'])): ?>
                 <button class="top-nav-menu-toggle" id="menu-toggle" onclick="(function(){const w=document.getElementById('wrapper');if(w)w.classList.toggle('toggled');})();">
                     <i class="fa fa-bars"></i>
                 </button>
+<?php
+                // Function to get page title based on current page
+                function getPageTitle($currentPage) {
+                    $pageTitles = [
+                        'admin' => 'Rückmeldungen',
+                        'rehearsals' => 'Termine',
+                        'probenplan' => 'Probenplan',
+                        'conductor_profile' => 'Profil bearbeiten',
+                        'orchestra_settings' => 'Orchester bearbeiten',
+                        'promises' => 'Meine Meldungen',
+                        'leader' => 'Rückmeldungen',
+                        'profile' => 'Profil bearbeiten',
+                    ];
+                    
+                    return isset($pageTitles[$currentPage]) ? $pageTitles[$currentPage] : 'Probenplaner';
+                }
+                
+                $displayTitle = isset($currentPage) ? getPageTitle($currentPage) : 'Probenplaner';
+                ?>
                 <div class="top-nav-title">
-                    Probenplaner
+                    <?= $displayTitle ?>
                 </div>
             </div>
             <div class="top-nav-actions">

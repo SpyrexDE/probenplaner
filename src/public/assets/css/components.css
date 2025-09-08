@@ -689,11 +689,7 @@
   left: 0;
   right: 0;
   height: var(--navbar-height);
-  background: linear-gradient(0deg, 
-    rgba(255, 255, 255, 0.95) 0%, 
-    rgba(248, 250, 255, 0.9) 50%, 
-    rgba(240, 245, 255, 0.85) 100%
-  );
+  background: rgba(255, 255, 255, 0.90);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
