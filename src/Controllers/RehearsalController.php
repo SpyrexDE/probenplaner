@@ -339,6 +339,16 @@ class RehearsalController extends Controller
             // Use the proper form data generation to handle tutti-with-exclusions
             $formData = \App\Core\RehearsalGroupProcessor::generateFormData($groups);
             
+            // Format times for HTML time inputs (strip seconds if present)
+            $startTime = '';
+            $endTime = '';
+            if (!empty($rehearsal['start_time'])) {
+                $startTime = substr($rehearsal['start_time'], 0, 5); // Convert HH:MM:SS to HH:MM
+            }
+            if (!empty($rehearsal['end_time'])) {
+                $endTime = substr($rehearsal['end_time'], 0, 5); // Convert HH:MM:SS to HH:MM
+            }
+            
             // Display the form
             $this->render('rehearsals/edit', [
                 'currentPage' => 'rehearsals',
@@ -346,8 +356,8 @@ class RehearsalController extends Controller
                 'errors' => [],
                 'formData' => [
                     'date' => $displayDate,
-                    'start_time' => $rehearsal['start_time'] ?? '',
-                    'end_time' => $rehearsal['end_time'] ?? '',
+                    'start_time' => $startTime,
+                    'end_time' => $endTime,
                     'location' => $rehearsal['location'],
                     'color' => $rehearsal['color'] ?? '',
                     'rehearsal_type' => $rehearsalType,

@@ -42,7 +42,7 @@ switch ($memberStatus) {
             <span class="tree-user-item-info"><?= $additionalInfo ?></span>
         <?php endif; ?>
         <?php if (!empty($note)): ?>
-            <span class="tree-user-item-note">- <?= $note ?></span>
+            <span class="tree-user-item-note"><?= icon('quote-left', 'tree-user-note-icon') ?> <?= $note ?></span>
         <?php endif; ?>
     </div>
     

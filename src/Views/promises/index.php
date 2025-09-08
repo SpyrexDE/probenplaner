@@ -120,7 +120,7 @@ $(document).ready(function() {
                 var noteHtml = '<div class="rehearsal-note-tag">' +
                                '<i class="fa-solid fa-quote-left rehearsal-note-icon"></i>' +
                                '<span class="rehearsal-note-text">' + $('<div>').text(note).html() + '</span></div>';
-                container.find('.rehearsal-card-header').append(noteHtml);
+                container.append(noteHtml);
             }
         }
     });
@@ -225,7 +225,7 @@ $(document).ready(function() {
                     var noteHtml = '<div class="rehearsal-note-tag">' +
                                    '<i class="fa-solid fa-quote-left rehearsal-note-icon"></i>' +
                                    '<span class="rehearsal-note-text">' + $('<div>').text(note).html() + '</span></div>';
-                    container.find('.rehearsal-card-header').append(noteHtml);
+                    container.append(noteHtml);
                 }
             } else {
                 // Note was cleared or cancelled

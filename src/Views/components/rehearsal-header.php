@@ -52,16 +52,16 @@ $groupsText = $smartDisplay->generateDescription(
     
     <div class="tree-node-stats">
         <div class="tree-node-stat">
-            <i class="tree-node-stat-icon fas fa-question-circle status-no-response"></i>
-            <span><?= $noResponseCount ?></span>
-        </div>
-        <div class="tree-node-stat">
             <i class="tree-node-stat-icon fas fa-check-circle status-attending"></i>
             <span><?= $attendingCount ?></span>
         </div>
         <div class="tree-node-stat">
             <i class="tree-node-stat-icon fas fa-times-circle status-not-attending"></i>
             <span><?= $notAttendingCount ?></span>
+        </div>
+        <div class="tree-node-stat">
+            <i class="tree-node-stat-icon fas fa-question-circle status-no-response"></i>
+            <span><?= $noResponseCount ?></span>
         </div>
     </div>
 </button>

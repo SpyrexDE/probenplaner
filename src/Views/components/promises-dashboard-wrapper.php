@@ -649,16 +649,16 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                         
                                         <div class="tree-node-stats">
                                             <div class="tree-node-stat">
-                                                <i class="tree-node-stat-icon fas fa-question-circle status-<?= DashboardConstants::CSS_NO_RESPONSE_CLASS ?>"></i>
-                                                <span><?= $sectionNoResponse ?></span>
-                                            </div>
-                                            <div class="tree-node-stat">
                                                 <i class="tree-node-stat-icon fas fa-check-circle status-<?= DashboardConstants::CSS_ATTENDING_CLASS ?>"></i>
                                                 <span><?= $sectionAttending ?></span>
                                             </div>
                                             <div class="tree-node-stat">
                                                 <i class="tree-node-stat-icon fas fa-times-circle status-<?= DashboardConstants::CSS_NOT_ATTENDING_CLASS ?>"></i>
                                                 <span><?= $sectionNotAttending ?></span>
+                                            </div>
+                                            <div class="tree-node-stat">
+                                                <i class="tree-node-stat-icon fas fa-question-circle status-<?= DashboardConstants::CSS_NO_RESPONSE_CLASS ?>"></i>
+                                                <span><?= $sectionNoResponse ?></span>
                                             </div>
                                         </div>
                                     </button>
@@ -723,16 +723,16 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                         
                                         <div class="tree-node-stats">
                                             <div class="tree-node-stat">
-                                                <i class="tree-node-stat-icon fas fa-question-circle status-<?= DashboardConstants::CSS_NO_RESPONSE_CLASS ?>"></i>
-                                                <span><?= $noResponseCount ?></span>
-                                            </div>
-                                            <div class="tree-node-stat">
                                                 <i class="tree-node-stat-icon fas fa-check-circle status-<?= DashboardConstants::CSS_ATTENDING_CLASS ?>"></i>
                                                 <span><?= $attendingCount ?></span>
                                             </div>
                                             <div class="tree-node-stat">
                                                 <i class="tree-node-stat-icon fas fa-times-circle status-<?= DashboardConstants::CSS_NOT_ATTENDING_CLASS ?>"></i>
                                                 <span><?= $notAttendingCount ?></span>
+                                            </div>
+                                            <div class="tree-node-stat">
+                                                <i class="tree-node-stat-icon fas fa-question-circle status-<?= DashboardConstants::CSS_NO_RESPONSE_CLASS ?>"></i>
+                                                <span><?= $noResponseCount ?></span>
                                             </div>
                                         </div>
                                     </button>

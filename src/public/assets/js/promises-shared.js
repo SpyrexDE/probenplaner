@@ -56,8 +56,9 @@ function initializeUserClickHandlers() {
                 // Prevent click from affecting parent elements
                 e.stopPropagation();
                 
-                // Extract user information
-                const username = this.innerText.split('-')[0].trim();
+                // Extract user information (only username, exclude note)
+                const usernameElement = this.querySelector('.tree-user-item-name');
+                const username = usernameElement ? usernameElement.textContent.trim() : this.innerText.split('-')[0].trim();
                 const stats = getUserStats(username);
                 
                 // Show SweetAlert with user statistics
@@ -101,9 +102,10 @@ function initializeUserClickHandlers() {
 // Get user attendance statistics
 function getUserStats(username) {
     // Find all instances of this username in the document
-    const userSpans = Array.from(document.querySelectorAll('.userSpan')).filter(span => 
-        span.textContent.includes(username)
-    );
+    const userSpans = Array.from(document.querySelectorAll('.userSpan')).filter(span => {
+        const usernameElement = span.querySelector('.tree-user-item-name');
+        return usernameElement ? usernameElement.textContent.trim() === username : span.textContent.includes(username);
+    });
     
     // Count each status type
     let attending = 0;

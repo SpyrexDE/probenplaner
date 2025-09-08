@@ -40,8 +40,8 @@
   transition: all var(--transition-base);
   position: relative;
   display: flex;
-  align-items: center;
-  gap: var(--space-3);
+  flex-direction: column;
+  gap: 0;
   box-shadow: var(--shadow-sm);
   min-height: 36px;
 }
@@ -222,15 +222,12 @@
 /* Mobile styles removed for consistent design */
 
 .rehearsal-note-tag {
-  position: absolute;
-  top: var(--space-2);
-  right: var(--space-3);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   font-style: italic;
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
 }
 
 .rehearsal-card-header {
@@ -246,6 +243,12 @@
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   font-style: italic;
+}
+
+.tree-user-note-icon {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-right: var(--space-1);
 }
 
 .rehearsal-actions {

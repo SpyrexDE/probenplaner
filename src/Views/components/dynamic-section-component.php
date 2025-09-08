@@ -40,16 +40,16 @@ $sectionElementId = $sectionId . $rehearsalId;
         
         <div class="tree-node-stats">
             <div class="tree-node-stat">
-                <i class="tree-node-stat-icon fas fa-question-circle status-no-response"></i>
-                <span><?= $sectionNoResponse ?></span>
-            </div>
-            <div class="tree-node-stat">
                 <i class="tree-node-stat-icon fas fa-check-circle status-attending"></i>
                 <span><?= $sectionAttending ?></span>
             </div>
             <div class="tree-node-stat">
                 <i class="tree-node-stat-icon fas fa-times-circle status-not-attending"></i>
                 <span><?= $sectionNotAttending ?></span>
+            </div>
+            <div class="tree-node-stat">
+                <i class="tree-node-stat-icon fas fa-question-circle status-no-response"></i>
+                <span><?= $sectionNoResponse ?></span>
             </div>
         </div>
     </button>
@@ -89,16 +89,16 @@ $sectionElementId = $sectionId . $rehearsalId;
                         
                         <div class="tree-node-stats">
                             <div class="tree-node-stat">
-                                <i class="tree-node-stat-icon fas fa-question-circle status-no-response"></i>
-                                <span><?= $subSectionNoResponse ?></span>
-                            </div>
-                            <div class="tree-node-stat">
                                 <i class="tree-node-stat-icon fas fa-check-circle status-attending"></i>
                                 <span><?= $subSectionAttending ?></span>
                             </div>
                             <div class="tree-node-stat">
                                 <i class="tree-node-stat-icon fas fa-times-circle status-not-attending"></i>
                                 <span><?= $subSectionNotAttending ?></span>
+                            </div>
+                            <div class="tree-node-stat">
+                                <i class="tree-node-stat-icon fas fa-question-circle status-no-response"></i>
+                                <span><?= $subSectionNoResponse ?></span>
                             </div>
                         </div>
                     </button>
@@ -136,16 +136,16 @@ $sectionElementId = $sectionId . $rehearsalId;
                                     
                                     <div class="tree-node-stats">
                                         <div class="tree-node-stat">
-                                            <i class="tree-node-stat-icon fas fa-question-circle status-no-response"></i>
-                                            <span><?= $noResponse ?></span>
-                                        </div>
-                                        <div class="tree-node-stat">
                                             <i class="tree-node-stat-icon fas fa-check-circle status-attending"></i>
                                             <span><?= $attending ?></span>
                                         </div>
                                         <div class="tree-node-stat">
                                             <i class="tree-node-stat-icon fas fa-times-circle status-not-attending"></i>
                                             <span><?= $notAttending ?></span>
+                                        </div>
+                                        <div class="tree-node-stat">
+                                            <i class="tree-node-stat-icon fas fa-question-circle status-no-response"></i>
+                                            <span><?= $noResponse ?></span>
                                         </div>
                                     </div>
                                 </button>
@@ -202,16 +202,16 @@ $sectionElementId = $sectionId . $rehearsalId;
                                 
                                 <div class="tree-node-stats">
                                     <div class="tree-node-stat">
-                                        <i class="tree-node-stat-icon fas fa-question-circle status-no-response"></i>
-                                        <span><?= $noResponse ?></span>
-                                    </div>
-                                    <div class="tree-node-stat">
                                         <i class="tree-node-stat-icon fas fa-check-circle status-attending"></i>
                                         <span><?= $attending ?></span>
                                     </div>
                                     <div class="tree-node-stat">
                                         <i class="tree-node-stat-icon fas fa-times-circle status-not-attending"></i>
                                         <span><?= $notAttending ?></span>
+                                    </div>
+                                    <div class="tree-node-stat">
+                                        <i class="tree-node-stat-icon fas fa-question-circle status-no-response"></i>
+                                        <span><?= $noResponse ?></span>
                                     </div>
                                 </div>
                             </button>
