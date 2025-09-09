@@ -205,44 +205,59 @@ $(document).ready(function() {
             cancelButtonText: 'Ohne Grund',
             confirmButtonColor: '#478cf4',
             cancelButtonColor: '#6c757d',
+            allowOutsideClick: true,
+            allowEscapeKey: true,
             inputValidator: (value) => {
                 if (value && value.length > 500) {
                     return 'Notiz ist zu lang (max. 500 Zeichen)';
                 }
             }
         }).then((result) => {
-            var note = '';
+            var note = currentNote; // Keep existing note by default
             var container = $('.rehearsal-card').has('#' + id);
+            var shouldUpdate = false;
             
-            if (result.isConfirmed && result.value) {
-                note = result.value;
+            if (result.isConfirmed) {
+                // User clicked "Speichern" - save the note (even if empty)
+                note = result.value || '';
+                shouldUpdate = true;
                 
                 // Update or create note tag
                 var existingNoteTag = container.find('.rehearsal-note-tag');
-                if (existingNoteTag.length) {
-                    existingNoteTag.find('.rehearsal-note-text').text(note);
+                if (note) {
+                    if (existingNoteTag.length) {
+                        existingNoteTag.find('.rehearsal-note-text').text(note);
+                    } else {
+                        var noteHtml = '<div class="rehearsal-note-tag">' +
+                                       '<i class="fa-solid fa-quote-left rehearsal-note-icon"></i>' +
+                                       '<span class="rehearsal-note-text">' + $('<div>').text(note).html() + '</span></div>';
+                        container.append(noteHtml);
+                    }
                 } else {
-                    var noteHtml = '<div class="rehearsal-note-tag">' +
-                                   '<i class="fa-solid fa-quote-left rehearsal-note-icon"></i>' +
-                                   '<span class="rehearsal-note-text">' + $('<div>').text(note).html() + '</span></div>';
-                    container.append(noteHtml);
+                    // Note was saved as empty
+                    existingNoteTag.remove();
                 }
-            } else {
-                // Note was cleared or cancelled
+            } else if (result.dismiss === Swal.DismissReason.cancel) {
+                // User clicked "Ohne Grund" - clear the note completely
+                note = '';
+                shouldUpdate = true;
                 container.find('.rehearsal-note-tag').remove();
             }
+            // For any other dismissal (clicking outside, ESC), do nothing - keep existing note
             
-            // Update hidden field
-            $('#note' + id).val(note);
-            
-            // Queue the update
-            queueUpdate("promise", id, false, note);
-            
-            // Update sidebar stats after note change
-            if (typeof window.loadUserStats === 'function') {
-                setTimeout(function() {
-                    window.loadUserStats();
-                }, 100);
+            if (shouldUpdate) {
+                // Update hidden field
+                $('#note' + id).val(note);
+                
+                // Queue the update
+                queueUpdate("promise", id, false, note);
+                
+                // Update sidebar stats after note change
+                if (typeof window.loadUserStats === 'function') {
+                    setTimeout(function() {
+                        window.loadUserStats();
+                    }, 100);
+                }
             }
         });
     }
