@@ -486,6 +486,10 @@ class SmartGroupDisplay
         
         if (count($groups) === 1) {
             $groupId = reset($groups);
+            // Handle special exclusion markers
+            if (strpos($groupId, '__EXCLUSION__') === 0) {
+                return substr($groupId, strlen('__EXCLUSION__'));
+            }
             $group = $this->groupManager->getGroup($groupId);
             return $group['display_name'] ?? $groupId;
         }
@@ -493,8 +497,14 @@ class SmartGroupDisplay
         $names = [];
         foreach ($groups as $groupId) {
             if (empty($groupId)) continue;
-            $group = $this->groupManager->getGroup($groupId);
-            $names[] = $group['display_name'] ?? $groupId;
+            
+            // Handle special exclusion markers
+            if (strpos($groupId, '__EXCLUSION__') === 0) {
+                $names[] = substr($groupId, strlen('__EXCLUSION__'));
+            } else {
+                $group = $this->groupManager->getGroup($groupId);
+                $names[] = $group['display_name'] ?? $groupId;
+            }
         }
         
         if (count($names) === 2) {
@@ -618,13 +628,20 @@ class SmartGroupDisplay
             ];
         }
         
-        // Strategy 3: Compress individual sections
+        // Strategy 4: Compress individual sections
         $compressedGroups = $this->compressSections($selectedGroups);
         if ($compressedGroups !== $selectedGroups) {
+            $description = $this->generateSimpleList($compressedGroups);
+            // Give higher priority to compressed sections that contain exclusions
+            $strategy = 'compressed_sections';
+            if (strpos($description, $this->language['without']) !== false) {
+                $strategy = 'compressed_sections_with_exclusions';
+            }
+            
             $candidates[] = [
-                'description' => $this->generateSimpleList($compressedGroups),
-                'strategy' => 'compressed_sections',
-                'score' => $this->calculateCompressionScore($this->generateSimpleList($compressedGroups))
+                'description' => $description,
+                'strategy' => $strategy,
+                'score' => $this->calculateCompressionScore($description)
             ];
         }
         
@@ -637,7 +654,7 @@ class SmartGroupDisplay
         
         // Sort candidates by multiple criteria:
         // 1. Avoid redundant multiple exclusions (prefer single root when simpler)
-        // 2. Strategy preference (single root > composite > multiple exclusions > compressed sections)
+        // 2. Strategy preference (single root > compressed sections with exclusions > composite > multiple exclusions > compressed sections)
         // 3. Lower score (more concise)
         usort($candidates, function($a, $b) use ($originalScore) {
             // First check: avoid redundant multiple exclusions
@@ -656,8 +673,28 @@ class SmartGroupDisplay
                 }
             }
             
+            // Also prefer compressed sections with exclusions over multiple exclusions when simpler
+            if ($a['strategy'] === 'compressed_sections_with_exclusions' && $b['strategy'] === 'multiple_exclusions') {
+                $aExclusionCount = $this->countExclusions($a['description']);
+                if ($aExclusionCount <= 3) { // Even stricter threshold
+                    return -1; // Prefer compressed sections with simple exclusions
+                }
+            }
+            if ($b['strategy'] === 'compressed_sections_with_exclusions' && $a['strategy'] === 'multiple_exclusions') {
+                $bExclusionCount = $this->countExclusions($b['description']);
+                if ($bExclusionCount <= 3) {
+                    return 1; // Prefer compressed sections with simple exclusions
+                }
+            }
+            
             // Strategy preference - fixed prioritization  
-            $strategyOrder = ['single_root' => 4, 'composite' => 3, 'multiple_exclusions' => 2, 'compressed_sections' => 1];
+            $strategyOrder = [
+                'single_root' => 5, 
+                'compressed_sections_with_exclusions' => 4,  // Higher priority for exclusions from compressed sections
+                'composite' => 3, 
+                'multiple_exclusions' => 2, 
+                'compressed_sections' => 1
+            ];
             $aStrategy = $strategyOrder[$a['strategy']] ?? 0;
             $bStrategy = $strategyOrder[$b['strategy']] ?? 0;
             
@@ -672,6 +709,13 @@ class SmartGroupDisplay
         // Return the best candidate that's better than the original
         foreach ($candidates as $candidate) {
             if ($candidate['score'] < $originalScore) {
+                return $candidate['description'];
+            }
+        }
+        
+        // If no candidate is better, but we have compressed sections with exclusions, use that
+        foreach ($candidates as $candidate) {
+            if ($candidate['strategy'] === 'compressed_sections_with_exclusions') {
                 return $candidate['description'];
             }
         }
@@ -1311,23 +1355,36 @@ class SmartGroupDisplay
         // Find instruments outside the root
         $instrumentsOutsideRoot = array_diff($selectedInstruments, $rootInstruments);
         
+        // Calculate coverage - what percentage of the selection is within this root
+        $rootCoverage = count(array_intersect($selectedInstruments, $rootInstruments)) / count($selectedInstruments);
+        
+        // Only proceed if this root covers most of the selection (at least 70%)
+        if ($rootCoverage < 0.7) {
+            return null; // This root doesn't represent most of the selection
+        }
+        
         // Only proceed if we're missing a reasonable number of instruments
         if (count($missingInstruments) === 0) {
             // Perfect match within root - just return the root name
             if (empty($instrumentsOutsideRoot)) {
                 return $this->groupManager->getDisplayName($rootId);
             } else {
-                // Root is complete but we have additional instruments outside - create unified list
-                $rootName = $this->groupManager->getDisplayName($rootId);
-                $rootGroupId = $this->getDynamicRootId();
-                $outsideGroups = $this->findGroupsForInstruments($instrumentsOutsideRoot, $rootGroupId);
-                
-                $allItems = [$rootName];
-                foreach ($outsideGroups as $groupId) {
-                    $group = $this->groupManager->getGroup($groupId);
-                    $allItems[] = $group['display_name'] ?? $groupId;
+                // Root is complete but we have additional instruments outside
+                // Only create unified list if the outside instruments are few
+                if (count($instrumentsOutsideRoot) <= count($rootInstruments) / 3) {
+                    $rootName = $this->groupManager->getDisplayName($rootId);
+                    $rootGroupId = $this->getDynamicRootId();
+                    $outsideGroups = $this->findGroupsForInstruments($instrumentsOutsideRoot, $rootGroupId);
+                    
+                    $allItems = [$rootName];
+                    foreach ($outsideGroups as $groupId) {
+                        $group = $this->groupManager->getGroup($groupId);
+                        $allItems[] = $group['display_name'] ?? $groupId;
+                    }
+                    return $this->generateSimpleListFromNames($allItems);
+                } else {
+                    return null; // Too many outside instruments
                 }
-                return $this->generateSimpleListFromNames($allItems);
             }
         }
         
@@ -1380,12 +1437,19 @@ class SmartGroupDisplay
             }
         }
         
-        // Build description with new structure: "Other groups und Root ohne missing"
+        // Build description - only if we don't have too many outside instruments
         if (empty($individualInstrumentsOutside) && empty($sectionGroupsOutside)) {
             // Simple case: just exclusions within the root
             $description = $rootName . ' ' . $this->language['without'] . ' ' . $missingDescription;
         } else {
-            // We have groups outside the root - restructure to "Other groups und Root ohne missing"
+            // We have groups outside the root
+            // If too many outside instruments, return null (this root doesn't represent most of the selection)
+            $totalOutside = count($individualInstrumentsOutside) + count($sectionGroupsOutside);
+            if ($totalOutside > count($rootInstruments)) {
+                return null; // Too many outside instruments for this to be a good root description
+            }
+            
+            // Continue with unified description only if reasonable
             $outsideGroups = [];
             
             // Add individual instruments outside
@@ -1576,6 +1640,8 @@ class SmartGroupDisplay
     
     /**
      * Compress sections by replacing complete child sets with their parent
+     * Also handle sections already in the list that have missing children
+     * AND handle individual instruments that form most of a section
      */
     private function compressSections(array $selectedGroups): array
     {
@@ -1583,11 +1649,6 @@ class SmartGroupDisplay
         $allSections = $this->groupManager->getAllSections();
         
         foreach ($allSections as $sectionId => $sectionData) {
-            // Skip if section is already in the list
-            if (in_array($sectionId, $compressed)) {
-                continue;
-            }
-            
             // Get all children of this section
             $children = $this->groupManager->getChildren($sectionId);
             if (empty($children)) {
@@ -1596,8 +1657,92 @@ class SmartGroupDisplay
             
             $childIds = array_map(fn($child) => $child['id'], $children);
             
-            // Check if ALL children are selected
+            // If section is already in the list, check if it should be replaced with exclusion description
+            if (in_array($sectionId, $compressed)) {
+                // Check if some children are missing (not all selected)
+                $selectedChildren = array_intersect($compressed, $childIds);
+                $missingChildren = array_diff($childIds, $compressed);
+                
+                // If we have some children selected individually AND some missing, 
+                // replace with "Section ohne missing" format
+                if (!empty($selectedChildren) && !empty($missingChildren) && count($missingChildren) <= count($childIds) / 2) {
+                    // Get all instruments in this section
+                    $sectionInstruments = $this->getAllInstrumentsInGroup($sectionId);
+                    $selectedInstruments = [];
+                    
+                    foreach ($compressed as $groupId) {
+                        if ($groupId !== $sectionId) { // Don't include the section itself in the selected instruments
+                            $groupInstruments = $this->getAllInstrumentsInGroup($groupId);
+                            $intersection = array_intersect($groupInstruments, $sectionInstruments);
+                            $selectedInstruments = array_merge($selectedInstruments, $intersection);
+                        }
+                    }
+                    $selectedInstruments = array_unique($selectedInstruments);
+                    
+                    $missingSectionInstruments = array_diff($sectionInstruments, $selectedInstruments);
+                    
+                    // Only replace if we have a reasonable number of missing instruments
+                    if (!empty($missingSectionInstruments) && count($missingSectionInstruments) <= count($sectionInstruments) / 2) {
+                        $missingGroups = $this->findGroupsForInstruments($missingSectionInstruments, $sectionId);
+                        if (!empty($missingGroups)) {
+                            $sectionName = $this->groupManager->getDisplayName($sectionId);
+                            $missingDescription = $this->generateSimpleList($missingGroups);
+                            $exclusionDescription = $sectionName . ' ' . $this->language['without'] . ' ' . $missingDescription;
+                            
+                            // Remove the original section and add the exclusion description as a special marker
+                            $compressed = array_diff($compressed, [$sectionId]);
+                            $compressed[] = '__EXCLUSION__' . $exclusionDescription;
+                        }
+                    }
+                }
+                continue;
+            }
+            
+            // NEW: Check if most children are selected individually (not the section itself)
+            // This handles cases like [Flöte, Oboe, Fagott] where Klarinette is missing
             $selectedChildren = array_intersect($compressed, $childIds);
+            if (count($selectedChildren) >= 2 && count($selectedChildren) < count($childIds)) {
+                // We have some but not all children selected
+                $missingChildren = array_diff($childIds, $selectedChildren);
+                
+                // Only proceed if we have high coverage (at least 75%) and reasonable number of missing items
+                // This prevents over-compression of sections like Streicher where individual instruments should remain separate
+                $coverage = count($selectedChildren) / count($childIds);
+                if ($coverage >= 0.75 && count($missingChildren) <= 2) {
+                    // Additional check: Only compress sections with compact instruments (wind/brass sections)
+                    // Skip sections like Streicher where individual instruments are commonly selected separately
+                    if ($this->shouldCompressSection($sectionId, $selectedChildren, $missingChildren)) {
+                        // Get all instruments in this section and check what's actually missing
+                        $sectionInstruments = $this->getAllInstrumentsInGroup($sectionId);
+                        $selectedInstruments = [];
+                        
+                        foreach ($selectedChildren as $childId) {
+                            $childInstruments = $this->getAllInstrumentsInGroup($childId);
+                            $selectedInstruments = array_merge($selectedInstruments, $childInstruments);
+                        }
+                        $selectedInstruments = array_unique($selectedInstruments);
+                        
+                        $missingSectionInstruments = array_diff($sectionInstruments, $selectedInstruments);
+                        
+                        // Only proceed if we have missing instruments and they're not too many
+                        if (!empty($missingSectionInstruments) && count($missingSectionInstruments) <= count($sectionInstruments) / 2) {
+                            $missingGroups = $this->findGroupsForInstruments($missingSectionInstruments, $sectionId);
+                            if (!empty($missingGroups)) {
+                                $sectionName = $this->groupManager->getDisplayName($sectionId);
+                                $missingDescription = $this->generateSimpleList($missingGroups);
+                                $exclusionDescription = $sectionName . ' ' . $this->language['without'] . ' ' . $missingDescription;
+                                
+                                // Replace the selected children with the exclusion description
+                                $compressed = array_diff($compressed, $selectedChildren);
+                                $compressed[] = '__EXCLUSION__' . $exclusionDescription;
+                            }
+                        }
+                    }
+                }
+                continue;
+            }
+            
+            // Check if ALL children are selected (original compression logic)
             if (count($selectedChildren) === count($childIds) && count($selectedChildren) > 1) {
                 // Replace all children with the parent section
                 $compressed = array_diff($compressed, $childIds);
@@ -1606,6 +1751,47 @@ class SmartGroupDisplay
         }
         
         return array_values($compressed);
+    }
+    
+    /**
+     * Determine if a section should be compressed with exclusions
+     * Some sections (like wind/brass) work well with "section ohne instrument" descriptions
+     * Others (like strings) are better left as individual instruments
+     */
+    private function shouldCompressSection(string $sectionId, array $selectedChildren, array $missingChildren): bool
+    {
+        // Wind and brass sections work well with exclusion descriptions
+        $compressibleSections = ['Holzbläser', 'Blechbläser', 'Bläser'];
+        
+        // String sections are commonly selected as individual instruments and should remain separate
+        $nonCompressibleSections = ['Streicher'];
+        
+        if (in_array($sectionId, $nonCompressibleSections)) {
+            return false; // Never compress these sections
+        }
+        
+        if (in_array($sectionId, $compressibleSections)) {
+            return true; // Always compress these sections when criteria are met
+        }
+        
+        // For other sections, use heuristics
+        $group = $this->groupManager->getGroup($sectionId);
+        if (!$group) {
+            return false;
+        }
+        
+        // Check if this is a wind/brass related section by looking at its children
+        $children = $this->groupManager->getChildren($sectionId);
+        $windBrassInstruments = ['Flöte', 'Oboe', 'Klarinette', 'Fagott', 'Horn', 'Trompete', 'Posaune', 'Tuba'];
+        
+        foreach ($children as $child) {
+            if (in_array($child['id'], $windBrassInstruments)) {
+                return true; // This section contains wind/brass instruments
+            }
+        }
+        
+        // Default to not compressing unknown sections
+        return false;
     }
     
     /**
@@ -1720,6 +1906,15 @@ class SmartGroupDisplay
                 $score -= 10; // Bonus for meaningful multiple exclusions
             } else {
                 $score += 15; // Penalty for overly complex descriptions
+            }
+        }
+        
+        // MAJOR bonus for compressed sections with clean exclusions
+        // Prefer "Holzbläser ohne Klarinette" over "Flöte, Oboe, Fagott"
+        $specificSections = $this->getSpecificSections();
+        foreach ($specificSections as $section) {
+            if (strpos($description, $section . ' ' . $this->language['without']) !== false) {
+                $score -= 50; // Major bonus for section-level exclusions
             }
         }
         
