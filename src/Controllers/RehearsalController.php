@@ -45,6 +45,12 @@ class RehearsalController extends Controller
             return;
         }
         
+        // Check if this is an AJAX request for past rehearsals only
+        if (isset($_GET['ajax']) && $_GET['pastOnly']) {
+            $this->handlePastRehearsalsAjax();
+            return;
+        }
+        
         // Get show old parameter
         $showOld = isset($_GET['showOld']);
         
@@ -430,5 +436,60 @@ class RehearsalController extends Controller
         }
         
         $this->redirect('/rehearsals');
+    }
+    
+    /**
+     * Handle AJAX request for past rehearsals with pagination
+     * 
+     * @return void
+     */
+    private function handlePastRehearsalsAjax()
+    {
+        $offset = (int)($_GET['offset'] ?? 0);
+        $limit = (int)($_GET['limit'] ?? 10);
+        
+        // Get all past rehearsals
+        $allPastRehearsals = $this->rehearsalModel->getUpcoming($_SESSION['orchestra_id'], true);
+        
+        // Filter only past rehearsals and apply pagination
+        $today = date('Y-m-d');
+        $pastRehearsals = array_filter($allPastRehearsals, function($rehearsal) use ($today) {
+            return $rehearsal['date'] < $today;
+        });
+        
+        // Sort by date descending (newest first)
+        usort($pastRehearsals, function($a, $b) {
+            return strtotime($b['date']) - strtotime($a['date']);
+        });
+        
+        $totalPastRehearsals = count($pastRehearsals);
+        $paginatedRehearsals = array_slice($pastRehearsals, $offset, $limit);
+        $hasMore = ($offset + $limit) < $totalPastRehearsals;
+        
+        // Generate HTML for rehearsal cards
+        $html = '';
+        foreach ($paginatedRehearsals as $rehearsal) {
+            // Set options for the rehearsal card component
+            $context = 'rehearsals';
+            $options = [
+                'showButtons' => true
+            ];
+            
+            // Capture output
+            ob_start();
+            include __DIR__ . '/../Views/components/rehearsal-card.php';
+            $html .= ob_get_clean();
+        }
+        
+        // Return JSON response
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => true,
+            'html' => $html,
+            'hasMore' => $hasMore,
+            'total' => $totalPastRehearsals,
+            'loaded' => $offset + count($paginatedRehearsals)
+        ]);
+        exit;
     }
 } 

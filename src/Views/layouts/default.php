@@ -180,9 +180,7 @@ if (isset($_SESSION['username'])): ?>
                                  || (strpos($currentUri, '/rehearsals/') === 0);
                 ?>
                 
-                <?php if ($showHistoryButton): ?>
-                <i onclick="openOld();" class="fas fa-history top-nav-icon"></i>
-                <?php endif; ?>
+                <?php // History button removed - now using scrollable interface ?>
                 
                 <?php if ($showHelpButton): ?>
                 <i onclick="showHelp();" class="fas fa-question-circle top-nav-icon"></i>
@@ -369,9 +367,7 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
                          || (strpos($currentUri, '/rehearsals/') === 0);
         ?>
         
-        <?php if ($showHistoryButton): ?>
-        <i onclick="openOld();" class="fas fa-history top-nav-icon"></i>
-        <?php endif; ?>
+        <?php // History button removed - now using scrollable interface ?>
         
         <?php if ($showHelpButton): ?>
         <i onclick="showHelp();" class="fas fa-question-circle top-nav-icon"></i>
@@ -522,48 +518,7 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
         });
     }
     
-    // Helper function to show old/current entries
-    function openOld() {
-        var currentUrl = window.location.href;
-        var newUrl;
-        
-        if (currentUrl.indexOf('showOld=true') > -1 || currentUrl.indexOf('showOld=1') > -1) {
-            // Currently showing old entries, switch to only current ones
-            Swal.fire({
-                title: 'Zur relevanten Ansicht wechseln?',
-                text: 'In der relevanten Ansicht werden nur zukünftige Proben angezeigt.',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Relevante Ansicht',
-                cancelButtonText: 'Abbrechen',
-                confirmButtonColor: '#478cf4'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    newUrl = currentUrl.replace(/[?&]showOld=(true|1)/, '');
-                    if (newUrl.endsWith('?') || newUrl.endsWith('&')) {
-                        newUrl = newUrl.slice(0, -1);
-                    }
-                    window.location.href = newUrl;
-                }
-            });
-        } else {
-            // Currently showing only current entries, switch to all entries
-            Swal.fire({
-                title: 'Zur vollständigen Ansicht wechseln?',
-                text: 'In der vollständigen Ansicht werden auch bereits vergangene Proben angezeigt.',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Vollständige Ansicht',
-                cancelButtonText: 'Abbrechen',
-                confirmButtonColor: '#478cf4'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    newUrl = currentUrl + (currentUrl.indexOf('?') > -1 ? '&' : '?') + 'showOld=1';
-                    window.location.href = newUrl;
-                }
-            });
-        }
-    }
+    // openOld() function removed - now using scrollable interface with date separator
 </script>
 <?php if (isset($_SESSION['flash_messages']) && !empty($_SESSION['flash_messages'])): ?>
 <script>
@@ -648,6 +603,33 @@ if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'regist
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+     // Function to trigger container-app fade-in
+     function triggerContainerFadeIn() {
+       const containerApps = document.querySelectorAll('.container-app');
+       containerApps.forEach(function(container) {
+         container.classList.add('fade-in');
+       });
+     }
+     
+     // Check if page has scroll positioning logic (like date separator)
+     const separator = document.getElementById('dateSeparator');
+     if (separator && !window.location.search.includes('showOld')) {
+       // Listen for scroll positioning completion, then fade in
+       document.addEventListener('scrollPositioningComplete', function() {
+         triggerContainerFadeIn();
+       });
+       
+       // Fallback timeout in case the event doesn't fire
+       setTimeout(function() {
+         triggerContainerFadeIn();
+       }, 300);
+     } else {
+       // No scroll positioning needed, fade in immediately
+       setTimeout(function() {
+         triggerContainerFadeIn();
+       }, 50); // Small delay to ensure DOM is fully ready
+     }
+     
      // Robust sidebar toggle setup
      const wrapper = document.getElementById('wrapper');
      const sidebar = document.getElementById('sidebar-wrapper');

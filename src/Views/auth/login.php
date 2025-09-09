@@ -44,45 +44,7 @@
 <script src="/assets/js/script.min.js"></script>
 
 <script>
-// Helper function to show old/current entries
-function openOld() {
-    var currentUrl = window.location.href;
-    var newUrl;
-    
-    if (currentUrl.indexOf('showOld=true') > -1) {
-        // Currently showing old entries, switch to only current ones
-        Swal.fire({
-            title: 'Zur relevanten Ansicht wechseln?',
-            text: 'In der relevanten Ansicht werden nur zukünftige Proben angezeigt.',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Relevante Ansicht',
-            cancelButtonText: 'Abbrechen',
-            confirmButtonColor: '#478cf4'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                newUrl = currentUrl.replace(/[?&]showOld=true/, '');
-                window.location.href = newUrl;
-            }
-        });
-    } else {
-        // Currently showing only current entries, switch to all entries
-        Swal.fire({
-            title: 'Zur vollständigen Ansicht wechseln?',
-            text: 'In der vollständigen Ansicht werden auch bereits vergangene Proben angezeigt.',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Vollständige Ansicht',
-            cancelButtonText: 'Abbrechen',
-            confirmButtonColor: '#478cf4'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                newUrl = currentUrl + (currentUrl.indexOf('?') > -1 ? '&' : '?') + 'showOld=true';
-                window.location.href = newUrl;
-            }
-        });
-    }
-}
+// openOld() function removed - now using scrollable interface with date separator
 </script>
 
 <?php if (isset($_SESSION['alerts']) && !empty($_SESSION['alerts'])): ?>

@@ -11,17 +11,53 @@
             include __DIR__ . '/../components/empty-state.php';
         ?>
     <?php else: ?>
-            <?php foreach ($rehearsals as $rehearsal): ?>
-                
-                <?php 
-                // Set options for the rehearsal card component
-                $context = 'rehearsals';
-                $options = [
-                    'showButtons' => true
-                ];
-                include __DIR__ . '/../components/rehearsal-card.php';
-                ?>
-            <?php endforeach; ?>
+        <?php 
+        // Separate current/future and past rehearsals
+        $currentRehearsals = [];
+        $pastRehearsals = [];
+        $today = date('Y-m-d');
+        
+        foreach ($rehearsals as $rehearsal) {
+            if ($rehearsal['date'] >= $today) {
+                $currentRehearsals[] = $rehearsal;
+            } else {
+                $pastRehearsals[] = $rehearsal;
+            }
+        }
+        ?>
+        
+        <!-- Past Rehearsals (only shown if showOld is true) -->
+        <?php if ($showOld && !empty($pastRehearsals)): ?>
+            <div class="past-rehearsals-section" id="pastRehearsalsSection">
+                <?php foreach ($pastRehearsals as $rehearsal): ?>
+                    <?php 
+                    // Set options for the rehearsal card component
+                    $context = 'rehearsals';
+                    $options = [
+                        'showButtons' => true
+                    ];
+                    include __DIR__ . '/../components/rehearsal-card.php';
+                    ?>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+        
+        <!-- Date Separator and Load Past Button -->
+        <?php if (!empty($currentRehearsals) || !empty($pastRehearsals)): ?>
+            <?php include __DIR__ . '/../components/date-separator.php'; ?>
+        <?php endif; ?>
+        
+        <!-- Current/Future Rehearsals -->
+        <?php foreach ($currentRehearsals as $rehearsal): ?>
+            <?php 
+            // Set options for the rehearsal card component
+            $context = 'rehearsals';
+            $options = [
+                'showButtons' => true
+            ];
+            include __DIR__ . '/../components/rehearsal-card.php';
+            ?>
+        <?php endforeach; ?>
     <?php endif; ?>
     
          <a href="/rehearsals/create" class="fixed bottom-5 right-5 bg-primary text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:scale-110 transition-transform">

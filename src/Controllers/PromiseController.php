@@ -53,6 +53,12 @@ class PromiseController extends Controller
             return;
         }
         
+        // Check if this is an AJAX request for past rehearsals only
+        if (isset($_GET['ajax']) && $_GET['pastOnly']) {
+            $this->handlePastRehearsalsAjax();
+            return;
+        }
+        
         // Get show old parameter
         $showOld = isset($_GET['showOld']);
         
@@ -616,5 +622,100 @@ class PromiseController extends Controller
             'showOld' => $showOld,
             'showRehearsalInsights' => $showRehearsalInsights
         ]);
+    }
+    
+    /**
+     * Handle AJAX request for past rehearsals with pagination
+     * 
+     * @return void
+     */
+    private function handlePastRehearsalsAjax()
+    {
+        $offset = (int)($_GET['offset'] ?? 0);
+        $limit = (int)($_GET['limit'] ?? 10);
+        
+        // Get user info
+        $userType = $_SESSION['type'];
+        $user = ['is_small_group' => $_SESSION['is_small_group'] ?? \App\Core\RehearsalTypeManager::SMALL_GROUP_DISABLED];
+        $isSmallGroup = \App\Core\RehearsalTypeManager::isUserInSmallGroup($user);
+        
+        // Get past rehearsals with limit and offset
+        $allPastRehearsals = $this->rehearsalModel->getForUser($userType, $_SESSION['orchestra_id'], true, $isSmallGroup);
+        
+        // Filter only past rehearsals and apply pagination
+        $today = date('Y-m-d');
+        $pastRehearsals = array_filter($allPastRehearsals, function($rehearsal) use ($today) {
+            return $rehearsal['date'] < $today;
+        });
+        
+        // Sort by date descending (newest first)
+        usort($pastRehearsals, function($a, $b) {
+            return strtotime($b['date']) - strtotime($a['date']);
+        });
+        
+        $totalPastRehearsals = count($pastRehearsals);
+        $paginatedRehearsals = array_slice($pastRehearsals, $offset, $limit);
+        $hasMore = ($offset + $limit) < $totalPastRehearsals;
+        
+        // Get user's promises
+        $promises = [];
+        $user = $this->userModel->findByUsername($_SESSION['username']);
+        if ($user) {
+            $userPromises = $this->userModel->getPromises($user['id']);
+            foreach ($userPromises as $promise) {
+                $promises[$promise['rehearsal_id']] = [
+                    'attending' => (bool)$promise['attending'],
+                    'note' => $promise['note']
+                ];
+            }
+        }
+        
+        // Generate HTML for rehearsal cards
+        $html = '';
+        foreach ($paginatedRehearsals as $rehearsal) {
+            // Determine status for this rehearsal
+            $status = 'pending';
+            $note = '';
+            
+            if (isset($promises[$rehearsal['id']])) {
+                $status = $promises[$rehearsal['id']]['attending'] ? 'attending' : 'not_attending';
+                $note = $promises[$rehearsal['id']]['note'];
+            }
+            
+            // Get group information
+            $groupArray = $rehearsal['groups'] ?? [];
+            
+            // Generate smart display text with integrated Kleingruppe handling
+            $smartDisplay = new \App\Core\SmartGroupDisplay();
+            $groupsText = $smartDisplay->generateDescription(
+                $groupArray, 
+                $rehearsal, 
+                false // Not admin view
+            );
+            
+            // Set options for the rehearsal card component
+            $context = 'promises';
+            $options = [
+                'status' => $status,
+                'note' => $note,
+                'showButtons' => true
+            ];
+            
+            // Capture output
+            ob_start();
+            include __DIR__ . '/../Views/components/rehearsal-card.php';
+            $html .= ob_get_clean();
+        }
+        
+        // Return JSON response
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => true,
+            'html' => $html,
+            'hasMore' => $hasMore,
+            'total' => $totalPastRehearsals,
+            'loaded' => $offset + count($paginatedRehearsals)
+        ]);
+        exit;
     }
 } 

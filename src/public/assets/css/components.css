@@ -29,6 +29,18 @@
   background-clip: text;
 }
 
+/* === CONTAINER APP FADE-IN ANIMATION === */
+.container-app {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+}
+
+.container-app.fade-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 /* === REHEARSAL CARD COMPONENT === */
 .rehearsal-card {
   background-color: var(--color-bg-primary);

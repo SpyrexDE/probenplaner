@@ -50,41 +50,97 @@ function sortGroups($groups) {
             include __DIR__ . '/../components/empty-state.php';
         ?>
     <?php else: ?>
-    <?php foreach ($rehearsals as $rehearsal): ?>
         <?php 
-        // Determine status for this rehearsal
-        $status = 'pending';
-        $note = '';
+        // Separate current/future and past rehearsals
+        $currentRehearsals = [];
+        $pastRehearsals = [];
+        $today = date('Y-m-d');
         
-        if (isset($promises[$rehearsal['id']])) {
-            $status = $promises[$rehearsal['id']]['attending'] ? 'attending' : 'not_attending';
-            $note = $promises[$rehearsal['id']]['note'];
+        foreach ($rehearsals as $rehearsal) {
+            if ($rehearsal['date'] >= $today) {
+                $currentRehearsals[] = $rehearsal;
+            } else {
+                $pastRehearsals[] = $rehearsal;
+            }
         }
-        
-                                        // Get group information
-        $groupArray = $rehearsal['groups'] ?? [];
-        
-        // Generate smart display text with integrated Kleingruppe handling
-        $smartDisplay = new \App\Core\SmartGroupDisplay();
-        $groupsText = $smartDisplay->generateDescription(
-            $groupArray, 
-            $rehearsal, 
-            false // Not admin view
-        );
-        
         ?>
         
-        <?php 
-        // Set options for the rehearsal card component
-        $context = 'promises';
-        $options = [
-            'status' => $status,
-            'note' => $note,
-            'showButtons' => true
-        ];
-        include __DIR__ . '/../components/rehearsal-card.php';
-        ?>
-    <?php endforeach; ?>
+        <!-- Past Rehearsals section (dynamically populated via AJAX) -->
+        <?php if ($showOld && !empty($pastRehearsals)): ?>
+            <div class="past-rehearsals-section" id="pastRehearsalsSection">
+                <?php foreach ($pastRehearsals as $rehearsal): ?>
+                    <?php 
+                    // Determine status for this rehearsal
+                    $status = 'pending';
+                    $note = '';
+                    
+                    if (isset($promises[$rehearsal['id']])) {
+                        $status = $promises[$rehearsal['id']]['attending'] ? 'attending' : 'not_attending';
+                        $note = $promises[$rehearsal['id']]['note'];
+                    }
+                    
+                    // Get group information
+                    $groupArray = $rehearsal['groups'] ?? [];
+                    
+                    // Generate smart display text with integrated Kleingruppe handling
+                    $smartDisplay = new \App\Core\SmartGroupDisplay();
+                    $groupsText = $smartDisplay->generateDescription(
+                        $groupArray, 
+                        $rehearsal, 
+                        false // Not admin view
+                    );
+                    
+                    // Set options for the rehearsal card component
+                    $context = 'promises';
+                    $options = [
+                        'status' => $status,
+                        'note' => $note,
+                        'showButtons' => true
+                    ];
+                    include __DIR__ . '/../components/rehearsal-card.php';
+                    ?>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+        
+        <!-- Date Separator and Load Past Button -->
+        <?php if (!empty($currentRehearsals) || !empty($pastRehearsals)): ?>
+            <?php include __DIR__ . '/../components/date-separator.php'; ?>
+        <?php endif; ?>
+        
+        <!-- Current/Future Rehearsals -->
+        <?php foreach ($currentRehearsals as $rehearsal): ?>
+            <?php 
+            // Determine status for this rehearsal
+            $status = 'pending';
+            $note = '';
+            
+            if (isset($promises[$rehearsal['id']])) {
+                $status = $promises[$rehearsal['id']]['attending'] ? 'attending' : 'not_attending';
+                $note = $promises[$rehearsal['id']]['note'];
+            }
+            
+            // Get group information
+            $groupArray = $rehearsal['groups'] ?? [];
+            
+            // Generate smart display text with integrated Kleingruppe handling
+            $smartDisplay = new \App\Core\SmartGroupDisplay();
+            $groupsText = $smartDisplay->generateDescription(
+                $groupArray, 
+                $rehearsal, 
+                false // Not admin view
+            );
+            
+            // Set options for the rehearsal card component
+            $context = 'promises';
+            $options = [
+                'status' => $status,
+                'note' => $note,
+                'showButtons' => true
+            ];
+            include __DIR__ . '/../components/rehearsal-card.php';
+            ?>
+        <?php endforeach; ?>
     <?php endif; ?>
 </div>
 
@@ -125,8 +181,8 @@ $(document).ready(function() {
         }
     });
     
-    // Handle attend/not attend button clicks
-    $('.checkBtn').click(function() {
+    // Handle attend/not attend button clicks (using event delegation for dynamic content)
+    $(document).on('click', '.checkBtn', function() {
         if ($(this).hasClass('disabled')) {
             return;
         }
@@ -161,7 +217,7 @@ $(document).ready(function() {
         }
     });
     
-    $('.crossBtn').click(function() {
+    $(document).on('click', '.crossBtn', function() {
         if ($(this).hasClass('disabled')) {
             return;
         }
@@ -262,8 +318,8 @@ $(document).ready(function() {
         });
     }
     
-    // Double click to edit note
-    $('.rehearsal-card').on('dblclick', function() {
+    // Double click to edit note (using event delegation for dynamic content)
+    $(document).on('dblclick', '.rehearsal-card', function() {
         var card = $(this);
         if (card.hasClass('status-not_attending')) {
             var id = card.find('.crossBtn').attr('id');
