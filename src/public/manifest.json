@@ -1,7 +1,7 @@
 {
-  "name": "Probenplaner - JSO Bremen",
+  "name": "Probenplaner",
   "short_name": "Probenplaner",
-  "description": "App zum Probenmanagement des JSO Bremen",
+  "description": "App zum Probenmanagement",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -17,7 +17,7 @@
       "purpose": "any"
     },
     {
-      "src": "/assets/img/tabIcon.png", 
+      "src": "/assets/img/Logo.png", 
       "sizes": "32x32",
       "type": "image/png",
       "purpose": "any"
@@ -37,7 +37,7 @@
       "url": "/promises",
       "icons": [
         {
-          "src": "/assets/img/tabIcon.png",
+          "src": "/assets/img/Logo.png",
           "sizes": "32x32",
           "type": "image/png"
         }
@@ -50,7 +50,7 @@
       "url": "/probenplan",
       "icons": [
         {
-          "src": "/assets/img/tabIcon.png",
+          "src": "/assets/img/Logo.png",
           "sizes": "32x32",
           "type": "image/png"
         }

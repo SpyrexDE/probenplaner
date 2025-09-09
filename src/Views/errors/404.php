@@ -7,7 +7,7 @@
     <!-- Bootstrap CSS removed - using custom components instead -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
     <link rel="stylesheet" href="/assets/css/styles.css">
-    <link rel="shortcut icon" href="/assets/img/tabIcon.png" type="image/x-icon">
+    <link rel="shortcut icon" href="/assets/img/Logo.png" type="image/x-icon">
 </head>
 <body class="bg-light">
     <div class="container">

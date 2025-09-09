@@ -113,7 +113,7 @@ const STATIC_CACHE_URLS = [
     '/assets/js/notifications.js',
     '/assets/js/script.min.js',
     '/assets/img/Logo.png',
-    '/assets/img/tabIcon.png',
+    '/assets/img/Logo.png',
     '/manifest.json'
 ];
 
@@ -251,8 +251,8 @@ self.addEventListener('push', event => {
     
     const options = {
         body: event.data ? event.data.text() : 'Neue Nachricht vom Probenplaner',
-        icon: '/assets/img/tabIcon.png',
-        badge: '/assets/img/tabIcon.png',
+        icon: '/assets/img/Logo.png',
+        badge: '/assets/img/Logo.png',
         vibrate: [100, 50, 100],
         data: {
             dateOfArrival: Date.now(),
@@ -262,7 +262,7 @@ self.addEventListener('push', event => {
             {
                 action: 'open',
                 title: 'Öffnen',
-                icon: '/assets/img/tabIcon.png'
+                icon: '/assets/img/Logo.png'
             }
         ]
     };

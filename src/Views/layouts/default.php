@@ -3,14 +3,14 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-    <title><?= isset($_SESSION['orchestra_name']) ? $_SESSION['orchestra_name'] : (isset($title) ? $title : APP_NAME) ?></title>
+    <title>Probenplaner</title>
     
     <!-- PWA Meta Tags -->
     <meta name="application-name" content="Probenplaner">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Probenplaner">
-    <meta name="description" content="App zum Probenmanagement des JSO Bremen">
+    <meta name="description" content="App zum Probenmanagement">
     <meta name="format-detection" content="telephone=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#ffffff">
@@ -113,7 +113,7 @@
     
     <!-- Icon Fonts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css">
-    <link rel="shortcut icon" href="/assets/img/tabIcon.png" type="image/x-icon">
+    <link rel="shortcut icon" href="/assets/img/Logo.png" type="image/x-icon">
     <link rel="manifest" href="/manifest.json">
     
     <!-- JavaScript Libraries -->
