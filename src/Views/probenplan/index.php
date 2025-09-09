@@ -3,23 +3,33 @@
         <div class="w-full text-center mb-6">
             <h5>Stand: <?= date("d.m.Y") ?></h5>
             
-            <div class="flex flex-wrap gap-2 mb-6 justify-center">
+            <div class="filter-controls">
                 <?php if ($userRole !== 'conductor'): ?>
-                <button id="filterToggle" class="btn-base btn-outline btn-sm" onclick="togglePersonalizedView()">
-                    <i class="fas fa-filter mr-2"></i><?= $personalized ? 'Personalisierte Ansicht' : 'Alle Proben' ?>
-                </button>
+                <div class="filter-toggle-container">
+                    <span class="filter-label">Personalisierte Ansicht</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="personalizedToggle" <?= $personalized ? 'checked' : '' ?> />
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-dot"></span>
+                    </label>
+                </div>
                 <?php endif; ?>
-                <a href="<?= $showOld ? '/probenplan' . ($personalized ? '?personalized=1' : '') : '/probenplan' . ($personalized ? '?personalized=1&showOld=1' : '?showOld=1') ?>" class="btn-base btn-ghost btn-sm">
-                    <i class="fas fa-history mr-2"></i><?= $showOld ? 'Nur aktuelle Proben' : 'Alle Proben (inkl. vergangene)' ?>
-                </a>
+                
+                <div class="filter-toggle-container">
+                    <span class="filter-label">Vergangene Proben anzeigen</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showOldToggle" <?= $showOld ? 'checked' : '' ?> />
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-dot"></span>
+                    </label>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="w-full mt-4">
-        <div class="w-full">
-            <div class="table-responsive">
-                <table class="table-themed">
+        <div class="table-responsive">
+            <table class="table-themed">
                     <thead>
                         <tr>
                             <th>Tag</th>
@@ -60,7 +70,6 @@
                     </tbody>
                 </table>
             </div>
-        </div>
     </div>
 
     <button class="fixed bottom-5 right-5 bg-primary text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:scale-110 transition-transform print:hidden" onclick="window.print()" id="print-btn">
@@ -69,10 +78,105 @@
 </div>
 
 <style>
+/* Filter Controls Styling */
+.filter-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-6);
+    justify-content: center;
+    align-items: center;
+    margin-bottom: var(--space-6);
+    padding: var(--space-4);
+    background: var(--color-bg-primary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.filter-toggle-container {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.filter-label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+    cursor: pointer;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--color-gray-300);
+    border-radius: 24px;
+    transition: var(--transition-base);
+}
+
+.toggle-dot {
+    position: absolute;
+    content: '';
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: var(--color-white);
+    border-radius: 50%;
+    transition: var(--transition-base);
+    box-shadow: var(--shadow-sm);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: var(--color-primary);
+}
+
+.toggle-switch input:checked + .toggle-slider + .toggle-dot {
+    transform: translateX(26px);
+}
+
+.toggle-switch:hover .toggle-dot {
+    box-shadow: var(--shadow-md);
+}
+
+@media (max-width: 640px) {
+    .filter-controls {
+        flex-direction: column;
+        gap: var(--space-4);
+        padding: var(--space-3);
+    }
+    
+    .filter-toggle-container {
+        width: 100%;
+        justify-content: space-between;
+        padding: var(--space-2) 0;
+    }
+}
+
 @media print {
     /* Hide navigation and UI elements */
     .top-nav, nav, header, .sidebar, #sidebar-wrapper, #wrapper > nav,
-    .btn, button, .fab, #print-btn, .print\\:hidden {
+    .btn, button, .fab, #print-btn, .print\\:hidden, .filter-controls {
         display: none !important;
     }
 
@@ -158,46 +262,92 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const filterButton = document.getElementById('filterToggle');
-    if (filterButton) {
-        tippy(filterButton, {
-            content: '<?= $personalized ? "Zur vollständigen Ansicht wechseln" : "Zur personalisierten Ansicht wechseln" ?>',
-            placement: 'top'
-        });
+    // Get toggle elements
+    const personalizedToggle = document.getElementById('personalizedToggle');
+    const showOldToggle = document.getElementById('showOldToggle');
+    
+    // Initialize toggle states visually
+    initializeToggleStates();
+    
+    // Add event listeners for immediate toggling
+    if (personalizedToggle) {
+        personalizedToggle.addEventListener('change', handlePersonalizedToggle);
+    }
+    
+    if (showOldToggle) {
+        showOldToggle.addEventListener('change', handleShowOldToggle);
+    }
+    
+    function initializeToggleStates() {
+        const currentlyPersonalized = <?= json_encode($personalized ?? false) ?>;
+        const currentlyShowingOld = <?= json_encode($showOld ?? false) ?>;
+        
+        if (personalizedToggle) {
+            updateToggleVisuals(personalizedToggle, currentlyPersonalized);
+        }
+        
+        if (showOldToggle) {
+            updateToggleVisuals(showOldToggle, currentlyShowingOld);
+        }
+    }
+    
+    function updateToggleVisuals(toggle, isActive) {
+        const slider = toggle.nextElementSibling;
+        const dot = slider.nextElementSibling;
+        
+        if (isActive) {
+            slider.style.backgroundColor = 'var(--color-primary)';
+            dot.style.transform = 'translateX(26px)';
+        } else {
+            slider.style.backgroundColor = 'var(--color-gray-300)';
+            dot.style.transform = 'translateX(0px)';
+        }
+    }
+    
+    function handlePersonalizedToggle() {
+        const url = new URL(window.location);
+        const slider = this.nextElementSibling;
+        const dot = slider.nextElementSibling;
+        
+        if (this.checked) {
+            url.searchParams.set('personalized', '1');
+            slider.style.backgroundColor = 'var(--color-primary)';
+            dot.style.transform = 'translateX(26px)';
+        } else {
+            url.searchParams.delete('personalized');
+            slider.style.backgroundColor = 'var(--color-gray-300)';
+            dot.style.transform = 'translateX(0px)';
+        }
+        
+        // Preserve showOld parameter if it exists
+        if (<?= json_encode($showOld ?? false) ?>) {
+            url.searchParams.set('showOld', '1');
+        }
+        
+        window.location.href = url.toString();
+    }
+    
+    function handleShowOldToggle() {
+        const url = new URL(window.location);
+        const slider = this.nextElementSibling;
+        const dot = slider.nextElementSibling;
+        
+        if (this.checked) {
+            url.searchParams.set('showOld', '1');
+            slider.style.backgroundColor = 'var(--color-primary)';
+            dot.style.transform = 'translateX(26px)';
+        } else {
+            url.searchParams.delete('showOld');
+            slider.style.backgroundColor = 'var(--color-gray-300)';
+            dot.style.transform = 'translateX(0px)';
+        }
+        
+        // Preserve personalized parameter if it exists
+        if (<?= json_encode($personalized ?? false) ?>) {
+            url.searchParams.set('personalized', '1');
+        }
+        
+        window.location.href = url.toString();
     }
 });
-
-<?php if ($userRole !== 'conductor'): ?>
-function togglePersonalizedView() {
-    <?php if ($personalized): ?>
-        Swal.fire({
-            title: 'Zur vollständigen Ansicht wechseln?',
-            text: 'In der vollständigen Ansicht werden alle Proben angezeigt.',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Vollständige Ansicht',
-            cancelButtonText: 'Abbrechen',
-            confirmButtonColor: '#478cf4'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = '/probenplan<?= $showOld ? "?showOld=1" : "" ?>';
-            }
-        });
-    <?php else: ?>
-        Swal.fire({
-            title: 'Zur personalisierten Ansicht wechseln?',
-            text: 'In der personalisierten Ansicht werden nur für dich relevante Proben angezeigt.',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Personalisierte Ansicht',
-            cancelButtonText: 'Abbrechen',
-            confirmButtonColor: '#478cf4'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = '/probenplan?personalized=1<?= $showOld ? "&showOld=1" : "" ?>';
-            }
-        });
-    <?php endif; ?>
-}
-<?php endif; ?>
 </script> 
