@@ -66,10 +66,11 @@
 </div>
 
 <script>
-// Delete rehearsal with AJAX and Sweetalert2
-document.querySelectorAll('.delete-btn').forEach(function(element) {
-    element.addEventListener('click', function(event) {
-        const id = event.currentTarget.id;
+// Delete rehearsal with AJAX and Sweetalert2 (using event delegation)
+document.addEventListener('click', function(event) {
+    if (event.target.closest('.delete-btn')) {
+        const deleteBtn = event.target.closest('.delete-btn');
+        const id = deleteBtn.id;
         
         Swal.fire({
             title: 'Willst du diesen Termin wirklich löschen?',
@@ -116,14 +117,15 @@ document.querySelectorAll('.delete-btn').forEach(function(element) {
                 });
             }
         });
-    });
+    }
 });
 
-// Edit rehearsal redirect
-document.querySelectorAll('.edit-btn').forEach(function(element) {
-    element.addEventListener('click', function(event) {
-        const buttonId = event.currentTarget.id;
+// Edit rehearsal redirect (using event delegation)
+document.addEventListener('click', function(event) {
+    if (event.target.closest('.edit-btn')) {
+        const editBtn = event.target.closest('.edit-btn');
+        const buttonId = editBtn.id;
         window.location.href = '/rehearsals/edit/' + buttonId;
-    });
+    }
 });
 </script> 
