@@ -102,18 +102,21 @@ self.addEventListener('fetch', event => {
 <?php else: ?>
 // PRODUCTION MODE: Full caching with version control
 
-// Assets to cache for offline functionality
+// Only cache true static assets - NO dynamic content or HTML pages
 const STATIC_CACHE_URLS = [
-    '/',
     '/offline.html',
     '/assets/css/theme.css',
     '/assets/css/components.css', 
     '/assets/css/focus-removal.css',
+    '/assets/css/promises-dashboard.css',
     '/assets/js/jquery.min.js',
     '/assets/js/notifications.js',
     '/assets/js/script.min.js',
+    '/assets/js/collapse.js',
+    '/assets/js/dropdown.js',
+    '/assets/js/tooltip.js',
     '/assets/img/Logo.png',
-    '/assets/img/Logo.png',
+    '/assets/fonts/FontAwesome.otf',
     '/manifest.json'
 ];
 
@@ -142,22 +145,32 @@ self.addEventListener('install', event => {
     );
 });
 
-// Activate event - take control but don't auto-clear caches
+// Activate event - clear old caches and take control
 self.addEventListener('activate', event => {
     console.log('Service Worker [PROD]: Activating version', APP_VERSION);
     event.waitUntil(
-        Promise.resolve().then(() => {
+        // Clear all old caches when activating new service worker
+        caches.keys().then(cacheNames => {
+            return Promise.all(
+                cacheNames.map(cache => {
+                    if (cache !== CACHE_NAME) {
+                        console.log('Service Worker [PROD]: Clearing old cache during activation:', cache);
+                        return caches.delete(cache);
+                    }
+                })
+            );
+        }).then(() => {
             console.log('Service Worker [PROD]: Taking control for version', APP_VERSION);
-            // Take control of all pages immediately, but don't clear caches yet
+            // Take control of all pages immediately
             return self.clients.claim();
         }).then(() => {
-            // Notify all clients about the new version availability (not that caches are cleared)
+            // Notify all clients about the new version
             return self.clients.matchAll().then(clients => {
                 clients.forEach(client => {
                     client.postMessage({
-                        type: 'VERSION_AVAILABLE',
+                        type: 'VERSION_UPDATED',
                         version: APP_VERSION,
-                        cacheCleared: false
+                        cacheCleared: true
                     });
                 });
             });
@@ -177,22 +190,54 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // Never cache API endpoints - always fetch fresh
-    if (event.request.url.includes('/api/')) {
+    // Never cache dynamic content - always fetch fresh from network
+    const url = event.request.url;
+    const isStaticAsset = (
+        url.includes('/assets/css/') ||
+        url.includes('/assets/js/') ||
+        url.includes('/assets/img/') ||
+        url.includes('/assets/fonts/') ||
+        url.includes('/assets/icons/') ||
+        url.endsWith('.css') ||
+        url.endsWith('.js') ||
+        url.endsWith('.png') ||
+        url.endsWith('.jpg') ||
+        url.endsWith('.jpeg') ||
+        url.endsWith('.gif') ||
+        url.endsWith('.svg') ||
+        url.endsWith('.ico') ||
+        url.endsWith('.woff') ||
+        url.endsWith('.woff2') ||
+        url.endsWith('.ttf') ||
+        url.endsWith('.otf') ||
+        url.endsWith('/manifest.json') ||
+        url.endsWith('/offline.html')
+    ) && !url.includes('.php');
+
+    // Always fetch dynamic content fresh (PHP pages, API endpoints, etc.)
+    if (!isStaticAsset) {
         event.respondWith(
-            fetch(event.request).catch(error => {
-                console.log('Service Worker [PROD]: API request failed:', event.request.url, error);
+            fetch(event.request).then(fetchResponse => {
+                console.log('Service Worker [PROD]: Serving fresh dynamic content from network:', event.request.url);
+                return fetchResponse;
+            }).catch(error => {
+                console.log('Service Worker [PROD]: Dynamic request failed:', event.request.url, error);
+                // Return offline page only for navigation requests
+                if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+                    return caches.match(OFFLINE_URL);
+                }
                 throw error;
             })
         );
         return;
     }
 
+    // For static assets only, use cache-first strategy
     event.respondWith(
         caches.match(event.request).then(response => {
             // Return cached version if available
             if (response) {
-                console.log('Service Worker [PROD]: Serving from cache:', event.request.url);
+                console.log('Service Worker [PROD]: Serving static asset from cache:', event.request.url);
                 return response;
             }
 
@@ -206,26 +251,15 @@ self.addEventListener('fetch', event => {
                 // Clone the response (can only be consumed once)
                 const responseToCache = fetchResponse.clone();
 
-                // Add to cache for future requests (but not API endpoints)
-                if (!event.request.url.includes('/api/')) {
-                    caches.open(CACHE_NAME).then(cache => {
-                        // Only cache GET requests for same origin, excluding API
-                        if (event.request.method === 'GET' && event.request.url.startsWith(self.location.origin)) {
-                            cache.put(event.request, responseToCache);
-                        }
-                    });
-                }
+                // Cache the static asset for future requests
+                caches.open(CACHE_NAME).then(cache => {
+                    cache.put(event.request, responseToCache);
+                    console.log('Service Worker [PROD]: Cached new static asset:', event.request.url);
+                });
 
                 return fetchResponse;
             }).catch(error => {
-                console.log('Service Worker [PROD]: Network request failed:', event.request.url, error);
-                
-                // Return offline page for navigation requests
-                if (event.request.mode === 'navigate') {
-                    return caches.match(OFFLINE_URL);
-                }
-                
-                // For other requests, just let them fail
+                console.log('Service Worker [PROD]: Static asset request failed:', event.request.url, error);
                 throw error;
             });
         })
