@@ -1,5 +1,24 @@
 <!DOCTYPE html>
-<html lang="de" class="w-full h-full">
+<?php
+// Get current theme for JavaScript
+$currentUserTheme = 'default'; // Default fallback
+
+// Try to get user theme from various sources
+if (isset($_SESSION['user_id'])) {
+    // Get from database if logged in
+    $userModel = new \App\Models\User();
+    $currentUserTheme = $userModel->getUserTheme($_SESSION['user_id']);
+} elseif (isset($_SESSION['theme'])) {
+    // Get from session
+    $currentUserTheme = $_SESSION['theme'];
+}
+
+// Ensure theme is valid
+if (!\App\Core\ThemeManager::themeExists($currentUserTheme)) {
+    $currentUserTheme = \App\Core\ThemeManager::getDefaultTheme();
+}
+?>
+<html lang="de" class="w-full h-full" data-current-theme="<?= htmlspecialchars($currentUserTheme) ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
@@ -32,7 +51,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Aldrich&family=Goldman:wght@400;700&family=Kantumruy+Pro:ital,wght@0,100..700;1,100..700&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Sansation:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap" rel="stylesheet">
     
     <!-- Theme and Component Styles -->
-    <link rel="stylesheet" href="/assets/css/theme.css">
+    <?php
+    // Update session with current theme for performance
+    $_SESSION['theme'] = $currentUserTheme;
+    
+    // Generate theme CSS link
+    echo \App\Core\ThemeManager::generateThemeCssLink($currentUserTheme);
+    ?>
     <link rel="stylesheet" href="/assets/css/components.css?v=<?= time() ?>">
     <link rel="stylesheet" href="/assets/css/focus-removal.css">
     

@@ -106,6 +106,7 @@ $router->addRoute('/probenplan', 'ProbenplanController', 'index');
 // User profile routes
 $router->addRoute('/profile', 'UserController', 'profile');
 $router->addRoute('/profile/check-leader-password', 'UserController', 'checkLeaderPassword');
+$router->addRoute('/profile/switch-theme', 'UserController', 'switchTheme', 'POST');
 $router->addRoute('/profile/delete', 'UserController', 'delete');
 $router->addRoute('/conductor/profile', 'UserController', 'conductorProfile');
 

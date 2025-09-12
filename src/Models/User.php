@@ -409,6 +409,55 @@ class User extends Model
     }
     
     /**
+     * Update user theme preference
+     * 
+     * @param int $userId User ID
+     * @param string $theme Theme key
+     * @return bool|array Success status or error array
+     */
+    public function updateTheme(int $userId, string $theme)
+    {
+        // Validate theme using ThemeManager
+        $validation = \App\Core\ThemeManager::validateThemePreference($theme);
+        if (!$validation['valid']) {
+            error_log("Theme update failed - Validation errors: " . implode(', ', $validation['errors']));
+            return ['error' => true, 'message' => implode(', ', $validation['errors'])];
+        }
+        
+        // Update the theme preference
+        $result = $this->update($userId, ['theme' => $theme]);
+        
+        if ($result === false) {
+            $error = $this->db->getLastError();
+            error_log("Theme update failed - Database error: " . $error);
+            return ['error' => true, 'message' => 'Fehler beim Aktualisieren des Themes.', 'details' => $error];
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * Get user theme preference
+     * 
+     * @param int $userId User ID
+     * @return string Theme key or default theme
+     */
+    public function getUserTheme(int $userId): string
+    {
+        $user = $this->findById($userId);
+        
+        if ($user && isset($user['theme'])) {
+            // Validate that the theme still exists
+            if (\App\Core\ThemeManager::themeExists($user['theme'])) {
+                return $user['theme'];
+            }
+        }
+        
+        // Return default theme if user not found or invalid theme
+        return \App\Core\ThemeManager::getDefaultTheme();
+    }
+    
+    /**
      * Delete user account
      * 
      * @param int $userId

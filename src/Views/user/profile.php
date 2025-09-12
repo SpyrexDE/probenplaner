@@ -8,6 +8,57 @@
             <h1 class="text-3xl font-bold text-gray-900">Mein Profil</h1>
         </div>
 
+        <!-- Theme Selection Card -->
+        <div class="modern-card mb-6">
+            <div class="modern-card-header">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                        <?= icon('palette', 'text-purple-600 text-sm') ?>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-900">Design-Theme</h2>
+                        <p class="text-sm text-gray-500 mt-1">Wähle dein bevorzugtes Farbschema</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modern-card-body">
+                <div class="theme-selection-compact">
+                    <?php 
+                    $currentTheme = $user['theme'] ?? 'default';
+                    foreach ($availableThemes as $themeKey => $theme): 
+                    ?>
+                    <div class="theme-option-compact">
+                        <input type="radio" 
+                               id="theme_compact_<?= $themeKey ?>" 
+                               name="theme_compact" 
+                               value="<?= $themeKey ?>"
+                               class="theme-radio-compact sr-only"
+                               data-theme-key="<?= $themeKey ?>"
+                               <?= ($themeKey === $currentTheme) ? 'checked' : '' ?>>
+                        
+                        <label for="theme_compact_<?= $themeKey ?>" class="theme-selector-compact">
+                            <div class="theme-preview-compact">
+                                <div class="theme-colors-compact">
+                                    <?php foreach ($theme['preview_colors'] as $colorName => $colorValue): ?>
+                                    <div class="theme-dot" 
+                                         style="background-color: <?= htmlspecialchars($colorValue) ?>"
+                                         title="<?= ucfirst($colorName) ?>">
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <span class="theme-name-compact"><?= htmlspecialchars($theme['name']) ?></span>
+                                <div class="theme-check-compact">
+                                    <?= icon('check', 'text-white text-xs') ?>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+
         <!-- Profile Settings Card -->
         <div class="modern-card mb-6">
             <div class="modern-card-header">
@@ -119,6 +170,7 @@
                             </div>
                         </div>
                     </div>
+
 
                     <!-- Password Section -->
                     <div class="form-section">
@@ -509,5 +561,96 @@ $(document).ready(function(){
             $(this).closest('.form-group-modern').addClass('filled');
         }
     });
+    
+    // Compact theme selection with instant switching
+    $('.theme-radio-compact').on('change', function() {
+        if ($(this).is(':checked')) {
+            const selectedTheme = $(this).val();
+            const themeKey = $(this).data('theme-key');
+            const themeName = $(this).closest('.theme-option-compact').find('.theme-name-compact').text();
+            
+            // Add switching state
+            $('.theme-selection-compact').addClass('theme-switching');
+            
+            // Apply theme instantly via AJAX
+            switchThemeInstantly(themeKey, themeName);
+        }
+    });
+    
+    // Function to switch theme instantly
+    function switchThemeInstantly(themeKey, themeName) {
+        $.ajax({
+            type: 'POST',
+            url: '/profile/switch-theme',
+            data: {
+                theme: themeKey,
+                csrf_token: $('input[name="csrf_token"]').val()
+            },
+            success: function(response) {
+                // Parse response if it's a string
+                if (typeof response === 'string') {
+                    try {
+                        response = JSON.parse(response);
+                    } catch (e) {
+                        console.error('Failed to parse response:', e);
+                        response = { success: false };
+                    }
+                }
+                
+                if (response.success) {
+                    // Apply theme to current page
+                    applyThemeToPage(themeKey);
+                    
+                    // Show success notification
+                    window.notifySuccess(`Theme "${themeName}" aktiviert`, 'Sofort angewendet!');
+                    
+                    // Add applied animation
+                    $('body').addClass('theme-applying');
+                    setTimeout(() => {
+                        $('body').removeClass('theme-applying');
+                    }, 600);
+                } else {
+                    // Handle error
+                    window.notifyError('Fehler beim Wechseln des Themes', response.message || 'Unbekannter Fehler');
+                    
+                    // Reset selection to previous theme
+                    const currentTheme = $('body').data('current-theme') || 'default';
+                    $(`input[data-theme-key="${currentTheme}"]`).prop('checked', true);
+                }
+                
+                // Remove switching state
+                $('.theme-selection-compact').removeClass('theme-switching');
+                
+            },
+            error: function() {
+                window.notifyError('Netzwerkfehler', 'Theme konnte nicht gewechselt werden');
+                $('.theme-selection-compact').removeClass('theme-switching');
+                
+                // Reset selection to previous theme
+                const currentTheme = $('body').data('current-theme') || 'default';
+                $(`input[data-theme-key="${currentTheme}"]`).prop('checked', true);
+            }
+        });
+    }
+    
+    // Function to apply theme to current page
+    function applyThemeToPage(themeKey) {
+        // Find the current theme link and update it
+        const currentThemeLink = $('link[data-theme]');
+        if (currentThemeLink.length > 0) {
+            const newThemeHref = `/assets/css/themes/theme-${themeKey}.css`;
+            currentThemeLink.attr('href', newThemeHref);
+            currentThemeLink.attr('data-theme', themeKey);
+        }
+        
+        // Update body data attribute
+        $('body').attr('data-current-theme', themeKey);
+        
+        // Store in session storage for consistency
+        if (typeof(Storage) !== 'undefined') {
+            sessionStorage.setItem('current-theme', themeKey);
+        }
+    }
+    
 });
 </script> 

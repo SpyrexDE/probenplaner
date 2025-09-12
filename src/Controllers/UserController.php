@@ -78,6 +78,7 @@ class UserController extends Controller
             'currentPage' => 'profile',
             'user' => $user,
             'typeStructure' => $this->getTypeStructure(),
+            'availableThemes' => \App\Core\ThemeManager::getThemesForPreview(),
             'csrf_token' => $this->getCSRFToken()
         ]);
     }
@@ -188,7 +189,7 @@ class UserController extends Controller
             }
             
             // Validate password using the model's validation method
-            $passwordValidation = $this->userModel->validateUserInput(null, $newPassword);
+            $passwordValidation = $this->userModel->validateUserInput('', $newPassword);
             if (!$passwordValidation['valid']) {
                 $this->addAlert('Fehler!', implode(", ", $passwordValidation['errors']), 'error');
                 $this->redirect('/conductor/profile');
@@ -296,7 +297,7 @@ class UserController extends Controller
             }
             
             // Validate password using the model's validation method
-            $passwordValidation = $this->userModel->validateUserInput(null, $newPassword);
+            $passwordValidation = $this->userModel->validateUserInput('', $newPassword);
             if (!$passwordValidation['valid']) {
                 $this->addAlert('Fehler!', implode(", ", $passwordValidation['errors']), 'error');
                 $this->redirect('/profile');
@@ -723,6 +724,91 @@ class UserController extends Controller
             echo json_encode([
                 'error' => "Fehler beim Löschen des Accounts."
             ]);
+        }
+    }
+    
+    /**
+     * Switch theme instantly via AJAX
+     * 
+     * @return void
+     */
+    public function switchTheme()
+    {
+        // Set content type to JSON
+        header('Content-Type: application/json');
+        
+        // Check if user is logged in
+        if (!$this->isLoggedIn()) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Nicht authentifiziert']);
+            return;
+        }
+        
+        // Only allow POST requests
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Methode nicht erlaubt']);
+            return;
+        }
+        
+        try {
+            // CSRF protection
+            $this->protectCSRF();
+        } catch (\Exception $e) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'CSRF-Fehler: ' . $e->getMessage()]);
+            return;
+        }
+        
+        // Get and validate theme
+        $theme = Validator::sanitizeUtf8($_POST['theme'] ?? '');
+        
+        if (empty($theme)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Kein Theme angegeben']);
+            return;
+        }
+        
+        // Validate theme using ThemeManager
+        $themeValidation = \App\Core\ThemeManager::validateThemePreference($theme);
+        if (!$themeValidation['valid']) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => implode(", ", $themeValidation['errors'])]);
+            return;
+        }
+        
+        // Get current user
+        $username = $_SESSION['username'];
+        $user = $this->userModel->findByUsername($username);
+        
+        if (!$user) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'Benutzer nicht gefunden']);
+            return;
+        }
+        
+        // Update theme preference
+        $result = $this->userModel->updateTheme($user['id'], $theme);
+        
+        if ($result === true) {
+            // Update session
+            $_SESSION['theme'] = $theme;
+            
+            // Return success
+            echo json_encode([
+                'success' => true,
+                'theme' => $theme,
+                'message' => 'Theme erfolgreich gewechselt'
+            ]);
+        } else {
+            // Handle error
+            $errorMessage = 'Fehler beim Aktualisieren des Themes';
+            if (is_array($result) && isset($result['message'])) {
+                $errorMessage = $result['message'];
+            }
+            
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => $errorMessage]);
         }
     }
 } 

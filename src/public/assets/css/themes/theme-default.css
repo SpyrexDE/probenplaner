@@ -827,3 +827,107 @@ label, .form-label {
 /* Mobile styles removed for consistent design */
 
 /* Mobile styles removed for consistent design */
+
+/* === DARK MODE STYLES === */
+html.dark-mode,
+html[data-theme-mode="dark"] {
+  /* Override background colors for dark mode */
+  --color-bg-primary: #1a1a1a;
+  --color-bg-secondary: #2d2d2d;
+  --color-bg-tertiary: #3d3d3d;
+  --color-bg-overlay: rgba(0, 0, 0, 0.8);
+  
+  /* Override text colors for dark mode */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #b0b0b0;
+  --color-text-muted: #888888;
+  --color-text-inverse: #1a1a1a;
+  
+  /* Override neutral colors for dark mode */
+  --color-white: #1a1a1a;
+  --color-gray-50: #2d2d2d;
+  --color-gray-100: #3d3d3d;
+  --color-gray-200: #4d4d4d;
+  --color-gray-300: #5d5d5d;
+  --color-gray-400: #6d6d6d;
+  --color-gray-500: #7d7d7d;
+  --color-gray-600: #9d9d9d;
+  --color-gray-700: #b0b0b0;
+  --color-gray-800: #d0d0d0;
+  --color-gray-900: #ffffff;
+  --color-black: #ffffff;
+  
+  /* Override border colors for dark mode */
+  --color-border: #4d4d4d;
+  --color-border-light: #3d3d3d;
+  --color-border-dark: #5d5d5d;
+  
+  /* Adjust shadows for dark mode */
+  --shadow-sm: 0 1px 2px rgba(255, 255, 255, 0.05);
+  --shadow-base: 0 1px 3px rgba(255, 255, 255, 0.1), 0 1px 2px rgba(255, 255, 255, 0.06);
+  --shadow-md: 0 4px 6px rgba(255, 255, 255, 0.07), 0 2px 4px rgba(255, 255, 255, 0.06);
+  --shadow-lg: 0 10px 15px rgba(255, 255, 255, 0.1), 0 4px 6px rgba(255, 255, 255, 0.05);
+  --shadow-xl: 0 20px 25px rgba(255, 255, 255, 0.1), 0 10px 10px rgba(255, 255, 255, 0.04);
+  --shadow-2xl: 0 25px 50px rgba(255, 255, 255, 0.25);
+}
+
+/* Dark mode body background */
+html.dark-mode body,
+html[data-theme-mode="dark"] body {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+/* Dark mode form adjustments */
+html.dark-mode .form-input,
+html.dark-mode .form-control,
+html.dark-mode input[type="text"],
+html.dark-mode input[type="email"],
+html.dark-mode input[type="password"],
+html.dark-mode input[type="number"],
+html.dark-mode input[type="tel"],
+html.dark-mode input[type="url"],
+html.dark-mode input[type="search"],
+html.dark-mode input[type="date"],
+html.dark-mode input[type="time"],
+html.dark-mode input[type="datetime-local"],
+html.dark-mode textarea,
+html.dark-mode select,
+html[data-theme-mode="dark"] .form-input,
+html[data-theme-mode="dark"] .form-control,
+html[data-theme-mode="dark"] input[type="text"],
+html[data-theme-mode="dark"] input[type="email"],
+html[data-theme-mode="dark"] input[type="password"],
+html[data-theme-mode="dark"] input[type="number"],
+html[data-theme-mode="dark"] input[type="tel"],
+html[data-theme-mode="dark"] input[type="url"],
+html[data-theme-mode="dark"] input[type="search"],
+html[data-theme-mode="dark"] input[type="date"],
+html[data-theme-mode="dark"] input[type="time"],
+html[data-theme-mode="dark"] input[type="datetime-local"],
+html[data-theme-mode="dark"] textarea,
+html[data-theme-mode="dark"] select {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+}
+
+/* Dark mode card adjustments */
+html.dark-mode .card-base,
+html[data-theme-mode="dark"] .card-base {
+  background-color: var(--color-bg-primary);
+  border-color: var(--color-border);
+}
+
+/* Dark mode button adjustments */
+html.dark-mode .btn-base,
+html[data-theme-mode="dark"] .btn-base {
+  background: linear-gradient(135deg, var(--color-bg-tertiary) 0%, var(--color-bg-primary) 100%);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+html.dark-mode .btn-base:hover,
+html[data-theme-mode="dark"] .btn-base:hover {
+  background: linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-tertiary) 100%);
+}

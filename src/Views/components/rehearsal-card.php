@@ -98,10 +98,10 @@ if ($context === 'promises') {
                 <?php if ($context === 'promises'): ?>
                     <!-- Promises buttons: Attend/Not Attend -->
                     <button type="button" id="<?= $rehearsalId ?>" class="checkBtn action-btn <?= $status !== 'attending' ? 'deselected' : 'selected' ?>">
-                        <img src="/assets/img/icons8_checked_checkbox_48px_2.png" alt="Zusagen">
+                        <i class="fas fa-check-square"></i>
                     </button>
                     <button type="button" id="<?= $rehearsalId ?>" class="crossBtn action-btn cross-btn <?= $status !== 'not_attending' ? 'deselected' : 'selected' ?>">
-                        <img src="/assets/img/icons8_close_window_48px_1.png" alt="Absagen">
+                        <i class="fas fa-times-square"></i>
                     </button>
                 <?php elseif ($context === 'rehearsals'): ?>
                     <!-- Rehearsals buttons: Edit/Delete -->
