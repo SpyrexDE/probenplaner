@@ -1,5 +1,11 @@
 <?php $this->layout('layouts/default', ['title' => 'Admin Verifizierung', 'currentPage' => $currentPage]) ?>
 
+<?php 
+// Load form and card styles (form-input component used for styles only)
+$renderComponent = false; // Just load styles, don't render component
+include __DIR__ . '/../components/form-input.php'; 
+?>
+
 <div class="login-container">
     <div class="admin-verify-back">
         <a href="/" class="back-link">

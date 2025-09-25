@@ -1,5 +1,11 @@
 <?php $this->layout('layouts/default', ['title' => 'Neues Orchester erstellen', 'currentPage' => $currentPage]) ?>
 
+<?php 
+// Load form and card styles (form-input component used for styles only)
+$renderComponent = false; // Just load styles, don't render component
+include __DIR__ . '/../components/form-input.php'; 
+?>
+
 <div class="login-container">
     <?php if (isset($admin_verified) && $admin_verified): ?>
     <div class="admin-verify-back">
@@ -9,7 +15,7 @@
         </a>
     </div>
     
-    <form action="/orchestras/store" method="post" class="login-form">
+    <form action="/orchestras/store" method="post" class="login-form" style="max-width: 480px;">
         <?php if (isset($csrf_token)): ?>
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8') ?>">
         <?php endif; ?>
@@ -19,52 +25,76 @@
         </div>
 
         <h2 class="verify-title">Neues Orchester erstellen</h2>
-        <p class="verify-subtitle">Füllen Sie bitte alle Felder aus, um ein neues Orchester zu erstellen.</p>
+        <p class="verify-subtitle">Konfiguration und Dirigenten-Account</p>
         
-        <input type="text" 
-               class="login-input" 
-               name="name" 
-               placeholder="Orchestername" 
-               value="<?= isset($formData['name']) ? htmlspecialchars($formData['name']) : '' ?>" 
-               required>
-        <div class="form-text">Der vollständige Name des Orchesters.</div>
+        <!-- Orchestra Settings Section -->
+        <div style="margin: var(--space-6) 0; padding: var(--space-4); background: var(--color-bg-secondary); border-radius: var(--radius-lg); border-left: 4px solid var(--color-primary);">
+            <h3 style="margin: 0 0 var(--space-3) 0; font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); color: var(--color-text-primary); display: flex; align-items: center; gap: var(--space-2);">
+                <i class="fas fa-music" style="color: var(--color-primary);"></i>
+                Orchester-Konfiguration
+            </h3>
+            
+            <input type="text" 
+                   class="login-input" 
+                   name="name" 
+                   placeholder="Orchestername" 
+                   value="<?= isset($formData['name']) ? htmlspecialchars($formData['name']) : '' ?>" 
+                   style="margin-bottom: var(--space-1);"
+                   required>
+            <div class="form-text" style="margin-bottom: var(--space-4);">z.B. Philharmonisches Orchester München</div>
+            
+            <input type="text" 
+                   class="login-input" 
+                   name="token" 
+                   placeholder="Registrierungs-Token" 
+                   value="<?= isset($formData['token']) ? htmlspecialchars($formData['token']) : '' ?>" 
+                   style="margin-bottom: var(--space-1);"
+                   required>
+            <div class="form-text" style="margin-bottom: var(--space-4);">Kurzer Code für neue Mitglieder (z.B. PHIL2024)</div>
+            
+            <input type="text" 
+                   class="login-input" 
+                   name="leader_password" 
+                   placeholder="Stimmführer-Passwort" 
+                   value="<?= isset($formData['leader_password']) ? htmlspecialchars($formData['leader_password']) : '' ?>" 
+                   style="margin-bottom: var(--space-1);"
+                   required>
+            <div class="form-text" style="margin-bottom: 0;">Für Stimmführer-Berechtigungen bei der Registrierung</div>
+        </div>
         
-        <input type="text" 
-               class="login-input" 
-               name="token" 
-               placeholder="Token" 
-               value="<?= isset($formData['token']) ? htmlspecialchars($formData['token']) : '' ?>" 
-               required>
-        <div class="form-text">Ein kurzer Code für die Registrierung neuer Mitglieder.</div>
-        
-        <input type="text" 
-               class="login-input" 
-               name="leader_password" 
-               placeholder="Stimmführer-Passwort" 
-               value="<?= isset($formData['leader_password']) ? htmlspecialchars($formData['leader_password']) : '' ?>" 
-               required>
-        <div class="form-text">Passwort für Stimmführer-Berechtigungen bei der Registrierung.</div>
-        
-        <h3 class="verify-subtitle" style="margin-top: 2rem;">Dirigenten-Account</h3>
-        
-        <input type="text" 
-               class="login-input" 
-               name="conductor_username" 
-               placeholder="Benutzername (Dirigent)" 
-               value="<?= isset($formData['conductor_username']) ? htmlspecialchars($formData['conductor_username']) : '' ?>" 
-               required>
-        <div class="form-text">Benutzername für den Dirigenten-Account.</div>
-        
-        <input type="password" 
-               class="login-input" 
-               name="conductor_password" 
-               placeholder="Passwort (Dirigent)" 
-               required>
-        <div class="form-text">Passwort für den Dirigenten-Account.</div>
+        <!-- Conductor Account Section -->  
+        <div style="margin: var(--space-6) 0; padding: var(--space-4); background: var(--color-bg-secondary); border-radius: var(--radius-lg); border-left: 4px solid var(--color-secondary);">
+            <h3 style="margin: 0 0 var(--space-3) 0; font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); color: var(--color-text-primary); display: flex; align-items: center; gap: var(--space-2);">
+                <i class="fas fa-user-tie" style="color: var(--color-secondary);"></i>
+                Dirigenten-Account
+            </h3>
+            
+            <input type="text" 
+                   class="login-input" 
+                   name="conductor_username" 
+                   placeholder="Benutzername (Dirigent)" 
+                   value="<?= isset($formData['conductor_username']) ? htmlspecialchars($formData['conductor_username']) : '' ?>" 
+                   style="margin-bottom: var(--space-1);"
+                   required>
+            <div class="form-text" style="margin-bottom: var(--space-4);">Eindeutiger Benutzername für Administrator</div>
+            
+            <input type="password" 
+                   class="login-input" 
+                   name="conductor_password" 
+                   placeholder="Passwort (Dirigent)" 
+                   style="margin-bottom: var(--space-1);"
+                   required>
+            <div class="form-text" style="margin-bottom: 0;">Starkes Passwort für den Administrator-Zugang</div>
+        </div>
         
         <button type="submit" class="login-button">
+            <i class="fas fa-plus-circle" style="margin-right: var(--space-2);"></i>
             Orchester erstellen
         </button>
+        
+        <div class="form-text" style="margin-top: var(--space-3); text-align: center;">
+            Sie erhalten sofort Zugang zu allen Administrationsfunktionen
+        </div>
     </form>
     <?php else: ?>
     <form method="post" action="/orchestras/create" class="login-form">

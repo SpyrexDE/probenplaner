@@ -1,3 +1,11 @@
+/*
+ * CONSISTENT PATTERNS FOR AI:
+ * - Use window.notifySuccess/Error/Info() for all notifications
+ * - Use existing .btn-base classes for buttons
+ * - Use existing form validation patterns
+ * - Never change CSS class names that JavaScript depends on
+ */
+
 /* Shared JavaScript functionality for promise views (admin and leader) */
 
 // Initialize promise view functionality
@@ -148,13 +156,8 @@ function deleteAccount(username) {
                     return response.json();
                 })
                 .then(data => {
-                    if (window.notifySuccess) {
-                        window.notifySuccess(data.message, { timer: 2000 });
-                        setTimeout(() => window.location.reload(), 600);
-                    } else {
-                        alert(data.message);
-                        window.location.reload();
-                    }
+                    window.notifySuccess(data.message, { timer: 2000 });
+                    setTimeout(() => window.location.reload(), 600);
                 })
                 .catch(error => {
                     console.error('Error deleting account:', error);
@@ -257,13 +260,25 @@ function resetPassword(username) {
     });
 }
 
+// Standardized API call helper
+function standardApiCall(url, options = {}) {
+    return fetch(url, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        ...options
+    }).then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.error || `Server returned ${response.status}`);
+            });
+        }
+        return response.json();
+    });
+}
+
 // Show error toast notification
 function showErrorToast(message, timer = 3000) {
-    if (window.notifyError) {
-        window.notifyError(message, { timer: timer });
-    } else {
-        alert(message);
-    }
+    window.notifyError(message, { timer: timer });
 }
 
 // Initialize view toggle functionality (leader view only)

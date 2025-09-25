@@ -1,3 +1,9 @@
+<?php 
+// Load table styles (table component used for styles only)
+$renderComponent = false; // Just load styles, don't render component
+include __DIR__ . '/../components/table.php'; 
+?>
+
 <div class="max-w-7xl mx-auto px-4 mt-4">
     <div class="w-full">
         <div class="w-full text-center mb-6">

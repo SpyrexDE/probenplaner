@@ -1,5 +1,11 @@
 <?php $this->layout('layouts/default', ['title' => 'Registrierung', 'currentPage' => $currentPage]) ?>
 
+<?php 
+// Load form styles (form-input component used for styles only)
+$renderComponent = false; // Just load styles, don't render component
+include __DIR__ . '/../components/form-input.php'; 
+?>
+
 <div class="login-container">
     <form method="post" action="/register" class="login-form">
         <?php if (isset($csrf_token)): ?>

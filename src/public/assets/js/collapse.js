@@ -1,3 +1,11 @@
+/*
+ * CONSISTENT PATTERNS FOR AI:
+ * - Use window.notifySuccess/Error/Info() for all notifications
+ * - Use existing .btn-base classes for buttons
+ * - Use existing form validation patterns
+ * - Never change CSS class names that JavaScript depends on
+ */
+
 /**
  * Vanilla JavaScript Collapse Component
  * Replaces Bootstrap's collapse functionality

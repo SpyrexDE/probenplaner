@@ -21,20 +21,11 @@
 }
 
 .analytics-card {
+  /* Use card-base-xl + focus-shadow-preserve-xl */
   position: relative;
-  background: var(--color-white);
-  border-radius: var(--radius-xl);
   padding: 0;
-  box-shadow: var(--shadow-lg);
-  border: none;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
   min-height: 280px;
-}
-
-
-.analytics-card:focus-within {
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1) !important;
 }
 
 .analytics-card-background {
@@ -276,19 +267,8 @@
 }
 
 .metric-card {
-  background: var(--color-white);
-  border-radius: var(--radius-lg);
-  padding: var(--space-6);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--color-border);
-  transition: all var(--transition-base);
+  /* Use card-base + card-content-md + focus-shadow-preserve */
   position: relative;
-  overflow: hidden;
-}
-
-
-.metric-card:focus-within {
-  box-shadow: var(--shadow-lg) !important;
 }
 
 .metric-card::before {
@@ -405,17 +385,7 @@
 }
 
 .rehearsal-compact {
-  background: var(--color-white);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--color-border);
-  overflow: hidden;
-  transition: all var(--transition-base);
-}
-
-
-.rehearsal-compact:focus-within {
-  box-shadow: var(--shadow-lg) !important;
+  /* Use card-base + focus-shadow-preserve */
 }
 
 .rehearsal-compact-header {
@@ -802,11 +772,7 @@
 }
 
 .rehearsal-overview {
-  background: var(--color-white);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg);
-  border: 1px solid var(--color-border);
-  overflow: hidden;
+  /* Use card-base-xl */
 }
 
 .rehearsal-header {
@@ -972,17 +938,7 @@
 }
 
 .section-card {
-  background: var(--color-white);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--color-border);
-  transition: all var(--transition-base);
-  overflow: hidden;
-}
-
-
-.section-card:focus-within {
-  box-shadow: var(--shadow-md) !important;
+  /* Use card-base-sm + transition + focus-shadow-preserve */
 }
 
 .section-card.expandable {

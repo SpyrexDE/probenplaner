@@ -1,3 +1,10 @@
+<?php
+// Load form, card, and modern checkbox styles (components used for styles only)
+$renderComponent = false; // Just load styles, don't render component
+include __DIR__ . '/../components/form-input.php';
+include __DIR__ . '/../components/modern-checkbox.php';
+?>
+
 <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
     <div class="max-w-3xl mx-auto px-4">
         <!-- Header -->

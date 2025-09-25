@@ -333,6 +333,17 @@ if (isset($_SESSION['username'])): ?>
                 </ul>
             </nav>
             
+            <!-- Load component styles -->
+            <?php 
+            // Load component styles (components used for styles only)
+            $renderComponent = false; // Just load styles, don't render component
+            include __DIR__ . '/../components/pwa-install-card.php';
+            include __DIR__ . '/../components/sidebar.php';
+            include __DIR__ . '/../components/top-navigation.php';
+            include __DIR__ . '/../components/tree-view.php';
+            include __DIR__ . '/../components/page-header.php';
+            ?>
+            
             <!-- PWA Install Card -->
             <div id="pwa-install-card" class="sidebar-install-card" style="display: none;" onclick="installPWA()">
                 <div class="sidebar-install-content">

@@ -1,9 +1,19 @@
 <?php
 /**
- * Modular Rehearsal Card Component
+ * SOPHISTICATED REHEARSAL CARD - UPDATED WITH TAILWIND + MINIMAL CSS
  * 
- * This component can be used in different contexts (promises, rehearsals)
- * with different button configurations and behaviors.
+ * Features:
+ * - Context-aware: 'promises', 'rehearsals', custom
+ * - Smart group display via SmartGroupDisplay service
+ * - Rehearsal type badges via RehearsalTypeManager
+ * - Conditional UI based on user role and context
+ * - Advanced date/time formatting
+ * - NOW USES: Tailwind utility classes + minimal custom CSS for sophisticated effects
+ * 
+ * Usage for AI:
+ * $context = 'promises|rehearsals';
+ * $options = ['status' => '...', 'showButtons' => bool];
+ * include __DIR__ . '/../components/rehearsal-card.php';
  * 
  * @param array $rehearsal - The rehearsal data
  * @param string $context - Context: 'promises' or 'rehearsals'
@@ -13,6 +23,230 @@
  *   - showButtons: bool - Whether to show action buttons (default: true)
  *   - buttons: array - Custom button configuration
  */
+
+// Component Styles - Only sophisticated effects that Tailwind can't handle
+?>
+<style>
+/* Rehearsal Card - Sophisticated gradients and animations */
+.rehearsal-card {
+    background-color: var(--color-bg-primary);
+    border-color: var(--color-border);
+    border-left-color: var(--color-gray-300);
+    box-shadow: var(--shadow-sm);
+}
+
+
+.rehearsal-card.status-pending {
+    border-left-color: var(--color-gray-400);
+}
+
+.rehearsal-card:focus-within {
+    box-shadow: var(--shadow-sm);
+}
+
+/* Weekday styling - EXACT match to original components.css */
+.rehearsal-weekday {
+    font-size: 24px;
+    font-weight: 900;
+    color: var(--color-primary);
+    line-height: 1;
+    min-width: 40px;
+    text-align: center;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+    text-shadow: 0 2px 4px rgba(71, 140, 244, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: var(--space-3);
+}
+
+.rehearsal-weekday::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 2px;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    border-radius: 1px;
+    opacity: 0.6;
+}
+
+/* Action Button - Sophisticated hover and state effects */
+.action-btn {
+    background-color: var(--color-bg-primary);
+    border-color: var(--color-border);
+    transition: all var(--transition-base);
+}
+
+.action-btn:hover {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary-50);
+    box-shadow: var(--shadow-md);
+}
+
+.action-btn:active {
+    transform: translateY(-1px);
+    transition: all 100ms ease;
+}
+
+
+.action-btn.selected i {
+    filter: brightness(1) saturate(1.2);
+}
+
+.action-btn.deselected {
+    opacity: 0.4;
+    background-color: var(--color-bg-tertiary);
+    border-color: var(--color-border);
+    box-shadow: none;
+}
+
+.action-btn.deselected:hover {
+    opacity: 0.7;
+    background-color: var(--color-primary-50);
+    border-color: var(--color-primary-200);
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-1px);
+}
+
+.action-btn.deselected i {
+    filter: grayscale(100%) brightness(0.7);
+}
+
+.action-btn.deselected:hover i {
+    filter: grayscale(50%) brightness(0.9);
+}
+
+/* Check Button (attending) */
+.checkBtn {
+    color: var(--color-success);
+    background-color: var(--color-bg-primary);
+}
+
+.checkBtn i {
+    color: var(--color-success-icon);
+}
+
+.checkBtn:not(.deselected) {
+    border-color: var(--color-success);
+    background-color: var(--color-success-50);
+    box-shadow: 0 2px 8px var(--color-success-200);
+    opacity: 1;
+}
+
+.checkBtn.deselected {
+    border-color: var(--color-border);
+    background-color: var(--color-bg-tertiary);
+    box-shadow: none;
+    opacity: 0.4;
+    color: var(--color-text-muted);
+}
+
+.checkBtn.deselected i {
+    color: var(--color-text-muted);
+}
+
+/* Cross Button (not attending) */
+.crossBtn {
+    color: var(--color-error);
+    background-color: var(--color-bg-primary);
+}
+
+.crossBtn i {
+    color: var(--color-error-icon);
+}
+
+.crossBtn:not(.deselected) {
+    border-color: var(--color-error);
+    background-color: var(--color-error-50);
+    box-shadow: 0 2px 8px var(--color-error-200);
+    opacity: 1;
+}
+
+.crossBtn.deselected {
+    border-color: var(--color-border);
+    background-color: var(--color-bg-tertiary);
+    box-shadow: none;
+    opacity: 0.4;
+    color: var(--color-text-muted);
+}
+
+.crossBtn.deselected i {
+    color: var(--color-text-muted);
+}
+
+/* Badges */
+.rehearsal-type-badge {
+    color: #7c3aed;
+    background-color: rgba(124, 58, 237, 0.1);
+    border: 1px solid rgba(124, 58, 237, 0.2);
+}
+
+.rehearsal-section-badge,
+.rehearsal-location-badge {
+    color: var(--color-text-secondary);
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+}
+
+/* Note styling */
+.rehearsal-note-icon,
+.rehearsal-note-text {
+    color: var(--color-text-muted);
+}
+
+/* === REHEARSAL GRID LAYOUT === */
+.rehearsal-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+/* === STATUS COLORS === */
+.status-attending {
+    color: var(--color-success);
+    background-color: var(--color-success-50);
+    border-color: var(--color-success);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-not-attending {
+    color: var(--color-error);
+    background-color: var(--color-error-50);
+    border-color: var(--color-error);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-pending {
+    color: var(--color-gray-500);
+    background-color: var(--color-gray-50);
+    border-color: var(--color-gray-300);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+</style>
+
+<?php
 
 // Set default values
 $context = $context ?? 'rehearsals';
@@ -58,61 +292,96 @@ $showLocation = !empty($rehearsal['location']) &&
 
 // Determine CSS classes based on context
 $cardClasses = 'rehearsal-card';
-if ($context === 'promises') {
-    $cardClasses .= ' status-' . $status;
-}
 ?>
 
-<div class="<?= $cardClasses ?>" style="<?= !empty($rehearsal['color']) ? 'border-left-color: ' . $rehearsal['color'] . ';' : '' ?>">
-    <div class="rehearsal-card-content">
-        <div class="rehearsal-card-info">
-            <div class="rehearsal-card-header">
-                <div class="rehearsal-main-info">
-                    <!-- Use consistent row layout for both contexts -->
-                    <div class="rehearsal-content-row">
+<!-- REHEARSAL CARD: Tailwind utility classes + sophisticated custom effects -->
+<div class="<?= $cardClasses ?> border border-l-4 my-2" 
+     style="border-radius: var(--radius-lg); padding: var(--space-3) var(--space-4); <?= !empty($rehearsal['color']) ? 'border-left-color: ' . $rehearsal['color'] . ';' : '' ?>">
+    
+    <!-- Card Content: Flexbox layout with Tailwind -->
+    <div class="flex items-center w-full gap-4">
+        
+        <!-- Card Info: Flex-grow for main content -->
+        <div class="flex-1 min-w-0 flex flex-col gap-0">
+            
+            <!-- Card Header: Relative positioning -->
+            <div class="relative">
+                
+                <!-- Main Info Container -->
+                <div class="flex flex-col flex-1">
+                    
+                    <!-- Content Row: Weekday + Date/Time -->
+                    <div class="flex items-center gap-2">
+                        <!-- Weekday with sophisticated underline effect -->
                         <div class="rehearsal-weekday"><?= strtoupper($weekdayShort) ?></div>
-                        <div class="rehearsal-datetime-block">
-                            <div class="rehearsal-date">
+                        
+                        <!-- Date/Time Block -->
+                        <div class="flex flex-col gap-0">
+                            <div class="text-lg font-bold" style="color: var(--color-text-primary);">
                                 <?= htmlspecialchars($rehearsal['date_formatted'] ?? $rehearsal['date']) ?>
                             </div>
-                            <div class="rehearsal-time-container">
-                                <div class="rehearsal-time stretch-text"><?= htmlspecialchars($time_display) ?></div>
+                            <div class="h-[18px] overflow-hidden relative">
+                                <div class="text-sm font-medium" style="color: var(--color-text-secondary);">
+                                    <?= htmlspecialchars($time_display) ?>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="rehearsal-badges">
+                    
+                    <!-- Badges Row -->
+                    <div class="flex items-center gap-1 flex-wrap">
                         <?php if ($showRehearsalType): ?>
-                            <div class="rehearsal-type-badge"><?= htmlspecialchars($rehearsalType) ?></div>
+                            <div class="rehearsal-type-badge text-[10px] font-semibold px-2 py-1" 
+                                 style="border-radius: var(--radius-sm);">
+                                <?= htmlspecialchars($rehearsalType) ?>
+                            </div>
                         <?php endif; ?>
-                        <div class="rehearsal-section-badge"><?= $groupsText ?></div>
+                        <div class="rehearsal-section-badge text-[10px] font-medium px-2 py-1" 
+                             style="border-radius: var(--radius-sm);">
+                            <?= $groupsText ?>
+                        </div>
                         <?php if ($showLocation): ?>
-                            <div class="rehearsal-location-badge"><?= htmlspecialchars($rehearsal['location']) ?></div>
+                            <div class="rehearsal-location-badge text-[10px] font-medium px-2 py-1" 
+                                 style="border-radius: var(--radius-sm);">
+                                <?= htmlspecialchars($rehearsal['location']) ?>
+                            </div>
                         <?php endif; ?>
                     </div>
+                    
                 </div>
+                
             </div>
         </div>
         
+        <!-- Actions: Flex-shrink-0 to prevent compression -->
         <?php if ($showButtons): ?>
-            <div class="rehearsal-actions">
+            <div class="flex gap-2 flex-shrink-0">
                 <?php if ($context === 'promises'): ?>
-                    <!-- Promises buttons: Attend/Not Attend -->
-                    <button type="button" id="<?= $rehearsalId ?>" class="checkBtn action-btn <?= $status !== 'attending' ? 'deselected' : 'selected' ?>">
-                        <i class="fas fa-check-square"></i>
+                    <!-- Promise Buttons: Check/Cross with sophisticated states -->
+                    <button type="button" id="<?= $rehearsalId ?>" 
+                            class="checkBtn action-btn w-[52px] h-[52px] border-2 flex items-center justify-center cursor-pointer <?= $status !== 'attending' ? 'deselected' : 'selected' ?>"
+                            style="border-radius: var(--radius-lg);">
+                        <i class="fas fa-check-square text-[28px] transition-all duration-200"></i>
                     </button>
-                    <button type="button" id="<?= $rehearsalId ?>" class="crossBtn action-btn cross-btn <?= $status !== 'not_attending' ? 'deselected' : 'selected' ?>">
-                        <i class="fas fa-times-square"></i>
+                    <button type="button" id="<?= $rehearsalId ?>" 
+                            class="crossBtn action-btn cross-btn w-[52px] h-[52px] border-2 flex items-center justify-center cursor-pointer <?= $status !== 'not_attending' ? 'deselected' : 'selected' ?>"
+                            style="border-radius: var(--radius-lg);">
+                        <i class="fas fa-times-square text-[28px] transition-all duration-200"></i>
                     </button>
                 <?php elseif ($context === 'rehearsals'): ?>
-                    <!-- Rehearsals buttons: Edit/Delete -->
-                    <button type="button" id="<?= $rehearsalId ?>" class="btn-icon btn-outline edit-btn">
-                        <i ><?= icon('edit', 'text-gray-600') ?></i>
+                    <!-- Rehearsal Management Buttons: Using existing button component styles -->
+                    <button type="button" id="<?= $rehearsalId ?>" 
+                            class="btn-base btn-icon btn-outline edit-btn inline-flex items-center justify-center w-12 h-12 border-2 transition-all duration-200"
+                            style="border-radius: var(--radius-md);">
+                        <i><?= icon('edit', 'text-gray-600') ?></i>
                     </button>
-                    <button type="button" id="<?= $rehearsalId ?>" class="btn-icon btn-danger delete-btn">
-                        <i ><?= icon('trash', 'text-white') ?></i>
+                    <button type="button" id="<?= $rehearsalId ?>" 
+                            class="btn-base btn-icon btn-danger delete-btn inline-flex items-center justify-center w-12 h-12 border-0 transition-all duration-200"
+                            style="border-radius: var(--radius-md);">
+                        <i><?= icon('trash', 'text-white') ?></i>
                     </button>
                 <?php else: ?>
-                    <!-- Custom buttons -->
+                    <!-- Custom Buttons -->
                     <?php foreach ($buttons as $button): ?>
                         <button 
                             type="button" 
@@ -129,14 +398,18 @@ if ($context === 'promises') {
         
     </div>
     
+    <!-- Note Tag for Promises Context -->
     <?php if ($context === 'promises' && !empty($note)): ?>
-        <div class="rehearsal-note-tag">
-            <?= icon('quote-left', 'rehearsal-note-icon') ?>
-            <span class="rehearsal-note-text"><?= htmlspecialchars($note) ?></span>
+        <div class="flex items-center justify-end gap-2 mt-3 px-3 py-2" 
+             style="background-color: var(--color-bg-secondary); border-radius: var(--radius-base);">
+            <?= icon('quote-left', 'rehearsal-note-icon text-xs') ?>
+            <span class="rehearsal-note-text text-xs italic"><?= htmlspecialchars($note) ?></span>
         </div>
     <?php endif; ?>
     
+    <!-- Hidden Note Input for JavaScript -->
     <?php if ($context === 'promises'): ?>
         <input type="hidden" id="note<?= $rehearsalId ?>" value="<?= htmlspecialchars($note) ?>">
     <?php endif; ?>
+    
 </div>

@@ -145,6 +145,11 @@ function sortGroups($groups) {
 </div>
 
 <!-- Save indicator -->
+<?php 
+// Load save indicator styles (component used for styles only)
+$renderComponent = false; // Just load styles, don't render component
+include __DIR__ . '/../components/save-indicator.php';
+?>
 <div id="save-indicator" class="save-indicator">
     <i class="fa fa-spinner fa-spin"></i>
     <span>Speichern...</span>
@@ -198,7 +203,6 @@ $(document).ready(function() {
         
         // Update UI
         var container = $(this).closest('.rehearsal-card');
-        container.removeClass('status-not_attending status-pending').addClass('status-attending');
         
         // Remove note tag
         container.find('.rehearsal-note-tag').remove();
@@ -240,7 +244,6 @@ $(document).ready(function() {
         $(this).siblings('.checkBtn').removeClass('selected').addClass('deselected');
         
         // Update UI
-        container.removeClass('status-pending status-attending').addClass('status-not_attending');
         
         // Get existing note
         var existingNote = $('#note' + id).val() || '';

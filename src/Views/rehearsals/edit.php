@@ -1,5 +1,13 @@
 <?php $this->layout('layouts/default', ['title' => 'Edit Rehearsal', 'currentPage' => $currentPage ?? 'rehearsals']) ?>
 
+<?php
+// Load form and checkbox styles (components used for styles only)
+$renderComponent = false; // Just load styles, don't render component
+include __DIR__ . '/../components/form-input.php';
+include __DIR__ . '/../components/tree-checkbox.php';
+include __DIR__ . '/../components/checkbox.php';
+?>
+
 <div class="container-app">
     <?php if (!empty($errors)): ?>
     <script>
