@@ -146,14 +146,14 @@ function sortGroups($groups) {
 
 <!-- Save indicator -->
 <?php 
-// Load save indicator styles (component used for styles only)
-$renderComponent = false; // Just load styles, don't render component
+// Ensure component renders the indicator
+$renderComponent = true;
+$message = 'Speichern...';
+$show = false;
+$type = 'default';
+$icon = 'spinner';
 include __DIR__ . '/../components/save-indicator.php';
 ?>
-<div id="save-indicator" class="save-indicator">
-    <i class="fa fa-spinner fa-spin"></i>
-    <span>Speichern...</span>
-</div>
 
 <script>
 $(document).ready(function() {

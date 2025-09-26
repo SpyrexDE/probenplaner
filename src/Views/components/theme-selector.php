@@ -79,6 +79,12 @@
     transform: translateY(-2px);
 }
 
+/* Keyboard focus ring for accessibility */
+.theme-radio:focus-visible + .theme-card {
+    outline: 3px solid var(--color-primary-300);
+    outline-offset: 3px;
+}
+
 /* When theme is selected */
 .theme-radio:checked + .theme-card {
     border-color: var(--color-primary);
@@ -201,11 +207,11 @@
     display: block;
     position: relative;
     padding: var(--space-3) var(--space-4);
-    /* border: 2px solid var(--color-border); → form-border-2 utility */
+    border: 2px solid var(--color-border);
     border-radius: var(--radius-lg);
-    /* background: var(--color-bg-primary); → card-bg utility */
+    background: var(--color-bg-primary);
     cursor: pointer;
-    /* transition: all var(--transition-base); → form-transition utility */
+    transition: all var(--transition-base);
     min-width: 120px;
     text-align: center;
     box-shadow: var(--shadow-sm);
@@ -215,6 +221,14 @@
     border-color: var(--color-primary-200);
     box-shadow: var(--shadow-md);
     transform: translateY(-1px);
+}
+
+/* Improve focus visibility and smoothness */
+.theme-selector-compact:focus { outline: none; }
+.theme-radio-compact:focus-visible + .theme-selector-compact,
+.theme-selector-compact:focus-visible {
+    outline: 3px solid var(--color-primary-300);
+    outline-offset: 2px;
 }
 
 /* When theme is selected */
