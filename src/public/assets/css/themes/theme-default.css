@@ -270,4 +270,7 @@ html[data-theme-mode="dark"] body {
   color: var(--color-text-primary);
 }
 
+/* === IMPORT CONSOLIDATED UTILITIES === */
+@import url('../utilities.css');
+
 /* END OF FILE - ALL COMPONENT STYLES MOVED TO COMPONENTS */

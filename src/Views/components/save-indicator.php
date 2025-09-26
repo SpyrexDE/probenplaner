@@ -44,7 +44,7 @@
 .save-indicator.show {
     opacity: 1;
     visibility: visible;
-    animation: bounce-in 0.5s ease-out;
+    /* animation: bounce-in 0.5s ease-out; → Removed wobbly zoom, simple fade is enough */
 }
 
 @keyframes bounce-in {

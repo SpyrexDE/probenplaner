@@ -1,7 +1,10 @@
 <?php
 /**
- * Floating Action Button (FAB) Component - Component-colocated styling
- * Sophisticated FAB with animations and hover effects
+ * Floating Action Button (FAB) Component - CONSOLIDATED VERSION
+ * Now uses utilities.css for common patterns + component-specific animations
+ * 
+ * Base classes: Uses btn-base btn-primary rounded-full flex-center shadow-lg transition
+ * Custom: Unique FAB positioning, animations, and overlay effects
  * 
  * Usage:
  * <?php 
@@ -20,23 +23,19 @@
 ?>
 
 <style>
-/* FLOATING ACTION BUTTON COMPONENT - All styles colocated */
+/* FLOATING ACTION BUTTON - Uses utilities + unique FAB behavior */
 .fab {
+    /* 🎨 CONSOLIDATED: Use utilities.css classes instead of repeating common patterns */
+    /* Base button structure from utilities: btn-base btn-primary */
+    /* Layout from utilities: flex-center */
+    /* Styling from utilities: rounded-full shadow-lg transition */
+    
+    /* ✨ UNIQUE FAB-SPECIFIC: Position, size, z-index, overflow */
     position: fixed;
     bottom: var(--space-5);
     right: var(--space-5);
     width: 60px;
     height: 60px;
-    border-radius: var(--radius-full);
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
-    color: var(--color-white);
-    border: none;
-    box-shadow: var(--shadow-lg);
-    cursor: pointer;
-    transition: all var(--transition-base);
-    display: flex;
-    align-items: center;
-    justify-content: center;
     z-index: var(--z-fixed);
     text-decoration: none;
     overflow: hidden;
@@ -55,8 +54,8 @@
 }
 
 .fab:hover {
-    background: linear-gradient(135deg, var(--color-primary-dark) 0%, #1e40af 100%);
-    box-shadow: var(--shadow-xl);
+    /* 🎨 CONSOLIDATED: Hover gradient uses utilities (btn-primary:hover) */
+    /* ✨ UNIQUE FAB-SPECIFIC: Custom transform animation */
     transform: scale(1.05) rotate(-5deg);
 }
 
@@ -80,21 +79,13 @@
     transform: rotate(90deg);
 }
 
-/* FAB variants */
+/* FAB variants - Use consolidated utilities */
 .fab-secondary {
-    background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-secondary-dark) 100%);
-}
-
-.fab-secondary:hover {
-    background: linear-gradient(135deg, var(--color-secondary-dark) 0%, #dc2626 100%);
+    /* 🎨 CONSOLIDATED: Use btn-secondary from utilities.css */
 }
 
 .fab-success {
-    background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark) 100%);
-}
-
-.fab-success:hover {
-    background: linear-gradient(135deg, var(--color-success-dark) 0%, #047857 100%);
+    /* 🎨 CONSOLIDATED: Use btn-success from utilities.css */
 }
 
 /* Mobile adjustments */
@@ -128,10 +119,23 @@ $title = $title ?? '';
 $variant = $variant ?? 'primary'; // primary, secondary, success
 $onclick = $onclick ?? '';
 
-// Build FAB classes
-$fabClasses = ['fab'];
-if ($variant !== 'primary') {
-    $fabClasses[] = 'fab-' . $variant;
+// Build FAB classes - 🎨 CONSOLIDATED: Use utilities + component-specific
+$fabClasses = [
+    'fab',                    // Component-specific positioning and animations
+    'btn-base',              // Base button structure from utilities
+    'flex-center',           // Centering layout from utilities  
+    'rounded-full',          // Full border radius from utilities
+    'shadow-lg',             // Large shadow from utilities
+    'transition',            // Smooth transitions from utilities
+];
+
+// Add variant styling from utilities
+if ($variant === 'secondary') {
+    $fabClasses[] = 'btn-secondary';
+} elseif ($variant === 'success') {
+    $fabClasses[] = 'btn-success';
+} else {
+    $fabClasses[] = 'btn-primary';  // Default primary variant
 }
 
 $fabClassString = implode(' ', $fabClasses);

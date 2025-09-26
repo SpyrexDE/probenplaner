@@ -20,8 +20,8 @@
   margin-bottom: var(--space-8);
 }
 
+/* Analytics cards should use: card-base-xl focus-shadow-preserve-xl */
 .analytics-card {
-  /* Use card-base-xl + focus-shadow-preserve-xl */
   position: relative;
   padding: 0;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -266,8 +266,8 @@
   margin-bottom: var(--space-8);
 }
 
+/* Metric cards should use: card-base card-content-md focus-shadow-preserve */
 .metric-card {
-  /* Use card-base + card-content-md + focus-shadow-preserve */
   position: relative;
 }
 
@@ -384,9 +384,7 @@
   gap: var(--space-6);
 }
 
-.rehearsal-compact {
-  /* Use card-base + focus-shadow-preserve */
-}
+/* Rehearsal compact cards should use: card-base focus-shadow-preserve */
 
 .rehearsal-compact-header {
   padding: var(--space-5);
@@ -771,9 +769,7 @@
   padding-left: var(--space-14);
 }
 
-.rehearsal-overview {
-  /* Use card-base-xl */
-}
+/* Rehearsal overview should use: card-base-xl */
 
 .rehearsal-header {
   padding: var(--space-6) var(--space-8);
@@ -937,9 +933,7 @@
   gap: var(--space-6);
 }
 
-.section-card {
-  /* Use card-base-sm + transition + focus-shadow-preserve */
-}
+/* Section cards should use: card-base-sm transition focus-shadow-preserve */
 
 .section-card.expandable {
   cursor: pointer;

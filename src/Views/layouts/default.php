@@ -339,6 +339,7 @@ if (isset($_SESSION['username'])): ?>
             $renderComponent = false; // Just load styles, don't render component
             include __DIR__ . '/../components/pwa-install-card.php';
             include __DIR__ . '/../components/sidebar.php';
+            include __DIR__ . '/../components/user-badge.php'; // For generateUserBadges() styling
             include __DIR__ . '/../components/top-navigation.php';
             include __DIR__ . '/../components/tree-view.php';
             include __DIR__ . '/../components/page-header.php';

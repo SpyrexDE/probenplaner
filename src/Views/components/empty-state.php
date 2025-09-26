@@ -18,7 +18,7 @@
     text-align: center;
     margin: var(--space-8) 0;
     position: relative;
-    overflow: hidden;
+    /* overflow: hidden; → card-overflow utility */
 }
 
 .empty-state::before {
@@ -54,7 +54,7 @@
 </style>
 <div class="flex justify-center">
     <div class="w-full max-w-2xl mx-4">
-        <div class="empty-state">
+        <div class="empty-state card-overflow">
             <h2 class="empty-state-title"><?= htmlspecialchars($title) ?></h2>
             <p class="empty-state-message"><?= htmlspecialchars($message) ?></p>
             <?php if (!empty($actionHref) && !empty($actionLabel)): ?>

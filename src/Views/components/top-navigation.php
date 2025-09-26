@@ -1,7 +1,10 @@
 <?php
 /**
- * Top Navigation Component - Component-colocated styling
- * Fixed top navigation bar with responsive behavior and sidebar integration
+ * Top Navigation Component - CONSOLIDATED VERSION
+ * Now uses utilities.css for common patterns + component-specific navigation styling
+ * 
+ * Base classes: Uses flex-between transition
+ * Custom: Unique backdrop blur, responsive behavior, z-index management
  * 
  * Usage:
  * <?php 
@@ -22,6 +25,13 @@
 <style>
 /* TOP NAVIGATION COMPONENT - All styles colocated */
 .top-nav {
+  /* ✨ ESSENTIAL LAYOUT - Must preserve exact original layout */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all var(--transition-slow);
+  
+  /* ✨ UNIQUE TOP-NAV-SPECIFIC: Position, backdrop blur, complex shadows */
   position: fixed;
   top: 0;
   left: 0;
@@ -36,11 +46,7 @@
     0 1px 3px rgba(0, 0, 0, 0.05),
     var(--shadow-md);
   z-index: var(--z-sticky);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   padding: var(--space-3) var(--space-5);
-  transition: all var(--transition-slow);
 }
 
 .top-nav *:focus {

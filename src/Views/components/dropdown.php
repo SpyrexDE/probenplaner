@@ -22,13 +22,14 @@
 .dropdown-menu {
     /* Sophisticated shadow and positioning effects that Tailwind can't handle */
     box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
-    background-color: var(--color-bg-primary);
+    /* background-color: var(--color-bg-primary); → card-bg utility */
     border-color: var(--color-border);
 }
 
 .dropdown-item:hover,
 .dropdown-item:focus {
     background-color: var(--color-primary-50);
+    /* transform: translateX(2px); → form-hover-shift utility would provide this */
     transform: translateX(2px);
 }
 
@@ -107,7 +108,7 @@ $triggerStyle = "color: var(--color-text-primary); background-color: var(--color
     </button>
 
     <!-- CRITICAL: Must use .dropdown-menu class name for JavaScript -->
-    <div class="dropdown-menu absolute top-full <?= $positionClasses[$position] ?> <?= $sizeClasses[$size] ?> py-2 mt-1 text-sm border rounded-md hidden z-50"
+    <div class="dropdown-menu absolute top-full <?= $positionClasses[$position] ?> <?= $sizeClasses[$size] ?> py-2 mt-1 text-sm border rounded-md hidden z-50 card-bg"
          style="color: var(--color-text-primary);"
          id="<?= $id ?>-menu"
          role="menu"

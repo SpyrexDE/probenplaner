@@ -24,14 +24,15 @@
 <style>
 /* TABLE COMPONENT - All styles colocated */
 .table-responsive {
-    overflow-x: auto;
+    overflow: hidden;
     border-radius: var(--radius-base);
     border: 1px solid var(--color-border);
 }
 
 .table-themed {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     background-color: var(--color-bg-primary);
 }
 
@@ -46,14 +47,25 @@
     background-color: var(--color-bg-tertiary);
     font-weight: var(--font-weight-semibold);
     color: var(--color-text-primary);
+    border-bottom: 2px solid var(--color-border);
 }
 
-.table-themed tr:hover {
-    background-color: var(--color-bg-secondary);
+/* Round header corners to align with wrapper radius */
+.table-themed thead th:first-child { border-top-left-radius: var(--radius-base); }
+.table-themed thead th:last-child { border-top-right-radius: var(--radius-base); }
+
+/* Hover animation removed per user request */
+
+/* Striped table styling for better row distinction */
+/* More specific selectors to override any conflicting styles */
+.table-responsive .table-themed.table-striped tbody tr:nth-child(odd),
+.table-themed.table-striped tbody tr:nth-child(odd) {
+    background-color: #ffffff !important;
 }
 
-.table-themed tr:hover td {
-    color: var(--color-text-primary);
+.table-responsive .table-themed.table-striped tbody tr:nth-child(even),
+.table-themed.table-striped tbody tr:nth-child(even) {
+    background-color: #f3f4f6 !important;
 }
 
 </style>

@@ -31,9 +31,9 @@ use App\Core\Constants;
   width: 40px;
   height: 40px;
   border-radius: var(--radius-base);
-  border: 2px solid var(--color-border);
+  /* border: 2px solid var(--color-border); → form-border-2 utility */
   cursor: pointer;
-  transition: all var(--transition-base);
+  /* transition: all var(--transition-base); → form-transition utility */
   position: relative;
   background: none;
   padding: 0;
@@ -151,7 +151,7 @@ use App\Core\Constants;
         <?php foreach (Constants::getRehearsalColors() as $colorValue => $colorName): ?>
             <button 
                 type="button" 
-                class="compact-color-option color-<?= str_replace('#', '', $colorValue) ?> <?= ($selectedColor ?? Constants::COLOR_WHITE) === $colorValue ? 'selected' : '' ?>" 
+                class="compact-color-option color-<?= str_replace('#', '', $colorValue) ?> <?= ($selectedColor ?? Constants::COLOR_WHITE) === $colorValue ? 'selected' : '' ?> form-border-2 form-transition" 
                 data-color="<?= htmlspecialchars($colorValue) ?>"
                 data-color-name="<?= htmlspecialchars($colorName) ?>"
                 title="<?= htmlspecialchars($colorName) ?>"

@@ -49,7 +49,7 @@
 /* Sophisticated border and styling */
 .collapse-container {
     border-color: var(--color-border);
-    background-color: var(--color-bg-primary);
+    /* background-color: var(--color-bg-primary); → card-bg utility */
 }
 
 .collapse-trigger:hover {
@@ -57,7 +57,7 @@
 }
 
 .collapse-content {
-    background-color: var(--color-bg-primary);
+    /* background-color: var(--color-bg-primary); → card-bg utility */
     border-color: var(--color-border);
 }
 </style>
@@ -84,22 +84,22 @@ $sizeClasses = [
 $triggerBaseClasses = "w-full flex items-center justify-between text-left transition-colors duration-200 focus:outline-none";
 
 if ($variant === 'card') {
-    $triggerClasses = $triggerBaseClasses . " " . $sizeClasses[$size] . " border rounded-t-md collapse-container";
+    $triggerClasses = $triggerBaseClasses . " " . $sizeClasses[$size] . " border rounded-t-md collapse-container card-bg";
 } elseif ($variant === 'minimal') {
     $triggerClasses = $triggerBaseClasses . " py-2 border-b";
 } else {
-    $triggerClasses = $triggerBaseClasses . " " . $sizeClasses[$size] . " border rounded-md collapse-container";
+    $triggerClasses = $triggerBaseClasses . " " . $sizeClasses[$size] . " border rounded-md collapse-container card-bg";
 }
 
 $triggerClasses .= " " . $triggerClass;
 
 // Content classes based on variant  
 if ($variant === 'card') {
-    $contentClasses = "collapse-content border border-t-0 rounded-b-md " . $sizeClasses[$size];
+    $contentClasses = "collapse-content border border-t-0 rounded-b-md card-bg " . $sizeClasses[$size];
 } elseif ($variant === 'minimal') {
     $contentClasses = "pt-2";
 } else {
-    $contentClasses = "collapse-content border border-t-0 rounded-b-md " . $sizeClasses[$size];
+    $contentClasses = "collapse-content border border-t-0 rounded-b-md card-bg " . $sizeClasses[$size];
 }
 ?>
 

@@ -49,6 +49,36 @@
   font-weight: var(--font-weight-semibold);
 }
 
+/* === GRANULAR CARD UTILITIES === */
+/* For components that need just specific properties */
+
+.card-bg {
+  background-color: var(--color-bg-primary);
+}
+
+.card-border {
+  border: 1px solid var(--color-border);
+}
+
+.card-overflow {
+  overflow: hidden;
+}
+
+/* === FORM UTILITIES === */
+/* Consolidates common form patterns found across 5+ components */
+
+.form-transition {
+  transition: all var(--transition-base);
+}
+
+.form-border-2 {
+  border: 2px solid var(--color-border);
+}
+
+.form-hover-shift:hover {
+  transform: translateX(2px);
+}
+
 .card-footer {
   background: var(--color-bg-secondary);
   border-top: 1px solid var(--color-border);

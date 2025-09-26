@@ -30,15 +30,15 @@
     min-width: 44px;
     height: 44px;
     padding: var(--space-2) var(--space-3);
-    border: 2px solid var(--color-border);
+    /* border: 2px solid var(--color-border); → form-border-2 utility */
     border-radius: var(--radius-base);
     font-size: var(--font-size-lg);
     font-weight: var(--font-weight-medium);
     cursor: pointer;
-    transition: all var(--transition-base);
+    /* transition: all var(--transition-base); → form-transition utility */
     position: relative;
-    overflow: hidden;
-    background-color: var(--color-bg-primary);
+    /* overflow: hidden; → card-overflow utility */
+    /* background-color: var(--color-bg-primary); → card-bg utility */
 }
 
 .promise-btn::before {
@@ -199,8 +199,8 @@ $loading = $loading ?? false;
 $onclick = $onclick ?? '';
 $title = $title ?? '';
 
-// Determine classes and icon
-$classes = ['promise-btn'];
+// Determine classes and icon  
+$classes = ['promise-btn', 'card-bg', 'form-border-2', 'form-transition', 'card-overflow'];
 $icon = '';
 
 if ($type === 'check') {

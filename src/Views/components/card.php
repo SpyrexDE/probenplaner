@@ -15,27 +15,18 @@
  */
 ?>
 
-<style>
-/* Only sophisticated hover effects that Tailwind can't handle */
-.card-sophisticated-hover:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
-}
-
-.card-sophisticated-focus:focus-within {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06), 0 0 0 2px rgba(71, 140, 244, 0.2);
-}
-
-.card-interactive:hover {
-    cursor: pointer;
-}
-
-/* Subtle shadow animations for nested cards */
-.card-nested:hover {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-    transform: translateY(-1px);
-}
-</style>
+<!-- 
+  🎨 CONSOLIDATED CARD SYSTEM
+  All card styles now use utilities.css for maximum maintainability
+  
+  Available classes:
+  - Base: card-base, card-base-xl, card-base-sm
+  - Content: card-content-xs, card-content-sm, card-content-md, card-content-lg, card-content-xl
+  - Sections: card-header, card-footer
+  - Effects: hover-lift, hover-lift-sm, hover-lift-lg
+  - Focus: focus-shadow-preserve, focus-shadow-preserve-xl
+  - States: interactive, interactive-subtle
+-->
 
 <?php
 // Set defaults
@@ -49,71 +40,47 @@ $variant = $variant ?? 'default';
 $interactive = $interactive ?? false;
 $nested = $nested ?? false;
 
-// Size classes for padding
-$sizeClasses = [
-    'xs' => 'p-3',
-    'sm' => 'p-4', 
-    'md' => 'p-6',
-    'lg' => 'p-8',
-    'xl' => 'p-10'
-];
+// 🎨 CONSOLIDATED SYSTEM: Use utilities.css classes
+$baseClasses = "card-base";
 
-$headerFooterSizeClasses = [
-    'xs' => 'px-3 py-2',
-    'sm' => 'px-4 py-3',
-    'md' => 'px-6 py-4', 
-    'lg' => 'px-8 py-5',
-    'xl' => 'px-10 py-6'
-];
+// Add focus shadow preservation from utilities.css
+$baseClasses .= " focus-shadow-preserve";
 
-// Base Tailwind classes
-$baseClasses = "rounded-lg border overflow-hidden shadow-sm transition-all duration-200";
-
-// Add hover effect classes
+// Add hover effects from utilities.css
 if ($hover) {
-    $baseClasses .= " card-sophisticated-hover";
+    if ($nested) {
+        $baseClasses .= " hover-lift-sm"; // Subtle lift for nested cards
+    } else {
+        $baseClasses .= " hover-lift";    // Standard lift for main cards
+    }
 }
 
+// Add interactive state from utilities.css
 if ($interactive) {
-    $baseClasses .= " card-interactive";
+    $baseClasses .= " interactive";
 }
 
-if ($nested) {
-    $baseClasses .= " card-nested";
-} else {
-    $baseClasses .= " card-sophisticated-focus";
-}
-
-// Colors using CSS variables for theme support
-$baseStyle = "background-color: var(--color-bg-primary); border-color: var(--color-border);";
-
-// Content padding class
-$contentPaddingClass = $padding ? $sizeClasses[$size] : '';
-
-// For cards with headers/footers, adjust content padding
-if ($header || $footer) {
-    $contentPaddingClass = $headerFooterSizeClasses[$size];
-}
+// Content padding using consolidated utilities
+$contentPaddingClass = $padding ? "card-content-{$size}" : '';
 
 // Build additional attributes
 $attributes = '';
 if (isset($onclick)) {
     $attributes .= ' onclick="' . htmlspecialchars($onclick) . '"';
-    $baseClasses .= ' cursor-pointer';
+    $baseClasses .= ' interactive';
 }
 if (isset($id)) $attributes .= ' id="' . htmlspecialchars($id) . '"';
 if (isset($class)) $baseClasses .= ' ' . htmlspecialchars($class);
 ?>
 
-<div class="<?= $baseClasses ?>" style="<?= $baseStyle ?>"<?= $attributes ?>>
+<div class="<?= $baseClasses ?>"<?= $attributes ?>>
     <?php if ($header): ?>
-        <div class="<?= $headerFooterSizeClasses[$size] ?> border-b font-semibold" 
-             style="border-color: var(--color-border); background-color: var(--color-bg-secondary); color: var(--color-text-primary);">
+        <div class="card-header card-content-<?= $size ?>">
             <?= $header ?>
         </div>
     <?php endif; ?>
     
-    <div class="<?= $contentPaddingClass ?>" style="color: var(--color-text-primary);">
+    <div class="<?= $contentPaddingClass ?>">
         <?= $content ?>
         
         <?php if (isset($children)): ?>
@@ -122,8 +89,7 @@ if (isset($class)) $baseClasses .= ' ' . htmlspecialchars($class);
     </div>
     
     <?php if ($footer): ?>
-        <div class="<?= $headerFooterSizeClasses[$size] ?> border-t" 
-             style="border-color: var(--color-border); background-color: var(--color-bg-secondary); color: var(--color-text-secondary);">
+        <div class="card-footer card-content-<?= $size ?>">
             <?= $footer ?>
         </div>
     <?php endif; ?>

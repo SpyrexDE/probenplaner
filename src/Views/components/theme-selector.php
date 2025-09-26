@@ -51,13 +51,13 @@
 .theme-card {
     display: block;
     position: relative;
-    border: 2px solid var(--color-border);
+    /* border: 2px solid var(--color-border); → form-border-2 utility */
     border-radius: var(--radius-lg);
-    background: var(--color-bg-primary);
+    /* background: var(--color-bg-primary); → card-bg utility */
     padding: var(--space-5);
     cursor: pointer;
-    transition: all var(--transition-base);
-    overflow: hidden;
+    /* transition: all var(--transition-base); → form-transition utility */
+    /* overflow: hidden; → card-overflow utility */
     box-shadow: var(--shadow-sm);
     animation: theme-card-enter 0.3s ease-out;
 }
@@ -201,11 +201,11 @@
     display: block;
     position: relative;
     padding: var(--space-3) var(--space-4);
-    border: 2px solid var(--color-border);
+    /* border: 2px solid var(--color-border); → form-border-2 utility */
     border-radius: var(--radius-lg);
-    background: var(--color-bg-primary);
+    /* background: var(--color-bg-primary); → card-bg utility */
     cursor: pointer;
-    transition: all var(--transition-base);
+    /* transition: all var(--transition-base); → form-transition utility */
     min-width: 120px;
     text-align: center;
     box-shadow: var(--shadow-sm);
@@ -352,7 +352,7 @@ $name = $name ?? 'theme_selection';
                        class="theme-radio-compact"
                        <?= ($selectedTheme === $theme['id']) ? 'checked' : '' ?>>
                 
-                <label for="theme-<?= htmlspecialchars($theme['id']) ?>" class="theme-selector-compact">
+                <label for="theme-<?= htmlspecialchars($theme['id']) ?>" class="theme-selector-compact form-border-2 card-bg form-transition">
                     <div class="theme-preview-compact">
                         <div class="theme-colors-compact">
                             <?php foreach (array_slice($theme['colors'], 0, 3) as $color): ?>
@@ -380,7 +380,7 @@ $name = $name ?? 'theme_selection';
                        class="theme-radio"
                        <?= ($selectedTheme === $theme['id']) ? 'checked' : '' ?>>
                 
-                <label for="theme-<?= htmlspecialchars($theme['id']) ?>" class="theme-card">
+                <label for="theme-<?= htmlspecialchars($theme['id']) ?>" class="theme-card form-border-2 card-bg form-transition card-overflow">
                     <div class="theme-preview">
                         <div class="theme-colors">
                             <?php foreach ($theme['colors'] as $color): ?>
