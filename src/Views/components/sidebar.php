@@ -56,7 +56,7 @@
   background-color: var(--color-gray-400);
 }
 
-@media (min-width: 800px) {
+@media (min-width: 900px) {
   .sidebar {
     transform: translateX(0);
     position: fixed;

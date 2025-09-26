@@ -384,7 +384,19 @@
   gap: var(--space-6);
 }
 
-/* Rehearsal compact cards should use: card-base focus-shadow-preserve */
+/* Rehearsal compact cards - applying card-base styles directly */
+.rehearsal-compact {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  transition: all var(--transition-base);
+  background: var(--color-white);
+}
+
+.rehearsal-compact:focus-within {
+  box-shadow: var(--shadow-lg) !important;
+}
 
 .rehearsal-compact-header {
   padding: var(--space-5);

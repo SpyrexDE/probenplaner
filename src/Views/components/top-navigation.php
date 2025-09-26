@@ -143,14 +143,14 @@
   transition: opacity var(--transition-base);
 }
 
-@media (min-width: 800px) {
+@media (min-width: 900px) {
   .sidebar-overlay {
     display: none;
   }
 }
 
 /* Desktop behavior - sidebar always visible, so adjust nav position */
-@media (min-width: 800px) {
+@media (min-width: 900px) {
   .top-nav {
     left: var(--sidebar-width) !important;
     width: calc(100% - var(--sidebar-width)) !important;
@@ -163,10 +163,18 @@
     left: 0 !important;
     width: 100% !important;
   }
+
+  /* When toggled on desktop, hide the sidebar and reset content margin */
+  #wrapper.toggled .sidebar {
+    transform: translateX(-100%);
+  }
+  #wrapper.toggled .page-content {
+    margin-left: 0;
+  }
 }
 
 /* Mobile behavior - hide title when sidebar is open */
-@media (max-width: 799px) {
+@media (max-width: 899px) {
   #wrapper.toggled .top-nav-left {
     display: none;
   }
@@ -179,7 +187,7 @@
 }
 
 /* Ensure title is never hidden on desktop */
-@media (min-width: 800px) {
+@media (min-width: 900px) {
   #wrapper.toggled .top-nav-left {
     display: flex !important;
   }
@@ -217,7 +225,7 @@
 }
 
 /* Mobile sidebar behavior */
-@media (max-width: 799px) {
+@media (max-width: 899px) {
   .sidebar {
     transform: translateX(-100%);
   }
