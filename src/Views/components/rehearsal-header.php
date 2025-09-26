@@ -35,7 +35,7 @@ $groupsText = $smartDisplay->generateDescription(
         href="#<?= htmlspecialchars($collapseTarget) ?>" 
         aria-expanded="false" 
         aria-controls="<?= htmlspecialchars($collapseTarget) ?>">
-    <?php if (!empty($rehearsal['color'])): ?>
+    <?php if (!empty($rehearsal['color']) && !in_array(strtolower($rehearsal['color']), ['white', '#ffffff'])): ?>
         <div class="tree-node-color" style="background-color: <?= htmlspecialchars($rehearsal['color']) ?>;"></div>
     <?php endif; ?>
     

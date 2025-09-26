@@ -107,3 +107,24 @@ $isButton = !empty($onclick);
         <i class="fas fa-<?= htmlspecialchars($icon) ?>"></i>
     </a>
 <?php endif; ?>
+
+<script>
+// Ensure FAB is fixed to viewport bottom-right regardless of parent containers
+(function() {
+    function ensureFabInBody() {
+        var fabs = document.querySelectorAll('.fab');
+        if (!fabs || fabs.length === 0) return;
+        fabs.forEach(function(fab) {
+            // If not a direct child of body, move it
+            if (fab.parentElement && fab.parentElement !== document.body) {
+                document.body.appendChild(fab);
+            }
+        });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', ensureFabInBody);
+    } else {
+        ensureFabInBody();
+    }
+})();
+</script>

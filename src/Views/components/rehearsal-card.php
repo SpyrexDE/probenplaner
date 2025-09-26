@@ -184,14 +184,14 @@
 /* Badges */
 .rehearsal-type-badge {
     color: #7c3aed;
-    background-color: rgba(124, 58, 237, 0.1);
-    border: 1px solid rgba(124, 58, 237, 0.2);
+    background-color: rgba(124, 58, 237, 0.15);
+    border: 1px solid rgba(124, 58, 237, 0.25);
 }
 
 .rehearsal-section-badge,
 .rehearsal-location-badge {
     color: var(--color-text-secondary);
-    background-color: var(--color-bg-secondary);
+    background-color: var(--color-bg-tertiary);
     border: 1px solid var(--color-border);
 }
 
@@ -296,7 +296,7 @@ $cardClasses = 'rehearsal-card';
 
 <!-- REHEARSAL CARD: Tailwind utility classes + sophisticated custom effects -->
 <div class="<?= $cardClasses ?> border border-l-4 my-2" 
-     style="border-radius: var(--radius-lg); padding: var(--space-3) var(--space-4); <?= !empty($rehearsal['color']) ? 'border-left-color: ' . $rehearsal['color'] . ';' : '' ?>">
+     style="border-radius: var(--radius-lg); padding: var(--space-3) var(--space-4); <?= (!empty($rehearsal['color']) && !in_array(strtolower($rehearsal['color']), ['white', '#ffffff'])) ? 'border-left-color: ' . $rehearsal['color'] . ';' : '' ?>">
     
     <!-- Card Content: Flexbox layout with Tailwind -->
     <div class="flex items-center w-full gap-4">
@@ -311,17 +311,17 @@ $cardClasses = 'rehearsal-card';
                 <div class="flex flex-col flex-1">
                     
                     <!-- Content Row: Weekday + Date/Time -->
-                    <div class="flex items-center gap-2">
+                    <div class="rehearsal-content-row flex items-center gap-2" style="margin-bottom: 8px;">
                         <!-- Weekday with sophisticated underline effect -->
                         <div class="rehearsal-weekday"><?= strtoupper($weekdayShort) ?></div>
                         
                         <!-- Date/Time Block -->
                         <div class="flex flex-col gap-0">
-                            <div class="text-lg font-bold" style="color: var(--color-text-primary);">
+                            <div class="rehearsal-date" style="font-size: var(--font-size-lg); font-weight: var(--font-weight-bold); color: var(--color-text-primary); line-height: 1.2; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; width: fit-content;">
                                 <?= htmlspecialchars($rehearsal['date_formatted'] ?? $rehearsal['date']) ?>
                             </div>
-                            <div class="h-[18px] overflow-hidden relative">
-                                <div class="text-sm font-medium" style="color: var(--color-text-secondary);">
+                            <div style="height: 18px; overflow: hidden; position: relative; margin-top: -2px; width: 100%;">
+                                <div style="font-size: var(--font-size-sm); color: var(--color-text-secondary); font-weight: var(--font-weight-medium); line-height: 1; font-family: 'Kantumruy Pro', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace; white-space: nowrap; position: absolute; top: 50%; left: 0; transform: translateY(-50%); transform-origin: left center;">
                                     <?= htmlspecialchars($time_display) ?>
                                 </div>
                             </div>
@@ -329,21 +329,19 @@ $cardClasses = 'rehearsal-card';
                     </div>
                     
                     <!-- Badges Row -->
-                    <div class="flex items-center gap-1 flex-wrap">
+                    <div class="rehearsal-badges flex items-center gap-1 flex-wrap" style="margin-top: 4px;">
                         <?php if ($showRehearsalType): ?>
-                            <div class="rehearsal-type-badge text-[10px] font-semibold px-2 py-1" 
-                                 style="border-radius: var(--radius-sm);">
+                            <div class="rehearsal-type-badge" style="font-size: 10px; font-weight: var(--font-weight-semibold); text-transform: uppercase; letter-spacing: 0.3px; padding: 2px 6px; border-radius: var(--radius-sm); display: inline-block; width: fit-content; margin-right: var(--space-1);">
                                 <?= htmlspecialchars($rehearsalType) ?>
                             </div>
                         <?php endif; ?>
-                        <div class="rehearsal-section-badge text-[10px] font-medium px-2 py-1" 
-                             style="border-radius: var(--radius-sm);">
+                        <div class="rehearsal-section-badge" style="font-size: 10px; font-weight: var(--font-weight-semibold); text-transform: uppercase; letter-spacing: 0.3px; padding: 2px 6px; border-radius: var(--radius-sm); display: inline-block; width: fit-content; margin-right: var(--space-1);">
                             <?= $groupsText ?>
                         </div>
                         <?php if ($showLocation): ?>
-                            <span class="text-[10px] font-medium" style="color: var(--color-text-secondary);">
-                                <?= htmlspecialchars($rehearsal['location']) ?>
-                            </span>
+                             <span style="font-size: 10px; font-weight: var(--font-weight-semibold); text-transform: uppercase; letter-spacing: 0.3px; padding: 2px 6px; border-radius: var(--radius-sm); display: inline-block; width: fit-content; margin-right: var(--space-1); color: var(--color-text-secondary);">
+                                 <?= htmlspecialchars($rehearsal['location']) ?>
+                             </span>
                         <?php endif; ?>
                     </div>
                     
