@@ -30,7 +30,7 @@ class Constants
     const REHEARSAL_SMALL_GROUP = 'small_group';
     
     // Color Codes for Rehearsals
-    const COLOR_WHITE = '#ffffff';
+    const COLOR_WHITE = '#e5e7eb';
     const COLOR_BLUE = '#3b82f6';
     const COLOR_GREEN = '#10b981';
     const COLOR_YELLOW = '#f59e0b';

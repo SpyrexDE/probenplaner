@@ -78,20 +78,21 @@
 
 .checkBtn:not(.deselected) {
     border-color: var(--color-success);
-    background-color: var(--color-success-50);
-    box-shadow: 0 2px 8px var(--color-success-200);
+    background: linear-gradient(135deg, var(--color-success-50) 0%, var(--color-success-100) 100%);
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
     opacity: 1;
     animation: pulse-green 1.5s infinite;
 }
 
 @keyframes pulse-green {
-    0%, 100% { box-shadow: 0 2px 8px var(--color-success-200); }
-    50% { box-shadow: 0 4px 16px var(--color-success-300); }
+    0%, 100% { box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25); }
+    50% { box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35); }
 }
 
 .checkBtn:not(.deselected):hover {
-    background-color: var(--color-success-100);
+    background: linear-gradient(135deg, var(--color-success-100) 0%, var(--color-success-200) 100%);
     transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35);
 }
 
 .checkBtn.deselected {
@@ -125,20 +126,21 @@
 
 .crossBtn:not(.deselected) {
     border-color: var(--color-error);
-    background-color: var(--color-error-50);
-    box-shadow: 0 2px 8px var(--color-error-200);
+    background: linear-gradient(135deg, var(--color-error-50) 0%, var(--color-error-100) 100%);
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.25);
     opacity: 1;
     animation: pulse-red 1.5s infinite;
 }
 
 @keyframes pulse-red {
-    0%, 100% { box-shadow: 0 2px 8px var(--color-error-200); }
-    50% { box-shadow: 0 4px 16px var(--color-error-300); }
+    0%, 100% { box-shadow: 0 4px 14px rgba(239, 68, 68, 0.25); }
+    50% { box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35); }
 }
 
 .crossBtn:not(.deselected):hover {
-    background-color: var(--color-error-100);
+    background: linear-gradient(135deg, var(--color-error-100) 0%, var(--color-error-200) 100%);
     transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 18px rgba(239, 68, 68, 0.35);
 }
 
 .crossBtn.deselected {

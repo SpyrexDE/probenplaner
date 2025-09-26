@@ -175,8 +175,9 @@
 
 /* === BUTTON COMPONENTS === */
 .btn-primary {
-  background-color: var(--color-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-white);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  box-shadow: 0 4px 14px rgba(71, 140, 244, 0.35);
   border: none;
   padding: var(--space-3) var(--space-6);
   border-radius: var(--radius-base);
@@ -191,15 +192,16 @@
 }
 
 .btn-primary:hover {
-  background-color: var(--color-primary-dark);
+  background: linear-gradient(135deg, var(--color-primary-dark) 0%, #1e40af 100%);
+  box-shadow: 0 6px 20px rgba(71, 140, 244, 0.45);
   transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
 }
 
 .btn-secondary {
-  background-color: var(--color-bg-secondary);
   color: var(--color-text-primary);
+  background: var(--color-white);
   border: 2px solid var(--color-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   padding: var(--space-3) var(--space-6);
   border-radius: var(--radius-base);
   font-weight: var(--font-weight-semibold);
@@ -213,13 +215,16 @@
 }
 
 .btn-secondary:hover {
-  background-color: var(--color-bg-tertiary);
-  border-color: var(--color-border-dark);
+  background: var(--color-gray-50);
+  border-color: var(--color-primary-200);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
 }
 
 .btn-danger {
-  background-color: var(--color-error);
-  color: var(--color-text-inverse);
+  color: var(--color-white);
+  background: linear-gradient(135deg, var(--color-error) 0%, var(--color-error-dark) 100%);
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
   border: none;
   padding: var(--space-3) var(--space-6);
   border-radius: var(--radius-base);
@@ -234,9 +239,9 @@
 }
 
 .btn-danger:hover {
-  background-color: var(--color-error-dark);
+  background: linear-gradient(135deg, var(--color-error-dark) 0%, #b91c1c 100%);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45);
   transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
 }
 
 .btn-outline {
@@ -252,6 +257,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: all var(--transition-base);
   text-decoration: none;
   cursor: pointer;
   transition: all var(--transition-base);
@@ -266,6 +272,52 @@
   box-shadow: 0 4px 14px rgba(71, 140, 244, 0.35);
   transform: translateY(-2px);
   text-decoration: none;
+}
+
+.btn-success {
+  color: var(--color-white);
+  background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark) 100%);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+  border: none;
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-base);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.btn-success:hover {
+  background: linear-gradient(135deg, var(--color-success-dark) 0%, #047857 100%);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+  transform: translateY(-1px);
+}
+
+.btn-warning {
+  color: var(--color-white);
+  background: linear-gradient(135deg, var(--color-warning) 0%, var(--color-warning-dark) 100%);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+  border: none;
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-base);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.btn-warning:hover {
+  background: linear-gradient(135deg, var(--color-warning-dark) 0%, #d97706 100%);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45);
+  transform: translateY(-1px);
 }
 
 /* NOTE: Confirmation card styles moved to /Views/components/confirmation-card.php */

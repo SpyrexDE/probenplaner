@@ -84,9 +84,9 @@ use App\Core\Constants;
 }
 
 /* Color-specific background styles for rehearsal colors */
-.compact-color-option.color-ffffff { 
-  background-color: #ffffff;
-  border-color: #d1d5db; /* Visible border for white color */
+.compact-color-option.color-e5e7eb { 
+  background-color: #e5e7eb;
+  border-color: #d1d5db; /* Visible border for light gray */
 }
 .compact-color-option.color-3b82f6 { background-color: #3b82f6; }
 .compact-color-option.color-10b981 { background-color: #10b981; }
@@ -101,9 +101,9 @@ use App\Core\Constants;
 .compact-color-option.color-475569 { background-color: #475569; }
 
 /* Support for data-color attributes (fallback for rehearsal colors) */
-.compact-color-option[data-color="#ffffff"] { 
-  background-color: #ffffff;
-  border-color: #d1d5db; /* Visible border for white color */
+.compact-color-option[data-color="#e5e7eb"] { 
+  background-color: #e5e7eb;
+  border-color: #d1d5db; /* Visible border for light gray */
 }
 .compact-color-option[data-color="#3b82f6"] { background-color: #3b82f6; }
 .compact-color-option[data-color="#10b981"] { background-color: #10b981; }

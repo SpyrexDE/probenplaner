@@ -314,8 +314,8 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                 
                 <div class="rehearsal-compact" data-rehearsal-id="<?= $rehearsalId ?>">
                     <!-- Compact Rehearsal Header -->
-                    <div class="rehearsal-compact-header <?= ($rehearsalColor && !in_array(strtolower($rehearsalColor), ['white', '#ffffff'])) ? 'has-color' : '' ?>" 
-                         <?= ($rehearsalColor && !in_array(strtolower($rehearsalColor), ['white', '#ffffff'])) ? 'style="--rehearsal-color: ' . $rehearsalColor . '"' : '' ?>>
+                    <div class="rehearsal-compact-header <?= ($rehearsalColor) ? 'has-color' : '' ?>" 
+                         <?= ($rehearsalColor) ? 'style="--rehearsal-color: ' . $rehearsalColor . '"' : '' ?>>
                         <div class="rehearsal-modern-title">
                             <?php
                             // Get German weekday abbreviations

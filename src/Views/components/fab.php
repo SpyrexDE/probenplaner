@@ -22,14 +22,14 @@
     right: var(--space-5);
     width: 56px;
     height: 56px;
-    background-color: var(--color-primary);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
     color: var(--color-text-inverse);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     text-decoration: none;
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 8px 20px rgba(71, 140, 244, 0.4);
     transition: all var(--transition-base);
     z-index: 1000;
     border: none;
@@ -37,9 +37,9 @@
 }
 
 .fab:hover {
-    background-color: var(--color-primary-dark);
-    transform: scale(1.1);
-    box-shadow: var(--shadow-xl);
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, #1e40af 100%);
+    transform: scale(1.1) translateY(-2px);
+    box-shadow: 0 12px 30px rgba(71, 140, 244, 0.5);
 }
 
 .fab i {
