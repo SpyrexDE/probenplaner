@@ -97,15 +97,17 @@ $tableClassString = implode(' ', $tableClasses);
 ?>
 
 <?php if ($responsive): ?>
-<div class="table-responsive">
+<div class="table-responsive card-base border-default shadow-sm">
 <?php endif; ?>
     
-    <table class="<?= $tableClassString ?>">
+    <table class="<?= $tableClassString ?> w-full">
         <?php if (!empty($headers)): ?>
         <thead>
             <tr>
                 <?php foreach ($headers as $header): ?>
-                    <th><?= htmlspecialchars($header) ?></th>
+                    <th class="text-heading text-sm">
+                        <?= htmlspecialchars($header) ?>
+                    </th>
                 <?php endforeach; ?>
             </tr>
         </thead>
@@ -114,9 +116,11 @@ $tableClassString = implode(' ', $tableClasses);
         <?php if (!empty($rows)): ?>
         <tbody>
             <?php foreach ($rows as $row): ?>
-            <tr>
+            <tr class="transition">
                 <?php foreach ($row as $cell): ?>
-                    <td><?= htmlspecialchars($cell) ?></td>
+                    <td class="text-body">
+                        <?= htmlspecialchars($cell) ?>
+                    </td>
                 <?php endforeach; ?>
             </tr>
             <?php endforeach; ?>

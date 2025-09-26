@@ -78,9 +78,16 @@ include __DIR__ . '/../components/table.php';
             </div>
     </div>
 
-    <button class="fixed bottom-5 right-5 bg-primary text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:scale-110 transition-transform print:hidden" onclick="window.print()" id="print-btn">
-        <i class="fas fa-print text-xl"></i>
-    </button>
+    <?php 
+    // FAB for print functionality
+    // Ensure component renders even if a previous include set $renderComponent = false
+    $renderComponent = true;
+    $icon = 'print';
+    $onclick = 'window.print()';
+    $title = 'Drucken';
+    $id = 'print-btn';
+    include __DIR__ . '/../components/fab.php';
+    ?>
 </div>
 
 <style>
@@ -182,7 +189,7 @@ include __DIR__ . '/../components/table.php';
 @media print {
     /* Hide navigation and UI elements */
     .top-nav, nav, header, .sidebar, #sidebar-wrapper, #wrapper > nav,
-    .btn, button, .fab, #print-btn, .print\\:hidden, .filter-controls {
+    .btn, button, .print\\:hidden, .filter-controls {
         display: none !important;
     }
 

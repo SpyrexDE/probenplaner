@@ -200,7 +200,7 @@ $onclick = $onclick ?? '';
 $title = $title ?? '';
 
 // Determine classes and icon  
-$classes = ['promise-btn', 'card-bg', 'form-border-2', 'form-transition', 'card-overflow'];
+$classes = ['btn-base', 'promise-btn', 'card-bg', 'form-border-2', 'form-transition', 'card-overflow'];
 $icon = '';
 
 if ($type === 'check') {

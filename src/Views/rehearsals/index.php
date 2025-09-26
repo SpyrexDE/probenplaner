@@ -60,9 +60,13 @@
         <?php endforeach; ?>
     <?php endif; ?>
     
-         <a href="/rehearsals/create" class="fixed bottom-5 right-5 bg-primary text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
-         <i ><?= icon('plus', 'text-white') ?></i>
-     </a>
+    <?php 
+    // FAB for adding new rehearsal
+    $icon = 'plus';
+    $href = '/rehearsals/create';
+    $title = 'Neue Probe hinzufügen';
+    include __DIR__ . '/../components/fab.php';
+    ?>
 </div>
 
 <script>

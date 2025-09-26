@@ -545,7 +545,7 @@ if (isset($autocomplete)) $attributes .= ' autocomplete="' . htmlspecialchars($a
 if (isset($readonly) && $readonly) $attributes .= ' readonly';
 
 // Tailwind classes for form inputs - CRITICAL: Must include .form-input-modern for JavaScript
-$inputClasses = "form-input-modern w-full leading-normal border-2 rounded-md transition-all duration-200";
+$inputClasses = "form-input-base form-input-modern w-full leading-normal border-2 rounded-md transition-all duration-200";
 $inputClasses .= " focus:outline-none focus:ring-0 " . $sizeClasses[$size];
 $inputClasses .= $disabled ? " opacity-50 cursor-not-allowed" : "";
 
@@ -553,7 +553,7 @@ $inputClasses .= $disabled ? " opacity-50 cursor-not-allowed" : "";
 $inputStyle = "color: var(--color-text-primary); background: var(--color-bg-primary); border-color: var(--color-border);";
 
 // Container classes - CRITICAL: Must include .form-group-modern for JavaScript  
-$containerClasses = "form-group-modern mb-6 relative";
+$containerClasses = "form-group form-group-modern mb-6 relative";
 if ($error) $containerClasses .= " error";
 ?>
 
