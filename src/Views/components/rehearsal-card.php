@@ -341,10 +341,9 @@ $cardClasses = 'rehearsal-card';
                             <?= $groupsText ?>
                         </div>
                         <?php if ($showLocation): ?>
-                            <div class="rehearsal-location-badge text-[10px] font-medium px-2 py-1" 
-                                 style="border-radius: var(--radius-sm);">
+                            <span class="text-[10px] font-medium" style="color: var(--color-text-secondary);">
                                 <?= htmlspecialchars($rehearsal['location']) ?>
-                            </div>
+                            </span>
                         <?php endif; ?>
                     </div>
                     
