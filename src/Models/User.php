@@ -5,6 +5,7 @@ use App\Core\Model;
 use App\Core\ErrorHandler;
 use App\Models\Orchestra;
 use App\Models\UserPromise;
+use App\Models\UserOrchestra;
 
 /**
  * User Model
@@ -18,23 +19,16 @@ class User extends Model
     protected $table = 'users';
     
     /**
-     * Find user by username within an orchestra
+     * Find user by username (orchestra-independent)
      * 
      * @param string $username
-     * @param int $orchestraId
      * @return array|null
      */
-    public function findByUsername(string $username, ?int $orchestraId = null): ?array
+    public function findByUsername(string $username): ?array
     {
-        if ($orchestraId !== null) {
-            $sql = "SELECT * FROM {$this->table} WHERE username = ? AND orchestra_id = ?";
-            $stmt = $this->db->prepare($sql);
-            $stmt->bind_param('si', $username, $orchestraId);
-        } else {
-            $sql = "SELECT * FROM {$this->table} WHERE username = ?";
-            $stmt = $this->db->prepare($sql);
-            $stmt->bind_param('s', $username);
-        }
+        $sql = "SELECT * FROM {$this->table} WHERE username = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param('s', $username);
         
         $stmt->execute();
         $result = $stmt->get_result();
@@ -49,64 +43,27 @@ class User extends Model
     }
     
     /**
-     * Find users by type (instrument/section) within an orchestra
+     * Get user orchestras (delegated to UserOrchestra model)
      * 
-     * @param string $type
-     * @param int $orchestraId
+     * @param int $userId
      * @return array
      */
-    public function findByType(string $type, int $orchestraId): array
+    public function getUserOrchestras(int $userId): array
     {
-        $sql = "SELECT * FROM {$this->table} WHERE type = ? AND orchestra_id = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bind_param('si', $type, $orchestraId);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        $users = [];
-        if ($result) {
-            while ($row = $result->fetch_assoc()) {
-                $users[] = $row;
-            }
-        }
-        
-        return $users;
+        $userOrchestraModel = new UserOrchestra();
+        return $userOrchestraModel->getUserOrchestras($userId);
     }
     
     /**
-     * Get all members of an orchestra
-     * 
-     * @param int $orchestraId
-     * @return array
-     */
-    public function getOrchestraMembers(int $orchestraId): array
-    {
-        $orchestraId = (int)$orchestraId;
-        
-        $sql = "SELECT * FROM {$this->table} WHERE orchestra_id = {$orchestraId} ORDER BY type, username";
-        $result = $this->db->query($sql);
-        
-        $users = [];
-        if ($result) {
-            while ($row = $result->fetch_assoc()) {
-                $users[] = $row;
-            }
-        }
-        
-        return $users;
-    }
-    
-    /**
-     * Authenticate user
+     * Authenticate user (orchestra-independent)
      * 
      * @param string $username
      * @param string $password
-     * @param int|null $orchestraId
      * @return array|null
      */
-    public function authenticate(string $username, string $password, ?int $orchestraId = null): ?array
+    public function authenticate(string $username, string $password): ?array
     {
-        $user = $this->findByUsername($username, $orchestraId);
+        $user = $this->findByUsername($username);
         
         if ($user && password_verify($password, $user['password'])) {
             return $user;
@@ -116,33 +73,20 @@ class User extends Model
     }
     
     /**
-     * Register a new user
+     * Register a new user (orchestra-independent)
      * 
      * @param string $username
      * @param string $password
-     * @param string $type
-     * @param int $orchestraId
-     * @param string $role
      * @return int|array Inserted user ID on success, array with error info on failure
      */
-    public function register(string $username, string $password, string $type, int $orchestraId, string $role = 'member')
+    public function register(string $username, string $password)
     {
         // Validate input
-        $validation = $this->validateUserInput($username, $password, $orchestraId);
+        $validation = $this->validateUserInput($username, $password);
         if (!$validation['valid']) {
             error_log("Registration failed: " . implode(', ', $validation['errors']));
             return ['error' => true, 'message' => implode(', ', $validation['errors'])];
         }
-        
-        // Validate orchestraId exists
-        $orchestraModel = new Orchestra();
-        if (!$orchestraModel->findById($orchestraId)) {
-            error_log("Registration failed: Orchestra ID $orchestraId does not exist");
-            return ['error' => true, 'message' => 'Das Orchester wurde nicht gefunden.', 'details' => 'Das angegebene Orchester existiert nicht mehr. Bitte kontaktieren Sie Ihren Dirigenten.'];
-        }
-        
-        // Explicitly convert types to ensure proper database insertion
-        $orchestraId = (int)$orchestraId;
         
         // Hash password
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
@@ -150,27 +94,81 @@ class User extends Model
         // Insert new user
         $userData = [
             'username' => $username,
-            'password' => $hashedPassword,
-            'type' => $type,
-            'orchestra_id' => $orchestraId,
-            'role' => $role
+            'password' => $hashedPassword
         ];
         
         error_log("Registering user: " . json_encode($userData));
         
         // Insert and return the result
-        $result = $this->insert($userData);
-        
-        if ($result === false) {
-            $error = $this->db->getLastError();
-            error_log("Registration failed - Database error: " . $error);
+        try {
+            // Get table schema first
+            $tableSchema = [];
+            $describeResult = $this->db->query("DESCRIBE users");
+            if ($describeResult) {
+                while ($row = $describeResult->fetch_assoc()) {
+                    $tableSchema[$row['Field']] = [
+                        'type' => $row['Type'],
+                        'null' => $row['Null'],
+                        'key' => $row['Key'],
+                        'default' => $row['Default']
+                    ];
+                }
+            }
+
+            // Check required columns
+            $missingColumns = [];
+            foreach (['username', 'password'] as $requiredCol) {
+                if (!isset($tableSchema[$requiredCol])) {
+                    $missingColumns[] = $requiredCol;
+                }
+            }
+
+            // Check for old schema columns
+            $oldColumns = [];
+            foreach (['orchestra_id', 'type', 'role'] as $oldCol) {
+                if (isset($tableSchema[$oldCol])) {
+                    $oldColumns[] = $oldCol;
+                }
+            }
+
+            if (!empty($missingColumns)) {
+                return [
+                    'error' => true,
+                    'message' => 'Datenbank-Schema-Fehler', 
+                    'details' => 'Fehlende Spalten: ' . implode(', ', $missingColumns)
+                ];
+            }
+
+            if (!empty($oldColumns)) {
+                return [
+                    'error' => true,
+                    'message' => 'Altes Datenbankschema erkannt', 
+                    'details' => 'Die Migration wurde nicht vollständig angewendet. Alte Spalten gefunden: ' . implode(', ', $oldColumns)
+                ];
+            }
+
+            $result = $this->insert($userData);
             
-            // Handle specific database errors with user-friendly messages
-            $exception = new \Exception($error);
-            return ErrorHandler::handleDatabaseError($exception, 'User registration');
+            if ($result === false) {
+                $mysqli = $this->db->getConnection();
+                $errorCode = $mysqli->errno;
+                $errorMsg = $mysqli->error;
+                
+                return [
+                    'error' => true,
+                    'message' => 'Datenbankfehler #' . $errorCode, 
+                    'details' => $errorMsg
+                ];
+            }
+            
+            return $result;
+        } catch (\Exception $e) {
+            return [
+                'error' => true,
+                'message' => 'Bei der Registrierung ist ein Fehler aufgetreten.', 
+                'details' => $e->getMessage()
+            ];
         }
-        
-        return $result;
     }
     
     /**
@@ -186,14 +184,14 @@ class User extends Model
             // Validate data before updating
             $validationErrors = [];
             
-            // Validate username if it's being updated
+                // Validate username if it's being updated
             if (isset($data['username'])) {
                 $user = $this->findById($id);
                 if (!$user) {
                     return ['error' => true, 'message' => 'Benutzer nicht gefunden.'];
                 }
                 
-                $validation = $this->validateUserInput($data['username'], null, $user['orchestra_id'], $id);
+                $validation = $this->validateUserInput($data['username'], null, $id);
                 if (!$validation['valid']) {
                     $validationErrors = array_merge($validationErrors, $validation['errors']);
                 }
@@ -338,32 +336,32 @@ class User extends Model
     }
     
     /**
-     * Set user as leader
+     * Join orchestra (delegated to UserOrchestra model)
      * 
      * @param int $userId
-     * @return bool
+     * @param int $orchestraId
+     * @param string $type Instrument/section
+     * @param string $role User role
+     * @return int|array Relationship ID on success, error array on failure
      */
-    public function setAsLeader(int $userId): bool
+    public function joinOrchestra(int $userId, int $orchestraId, string $type, string $role = 'member')
     {
-        return $this->update($userId, ['role' => 'leader']);
+        $userOrchestraModel = new UserOrchestra();
+        return $userOrchestraModel->joinOrchestra($userId, $orchestraId, $type, $role);
     }
     
     /**
-     * Check if user is in specific role
+     * Check if user has specific role in an orchestra
      * 
      * @param int $userId
+     * @param int $orchestraId
      * @param string $role
      * @return bool
      */
-    public function isInRole(int $userId, string $role): bool
+    public function hasRoleInOrchestra(int $userId, int $orchestraId, string $role): bool
     {
-        $user = $this->findById($userId);
-        
-        if (!$user) {
-            return false;
-        }
-        
-        return $user['role'] === $role;
+        $userOrchestraModel = new UserOrchestra();
+        return $userOrchestraModel->hasRole($userId, $orchestraId, $role);
     }
     
     /**
@@ -371,12 +369,11 @@ class User extends Model
      * 
      * @param string $username Username to validate
      * @param string $password Password to validate (if provided)
-     * @param int|null $orchestraId Orchestra ID for duplicate username check
      * @param int|null $excludeUserId User ID to exclude from duplicate check (for updates)
      * @param string|null $passwordConfirm Confirmation password to check (if provided)
      * @return array Array with 'valid' => bool and 'errors' => array
      */
-    public function validateUserInput(string $username, ?string $password = null, ?int $orchestraId = null, ?int $excludeUserId = null, ?string $passwordConfirm = null): array
+    public function validateUserInput(string $username, ?string $password = null, ?int $excludeUserId = null, ?string $passwordConfirm = null): array
     {
         $errors = [];
         
@@ -387,7 +384,7 @@ class User extends Model
             $errors[] = "Der Benutzername muss zwischen 3 und 20 Zeichen haben";
         } else {
             // Check for duplicates if not updating own username
-            $existingUser = $this->findByUsername($username, $orchestraId);
+            $existingUser = $this->findByUsername($username);
             if ($existingUser && (!$excludeUserId || $existingUser['id'] != $excludeUserId)) {
                 $errors[] = "Dieser Benutzername ist bereits vergeben";
             }

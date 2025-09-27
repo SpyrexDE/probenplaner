@@ -28,15 +28,13 @@ class ProbenplanController extends Controller
     /**
      * Display rehearsal plan
      * 
+     * @param array $params Route parameters containing orchestra_id
      * @return void
      */
-    public function index(): void
+    public function index($params = []): void
     {
-        // Check if user is logged in
-        if (!$this->isLoggedIn()) {
-            $this->redirect('/login');
-            return;
-        }
+        // Validate orchestra context and set session variables
+        $this->validateOrchestraContext($params);
         
         // Get personalized view parameter
         $personalized = isset($_GET['personalized']) && $_GET['personalized'] === '1';
@@ -47,12 +45,12 @@ class ProbenplanController extends Controller
         // Get rehearsals
         if ($personalized) {
             // Get only rehearsals relevant to the user
-            $userType = $_SESSION['type'] ?? '';
-            $userGroups = $_SESSION['groups'] ?? [];
-            $isSmallGroup = $_SESSION['is_small_group'] ?? false;
+            $userType = $_SESSION['current_type'] ?? '';
+            $userGroups = $_SESSION['groups'] ?? []; // TODO: Handle groups in new multi-orchestra system
+            $isSmallGroup = false; // TODO: Handle small group logic in new multi-orchestra system
             
             $rehearsals = $this->rehearsalModel->getRelevantForUser(
-                $_SESSION['orchestra_id'],
+                $_SESSION['current_orchestra_id'],
                 $userType,
                 $userGroups,
                 $showOld,
@@ -60,7 +58,7 @@ class ProbenplanController extends Controller
             );
         } else {
             // Get all rehearsals
-            $rehearsals = $this->rehearsalModel->getUpcoming($_SESSION['orchestra_id'], $showOld);
+            $rehearsals = $this->rehearsalModel->getUpcoming($_SESSION['current_orchestra_id'], $showOld);
         }
         
         // Get day abbreviations for each rehearsal
@@ -72,7 +70,7 @@ class ProbenplanController extends Controller
         }
         
         // Get user role
-        $userRole = $_SESSION['role'] ?? '';
+        $userRole = $_SESSION['current_role'] ?? '';
         
         // Render view
         $this->render('probenplan/index', [

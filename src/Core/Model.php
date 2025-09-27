@@ -180,7 +180,12 @@ abstract class Model
             $stmt = $this->db->prepare($sql);
             
             if (!$stmt) {
-                @error_log("Failed to prepare statement: " . $this->db->getConnection()->error);
+                $conn = $this->db->getConnection();
+                @error_log("Failed to prepare statement: " . $conn->error);
+                // Record precise error for later retrieval
+                if (method_exists($this->db, 'setLastError')) {
+                    $this->db->setLastError($conn->errno, $conn->error);
+                }
                 return false;
             }
             
@@ -217,6 +222,10 @@ abstract class Model
                 $error = $stmt->error;
                 $errno = $stmt->errno;
                 @error_log("Failed to execute statement: MySQL Error #{$errno}: {$error}");
+                // Record precise error for later retrieval
+                if (method_exists($this->db, 'setLastError')) {
+                    $this->db->setLastError($errno, $error);
+                }
                 
                 // Check for specific error cases
                 if ($errno == 1062) { // Duplicate entry

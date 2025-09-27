@@ -42,24 +42,8 @@ include __DIR__ . '/../components/form-input.php';
                minlength="4" 
                maxlength="20"
                autocomplete="new-password">
-
-        <input class="login-input" 
-               type="text" 
-               name="token" 
-               placeholder="Orchester-Token" 
-               required>
         
-        <div class="form-text">Der Token identifiziert dein Orchester</div>
-
-        <select class="login-input" name="type" required>
-            <option value="" disabled selected>Instrument / Stimmgruppe</option>
-            <?php foreach ($typeStructure as $group => $instruments): ?>
-                <option value="" disabled style="font-weight: bold; color: #6b7280;"><?= $group ?></option>
-                <?php foreach ($instruments as $instrument): ?>
-                    <option value="<?= $instrument ?>">&nbsp;&nbsp;<?= str_replace('_', ' ', $instrument) ?></option>
-                <?php endforeach; ?>
-            <?php endforeach; ?>
-        </select>
+        <div class="form-text">Nach der Registrierung können Sie Orchestern beitreten</div>
 
         <button class="login-button" type="submit">
             Registrieren
@@ -75,3 +59,8 @@ include __DIR__ . '/../components/form-input.php';
         </div>
     </form>
 </div>
+
+<?php
+// Include notification system to display alerts
+include __DIR__ . '/../components/notification-system.php';
+?>

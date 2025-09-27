@@ -9,6 +9,8 @@ class Database
 {
     private static $instance = null;
     private $connection;
+    private $lastStmtErrno = 0;
+    private $lastStmtError = '';
     
     /**
      * Constructor is private to prevent direct instantiation
@@ -165,11 +167,28 @@ class Database
      */
     public function getLastError()
     {
+        // Prefer last statement error if available
+        if ($this->lastStmtErrno !== 0 || $this->lastStmtError !== '') {
+            return "MySQL Error #{$this->lastStmtErrno}: {$this->lastStmtError}";
+        }
         if ($this->connection) {
             $error = $this->connection->error;
             $errno = $this->connection->errno;
             return "MySQL Error #{$errno}: {$error}";
         }
         return mysqli_connect_error();
+    }
+
+    /**
+     * Set last statement error (errno and message) to surface precise failures
+     *
+     * @param int $errno
+     * @param string $error
+     * @return void
+     */
+    public function setLastError($errno, $error)
+    {
+        $this->lastStmtErrno = (int)$errno;
+        $this->lastStmtError = (string)$error;
     }
 } 

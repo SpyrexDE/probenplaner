@@ -364,8 +364,9 @@ $(document).ready(function() {
     }
     
     function updatePromise(id, attending, note) {
+        <?php $orchestraId = $_SESSION['current_orchestra_id'] ?? 1; ?>
         $.ajax({
-            url: '/promises/update',
+            url: '/<?= $orchestraId ?>/promises/update',
             type: 'POST',
             data: {
                 id: id,

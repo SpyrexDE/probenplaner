@@ -397,10 +397,9 @@ $cardClasses = 'rehearsal-card';
     
     <!-- Note Tag for Promises Context -->
     <?php if ($context === 'promises' && !empty($note)): ?>
-        <div class="flex items-center justify-end gap-2 mt-3 px-3 py-2" 
-             style="background-color: var(--color-bg-secondary); border-radius: var(--radius-base);">
-            <?= icon('quote-left', 'rehearsal-note-icon text-xs') ?>
-            <span class="rehearsal-note-text text-xs italic"><?= htmlspecialchars($note) ?></span>
+        <div class="rehearsal-note-tag">
+            <i class="fa-solid fa-quote-left rehearsal-note-icon"></i>
+            <span class="rehearsal-note-text"><?= htmlspecialchars($note) ?></span>
         </div>
     <?php endif; ?>
     

@@ -37,19 +37,17 @@ class PromiseController extends Controller
     /**
      * Display user promises (attendance)
      * 
+     * @param array $params Route parameters containing orchestra_id
      * @return void
      */
-    public function index()
+    public function index($params = [])
     {
-        // Check if user is logged in
-        if (!$this->isLoggedIn()) {
-            $this->redirect('/login');
-            return;
-        }
+        // Validate orchestra context and set session variables
+        $this->validateOrchestraContext($params);
         
-        // Redirect admins to the admin page
-        if ($_SESSION['type'] === 'Dirigent') {
-            $this->redirect('/promises/admin');
+        // Redirect conductors to the admin page
+        if ($_SESSION['current_role'] === 'conductor') {
+            $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/promises/admin');
             return;
         }
         
@@ -63,10 +61,10 @@ class PromiseController extends Controller
         $showOld = isset($_GET['showOld']);
         
         // Get rehearsals for the user's type using modern system
-        $userType = $_SESSION['type'];
-        $user = ['is_small_group' => $_SESSION['is_small_group'] ?? \App\Core\RehearsalTypeManager::SMALL_GROUP_DISABLED];
+        $userType = $_SESSION['current_type'];
+        $user = ['is_small_group' => false]; // TODO: Handle small group logic in new multi-orchestra system
         $isSmallGroup = \App\Core\RehearsalTypeManager::isUserInSmallGroup($user);
-        $rehearsals = $this->rehearsalModel->getForUser($userType, $_SESSION['orchestra_id'], $showOld, $isSmallGroup);
+        $rehearsals = $this->rehearsalModel->getForUser($userType, $_SESSION['current_orchestra_id'], $showOld, $isSmallGroup);
         
         // Get user's promises from the user_promises table
         $promises = [];
@@ -100,40 +98,34 @@ class PromiseController extends Controller
     /**
      * Display section leader view of member promises
      * 
+     * @param array $params Route parameters containing orchestra_id
      * @return void
      */
-    public function leader()
+    public function leader($params = [])
     {
-        // Check if user is logged in and is a section leader
-        if (!$this->isLoggedIn()) {
-            $this->redirect('/login');
-            return;
-        }
-
+        // Validate orchestra context and set session variables
+        $this->validateOrchestraContext($params);
+        
         // Check if user is a section leader
-        $username = $_SESSION['username'];
-        if ($_SESSION['role'] !== 'leader') {
-            $this->redirect('/promises');
-            return;
-        }
+        $this->requireRole('leader');
         
         // Get show old parameter
         $showOld = isset($_GET['showOld']);
         
         // Get user type (section)
-        $userType = $_SESSION['type'];
+        $userType = $_SESSION['current_type'];
 
         // Clean up section name for database queries
         $sectionName = str_replace(' ', '_', $userType);
         
         // Get rehearsals for the section using modern system
-        $user = ['is_small_group' => $_SESSION['is_small_group'] ?? \App\Core\RehearsalTypeManager::SMALL_GROUP_DISABLED];
+        $user = ['is_small_group' => false]; // TODO: Handle small group logic in new multi-orchestra system
         $isSmallGroup = \App\Core\RehearsalTypeManager::isUserInSmallGroup($user);
-        $rehearsals = $this->rehearsalModel->getForUser($sectionName, $_SESSION['orchestra_id'], $showOld, $isSmallGroup);
+        $rehearsals = $this->rehearsalModel->getForUser($sectionName, $_SESSION['current_orchestra_id'], $showOld, $isSmallGroup);
         
         // Get orchestra to check settings (leaders can view all sections?)
         $orchestraModel = new \App\Models\Orchestra();
-        $orchestra = $orchestraModel->findById($_SESSION['orchestra_id']);
+        $orchestra = $orchestraModel->findById($_SESSION['current_orchestra_id']);
         $leadersCanViewAllEnabled = !empty($orchestra['leaders_can_view_all_sections']);
         
         // Check if user wants to view all sections (from URL parameter or toggle state)
@@ -143,21 +135,22 @@ class PromiseController extends Controller
         
 
         // Get members: either only own section or all sections based on setting
+        $userOrchestraModel = new \App\Models\UserOrchestra();
         if ($leadersCanViewAll) {
-            $members = $this->userModel->getOrchestraMembers($_SESSION['orchestra_id']);
+            $members = $userOrchestraModel->getOrchestraUsers($_SESSION['current_orchestra_id']);
         } else {
-            $members = $this->userModel->findByType($sectionName, $_SESSION['orchestra_id']);
+            $members = $userOrchestraModel->getUsersByType($sectionName, $_SESSION['current_orchestra_id']);
             
             // If no exact match found, try with the original user type (without underscore replacement)
             if (empty($members)) {
-                $members = $this->userModel->findByType($userType, $_SESSION['orchestra_id']);
+                $members = $userOrchestraModel->getUsersByType($userType, $_SESSION['current_orchestra_id']);
             }
             
             // If still no exact match, search for similar section names using GroupManager
             if (empty($members)) {
                 $groupManager = new \App\Core\GroupManager();
                 $resolvedType = $groupManager->resolveAlias($userType);
-                $allMembers = $this->userModel->getOrchestraMembers($_SESSION['orchestra_id']);
+                $allMembers = $userOrchestraModel->getOrchestraUsers($_SESSION['current_orchestra_id']);
                 
                 // Filter members that belong to the leader's section/group
                 $members = array_filter($allMembers, function($member) use ($groupManager, $resolvedType, $userType) {
@@ -510,32 +503,27 @@ class PromiseController extends Controller
      * 
      * @return void
      */
-    public function admin()
+    public function admin($params = [])
     {
-        // Check if user is logged in and is a director
-        if (!$this->isLoggedIn()) {
-            $this->redirect('/login');
-            return;
-        }
-
-        // Check if user is a director
-        if ($_SESSION['type'] !== 'Dirigent') {
-            $this->redirect('/promises');
-            return;
-        }
+        // Validate orchestra context and set session variables
+        $this->validateOrchestraContext($params);
+        
+        // Check if user is a conductor
+        $this->requireRole('conductor');
         
         // Get show old parameter
         $showOld = isset($_GET['showOld']);
         
         // Get all rehearsals
-        $rehearsals = $this->rehearsalModel->getUpcoming($_SESSION['orchestra_id'], $showOld);
+        $rehearsals = $this->rehearsalModel->getUpcoming($_SESSION['current_orchestra_id'], $showOld);
         
         // Get all users in the current orchestra
-        $users = $this->userModel->getOrchestraMembers($_SESSION['orchestra_id']);
+        $userOrchestraModel = new \App\Models\UserOrchestra();
+        $users = $userOrchestraModel->getOrchestraUsers($_SESSION['current_orchestra_id']);
         
         // Get orchestra settings
         $orchestraModel = new \App\Models\Orchestra();
-        $orchestra = $orchestraModel->findById($_SESSION['orchestra_id']);
+        $orchestra = $orchestraModel->findById($_SESSION['current_orchestra_id']);
         $showRehearsalInsights = !empty($orchestra['show_rehearsal_insights']);
         
         // Initialize GroupManager for dynamic section handling
@@ -635,12 +623,12 @@ class PromiseController extends Controller
         $limit = (int)($_GET['limit'] ?? 10);
         
         // Get user info
-        $userType = $_SESSION['type'];
-        $user = ['is_small_group' => $_SESSION['is_small_group'] ?? \App\Core\RehearsalTypeManager::SMALL_GROUP_DISABLED];
+        $userType = $_SESSION['current_type'];
+        $user = ['is_small_group' => false]; // TODO: Handle small group logic in new multi-orchestra system
         $isSmallGroup = \App\Core\RehearsalTypeManager::isUserInSmallGroup($user);
         
         // Get past rehearsals with limit and offset
-        $allPastRehearsals = $this->rehearsalModel->getForUser($userType, $_SESSION['orchestra_id'], true, $isSmallGroup);
+        $allPastRehearsals = $this->rehearsalModel->getForUser($userType, $_SESSION['current_orchestra_id'], true, $isSmallGroup);
         
         // Filter only past rehearsals and apply pagination
         $today = date('Y-m-d');

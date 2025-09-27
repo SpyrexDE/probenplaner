@@ -203,4 +203,108 @@ class Controller
     {
         return CSRF::getTokenField();
     }
+    
+    /**
+     * Validate orchestra context for orchestra-specific routes
+     * 
+     * @param array $params Route parameters (should contain orchestra_id)
+     * @return array|null Orchestra context data or null if invalid
+     */
+    protected function validateOrchestraContext(array $params): ?array
+    {
+        // Must be logged in
+        if (!$this->isLoggedIn()) {
+            $this->redirect('/login');
+            return null;
+        }
+        
+        // Extract orchestra ID from route parameters
+        $orchestraId = (int)($params['orchestra_id'] ?? 0);
+        
+        if (!$orchestraId) {
+            $this->addAlert('Fehler!', 'Ungültige Orchester-ID.', 'error');
+            $this->redirect('/orchestras/select');
+            return null;
+        }
+        
+        // Check if user has access to this orchestra
+        $userOrchestraModel = new \App\Models\UserOrchestra();
+        $relation = $userOrchestraModel->getUserOrchestraRelation($_SESSION['user_id'], $orchestraId, true);
+        
+        if (!$relation) {
+            $this->addAlert('Fehler!', 'Sie haben keinen Zugriff auf dieses Orchester.', 'error');
+            $this->redirect('/orchestras/select');
+            return null;
+        }
+        
+        // Get orchestra details
+        $orchestraModel = new \App\Models\Orchestra();
+        $orchestra = $orchestraModel->findById($orchestraId);
+        
+        if (!$orchestra) {
+            $this->addAlert('Fehler!', 'Orchester nicht gefunden.', 'error');
+            $this->redirect('/orchestras/select');
+            return null;
+        }
+        
+        // Set current orchestra context if not already set or different
+        if (!isset($_SESSION['current_orchestra_id']) || $_SESSION['current_orchestra_id'] != $orchestraId) {
+            $_SESSION['current_orchestra_id'] = $orchestraId;
+            $_SESSION['current_orchestra_name'] = $orchestra['name'];
+            $_SESSION['current_type'] = $relation['type'];
+            $_SESSION['current_role'] = $relation['role'];
+        }
+        
+        return [
+            'orchestra_id' => $orchestraId,
+            'orchestra' => $orchestra,
+            'relation' => $relation,
+            'user_role' => $relation['role'],
+            'user_type' => $relation['type']
+        ];
+    }
+    
+    /**
+     * Require specific role in current orchestra
+     * 
+     * @param string $requiredRole Required role (member, leader, conductor)
+     * @param array|null $context Orchestra context from validateOrchestraContext()
+     * @return bool
+     */
+    protected function requireRole(string $requiredRole, ?array $context = null): bool
+    {
+        if (!$context && isset($_SESSION['current_role'])) {
+            $userRole = $_SESSION['current_role'];
+        } elseif ($context) {
+            $userRole = $context['user_role'];
+        } else {
+            $this->addAlert('Fehler!', 'Keine Berechtigung.', 'error');
+            $this->redirect('/orchestras/select');
+            return false;
+        }
+        
+        // Role hierarchy: conductor > leader > member
+        $roleHierarchy = ['member' => 1, 'leader' => 2, 'conductor' => 3];
+        
+        $userLevel = $roleHierarchy[$userRole] ?? 0;
+        $requiredLevel = $roleHierarchy[$requiredRole] ?? 0;
+        
+        if ($userLevel < $requiredLevel) {
+            $this->addAlert('Fehler!', 'Sie haben nicht die erforderliche Berechtigung für diese Aktion.', 'error');
+            
+            // Redirect based on current role
+            if (isset($_SESSION['current_orchestra_id'])) {
+                if ($userRole === 'conductor') {
+                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/promises/admin');
+                } else {
+                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/promises');
+                }
+            } else {
+                $this->redirect('/orchestras/select');
+            }
+            return false;
+        }
+        
+        return true;
+    }
 } 

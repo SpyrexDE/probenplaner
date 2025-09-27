@@ -32,18 +32,13 @@ class RehearsalController extends Controller
      * 
      * @return void
      */
-    public function index()
+    public function index($params = [])
     {
-        // Check if user is logged in and is a director
-        if (!$this->isLoggedIn()) {
-            $this->redirect('/login');
-            return;
-        }
-
-        if ($_SESSION['type'] !== 'Dirigent') {
-            $this->redirect('/promises');
-            return;
-        }
+        // Validate orchestra context and set session variables
+        $this->validateOrchestraContext($params);
+        
+        // Check if user is a conductor
+        $this->requireRole('conductor');
         
         // Check if this is an AJAX request for past rehearsals only
         if (isset($_GET['ajax']) && $_GET['pastOnly']) {
@@ -55,7 +50,7 @@ class RehearsalController extends Controller
         $showOld = isset($_GET['showOld']);
         
         // Get all rehearsals
-        $rehearsals = $this->rehearsalModel->getUpcoming($_SESSION['orchestra_id'], $showOld);
+        $rehearsals = $this->rehearsalModel->getUpcoming($_SESSION['current_orchestra_id'], $showOld);
         
         // Render view
         $this->render('rehearsals/index', [
@@ -68,20 +63,16 @@ class RehearsalController extends Controller
     /**
      * Display rehearsal creation form
      * 
+     * @param array $params Route parameters containing orchestra_id
      * @return void
      */
-    public function create()
+    public function create($params = [])
     {
-        // Check if user is logged in and is a director
-        if (!$this->isLoggedIn()) {
-            $this->redirect('/login');
-            return;
-        }
-
-        if ($_SESSION['type'] !== 'Dirigent') {
-            $this->redirect('/promises');
-            return;
-        }
+        // Validate orchestra context and set session variables
+        $this->validateOrchestraContext($params);
+        
+        // Check if user is a conductor
+        $this->requireRole('conductor');
         
         // Process form submission
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -138,7 +129,7 @@ class RehearsalController extends Controller
                     'start_time' => $start_time,
                     'end_time' => $end_time,
                     'location' => $location,
-                    'orchestra_id' => (int)$_SESSION['orchestra_id'],
+                    'orchestra_id' => (int)$_SESSION['current_orchestra_id'],
                     'is_small_group' => $isSmallGroup ? 1 : 0
                 ];
                 
@@ -151,7 +142,7 @@ class RehearsalController extends Controller
                 
                 if ($result && !is_array($result)) {
                     $this->setFlash('success', 'Rehearsal created successfully');
-                    $this->redirect('/rehearsals');
+                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
                     return;
                 } else {
                     $errorMessage = is_array($result) && isset($result['message']) 
@@ -208,22 +199,17 @@ class RehearsalController extends Controller
      */
     public function edit($params)
     {
-        // Check if user is logged in and is a director
-        if (!$this->isLoggedIn()) {
-            $this->redirect('/login');
-            return;
-        }
-
-        if ($_SESSION['type'] !== 'Dirigent') {
-            $this->redirect('/promises');
-            return;
-        }
+        // Validate orchestra context and set session variables
+        $this->validateOrchestraContext($params);
+        
+        // Check if user is a conductor
+        $this->requireRole('conductor');
         
         // Get rehearsal ID from route parameters
         $rehearsalId = isset($params['id']) ? intval($params['id']) : 0;
         
         if ($rehearsalId <= 0) {
-            $this->redirect('/rehearsals');
+            $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
             return;
         }
         
@@ -232,7 +218,7 @@ class RehearsalController extends Controller
         
         if (!$rehearsal) {
             $this->setFlash('error', 'Rehearsal not found');
-            $this->redirect('/rehearsals');
+            $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
             return;
         }
         
@@ -302,7 +288,7 @@ class RehearsalController extends Controller
                 
                 if ($result === true) {
                     $this->setFlash('success', 'Rehearsal updated successfully');
-                    $this->redirect('/rehearsals');
+                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
                     return;
                 } else {
                     $errorMessage = is_array($result) && isset($result['message']) 
@@ -382,22 +368,17 @@ class RehearsalController extends Controller
      */
     public function delete($params)
     {
-        // Check if user is logged in and is a director
-        if (!$this->isLoggedIn()) {
+        // Validate orchestra context and set session variables
+        try {
+            $this->validateOrchestraContext($params);
+            // Check if user is a conductor
+            $this->requireRole('conductor');
+        } catch (\Exception $e) {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo json_encode(['success' => false, 'message' => 'Unauthorized']);
                 exit;
             }
             $this->redirect('/login');
-            return;
-        }
-
-        if ($_SESSION['type'] !== 'Dirigent') {
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-                exit;
-            }
-            $this->redirect('/promises');
             return;
         }
         
@@ -414,7 +395,7 @@ class RehearsalController extends Controller
                 echo json_encode(['success' => false, 'message' => 'Invalid rehearsal ID']);
                 exit;
             }
-            $this->redirect('/rehearsals');
+            $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
             return;
         }
         
@@ -435,7 +416,7 @@ class RehearsalController extends Controller
             $this->setFlash('error', 'Failed to delete rehearsal');
         }
         
-        $this->redirect('/rehearsals');
+        $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
     }
     
     /**
@@ -449,7 +430,7 @@ class RehearsalController extends Controller
         $limit = (int)($_GET['limit'] ?? 10);
         
         // Get all past rehearsals
-        $allPastRehearsals = $this->rehearsalModel->getUpcoming($_SESSION['orchestra_id'], true);
+        $allPastRehearsals = $this->rehearsalModel->getUpcoming($_SESSION['current_orchestra_id'], true);
         
         // Filter only past rehearsals and apply pagination
         $today = date('Y-m-d');

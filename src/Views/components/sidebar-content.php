@@ -16,8 +16,8 @@
                 <?= $_SESSION['username'] ?? 'User' ?>
                 <?php 
                 $userData = [
-                    'role' => $_SESSION['role'] ?? 'member',
-                    'is_small_group' => $_SESSION['is_small_group'] ?? false
+                    'role' => $_SESSION['current_role'] ?? 'member',
+                    'is_small_group' => false // TODO: Handle this in new multi-orchestra system
                 ];
                 echo \App\Core\Utilities::generateUserBadges($userData);
                 ?>
@@ -25,13 +25,13 @@
             <div class="sidebar-details">
                 <?php 
                 $parts = [];
-                $orchestra = isset($_SESSION['orchestra_name']) ? $_SESSION['orchestra_name'] : APP_NAME;
+                $orchestra = isset($_SESSION['current_orchestra_name']) ? $_SESSION['current_orchestra_name'] : APP_NAME;
                 if (strlen($orchestra) > 12) {
                     $orchestra = substr($orchestra, 0, 9) . '...';
                 }
                 $parts[] = '<span class="orchestra">' . $orchestra . '</span>';
-                if (isset($_SESSION['type'])) {
-                    $parts[] = str_replace('_', ' ', $_SESSION['type']);
+                if (isset($_SESSION['current_type'])) {
+                    $parts[] = str_replace('_', ' ', $_SESSION['current_type']);
                 }
                 echo implode(' · ', $parts);
                 ?>
@@ -43,7 +43,7 @@
 <!-- Statistics Section -->
 <?php if (isset($_SESSION['user_id'])): ?>
 <div class="sidebar-stats">
-    <?php if (isset($_SESSION['type']) && $_SESSION['type'] === 'Dirigent'): ?>
+    <?php if (isset($_SESSION['current_role']) && $_SESSION['current_role'] === 'conductor'): ?>
     <div class="sidebar-stats-header">
         <div class="sidebar-stats-title">Probe</div>
         <div class="sidebar-stats-date" id="next-rehearsal-date"></div>
@@ -78,28 +78,34 @@
     <ul class="sidebar-nav-list">
     <?php
     $menu = [];
-    if (isset($_SESSION['type']) && $_SESSION['type'] === 'Dirigent') {
+    if (isset($_SESSION['current_role']) && $_SESSION['current_role'] === 'conductor') {
+        $orchestraId = $_SESSION['current_orchestra_id'];
         $menu = [
-            ['label' => 'Rückmeldungen', 'href' => '/promises/admin', 'page' => 'admin', 'icon' => 'fas fa-chart-bar'],
-            ['label' => 'Termine', 'href' => '/rehearsals', 'page' => 'rehearsals', 'icon' => 'fas fa-calendar-alt'],
-            ['label' => 'Probenplan', 'href' => '/probenplan', 'page' => 'probenplan', 'icon' => 'fas fa-list'],
-            ['label' => 'Profil bearbeiten', 'href' => '/conductor/profile', 'page' => 'conductor_profile', 'icon' => 'fas fa-user-cog'],
-            ['label' => 'Orchester bearbeiten', 'href' => '/orchestras/settings', 'page' => 'orchestra_settings', 'icon' => 'fas fa-cog'],
+            ['label' => 'Rückmeldungen', 'href' => "/{$orchestraId}/promises/admin", 'page' => 'admin', 'icon' => 'fas fa-chart-bar'],
+            ['label' => 'Termine', 'href' => "/{$orchestraId}/rehearsals", 'page' => 'rehearsals', 'icon' => 'fas fa-calendar-alt'],
+            ['label' => 'Probenplan', 'href' => "/{$orchestraId}/probenplan", 'page' => 'probenplan', 'icon' => 'fas fa-list'],
+            ['label' => 'Profil bearbeiten', 'href' => "/{$orchestraId}/conductor/profile", 'page' => 'conductor_profile', 'icon' => 'fas fa-user-cog'],
+            ['label' => 'Orchester bearbeiten', 'href' => "/{$orchestraId}/orchestras/settings", 'page' => 'orchestra_settings', 'icon' => 'fas fa-cog'],
+            ['label' => 'Orchester wechseln', 'href' => '/orchestras/select', 'page' => null, 'icon' => 'fas fa-exchange-alt'],
             ['label' => 'Logout', 'href' => '/logout', 'page' => null, 'icon' => 'fas fa-sign-out-alt'],
         ];
-    } elseif (isset($_SESSION['role']) && $_SESSION['role'] === 'leader') {
+    } elseif (isset($_SESSION['current_role']) && $_SESSION['current_role'] === 'leader') {
+        $orchestraId = $_SESSION['current_orchestra_id'];
         $menu = [
-            ['label' => 'Meine Meldungen', 'href' => '/promises', 'page' => 'promises', 'icon' => 'fas fa-clipboard-check'],
-            ['label' => 'Rückmeldungen', 'href' => '/promises/leader', 'page' => 'leader', 'icon' => 'fas fa-chart-bar'],
-            ['label' => 'Probenplan', 'href' => '/probenplan', 'page' => 'probenplan', 'icon' => 'fas fa-list'],
-            ['label' => 'Profil bearbeiten', 'href' => '/profile', 'page' => 'profile', 'icon' => 'fas fa-user-cog'],
+            ['label' => 'Meine Meldungen', 'href' => "/{$orchestraId}/promises", 'page' => 'promises', 'icon' => 'fas fa-clipboard-check'],
+            ['label' => 'Rückmeldungen', 'href' => "/{$orchestraId}/promises/leader", 'page' => 'leader', 'icon' => 'fas fa-chart-bar'],
+            ['label' => 'Probenplan', 'href' => "/{$orchestraId}/probenplan", 'page' => 'probenplan', 'icon' => 'fas fa-list'],
+            ['label' => 'Profil bearbeiten', 'href' => "/{$orchestraId}/profile", 'page' => 'profile', 'icon' => 'fas fa-user-cog'],
+            ['label' => 'Orchester wechseln', 'href' => '/orchestras/select', 'page' => null, 'icon' => 'fas fa-exchange-alt'],
             ['label' => 'Logout', 'href' => '/logout', 'page' => null, 'icon' => 'fas fa-sign-out-alt'],
         ];
     } else {
+        $orchestraId = $_SESSION['current_orchestra_id'];
         $menu = [
-            ['label' => 'Meine Meldungen', 'href' => '/promises', 'page' => 'promises', 'icon' => 'fas fa-clipboard-check'],
-            ['label' => 'Probenplan', 'href' => '/probenplan', 'page' => 'probenplan', 'icon' => 'fas fa-list'],
-            ['label' => 'Profil bearbeiten', 'href' => '/profile', 'page' => 'profile', 'icon' => 'fas fa-user-cog'],
+            ['label' => 'Meine Meldungen', 'href' => "/{$orchestraId}/promises", 'page' => 'promises', 'icon' => 'fas fa-clipboard-check'],
+            ['label' => 'Probenplan', 'href' => "/{$orchestraId}/probenplan", 'page' => 'probenplan', 'icon' => 'fas fa-list'],
+            ['label' => 'Profil bearbeiten', 'href' => "/{$orchestraId}/profile", 'page' => 'profile', 'icon' => 'fas fa-user-cog'],
+            ['label' => 'Orchester wechseln', 'href' => '/orchestras/select', 'page' => null, 'icon' => 'fas fa-exchange-alt'],
             ['label' => 'Logout', 'href' => '/logout', 'page' => null, 'icon' => 'fas fa-sign-out-alt'],
         ];
     }

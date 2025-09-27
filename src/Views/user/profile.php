@@ -81,7 +81,7 @@ include __DIR__ . '/../components/theme-selector.php';
             </div>
             
             <div class="modern-card-body">
-                <form action="/profile" method="post" class="space-y-6">
+                <form action="/<?= $orchestraId ?>/profile" method="post" class="space-y-6">
                     <?php if (isset($csrf_token)): ?>
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8') ?>">
                     <?php endif; ?>
@@ -399,9 +399,10 @@ $(document).ready(function(){
                     });
                     
                     // AJAX request to verify the password
+                    <?php $orchestraId = $_SESSION['current_orchestra_id'] ?? 1; ?>
                     $.ajax({
                         type: "POST",
-                        url: "/profile/check-leader-password",
+                        url: "/<?= $orchestraId ?>/profile/check-leader-password",
                         data: { password: password },
                         success: function(response){
                             // Parse response if it's a string
@@ -546,7 +547,7 @@ $(document).ready(function(){
                 });
                 
                 // Redirect to deletion endpoint
-                window.location.href = "/profile/delete";
+                window.location.href = "/<?= $orchestraId ?>/profile/delete";
             }
         });
     });
@@ -587,9 +588,10 @@ $(document).ready(function(){
     
     // Function to switch theme instantly
     function switchThemeInstantly(themeKey, themeName) {
+        <?php $orchestraId = $_SESSION['current_orchestra_id'] ?? 1; ?>
         $.ajax({
             type: 'POST',
-            url: '/profile/switch-theme',
+            url: '/<?= $orchestraId ?>/profile/switch-theme',
             data: {
                 theme: themeKey,
                 csrf_token: $('input[name="csrf_token"]').val()

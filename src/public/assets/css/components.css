@@ -329,6 +329,22 @@
   gap: var(--space-4);
 }
 
+/* === REHEARSAL NOTE STYLING === */
+.rehearsal-note-tag {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.rehearsal-note-text {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
 /* NOTE: Tree view component styles moved to /Views/components/tree-view.php */
 
 

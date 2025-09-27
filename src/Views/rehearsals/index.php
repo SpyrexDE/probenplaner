@@ -85,7 +85,8 @@ document.addEventListener('click', function(event) {
             confirmButtonText: 'Löschen'
         }).then((result) => {
             if (result.isConfirmed) {
-                fetch('/rehearsals/delete/' + id, {
+                <?php $orchestraId = $_SESSION['current_orchestra_id'] ?? 1; ?>
+                fetch('/<?= $orchestraId ?>/rehearsals/delete/' + id, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',

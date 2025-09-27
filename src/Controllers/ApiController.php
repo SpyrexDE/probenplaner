@@ -24,17 +24,17 @@ class ApiController extends Controller
      */
     public function getUserStats()
     {
-        // Ensure user is logged in
-        if (!isset($_SESSION['user_id'])) {
-            $this->jsonResponse(['success' => false, 'error' => 'Not authenticated'], 401);
+        // Ensure user is logged in and has orchestra context
+        if (!isset($_SESSION['user_id']) || !isset($_SESSION['current_orchestra_id'])) {
+            $this->jsonResponse(['success' => false, 'error' => 'Not authenticated or no orchestra selected'], 401);
             return;
         }
 
         $userId = $_SESSION['user_id'];
-        $orchestraId = $_SESSION['orchestra_id'] ?? 1;
+        $orchestraId = $_SESSION['current_orchestra_id'];
 
         // If user is a conductor, get upcoming rehearsal stats instead of personal stats
-        if (isset($_SESSION['type']) && $_SESSION['type'] === 'Dirigent') {
+        if (isset($_SESSION['current_role']) && $_SESSION['current_role'] === 'conductor') {
             $this->getConductorStats($orchestraId);
             return;
         }
@@ -53,11 +53,11 @@ class ApiController extends Controller
             foreach ($rehearsals as $rehearsal) {
                 // Check if user is relevant for this rehearsal using modern system
                 $groups = $this->rehearsalModel->getGroupsAsAssoc($rehearsal['id']);
-                $user = ['is_small_group' => $_SESSION['is_small_group'] ?? \App\Core\RehearsalTypeManager::SMALL_GROUP_DISABLED];
+                $user = ['is_small_group' => false]; // TODO: Handle small group logic in new multi-orchestra system
                 $isSmallGroup = \App\Core\RehearsalTypeManager::isUserInSmallGroup($user);
                 $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal);
                 
-                if ($this->rehearsalModel->isUserInRehearsalGroup($_SESSION['type'] ?? '', $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
+                if ($this->rehearsalModel->isUserInRehearsalGroup($_SESSION['current_type'] ?? '', $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
                     $stats['total']++;
                     
                     // Check user's promise for this rehearsal

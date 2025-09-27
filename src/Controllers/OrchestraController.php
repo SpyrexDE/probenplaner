@@ -244,59 +244,50 @@ class OrchestraController extends Controller
     /**
      * Display orchestra settings form (for conductor)
      * 
+     * @param array $params Route parameters
      * @return void
      */
-    public function settings()
+    public function settings($params = [])
     {
-        // Check if logged in as conductor
-        if (!$this->isLoggedIn() || $_SESSION['role'] !== 'conductor') {
-            $this->addAlert('Fehler!', 'Sie haben keine Berechtigung für diese Seite.', 'error');
-            $this->redirect('/login');
-            return;
-        }
+        // Validate orchestra context and require conductor role
+        $context = $this->validateOrchestraContext($params);
+        if (!$context) return;
         
-        // Get orchestra data
-        $orchestra = $this->orchestraModel->findById($_SESSION['orchestra_id']);
-        
-        if (!$orchestra) {
-            $this->addAlert('Fehler!', 'Orchester nicht gefunden.', 'error');
-            $this->redirect('/promises');
-            return;
-        }
+        if (!$this->requireRole('conductor', $context)) return;
         
         // Display settings form
         $this->render('orchestras/settings', [
             'currentPage' => 'orchestra_settings',
-            'orchestra' => $orchestra
+            'orchestra' => $context['orchestra']
         ]);
     }
     
     /**
      * Update orchestra settings
      * 
+     * @param array $params Route parameters
      * @return void
      */
-    public function update()
+    public function update($params = [])
     {
-        // Check if logged in as conductor
-        if (!$this->isLoggedIn() || $_SESSION['role'] !== 'conductor') {
-            $this->addAlert('Fehler!', 'Sie haben keine Berechtigung für diese Seite.', 'error');
-            $this->redirect('/login');
-            return;
-        }
+        // Validate orchestra context and require conductor role
+        $context = $this->validateOrchestraContext($params);
+        if (!$context) return;
+        
+        if (!$this->requireRole('conductor', $context)) return;
         
         // CSRF protection
         try {
             $this->protectCSRF();
         } catch (\Exception $e) {
             $this->addAlert('Sicherheitsfehler!', $e->getMessage(), 'error');
-            $this->redirect('/orchestras/settings');
+            $this->redirect('/' . $context['orchestra_id'] . '/orchestras/settings');
             return;
         }
         
         // Check if form submitted
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/orchestras/settings');
+            $this->redirect('/' . $context['orchestra_id'] . '/orchestras/settings');
             return;
         }
         
@@ -315,12 +306,9 @@ class OrchestraController extends Controller
         // Validate individual fields
         $tokenValidation = Validator::validateToken($token);
         
-        // Get current orchestra
-        $orchestra = $this->orchestraModel->findById($_SESSION['orchestra_id']);
-        
         // Check token uniqueness (only if changed)
         $tokenErrors = [];
-        if ($token !== $orchestra['token'] && $this->orchestraModel->findByToken($token)) {
+        if ($token !== $context['orchestra']['token'] && $this->orchestraModel->findByToken($token)) {
             $tokenErrors[] = "Dieser Token wird bereits verwendet";
         }
         
@@ -335,7 +323,7 @@ class OrchestraController extends Controller
         if (!$validation['valid']) {
             $errorMsg = implode(", ", $validation['errors']);
             $this->addAlert('Fehler!', $errorMsg, 'error');
-            $this->redirect('/orchestras/settings');
+            $this->redirect('/' . $context['orchestra_id'] . '/orchestras/settings');
             return;
         }
         
@@ -346,7 +334,7 @@ class OrchestraController extends Controller
         $showRehearsalInsights = isset($_POST['show_rehearsal_insights']) ? 1 : 0;
         
         // Update orchestra
-        $result = $this->orchestraModel->update($_SESSION['orchestra_id'], [
+        $result = $this->orchestraModel->update($context['orchestra_id'], [
             'name' => $name,
             'token' => $token,
             'leader_pw' => $leaderPassword,
@@ -355,73 +343,76 @@ class OrchestraController extends Controller
         ]);
         
         if ($result) {
+            // Update session orchestra name if changed
+            if ($name !== $_SESSION['current_orchestra_name']) {
+                $_SESSION['current_orchestra_name'] = $name;
+            }
             $this->setFlash('success', 'Die Orchestereinstellungen wurden aktualisiert.');
         } else {
             $this->addAlert('Fehler!', 'Die Einstellungen konnten nicht aktualisiert werden.', 'error');
         }
         
-        $this->redirect('/orchestras/settings');
+        $this->redirect('/' . $context['orchestra_id'] . '/orchestras/settings');
     }
     
     /**
      * Delete orchestra confirmation
      * 
+     * @param array $params Route parameters
      * @return void
      */
-    public function confirmDelete()
+    public function confirmDelete($params = [])
     {
-        // Check if logged in as conductor
-        if (!$this->isLoggedIn() || $_SESSION['role'] !== 'conductor') {
-            $this->addAlert('Fehler!', 'Sie haben keine Berechtigung für diese Seite.', 'error');
-            $this->redirect('/login');
-            return;
-        }
+        // Validate orchestra context and require conductor role
+        $context = $this->validateOrchestraContext($params);
+        if (!$context) return;
         
-        // Get orchestra data
-        $orchestra = $this->orchestraModel->findById($_SESSION['orchestra_id']);
-        
-        if (!$orchestra) {
-            $this->addAlert('Fehler!', 'Orchester nicht gefunden.', 'error');
-            $this->redirect('/promises');
-            return;
-        }
+        if (!$this->requireRole('conductor', $context)) return;
         
         // Display confirmation form
         $this->render('orchestras/delete', [
             'currentPage' => 'orchestra_settings',
-            'orchestra' => $orchestra
+            'orchestra' => $context['orchestra']
         ]);
     }
     
     /**
      * Process orchestra deletion
      * 
+     * @param array $params Route parameters
      * @return void
      */
-    public function delete()
+    public function delete($params = [])
     {
-        // Check if logged in as conductor
-        if (!$this->isLoggedIn() || $_SESSION['role'] !== 'conductor') {
-            $this->addAlert('Fehler!', 'Sie haben keine Berechtigung für diese Seite.', 'error');
-            $this->redirect('/login');
-            return;
-        }
+        // Validate orchestra context and require conductor role
+        $context = $this->validateOrchestraContext($params);
+        if (!$context) return;
+        
+        if (!$this->requireRole('conductor', $context)) return;
         
         // Check if form submitted with confirmation
         if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['confirm_delete']) || $_POST['confirm_delete'] !== 'yes') {
-            $this->redirect('/orchestras/settings');
+            $this->redirect('/' . $context['orchestra_id'] . '/orchestras/settings');
             return;
         }
         
         // Delete orchestra (cascade will delete all related data)
-        $result = $this->orchestraModel->delete($_SESSION['orchestra_id']);
+        $result = $this->orchestraModel->delete($context['orchestra_id']);
         
         if ($result) {
-            // Logout user
-            $this->redirect('/logout');
+            // Clear orchestra context from session
+            unset($_SESSION['current_orchestra_id']);
+            unset($_SESSION['current_orchestra_name']);
+            unset($_SESSION['current_type']);
+            unset($_SESSION['current_role']);
+            
+            $this->setFlash('success', 'Das Orchester wurde erfolgreich gelöscht.');
+            
+            // Redirect to orchestra selection (user might have other orchestras)
+            $this->redirect('/orchestras/select');
         } else {
             $this->addAlert('Fehler!', 'Das Orchester konnte nicht gelöscht werden.', 'error');
-            $this->redirect('/orchestras/settings');
+            $this->redirect('/' . $context['orchestra_id'] . '/orchestras/settings');
         }
     }
     

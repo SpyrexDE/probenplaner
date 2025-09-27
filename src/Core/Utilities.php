@@ -26,6 +26,11 @@ class Utilities
             $badges[] = '<span class="user-badge" title="Stimmführer"><i class="fas fa-crown"></i></span>';
         }
         
+        // Add crown badge for conductors (Dirigent)
+        if (isset($user['role']) && $user['role'] === 'conductor') {
+            $badges[] = '<span class="user-badge" title="Dirigent"><i class="fas fa-crown"></i></span>';
+        }
+        
         // Add small group badge for small group members using modern system
         if (\App\Core\RehearsalTypeManager::isUserInSmallGroup($user)) {
             $badges[] = '<span class="user-badge" title="' . \App\Core\RehearsalTypeManager::LABEL_KLEINGRUPPE . '"><i class="fas fa-user-friends"></i></span>';

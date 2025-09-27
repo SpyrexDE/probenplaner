@@ -108,7 +108,8 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       // Use the proper API endpoint instead of scraping HTML
-      fetch('/api/user-stats', {
+      <?php $orchestraId = $_SESSION['current_orchestra_id'] ?? 1; ?>
+      fetch('/<?= $orchestraId ?>/api/user-stats', {
           method: 'GET',
           headers: {
               'Content-Type': 'application/json',

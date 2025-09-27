@@ -16,12 +16,19 @@ class HomeController extends Controller
      */
     public function index()
     {
-        // If logged in, redirect to appropriate dashboard
+        // If logged in, redirect to orchestra selection or main app
         if ($this->isLoggedIn()) {
-            if ($this->isAdmin()) {
-                $this->redirect('/promises/admin');
+            // Check if user has selected an orchestra
+            if (isset($_SESSION['current_orchestra_id'])) {
+                // Redirect based on role in current orchestra
+                if ($_SESSION['current_role'] === 'conductor') {
+                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/promises/admin');
+                } else {
+                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/promises');
+                }
             } else {
-                $this->redirect('/promises');
+                // No orchestra selected, go to orchestra selection
+                $this->redirect('/orchestras/select');
             }
             return;
         }

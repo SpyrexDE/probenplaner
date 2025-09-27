@@ -104,8 +104,8 @@ class UserPromise extends Model
         }
         
         // Get all users from this orchestra
-        $userModel = new User();
-        $users = $userModel->getOrchestraMembers($orchestraId);
+        $userOrchestraModel = new UserOrchestra();
+        $users = $userOrchestraModel->getOrchestraUsers($orchestraId);
         
         // Check which users should attend this rehearsal
         foreach ($users as $user) {

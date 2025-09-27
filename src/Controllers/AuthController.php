@@ -40,13 +40,19 @@ class AuthController extends Controller
      */
     public function login()
     {
-        // If already logged in, redirect
+        // If already logged in, redirect to orchestra selection or main app
         if ($this->isLoggedIn()) {
-            // Redirect based on role
-            if ($_SESSION['role'] === 'conductor') {
-                $this->redirect('/promises/admin');
+            // Check if user has selected an orchestra
+            if (isset($_SESSION['current_orchestra_id'])) {
+                // Redirect based on role in current orchestra
+                if ($_SESSION['current_role'] === 'conductor') {
+                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/promises/admin');
+                } else {
+                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/promises');
+                }
             } else {
-                $this->redirect('/promises');
+                // No orchestra selected, go to orchestra selection
+                $this->redirect('/orchestras/select');
             }
             return;
         }
@@ -95,7 +101,7 @@ class AuthController extends Controller
             return;
         }
         
-        // First try to authenticate with any orchestra
+        // Authenticate user (orchestra-independent)
         $user = $this->userModel->authenticate($username, $password);
         
         if ($user) {
@@ -138,17 +144,9 @@ class AuthController extends Controller
         // Regenerate session ID to prevent session fixation attacks
         session_regenerate_id(true);
         
-        // Get orchestra
-        $orchestra = $this->orchestraModel->findById($user['orchestra_id']);
-        
-        // Set session variables
+        // Set basic session variables (no orchestra context yet)
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = $user['username'];
-        $_SESSION['type'] = $user['type'];
-        $_SESSION['role'] = $user['role'];
-        $_SESSION['orchestra_id'] = $user['orchestra_id'];
-        $_SESSION['orchestra_name'] = $orchestra['name'];
-        $_SESSION['is_small_group'] = isset($user['is_small_group']) && $user['is_small_group'] ? true : false;
         
         // Set secure cookies
         $cookieOptions = [
@@ -164,12 +162,8 @@ class AuthController extends Controller
         
         $this->setFlash('success', 'Sie wurden erfolgreich eingeloggt.');
         
-        // Redirect based on role
-        if ($user['role'] === 'conductor') {
-            $this->redirect('/promises/admin');
-        } else {
-            $this->redirect('/promises');
-        }
+        // Redirect to orchestra selection
+        $this->redirect('/orchestras/select');
     }
     
     /**
@@ -179,13 +173,19 @@ class AuthController extends Controller
      */
     public function showRegisterForm()
     {
-        // If already logged in, redirect
+        // If already logged in, redirect to orchestra selection or main app
         if ($this->isLoggedIn()) {
-            // Redirect based on role
-            if ($_SESSION['role'] === 'conductor') {
-                $this->redirect('/promises/admin');
+            // Check if user has selected an orchestra
+            if (isset($_SESSION['current_orchestra_id'])) {
+                // Redirect based on role in current orchestra
+                if ($_SESSION['current_role'] === 'conductor') {
+                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/promises/admin');
+                } else {
+                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/promises');
+                }
             } else {
-                $this->redirect('/promises');
+                // No orchestra selected, go to orchestra selection
+                $this->redirect('/orchestras/select');
             }
             return;
         }
@@ -193,13 +193,12 @@ class AuthController extends Controller
         // Display registration form
         $this->render('auth/register', [
             'currentPage' => 'register',
-            'typeStructure' => $this->getTypeStructure(),
             'csrf_token' => $this->getCSRFToken()
         ]);
     }
     
     /**
-     * Process registration
+     * Process registration (orchestra-independent)
      * 
      * @return void
      */
@@ -223,20 +222,16 @@ class AuthController extends Controller
         $username = Validator::sanitizeUtf8($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';
         $passwordConfirm = $_POST['password_confirm'] ?? '';
-        $type = Validator::sanitizeUtf8($_POST['type'] ?? '');
-        $token = Validator::sanitizeUtf8($_POST['token'] ?? '');
         
         // For debugging - log registration attempt
-        error_log("Registration attempt - Type: $type, Token: $token");
+        error_log("Registration attempt - Username: $username");
         
         // Validate required fields
         $requiredValidation = Validator::validateRequired([
             'username' => $username,
             'password' => $password,
-            'password_confirm' => $passwordConfirm,
-            'type' => $type,
-            'token' => $token
-        ], ['username', 'password', 'password_confirm', 'type', 'token']);
+            'password_confirm' => $passwordConfirm
+        ], ['username', 'password', 'password_confirm']);
         
         if (!$requiredValidation['valid']) {
             $this->addAlert(
@@ -252,9 +247,8 @@ class AuthController extends Controller
         // Validate individual field formats
         $usernameValidation = Validator::validateUsername($username);
         $passwordValidation = Validator::validatePassword($password, $passwordConfirm);
-        $tokenValidation = Validator::validateToken($token);
         
-        $validation = Validator::mergeResults([$usernameValidation, $passwordValidation, $tokenValidation]);
+        $validation = Validator::mergeResults([$usernameValidation, $passwordValidation]);
         
         if (!$validation['valid']) {
             $this->addAlert(
@@ -267,51 +261,42 @@ class AuthController extends Controller
             return;
         }
         
-        // Find the orchestra by token
-        $orchestra = $this->orchestraModel->findByToken($token);
-        
-        if (!$orchestra) {
-            $this->addAlert(
-                'Fehler!', 
-                'Der eingegebene Orchester-Token ist ungültig.', 
-                'error',
-                'Der Token wurde nicht gefunden. Bitte überprüfen Sie den Token oder kontaktieren Sie Ihren Dirigenten für den korrekten Token.'
-            );
-            error_log("Registration failed - Invalid token: $token");
-            $this->redirect('/register');
-            return;
-        }
-        
-        error_log("Found orchestra: " . json_encode($orchestra));
-        $orchestraId = (int)$orchestra['id'];
-        
         // Register the user
-        $result = $this->userModel->register($username, $password, $type, $orchestraId);
+        $result = $this->userModel->register($username, $password);
         
-        if (is_array($result) && isset($result['error'])) {
+        if (is_array($result)) {
+            // Handle different array response formats
+            if (isset($result['messages'])) {
+                // ErrorHandler format with 'messages' array
+                $message = is_array($result['messages']) ? implode(', ', $result['messages']) : $result['messages'];
+                $details = $result['data'] ?? '';
+            } else {
+                // Direct format with 'message' string
+                $message = $result['message'] ?? 'Bei der Registrierung ist ein Fehler aufgetreten.';
+                $details = $result['details'] ?? '';
+            }
+            
             $this->addAlert(
                 'Fehler!', 
-                $result['message'], 
+                $message, 
                 'error',
-                $result['details']
+                is_array($details) ? json_encode($details) : $details
             );
-            error_log("Registration failed: " . $result['message'] . " - " . $result['details']);
             $this->redirect('/register');
             return;
         }
         
-        if ($result) {
+        if (is_int($result) && $result > 0) {
             $this->setFlash('success', 'Ihr Konto wurde erfolgreich erstellt. Sie können sich jetzt anmelden.');
-            error_log("Registration successful - User ID: $result");
-            $this->redirect('/login?token=' . urlencode($token));
+            $this->redirect('/login');
         } else {
+            // Handle unexpected non-array, non-integer results
             $this->addAlert(
                 'Fehler!', 
                 'Bei der Registrierung ist ein Fehler aufgetreten.', 
                 'error',
-                'Es gab ein unerwartetes technisches Problem bei der Registrierung. Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.'
+                'Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.'
             );
-            error_log("Registration failed - Unexpected error");
             $this->redirect('/register');
         }
     }
@@ -356,52 +341,4 @@ class AuthController extends Controller
         $this->redirect('/login');
     }
     
-    /**
-     * Get instrument/section type structure dynamically
-     * 
-     * @return array
-     */
-    private function getTypeStructure()
-    {
-        $groupManager = new \App\Core\GroupManager();
-        $config = $groupManager->getConfig();
-        
-        // Extract the structure for the registration form
-        if (isset($config['tutti']['children'])) {
-            $structure = [];
-            
-            foreach ($config['tutti']['children'] as $sectionKey => $section) {
-                if ($section['type'] === 'section') {
-                    $sectionInstruments = [];
-                    
-                    if (isset($section['children'])) {
-                        foreach ($section['children'] as $childKey => $child) {
-                            if ($child['type'] === 'instrument') {
-                                $sectionInstruments[] = $child['id'];
-                            } elseif ($child['type'] === 'section' && isset($child['children'])) {
-                                // Flatten nested sections for the form
-                                foreach ($child['children'] as $instrumentKey => $instrument) {
-                                    if ($instrument['type'] === 'instrument') {
-                                        $sectionInstruments[] = $instrument['id'];
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        // Simple sections like Schlagwerk - add the section ID as an instrument
-                        $sectionInstruments[] = $section['id'];
-                    }
-                    
-                    if (!empty($sectionInstruments)) {
-                        $structure[$section['id']] = $sectionInstruments;
-                    }
-                }
-            }
-            
-            return $structure;
-        }
-        
-        // Configuration is malformed
-        throw new \Exception("Orchestra groups configuration is malformed or missing 'tutti' section. Please check src/config/orchestra_groups.php");
-    }
 } 

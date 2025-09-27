@@ -159,7 +159,11 @@ if (!\App\Core\ThemeManager::themeExists($currentUserTheme)) {
 <?php 
 use App\Core\Utilities;
 use App\Core\Version;
-if (isset($_SESSION['username'])): ?>
+// Only show sidebar/topbar if logged in AND has selected an orchestra AND not on orchestra selection page
+$hideOnPages = ['login', 'register', 'create_orchestra', 'orchestra_select', 'join_orchestra', 'select_section'];
+$currentPageHidesSidebar = isset($currentPage) && in_array($currentPage, $hideOnPages);
+$showSidebar = isset($_SESSION['username']) && isset($_SESSION['current_orchestra_id']) && !$currentPageHidesSidebar;
+if ($showSidebar): ?>
     <div id="wrapper" class="flex min-h-screen transition-all duration-slow">
         <!-- Top Navigation -->
         <?php
@@ -220,9 +224,9 @@ if (isset($_SESSION['username'])): ?>
     </div>
 <?php else: ?>
 <?php 
-// Hide topbar on login, register, and admin verify pages
+// Hide topbar on login, register, orchestra selection pages, and admin verify pages
 $hideNavbar = false;
-if (isset($currentPage) && ($currentPage === 'login' || $currentPage === 'register' || $currentPage === 'create_orchestra')) {
+if (isset($currentPage) && in_array($currentPage, ['login', 'register', 'create_orchestra', 'orchestra_select', 'join_orchestra', 'select_section'])) {
     $hideNavbar = true;
 }
 ?>
