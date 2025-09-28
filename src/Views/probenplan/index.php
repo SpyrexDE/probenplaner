@@ -73,13 +73,14 @@ include __DIR__ . '/../components/table.php';
                             <th>Datum</th>
                             <th>Zeit</th>
                             <th>Ort</th>
+                            <th>Art</th>
                             <th>Stimmen</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($rehearsals)): ?>
                             <tr>
-                                <td colspan="5" class="text-center">Keine Proben gefunden</td>
+                                <td colspan="6" class="text-center">Keine Proben gefunden</td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($rehearsals as $i => $rehearsal): ?>
@@ -93,6 +94,16 @@ include __DIR__ . '/../components/table.php';
                                     <td><?= $rehearsal['date_formatted'] ?? $rehearsal['date'] ?></td>
                                     <td><?= htmlspecialchars($time_display_pp) ?></td>
                                     <td><?= $rehearsal['location'] ?></td>
+                                    <td>
+                                        <?php 
+                                        $rehearsalType = \App\Core\RehearsalTypeManager::getRehearsalType($rehearsal);
+                                        if (\App\Core\RehearsalTypeManager::shouldDisplayType($rehearsalType)) {
+                                            echo htmlspecialchars($rehearsalType);
+                                        } else {
+                                            echo 'Probe';
+                                        }
+                                        ?>
+                                    </td>
                                     <td>
                                         <?php 
                                         if (isset($rehearsal['groups']) && is_array($rehearsal['groups'])) {
