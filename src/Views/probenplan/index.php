@@ -6,6 +6,37 @@ include __DIR__ . '/../components/table.php';
 
 <div class="max-w-7xl mx-auto px-4 mt-4">
     <div class="w-full">
+        <!-- Print Header (only visible during print) -->
+        <div class="print-header print-only">
+            <div class="print-header-main">
+                <h1 class="print-title">Probenplan</h1>
+                <div class="print-subtitle">
+                    <?= $_SESSION['current_orchestra_name'] ?? 'Orchester' ?>
+                    <?php if ($personalized): ?>
+                    · Personalisierte Ansicht (<?= $_SESSION['current_type'] ?? '' ?>)
+                    <?php else: ?>
+                    · Alle Proben
+                    <?php endif; ?>
+                </div>
+            </div>
+            <div class="print-info">
+                <div class="print-date">Stand: <?= date("d.m.Y, H:i") ?> Uhr</div>
+                <?php if (!empty($rehearsals)): ?>
+                    <div class="print-range">
+                        <?php 
+                        $firstDate = reset($rehearsals)['date_formatted'] ?? reset($rehearsals)['date'];
+                        $lastDate = end($rehearsals)['date_formatted'] ?? end($rehearsals)['date'];
+                        if ($firstDate === $lastDate) {
+                            echo $firstDate;
+                        } else {
+                            echo $firstDate . ' – ' . $lastDate;
+                        }
+                        ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        
         <div class="w-full text-center mb-6">
             <h5>Stand: <?= date("d.m.Y") ?></h5>
             
@@ -186,79 +217,219 @@ include __DIR__ . '/../components/table.php';
     }
 }
 
+/* Print-only elements (hidden on screen) */
+.print-only {
+    display: none;
+}
+
 @media print {
-    /* Hide navigation and UI elements */
-    .top-nav, nav, header, .sidebar, #sidebar-wrapper, #wrapper > nav,
-    .btn, button, .print\\:hidden, .filter-controls {
+    /* Define CSS variables for print context */
+    :root {
+        --radius-base: 8px;
+        --color-border: #e5e7eb;
+    }
+
+    /* Show print-only elements */
+    .print-only {
+        display: block !important;
+    }
+
+    /* Hide specific UI elements for print */
+    .top-nav, nav, header, .sidebar, #sidebar-wrapper, .sidebar-overlay,
+    .btn, button, .fab, .filter-controls, .toggle-switch, 
+    .filter-toggle-container, .filter-label, .toggle-slider, .toggle-dot,
+    .page-header, .breadcrumbs, .alert, .toast, .modal, .dropdown,
+    /* Hide the screen header with date */
+    .w-full.text-center.mb-6 {
         display: none !important;
     }
 
-    /* Reset page layout */
+    /* Reset page layout for clean printing */
+    * {
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+
     body, html {
         margin: 0 !important;
         padding: 0 !important;
         background: white !important;
-        font-size: 12pt !important;
-        line-height: 1.4 !important;
-    }
-
-    /* Reset main containers */
-    #wrapper, .page-content-inner, .max-w-7xl {
-        width: 100% !important;
-        max-width: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        box-shadow: none !important;
-        border: none !important;
-    }
-
-    /* Center and style headers */
-    h1 {
-        text-align: center !important;
-        font-size: 18pt !important;
-        margin: 0.5em 0 !important;
-    }
-
-    h5 {
-        text-align: center !important;
-        font-size: 12pt !important;
-        color: #666 !important;
-        margin: 0.5em 0 2em 0 !important;
-    }
-
-    /* Table styling */
-    .table-responsive {
-        overflow: visible !important;
-    }
-
-    table {
-        width: 100% !important;
-        border-collapse: collapse !important;
-        margin: 0 !important;
-        font-size: 11pt !important;
-    }
-
-    th, td {
-        border: 1px solid #333 !important;
-        padding: 6px 8px !important;
-        text-align: left !important;
-    }
-
-    th {
-        background-color: #f5f5f5 !important;
-        font-weight: bold !important;
-    }
-
-    /* Preserve row colors */
-    tr[style*="background-color"] {
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif !important;
+        font-size: 10pt !important;
+        line-height: 1.3 !important;
+        color: #000 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
 
-    /* Page settings */
+    /* Reset main containers for print */
+    body, html {
+        background: white !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Force main content to be visible and properly positioned */
+    #wrapper {
+        display: block !important;
+        position: static !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    #page-content-wrapper {
+        display: block !important;
+        position: static !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .page-content-inner {
+        display: block !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .max-w-7xl {
+        max-width: none !important;
+        margin: 0 auto !important;
+        padding: 0 20px !important;
+        display: block !important;
+    }
+
+    /* Ensure content divs are visible */
+    .max-w-7xl > .w-full {
+        display: block !important;
+    }
+
+    .w-full.mt-4 {
+        display: block !important;
+        margin-top: 0 !important;
+    }
+
+    /* Print Header Styling */
+    .print-header {
+        margin-bottom: 24px !important;
+        padding-bottom: 16px !important;
+        border-bottom: 2px solid #e5e7eb !important;
+    }
+
+    .print-header-main {
+        text-align: center !important;
+        margin-bottom: 12px !important;
+    }
+
+    .print-title {
+        font-size: 20pt !important;
+        font-weight: bold !important;
+        margin: 0 0 6px 0 !important;
+        color: #111827 !important;
+    }
+
+    .print-subtitle {
+        font-size: 12pt !important;
+        color: #6b7280 !important;
+        font-weight: normal !important;
+        margin: 0 !important;
+    }
+
+    .print-info {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        font-size: 9pt !important;
+        color: #9ca3af !important;
+    }
+
+    .print-date, .print-range {
+        margin: 0 !important;
+    }
+
+    /* Table styling to match UI exactly */
+    .table-responsive {
+        overflow: visible !important;
+        border-radius: var(--radius-base) !important;
+        border: 1px solid var(--color-border) !important;
+        box-shadow: none !important;
+        background: white !important;
+    }
+
+    table.table-themed {
+        width: 100% !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        margin: 0 !important;
+        font-size: 11pt !important;
+        background: white !important;
+    }
+
+    table.table-themed th {
+        background: #f3f4f6 !important;
+        font-weight: 600 !important;
+        color: #374151 !important;
+        padding: 12px 16px !important;
+        text-align: left !important;
+        border-bottom: 2px solid #e5e7eb !important;
+        font-size: 11pt !important;
+    }
+
+    table.table-themed td {
+        padding: 12px 16px !important;
+        text-align: left !important;
+        border-bottom: 1px solid #e5e7eb !important;
+        color: #111827 !important;
+        font-size: 11pt !important;
+        vertical-align: top !important;
+    }
+
+    /* Match UI striped rows exactly */
+    table.table-themed.table-striped tbody tr:nth-child(odd) {
+        background: #ffffff !important;
+    }
+
+    table.table-themed.table-striped tbody tr:nth-child(even) {
+        background: #f3f4f6 !important;
+    }
+
+    /* Round header corners like UI */
+    table.table-themed thead th:first-child {
+        border-top-left-radius: var(--radius-base) !important;
+    }
+    
+    table.table-themed thead th:last-child {
+        border-top-right-radius: var(--radius-base) !important;
+    }
+
+    /* Preserve rehearsal color borders exactly as in UI */
+    table.table-themed td[style*="border-left"] {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Natural column widths for print like UI */
+
+    /* Page settings for optimal printing */
     @page {
-        margin: 1.5cm !important;
-        size: A4 !important;
+        margin: 1.2cm !important;
+        size: A4 portrait !important;
+    }
+
+    /* Prevent table from breaking across pages poorly */
+    table.table-themed {
+        page-break-inside: avoid !important;
+    }
+
+    table.table-themed tr {
+        page-break-inside: avoid !important;
+        page-break-after: auto !important;
+    }
+
+    table.table-themed thead {
+        display: table-header-group !important;
+    }
+
+    table.table-themed tfoot {
+        display: table-footer-group !important;
     }
 }
 
