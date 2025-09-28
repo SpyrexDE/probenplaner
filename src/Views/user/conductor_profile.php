@@ -3,6 +3,7 @@
 $renderComponent = false; // Just load styles, don't render component
 include __DIR__ . '/../components/form-input.php';
 include __DIR__ . '/../components/modern-checkbox.php';
+include __DIR__ . '/../components/theme-selector.php';
 ?>
 
 <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
@@ -13,6 +14,57 @@ include __DIR__ . '/../components/modern-checkbox.php';
                 <?= icon('user-tie', 'text-white text-2xl') ?>
             </div>
             <h1 class="text-3xl font-bold text-gray-900">Dirigent-Profil</h1>
+        </div>
+
+        <!-- Theme Selection Card -->
+        <div class="modern-card mb-6">
+            <div class="modern-card-header">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                        <?= icon('palette', 'text-purple-600 text-sm') ?>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-900">Design-Theme</h2>
+                        <p class="text-sm text-gray-500 mt-1">Wähle dein bevorzugtes Farbschema</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modern-card-body">
+                <div class="theme-selection-compact">
+                    <?php 
+                    $currentTheme = $user['theme'] ?? 'default';
+                    foreach ($availableThemes as $themeKey => $theme): 
+                    ?>
+                    <div class="theme-option-compact">
+                        <input type="radio" 
+                               id="theme_compact_<?= $themeKey ?>" 
+                               name="theme_compact" 
+                               value="<?= $themeKey ?>"
+                               class="theme-radio-compact sr-only"
+                               data-theme-key="<?= $themeKey ?>"
+                               <?= ($themeKey === $currentTheme) ? 'checked' : '' ?>>
+                        
+                        <label for="theme_compact_<?= $themeKey ?>" class="theme-selector-compact">
+                            <div class="theme-preview-compact">
+                                <div class="theme-colors-compact">
+                                    <?php foreach ($theme['preview_colors'] as $colorName => $colorValue): ?>
+                                    <div class="theme-dot" 
+                                         style="background-color: <?= htmlspecialchars($colorValue) ?>"
+                                         title="<?= ucfirst($colorName) ?>">
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <span class="theme-name-compact"><?= htmlspecialchars($theme['name']) ?></span>
+                                <div class="theme-check-compact">
+                                    <?= icon('check', 'text-white text-xs') ?>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
         </div>
 
         <!-- Profile Settings Card -->
@@ -48,12 +100,26 @@ include __DIR__ . '/../components/modern-checkbox.php';
                     </div>
 
                     <!-- Password Section -->
-                    <div class="form-section">
+                    <div class="form-section ring-2 ring-primary-200 rounded-xl">
+                        <?php $hasPassword = isset($hasPassword) ? (bool)$hasPassword : !empty($user['password']); ?>
+                        <?php if (!$hasPassword): ?>
+                        <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 flex items-start">
+                            <div class="mr-2 mt-0.5">
+                                <?= icon('info', 'text-yellow-600') ?>
+                            </div>
+                            <div>
+                                <p class="text-sm">
+                                    Du hast aktuell kein Passwort. Setze jetzt eines, um dich auch ohne JMD App anmelden zu können.
+                                </p>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                         <div class="form-section-header">
-                            <h3 class="form-section-title">Passwort ändern</h3>
-                            <p class="form-section-description">Felder leer lassen, wenn keine Änderung gewünscht</p>
+                            <h3 class="form-section-title"><?= $hasPassword ? 'Passwort ändern' : 'Passwort festlegen' ?></h3>
+                            <p class="form-section-description"><?= $hasPassword ? 'Felder leer lassen, wenn keine Änderung gewünscht' : 'Lege ein neues Passwort für deinen Account fest' ?></p>
                         </div>
                         <div class="space-y-4">
+                            <?php if ($hasPassword): ?>
                             <div class="form-group-modern">
                                 <label for="current_password" class="form-label-modern">
                                     <?= icon('lock', 'form-label-icon') ?>
@@ -63,6 +129,7 @@ include __DIR__ . '/../components/modern-checkbox.php';
                                        name="current_password" placeholder="Gib dein aktuelles Passwort ein"
                                        autocomplete="current-password">
                             </div>
+                            <?php endif; ?>
                             
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div class="form-group-modern">
@@ -137,6 +204,7 @@ include __DIR__ . '/../components/modern-checkbox.php';
 
 <script>
 $(document).ready(function(){
+    const hasPassword = <?php echo isset($hasPassword) && $hasPassword ? 'true' : 'false'; ?>;
     // Password strength checker
     function checkPasswordStrength(password) {
         const strengthIndicator = $('#passwordStrength');
@@ -212,14 +280,18 @@ $(document).ready(function(){
     $('form').on('submit', function(e) {
         const newPassword = $('#new_password').val();
         const confirmPassword = $('#confirm_password').val();
-        const currentPassword = $('#current_password').val();
+        const currentPassword = $('#current_password').length ? $('#current_password').val() : '';
         
         // If trying to change password
         if (newPassword || confirmPassword || currentPassword) {
             // All password fields must be filled
-            if (!newPassword || !confirmPassword || !currentPassword) {
+            if (!newPassword || !confirmPassword || (hasPassword && !currentPassword)) {
                 e.preventDefault();
-                window.notifyError('Bitte fülle alle Passwort-Felder aus, um das Passwort zu ändern.');
+                if (hasPassword && !currentPassword) {
+                    window.notifyError('Bitte gib dein aktuelles Passwort ein.');
+                } else {
+                    window.notifyError('Bitte fülle alle Passwort-Felder aus, um das Passwort zu ändern.');
+                }
                 return false;
             }
             
@@ -322,5 +394,79 @@ $(document).ready(function(){
             $(this).closest('.form-group-modern').addClass('filled');
         }
     });
+    
+    // Compact theme selection with instant switching
+    $('.theme-radio-compact').on('change', function() {
+        if ($(this).is(':checked')) {
+            const selectedTheme = $(this).val();
+            const themeKey = $(this).data('theme-key');
+            const themeName = $(this).closest('.theme-option-compact').find('.theme-name-compact').text();
+            
+            // Add switching state
+            $('.theme-selection-compact').addClass('theme-switching');
+            
+            // Apply theme instantly via AJAX
+            switchThemeInstantly(themeKey, themeName);
+        }
+    });
+    
+    // Function to switch theme instantly
+    function switchThemeInstantly(themeKey, themeName) {
+        $.ajax({
+            type: 'POST',
+            url: '/<?= $orchestraId ?>/profile/switch-theme',
+            data: {
+                theme: themeKey,
+                csrf_token: $('input[name="csrf_token"]').val()
+            },
+            success: function(response) {
+                // Parse response if it's a string
+                if (typeof response === 'string') {
+                    try {
+                        response = JSON.parse(response);
+                    } catch (e) {
+                        console.error('Failed to parse response:', e);
+                        response = { success: false };
+                    }
+                }
+                
+                if (response.success) {
+                    // Apply theme to current page
+                    applyThemeToPage(themeKey);
+                    
+                    // Show success notification
+                    window.notifySuccess(`Theme "${themeName}" aktiviert`, 'Sofort angewendet!');
+                    
+                    // Add applied animation
+                    $('body').addClass('theme-applying');
+                    setTimeout(() => {
+                        $('body').removeClass('theme-applying');
+                    }, 600);
+                } else {
+                    // Handle error
+                    window.notifyError('Fehler beim Wechseln des Themes', response.message || 'Unbekannter Fehler');
+                    
+                    // Reset selection to previous theme
+                    const currentTheme = $('body').data('current-theme') || 'default';
+                    $(`input[data-theme-key="${currentTheme}"]`).prop('checked', true);
+                }
+                
+                // Remove switching state
+                $('.theme-selection-compact').removeClass('theme-switching');
+                
+            },
+            error: function() {
+                // Handle AJAX error
+                window.notifyError('Fehler beim Wechseln des Themes', 'Netzwerkfehler');
+                
+                // Reset selection to previous theme
+                const currentTheme = $('body').data('current-theme') || 'default';
+                $(`input[data-theme-key="${currentTheme}"]`).prop('checked', true);
+                
+                // Remove switching state
+                $('.theme-selection-compact').removeClass('theme-switching');
+            }
+        });
+    }
 });
 </script> 

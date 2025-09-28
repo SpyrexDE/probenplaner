@@ -54,7 +54,7 @@ class Utilities
     
     /**
      * Get display text for user type/role combination
-     * Handles the case where conductors have type='conductor' (same as role)
+     * Shows only "Conductor" for conductors, or section name for members
      * 
      * @param string $type User type (instrument/section)
      * @param string $role User role (conductor, leader, member)
@@ -64,11 +64,15 @@ class Utilities
     {
         $result = [
             'type' => null,
-            'role' => self::getRoleDisplayName($role)
+            'role' => null
         ];
         
-        // For conductors, skip showing type since they don't have a section
-        if ($type !== 'conductor' && $type !== 'none') {
+        // For conductors, only show "Conductor" role
+        if ($role === 'conductor') {
+            $result['role'] = self::getRoleDisplayName($role);
+        }
+        // For section members, only show the section name (not "Mitglied")
+        elseif ($type !== 'conductor' && $type !== 'none') {
             $result['type'] = str_replace('_', ' ', $type);
         }
         

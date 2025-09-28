@@ -373,20 +373,22 @@ class User extends Model
      * @param string|null $passwordConfirm Confirmation password to check (if provided)
      * @return array Array with 'valid' => bool and 'errors' => array
      */
-    public function validateUserInput(string $username, ?string $password = null, ?int $excludeUserId = null, ?string $passwordConfirm = null): array
+    public function validateUserInput(?string $username = null, ?string $password = null, ?int $excludeUserId = null, ?string $passwordConfirm = null): array
     {
         $errors = [];
         
-        // Validate username
-        if (empty($username)) {
-            $errors[] = "Benutzername fehlt";
-        } elseif (strlen($username) < 3 || strlen($username) > 20) {
-            $errors[] = "Der Benutzername muss zwischen 3 und 20 Zeichen haben";
-        } else {
-            // Check for duplicates if not updating own username
-            $existingUser = $this->findByUsername($username);
-            if ($existingUser && (!$excludeUserId || $existingUser['id'] != $excludeUserId)) {
-                $errors[] = "Dieser Benutzername ist bereits vergeben";
+        // Validate username only when provided (null means skip username validation)
+        if ($username !== null) {
+            if ($username === '') {
+                $errors[] = "Benutzername fehlt";
+            } elseif (strlen($username) < 3 || strlen($username) > 20) {
+                $errors[] = "Der Benutzername muss zwischen 3 und 20 Zeichen haben";
+            } else {
+                // Check for duplicates if not updating own username
+                $existingUser = $this->findByUsername($username);
+                if ($existingUser && (!$excludeUserId || $existingUser['id'] != $excludeUserId)) {
+                    $errors[] = "Dieser Benutzername ist bereits vergeben";
+                }
             }
         }
         

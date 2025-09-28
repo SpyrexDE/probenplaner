@@ -181,12 +181,26 @@ include __DIR__ . '/../components/theme-selector.php';
 
 
                     <!-- Password Section -->
-                    <div class="form-section">
+                    <div class="form-section ring-2 ring-primary-200 rounded-xl">
+                        <?php $hasPassword = isset($hasPassword) ? (bool)$hasPassword : !empty($user['password']); ?>
+                        <?php if (!$hasPassword): ?>
+                        <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 flex items-start">
+                            <div class="mr-2 mt-0.5">
+                                <?= icon('info', 'text-yellow-600') ?>
+                            </div>
+                            <div>
+                                <p class="text-sm">
+                                    Du hast aktuell kein Passwort. Setze jetzt eines, um dich auch ohne JMD App anmelden zu können.
+                                </p>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                         <div class="form-section-header">
-                            <h3 class="form-section-title">Passwort ändern</h3>
-                            <p class="form-section-description">Felder leer lassen, wenn keine Änderung gewünscht</p>
+                            <h3 class="form-section-title"><?= $hasPassword ? 'Passwort ändern' : 'Passwort festlegen' ?></h3>
+                            <p class="form-section-description"><?= $hasPassword ? 'Felder leer lassen, wenn keine Änderung gewünscht' : 'Lege ein neues Passwort für deinen Account fest' ?></p>
                         </div>
                         <div class="space-y-4">
+                            <?php if ($hasPassword): ?>
                             <div class="form-group-modern">
                                 <label for="current_password" class="form-label-modern">
                                     <?= icon('lock', 'form-label-icon') ?>
@@ -196,6 +210,7 @@ include __DIR__ . '/../components/theme-selector.php';
                                        name="current_password" placeholder="Gib dein aktuelles Passwort ein"
                                        autocomplete="current-password">
                             </div>
+                            <?php endif; ?>
                             
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div class="form-group-modern">
@@ -270,6 +285,7 @@ include __DIR__ . '/../components/theme-selector.php';
 
 <script>
 $(document).ready(function(){
+    const hasPassword = <?php echo isset($hasPassword) && $hasPassword ? 'true' : 'false'; ?>;
     // Password strength checker
     function checkPasswordStrength(password) {
         const strengthIndicator = $('#passwordStrength');
@@ -460,14 +476,18 @@ $(document).ready(function(){
         
         const newPassword = $('#new_password').val();
         const confirmPassword = $('#confirm_password').val();
-        const currentPassword = $('#current_password').val();
+        const currentPassword = $('#current_password').val ? $('#current_password').val() : '';
         
         // If trying to change password
         if (newPassword || confirmPassword || currentPassword) {
             // All password fields must be filled
-            if (!newPassword || !confirmPassword || !currentPassword) {
+            if (!newPassword || !confirmPassword || (hasPassword && !currentPassword)) {
                 e.preventDefault();
-                window.notifyError('Bitte fülle alle Passwort-Felder aus, um das Passwort zu ändern.');
+                if (hasPassword && !currentPassword) {
+                    window.notifyError('Bitte gib dein aktuelles Passwort ein.');
+                } else {
+                    window.notifyError('Bitte fülle alle Passwort-Felder aus, um das Passwort zu ändern.');
+                }
                 return false;
             }
             

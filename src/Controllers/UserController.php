@@ -77,7 +77,8 @@ class UserController extends Controller
             'typeStructure' => $this->getTypeStructure(),
             'availableThemes' => \App\Core\ThemeManager::getThemesForPreview(),
             'csrf_token' => $this->getCSRFToken(),
-            'orchestraId' => $_SESSION['current_orchestra_id']
+            'orchestraId' => $_SESSION['current_orchestra_id'],
+            'hasPassword' => !empty($user['password'])
         ]);
     }
     
@@ -115,8 +116,10 @@ class UserController extends Controller
         $this->render('user/conductor_profile', [
             'currentPage' => 'conductor_profile',
             'user' => $user,
+            'availableThemes' => \App\Core\ThemeManager::getThemesForPreview(),
             'csrf_token' => $this->getCSRFToken(),
-            'orchestraId' => $_SESSION['current_orchestra_id']
+            'orchestraId' => $_SESSION['current_orchestra_id'],
+            'hasPassword' => !empty($user['password'])
         ]);
     }
     
@@ -150,9 +153,8 @@ class UserController extends Controller
         if (!empty($newUsername) && $newUsername != $oldUsername) {
             // Validate username using the model's validation method
             $usernameValidation = $this->userModel->validateUserInput(
-                $newUsername, 
-                null, 
-                $_SESSION['current_orchestra_id'], 
+                $newUsername,
+                null,
                 $user['id']
             );
             
@@ -168,21 +170,24 @@ class UserController extends Controller
         
         // Process password changes if provided
         if (!empty($newPassword)) {
-            if (empty($currentPassword)) {
-                $this->addAlert('Fehler!', 'Bitte geben Sie Ihr aktuelles Passwort ein.', 'error');
-                $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/conductor/profile');
-                return;
-            }
-            
-            // Verify current password
-            if (!password_verify($currentPassword, $user['password'])) {
-                $this->addAlert('Fehler!', 'Das aktuelle Passwort ist falsch.', 'error');
-                $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/conductor/profile');
-                return;
+            $hasPassword = !empty($user['password']);
+            if ($hasPassword) {
+                if (empty($currentPassword)) {
+                    $this->addAlert('Fehler!', 'Bitte geben Sie Ihr aktuelles Passwort ein.', 'error');
+                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/conductor/profile');
+                    return;
+                }
+                
+                // Verify current password
+                if (!password_verify($currentPassword, $user['password'])) {
+                    $this->addAlert('Fehler!', 'Das aktuelle Passwort ist falsch.', 'error');
+                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/conductor/profile');
+                    return;
+                }
             }
             
             // Validate password using the model's validation method
-            $passwordValidation = $this->userModel->validateUserInput('', $newPassword);
+            $passwordValidation = $this->userModel->validateUserInput(null, $newPassword);
             if (!$passwordValidation['valid']) {
                 $this->addAlert('Fehler!', implode(", ", $passwordValidation['errors']), 'error');
                 $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/conductor/profile');
@@ -247,20 +252,20 @@ class UserController extends Controller
         $newPassword = $_POST['new_password'] ?? '';
         $confirmPassword = $_POST['confirm_password'] ?? '';
         $groupType = Validator::sanitizeUtf8($_POST['group_type'] ?? '');
-        $smallGroup = isset($_POST['small_group']) ? true : false;
+        $smallGroup = isset($_POST['small_group']) ? true : false; // TODO: implement in relation if supported
         $groupLeader = isset($_POST['group_leader']) ? true : false;
         $groupLeaderPassword = Validator::sanitizeUtf8($_POST['group_leader_password'] ?? '');
         
         $updateData = [];
+        $relationChangesMade = false;
         $usernameChanged = false;
         
         // Process username changes if provided
         if (!empty($newUsername) && $newUsername != $oldUsername) {
             // Validate username using the model's validation method
             $usernameValidation = $this->userModel->validateUserInput(
-                $newUsername, 
-                null, 
-                $_SESSION['current_orchestra_id'], 
+                $newUsername,
+                null,
                 $user['id']
             );
             
@@ -276,21 +281,24 @@ class UserController extends Controller
         
         // Process password changes if provided
         if (!empty($newPassword)) {
-            if (empty($currentPassword)) {
-                $this->addAlert('Fehler!', 'Bitte geben Sie Ihr aktuelles Passwort ein.', 'error');
-                $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
-                return;
-            }
-            
-            // Verify current password
-            if (!password_verify($currentPassword, $user['password'])) {
-                $this->addAlert('Fehler!', 'Das aktuelle Passwort ist falsch.', 'error');
-                $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
-                return;
+            $hasPassword = !empty($user['password']);
+            if ($hasPassword) {
+                if (empty($currentPassword)) {
+                    $this->addAlert('Fehler!', 'Bitte geben Sie Ihr aktuelles Passwort ein.', 'error');
+                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
+                    return;
+                }
+                
+                // Verify current password
+                if (!password_verify($currentPassword, $user['password'])) {
+                    $this->addAlert('Fehler!', 'Das aktuelle Passwort ist falsch.', 'error');
+                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
+                    return;
+                }
             }
             
             // Validate password using the model's validation method
-            $passwordValidation = $this->userModel->validateUserInput('', $newPassword);
+            $passwordValidation = $this->userModel->validateUserInput(null, $newPassword);
             if (!$passwordValidation['valid']) {
                 $this->addAlert('Fehler!', implode(", ", $passwordValidation['errors']), 'error');
                 $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
@@ -307,13 +315,18 @@ class UserController extends Controller
             $updateData['password'] = $newPassword;
         }
         
-        // Process group type changes if provided
-        if (!empty($groupType)) {
-            $updateData['type'] = $groupType;
-            $updateData['is_small_group'] = $smallGroup ? 1 : 0;
-        } else if (isset($_POST['small_group'])) {
-            // Only small group status changed
-            $updateData['is_small_group'] = $smallGroup ? 1 : 0;
+        // Process group type changes in user_orchestras relation
+        $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
+        if ($orchestraId) {
+            $userOrchestraModel = new \App\Models\UserOrchestra();
+            if (!empty($groupType)) {
+                $typeUpdated = $userOrchestraModel->updateUserType((int)$user['id'], (int)$orchestraId, $groupType);
+                if ($typeUpdated) {
+                    $_SESSION['current_type'] = $groupType;
+                    $relationChangesMade = true;
+                }
+            }
+            // small_group: not stored in users; skip until relation supports it
         }
         
         // Process group leader status
@@ -328,23 +341,38 @@ class UserController extends Controller
                 $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
                 return;
             }
-            
-            // Set user role to leader
-            $updateData['role'] = 'leader';
+            // Update role in relation
+            if ($orchestraId) {
+                $userOrchestraModel = $userOrchestraModel ?? new \App\Models\UserOrchestra();
+                $roleUpdated = $userOrchestraModel->updateUserRole((int)$user['id'], (int)$orchestraId, 'leader');
+                if ($roleUpdated) {
+                    $_SESSION['current_role'] = 'leader';
+                    $relationChangesMade = true;
+                }
+            }
         } else if (!$groupLeader && $isCurrentlyLeader) {
-            // Remove leader role
-            $updateData['role'] = 'member';
+            if ($orchestraId) {
+                $userOrchestraModel = $userOrchestraModel ?? new \App\Models\UserOrchestra();
+                $roleUpdated = $userOrchestraModel->updateUserRole((int)$user['id'], (int)$orchestraId, 'member');
+                if ($roleUpdated) {
+                    $_SESSION['current_role'] = 'member';
+                    $relationChangesMade = true;
+                }
+            }
         }
         
         // If no changes were made
-        if (empty($updateData)) {
+        if (empty($updateData) && !$relationChangesMade) {
             $this->addAlert('Info', 'Keine Änderungen vorgenommen.', 'info');
             $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
             return;
         }
         
-        // Update user profile
-        $result = $this->userModel->updateProfile($user['id'], $updateData);
+        // Update user profile if there are user-table changes
+        $result = true;
+        if (!empty($updateData)) {
+            $result = $this->userModel->updateProfile($user['id'], $updateData);
+        }
         
         if ($result === true) {
             if ($usernameChanged) {
@@ -352,15 +380,7 @@ class UserController extends Controller
                 $this->setFlash('success', 'Profil aktualisiert. Bitte melden Sie sich erneut an.');
                 $this->logout();
             } else {
-                // Update current orchestra session variables to reflect changes
-                if (isset($updateData['type'])) {
-                    $_SESSION['current_type'] = $updateData['type'];
-                }
-                if (isset($updateData['role'])) {
-                    $_SESSION['current_role'] = $updateData['role'];
-                }
-                // TODO: Handle is_small_group updates in new multi-orchestra system
-                
+                // Session updates for relation handled above when applying relation changes
                 $this->setFlash('success', 'Profil erfolgreich aktualisiert.');
                 $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
             }

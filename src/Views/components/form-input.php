@@ -195,9 +195,6 @@
     border-color: var(--color-primary);
 }
 
-.form-group-modern.filled .form-input-modern {
-    background-color: var(--color-bg-secondary);
-}
 
 .form-group-modern.error .form-input-modern {
     border-color: var(--color-error);
