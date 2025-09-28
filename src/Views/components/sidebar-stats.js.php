@@ -112,15 +112,21 @@ document.addEventListener('DOMContentLoaded', function() {
       fetch('/<?= $orchestraId ?>/api/user-stats', {
           method: 'GET',
           headers: {
-              'Content-Type': 'application/json',
+              'Accept': 'application/json',
               'Cache-Control': 'no-cache'
           }
       })
-      .then(response => {
+      .then(async (response) => {
+          const contentType = response.headers.get('content-type') || '';
+          const text = await response.text().catch(() => '');
+          const isJson = contentType.includes('application/json');
+          const parseJson = () => { try { return JSON.parse(text); } catch (e) { return null; } };
           if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
+              const data = isJson ? parseJson() : null;
+              const message = (data && (data.error || data.message)) || text || `HTTP ${response.status}`;
+              throw new Error(message);
           }
-          return response.json();
+          return isJson ? (parseJson() || { success: false }) : { success: false };
       })
       .then(data => {
           if (data.success && data.stats) {

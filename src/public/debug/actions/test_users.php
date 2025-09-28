@@ -69,7 +69,7 @@ try {
             $usernameCounter++;
             
             // Check if user with this username already exists in this orchestra
-            $checkStmt = $conn->prepare("SELECT id FROM users WHERE username = ? AND orchestra_id = ?");
+            $checkStmt = $conn->prepare("SELECT u.id FROM users u INNER JOIN user_orchestras uo ON u.id = uo.user_id WHERE u.username = ? AND uo.orchestra_id = ? AND uo.is_active = TRUE");
             $checkStmt->bind_param('si', $username, $orchestraId);
             $checkStmt->execute();
             $checkResult = $checkStmt->get_result();
@@ -82,19 +82,30 @@ try {
             // Hash the password (same as username)
             $hashedPassword = password_hash($username, PASSWORD_DEFAULT);
             
-            // Create the user with prepared statement
-            $insertStmt = $conn->prepare("INSERT INTO users (username, password, type, orchestra_id, role) VALUES (?, ?, ?, ?, 'member')");
-            $insertStmt->bind_param('sssi', $username, $hashedPassword, $section, $orchestraId);
+            // Create the user with prepared statement (without orchestra-specific fields)
+            $insertStmt = $conn->prepare("INSERT INTO users (username, password) VALUES (?, ?)");
+            $insertStmt->bind_param('ss', $username, $hashedPassword);
             
             if ($insertStmt->execute()) {
-                $generatedUsers[] = [
-                    'username' => $username,
-                    'password' => $username, // Username is the password
-                    'type' => $section
-                ];
-                $totalGenerated++;
+                $userId = $conn->insert_id;
+                $insertStmt->close();
+                
+                // Create the user-orchestra relationship
+                $userOrchestraStmt = $conn->prepare("INSERT INTO user_orchestras (user_id, orchestra_id, type, role) VALUES (?, ?, ?, 'member')");
+                $userOrchestraStmt->bind_param('iis', $userId, $orchestraId, $section);
+                
+                if ($userOrchestraStmt->execute()) {
+                    $generatedUsers[] = [
+                        'username' => $username,
+                        'password' => $username, // Username is the password
+                        'type' => $section
+                    ];
+                    $totalGenerated++;
+                }
+                $userOrchestraStmt->close();
+            } else {
+                $insertStmt->close();
             }
-            $insertStmt->close();
         }
     }
     

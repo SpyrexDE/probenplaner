@@ -39,16 +39,21 @@ function initializeColorPicker(picker) {
 }
 
 function updateSelectedColor(picker, color) {
-    // Remove selected class from all options
+    // Remove selected class from all options with smooth transition
     const allOptions = picker.querySelectorAll('.compact-color-option');
     allOptions.forEach(function(option) {
         option.classList.remove('selected');
+        // Add a small delay to make the transition smoother
+        option.style.transition = 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
     });
     
     // Add selected class to the matching option
     const selectedOption = picker.querySelector(`[data-color="${color}"]`);
     if (selectedOption) {
-        selectedOption.classList.add('selected');
+        // Small delay to ensure smooth transition
+        setTimeout(() => {
+            selectedOption.classList.add('selected');
+        }, 50);
     }
     
     // Update the picker's data attribute

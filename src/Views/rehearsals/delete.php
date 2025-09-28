@@ -45,14 +45,14 @@
                 </div>
             </div>
             
-            <form action="/rehearsals/delete" method="post" class="confirmation-form">
+            <form action="/<?= $_SESSION['current_orchestra_id'] ?>/rehearsals/delete" method="post" class="confirmation-form">
                 <input type="hidden" name="id" value="<?= htmlspecialchars($rehearsal['id']) ?>">
                 <div class="form-actions">
                     <button type="submit" class="btn-danger" onclick="return confirmDelete(event)">
                         <i class=" -alt"><?= icon('trash', 'text-white') ?></i>
                         Termin löschen
                     </button>
-                                         <a href="/rehearsals" class="btn-outline">Abbrechen</a>
+                                         <a href="/<?= $_SESSION['current_orchestra_id'] ?>/rehearsals" class="btn-outline">Abbrechen</a>
                 </div>
             </form>
         </div>

@@ -193,7 +193,8 @@ class SmartDeviationDetector {
             FROM rehearsals r
             JOIN user_promises up ON r.id = up.rehearsal_id
             JOIN users u ON up.user_id = u.id
-            WHERE u.type = ? 
+            JOIN user_orchestras uo ON u.id = uo.user_id
+            WHERE uo.type = ? AND uo.orchestra_id = r.orchestra_id AND uo.is_active = 1
             AND r.id != ?
             AND r.date < (SELECT date FROM rehearsals WHERE id = ?)
             AND r.date >= DATE_SUB((SELECT date FROM rehearsals WHERE id = ?), INTERVAL 6 MONTH)
@@ -219,7 +220,9 @@ class SmartDeviationDetector {
                 SUM(CASE WHEN up.status = 'maybe' THEN 1 ELSE 0 END) as no_response
             FROM user_promises up
             JOIN users u ON up.user_id = u.id
-            WHERE u.type = ? AND up.rehearsal_id = ?
+            JOIN user_orchestras uo ON u.id = uo.user_id
+            JOIN rehearsals r ON up.rehearsal_id = r.id
+            WHERE uo.type = ? AND up.rehearsal_id = ? AND uo.orchestra_id = r.orchestra_id AND uo.is_active = 1
         ");
         
         $stmt->bind_param('si', $sectionId, $rehearsalId);
@@ -467,13 +470,15 @@ class SmartDeviationDetector {
         
         // Get all sections that have users in this rehearsal
         $stmt = $this->db->prepare("
-            SELECT DISTINCT u.type as id, u.type as name, COUNT(up.id) as user_count
+            SELECT DISTINCT uo.type as id, uo.type as name, COUNT(up.id) as user_count
             FROM user_promises up
             JOIN users u ON up.user_id = u.id
-            WHERE up.rehearsal_id = ?
-            GROUP BY u.type
+            JOIN user_orchestras uo ON u.id = uo.user_id
+            JOIN rehearsals r ON up.rehearsal_id = r.id
+            WHERE up.rehearsal_id = ? AND uo.orchestra_id = r.orchestra_id AND uo.is_active = 1
+            GROUP BY uo.type
             HAVING user_count > 0
-            ORDER BY u.type
+            ORDER BY uo.type
         ");
         
         $stmt->bind_param('i', $rehearsalId);

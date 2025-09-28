@@ -146,14 +146,23 @@ function deleteAccount(username) {
     }).then((result) => {
         if (result.isConfirmed) {
             // Use the MVC controller endpoint
-            fetch('/user/deleteUser?username=' + encodeURIComponent(username))
-                .then(response => {
+            const orchestraId = window.location.pathname.split('/')[1];
+            fetch('/' + orchestraId + '/user/deleteUser?username=' + encodeURIComponent(username), {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+                .then(async response => {
+                    const contentType = response.headers.get('content-type') || '';
+                    const text = await response.text().catch(() => '');
+                    const isJson = contentType.includes('application/json');
+                    const parseJson = () => { try { return JSON.parse(text); } catch (e) { return null; } };
                     if (!response.ok) {
-                        return response.json().then(data => {
-                            throw new Error(data.error || 'Server returned ' + response.status);
-                        });
+                        const data = isJson ? parseJson() : null;
+                        const message = (data && (data.error || data.message)) || text || ('HTTP ' + response.status);
+                        throw new Error(message);
                     }
-                    return response.json();
+                    return isJson ? (parseJson() || { message: 'Erfolg' }) : { message: 'Erfolg' };
                 })
                 .then(data => {
                     window.notifySuccess(data.message, { timer: 2000 });
@@ -179,14 +188,23 @@ function resetPassword(username) {
     }).then((result) => {
         if (result.isConfirmed) {
             // Use the MVC controller endpoint
-            fetch('/user/resetPassword?username=' + encodeURIComponent(username))
-                .then(response => {
+            const orchestraId = window.location.pathname.split('/')[1];
+            fetch('/' + orchestraId + '/user/resetPassword?username=' + encodeURIComponent(username), {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+                .then(async response => {
+                    const contentType = response.headers.get('content-type') || '';
+                    const text = await response.text().catch(() => '');
+                    const isJson = contentType.includes('application/json');
+                    const parseJson = () => { try { return JSON.parse(text); } catch (e) { return null; } };
                     if (!response.ok) {
-                        return response.json().then(data => {
-                            throw new Error(data.error || 'Server returned ' + response.status);
-                        });
+                        const data = isJson ? parseJson() : null;
+                        const message = (data && (data.error || data.message)) || text || ('HTTP ' + response.status);
+                        throw new Error(message);
                     }
-                    return response.json();
+                    return isJson ? (parseJson() || {}) : {};
                 })
                 .then(data => {
                     // Extract password from message and show in a modal that can be copied
@@ -262,17 +280,22 @@ function resetPassword(username) {
 
 // Standardized API call helper
 function standardApiCall(url, options = {}) {
-    return fetch(url, {
+    const finalOptions = {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Accept': 'application/json', ...(options.headers || {}) },
         ...options
-    }).then(response => {
+    };
+    return fetch(url, finalOptions).then(async response => {
+        const contentType = response.headers.get('content-type') || '';
+        const text = await response.text().catch(() => '');
+        const isJson = contentType.includes('application/json');
+        const parseJson = () => { try { return JSON.parse(text); } catch (e) { return null; } };
         if (!response.ok) {
-            return response.json().then(data => {
-                throw new Error(data.error || `Server returned ${response.status}`);
-            });
+            const data = isJson ? parseJson() : null;
+            const message = (data && (data.error || data.message)) || text || `HTTP ${response.status}`;
+            throw new Error(message);
         }
-        return response.json();
+        return isJson ? (parseJson() || {}) : {};
     });
 }
 

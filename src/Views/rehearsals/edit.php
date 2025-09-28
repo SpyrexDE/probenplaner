@@ -19,7 +19,7 @@ include __DIR__ . '/../components/checkbox.php';
     
     
     <div class="form-container">
-        <form method="post" action="/rehearsals/edit/<?= $rehearsal['id'] ?>" class="form">
+        <form method="post" action="/<?= $_SESSION['current_orchestra_id'] ?>/rehearsals/edit/<?= $rehearsal['id'] ?>" class="form">
             <div class="form-group">
                 <label for="date" class="form-label">Datum</label>
                 <input class="form-input" type="date" id="date" name="date" value="<?= htmlspecialchars($formData['date'] ?? '') ?>" required>
@@ -90,7 +90,7 @@ include __DIR__ . '/../components/checkbox.php';
             
             <div class="form-actions">
                 <button type="submit" class="btn-primary">Änderungen speichern</button>
-                <a href="/rehearsals" class="btn-outline">Abbrechen</a>
+                <a href="/<?= $_SESSION['current_orchestra_id'] ?>/rehearsals" class="btn-outline">Abbrechen</a>
             </div>
         </form>
     </div>

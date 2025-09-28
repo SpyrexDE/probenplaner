@@ -54,6 +54,19 @@ class Controller
         // Include the view
         include APP_ROOT . '/Views/' . $view . '.php';
     }
+
+    /**
+     * Detect whether the current request expects a JSON response
+     *
+     * @return bool
+     */
+    private function isJsonRequest(): bool
+    {
+        $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
+        $xhr = $_SERVER['HTTP_X_REQUESTED_WITH'] ?? '';
+        return (stripos($accept, 'application/json') !== false)
+            || (strcasecmp($xhr, 'XMLHttpRequest') === 0);
+    }
     
     /**
      * Redirect to a URL
@@ -214,6 +227,12 @@ class Controller
     {
         // Must be logged in
         if (!$this->isLoggedIn()) {
+            if ($this->isJsonRequest()) {
+                http_response_code(401);
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'error' => 'Nicht eingeloggt']);
+                exit;
+            }
             $this->redirect('/login');
             return null;
         }
@@ -223,6 +242,12 @@ class Controller
         
         if (!$orchestraId) {
             $this->addAlert('Fehler!', 'Ungültige Orchester-ID.', 'error');
+            if ($this->isJsonRequest()) {
+                http_response_code(400);
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'error' => 'Ungültige Orchester-ID.']);
+                exit;
+            }
             $this->redirect('/orchestras/select');
             return null;
         }
@@ -233,6 +258,12 @@ class Controller
         
         if (!$relation) {
             $this->addAlert('Fehler!', 'Sie haben keinen Zugriff auf dieses Orchester.', 'error');
+            if ($this->isJsonRequest()) {
+                http_response_code(403);
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'error' => 'Kein Zugriff auf dieses Orchester']);
+                exit;
+            }
             $this->redirect('/orchestras/select');
             return null;
         }
@@ -243,6 +274,12 @@ class Controller
         
         if (!$orchestra) {
             $this->addAlert('Fehler!', 'Orchester nicht gefunden.', 'error');
+            if ($this->isJsonRequest()) {
+                http_response_code(404);
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'error' => 'Orchester nicht gefunden']);
+                exit;
+            }
             $this->redirect('/orchestras/select');
             return null;
         }
@@ -279,6 +316,12 @@ class Controller
             $userRole = $context['user_role'];
         } else {
             $this->addAlert('Fehler!', 'Keine Berechtigung.', 'error');
+            if ($this->isJsonRequest()) {
+                http_response_code(403);
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'error' => 'Keine Berechtigung']);
+                exit;
+            }
             $this->redirect('/orchestras/select');
             return false;
         }
@@ -292,6 +335,12 @@ class Controller
         if ($userLevel < $requiredLevel) {
             $this->addAlert('Fehler!', 'Sie haben nicht die erforderliche Berechtigung für diese Aktion.', 'error');
             
+            if ($this->isJsonRequest()) {
+                http_response_code(403);
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'error' => 'Nicht ausreichend berechtigt']);
+                exit;
+            }
             // Redirect based on current role
             if (isset($_SESSION['current_orchestra_id'])) {
                 if ($userRole === 'conductor') {

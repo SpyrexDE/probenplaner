@@ -577,6 +577,9 @@ class UserController extends Controller
         // Check if user is authorized (either conductor or group leader)
         $this->requireRole('leader'); // This allows both leader and conductor
         
+        // Always return JSON for this endpoint
+        header('Content-Type: application/json');
+
         // Check if username parameter exists
         if (!isset($_GET['username'])) {
             http_response_code(400);
@@ -620,6 +623,9 @@ class UserController extends Controller
         // Check if user is authorized (either conductor or group leader)
         $this->requireRole('leader'); // This allows both leader and conductor
         
+        // Always return JSON for this endpoint
+        header('Content-Type: application/json');
+
         // Check if username parameter exists
         if (!isset($_GET['username'])) {
             http_response_code(400);
@@ -702,6 +708,9 @@ class UserController extends Controller
         // Check if user is authorized (either conductor or group leader)
         $this->requireRole('leader'); // This allows both leader and conductor
         
+        // Always return JSON for this endpoint
+        header('Content-Type: application/json');
+
         // Check if username parameter exists
         if (!isset($_GET['username'])) {
             http_response_code(400);

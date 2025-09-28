@@ -7,14 +7,14 @@
                 <h5 class="text-xl font-bold mb-0">Orchester löschen</h5>
             </div>
             <div class="p-6">
-                    <form action="/orchestras/delete" method="post">
+                    <form action="/<?= $_SESSION['current_orchestra_id'] ?>/orchestras/delete" method="post">
                         <input type="hidden" name="confirm_delete" value="yes">
                         
                         <div class="space-y-3">
                             <button type="submit" class="btn-base btn-danger w-full" onclick="return confirmDelete(event)">
                                 <i class=" -alt mr-2"><?= icon('trash', 'text-white') ?></i>Ja, Orchester unwiderruflich löschen
                             </button>
-                            <a href="/orchestras/settings" class="btn-base btn-outline w-full text-center block">Abbrechen</a>
+                            <a href="/<?= $_SESSION['current_orchestra_id'] ?>/orchestras/settings" class="btn-base btn-outline w-full text-center block">Abbrechen</a>
                         </div>
                     </form>
                 </div>

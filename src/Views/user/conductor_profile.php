@@ -371,7 +371,7 @@ $(document).ready(function(){
                 });
                 
                 // Redirect to deletion endpoint
-                window.location.href = "/profile/delete";
+                window.location.href = "/<?= $_SESSION['current_orchestra_id'] ?>/profile/delete";
             }
         });
     });
@@ -467,6 +467,25 @@ $(document).ready(function(){
                 $('.theme-selection-compact').removeClass('theme-switching');
             }
         });
+    }
+    
+    // Function to apply theme to current page
+    function applyThemeToPage(themeKey) {
+        // Find the current theme link and update it
+        const currentThemeLink = $('link[data-theme]');
+        if (currentThemeLink.length > 0) {
+            const newThemeHref = `/assets/css/themes/theme-${themeKey}.css`;
+            currentThemeLink.attr('href', newThemeHref);
+            currentThemeLink.attr('data-theme', themeKey);
+        }
+        
+        // Update body data attribute
+        $('body').attr('data-current-theme', themeKey);
+        
+        // Store in session storage for consistency
+        if (typeof(Storage) !== 'undefined') {
+            sessionStorage.setItem('current-theme', themeKey);
+        }
     }
 });
 </script> 

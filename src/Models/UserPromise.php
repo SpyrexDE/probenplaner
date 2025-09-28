@@ -46,11 +46,13 @@ class UserPromise extends Model
      */
     public function getByRehearsal(int $rehearsalId): array
     {
-        $sql = "SELECT up.*, u.username, u.type
+        $sql = "SELECT up.*, u.username, uo.type
                 FROM {$this->table} up
                 JOIN users u ON up.user_id = u.id
-                WHERE up.rehearsal_id = ?
-                ORDER BY u.type, u.username";
+                JOIN user_orchestras uo ON u.id = uo.user_id
+                JOIN rehearsals r ON up.rehearsal_id = r.id
+                WHERE up.rehearsal_id = ? AND uo.orchestra_id = r.orchestra_id AND uo.is_active = 1
+                ORDER BY uo.type, u.username";
         
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param('i', $rehearsalId);

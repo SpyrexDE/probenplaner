@@ -259,8 +259,19 @@ function loadPastRehearsals(offset = 0) {
     
     const requestUrl = currentPath + '?' + urlParams.toString();
     
-    fetch(requestUrl)
-        .then(response => response.json())
+    fetch(requestUrl, { headers: { 'Accept': 'application/json' } })
+        .then(async (response) => {
+            const contentType = response.headers.get('content-type') || '';
+            const text = await response.text().catch(() => '');
+            const isJson = contentType.includes('application/json');
+            const parseJson = () => { try { return JSON.parse(text); } catch (e) { return null; } };
+            if (!response.ok) {
+                const data = isJson ? parseJson() : null;
+                const message = (data && (data.message || data.error)) || text || `HTTP ${response.status}`;
+                throw new Error(message);
+            }
+            return isJson ? (parseJson() || { success: false }) : { success: false };
+        })
         .then(data => {
             if (data.success) {
                 if (offset === 0) {

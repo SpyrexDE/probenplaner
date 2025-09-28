@@ -31,19 +31,30 @@ use App\Core\Constants;
   width: 40px;
   height: 40px;
   border-radius: var(--radius-base);
-  /* border: 2px solid var(--color-border); → form-border-2 utility */
+  border: 2px solid var(--color-border);
   cursor: pointer;
-  /* transition: all var(--transition-base); → form-transition utility */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   background: none;
   padding: 0;
   outline: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .compact-color-option:hover {
-  transform: scale(1.1);
-  box-shadow: var(--shadow-md);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1;
+  border-color: var(--color-primary-300);
+}
+
+.compact-color-option:hover:not(.selected) {
+  border-width: 3px;
+}
+
+.compact-color-option:active {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
 }
 
 .compact-color-option:focus {
@@ -52,8 +63,10 @@ use App\Core\Constants;
 }
 
 .compact-color-option.selected {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary-100);
+  border: 3px solid var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-100), 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: scale(1.05);
+  z-index: 2;
 }
 
 .compact-color-option.selected::after {
@@ -66,16 +79,17 @@ use App\Core\Constants;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
-  animation: checkmark-bounce 0.3s ease-out;
+  animation: checkmark-bounce 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  transition: opacity 0.2s ease;
 }
 
 @keyframes checkmark-bounce {
   0% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.5);
+    transform: translate(-50%, -50%) scale(0.3);
   }
   50% {
-    transform: translate(-50%, -50%) scale(1.2);
+    transform: translate(-50%, -50%) scale(1.3);
   }
   100% {
     opacity: 1;
@@ -151,7 +165,7 @@ use App\Core\Constants;
         <?php foreach (Constants::getRehearsalColors() as $colorValue => $colorName): ?>
             <button 
                 type="button" 
-                class="compact-color-option color-<?= str_replace('#', '', $colorValue) ?> <?= ($selectedColor ?? Constants::COLOR_WHITE) === $colorValue ? 'selected' : '' ?> form-border-2 form-transition" 
+                class="compact-color-option color-<?= str_replace('#', '', $colorValue) ?> <?= ($selectedColor ?? Constants::COLOR_WHITE) === $colorValue ? 'selected' : '' ?>" 
                 data-color="<?= htmlspecialchars($colorValue) ?>"
                 data-color-name="<?= htmlspecialchars($colorName) ?>"
                 title="<?= htmlspecialchars($colorName) ?>"

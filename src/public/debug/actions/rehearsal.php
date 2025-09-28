@@ -53,7 +53,7 @@ $orchestra = $orchestraResult->fetch_assoc();
 $stmt->close();
 
 // Get users in the orchestra
-$stmt = $conn->prepare("SELECT id, type FROM users WHERE orchestra_id = ? AND role = 'member'");
+$stmt = $conn->prepare("SELECT u.id, uo.type FROM users u INNER JOIN user_orchestras uo ON u.id = uo.user_id WHERE uo.orchestra_id = ? AND uo.role = 'member' AND uo.is_active = TRUE");
 $stmt->bind_param('i', $orchestraId);
 $stmt->execute();
 $usersResult = $stmt->get_result();

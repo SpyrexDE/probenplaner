@@ -31,7 +31,7 @@ include __DIR__ . '/../components/modern-checkbox.php';
             </div>
             
             <div class="modern-card-body">
-                <form action="/orchestras/update" method="post" class="space-y-6">
+                <form action="/<?= $_SESSION['current_orchestra_id'] ?>/orchestras/update" method="post" class="space-y-6">
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
                     <!-- Basic Information -->
                     <div class="form-section">
@@ -401,7 +401,7 @@ function confirmDelete(event) {
                     
                     // Redirect to deletion endpoint
                     setTimeout(() => {
-                        window.location.href = '/orchestras/delete-confirm';
+                        window.location.href = '/<?= $_SESSION['current_orchestra_id'] ?>/orchestras/delete-confirm';
                     }, 1000);
                 }
             });

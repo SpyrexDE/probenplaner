@@ -6,7 +6,7 @@
         <?php 
             $title = 'Keine Termine gefunden';
             $message = 'Lege einen neuen Termin an, um hier Proben zu sehen.';
-            $actionHref = '/rehearsals/create';
+            $actionHref = '/' . $_SESSION['current_orchestra_id'] . '/rehearsals/create';
             $actionLabel = 'Termin hinzufügen';
             include __DIR__ . '/../components/empty-state.php';
         ?>
@@ -63,7 +63,7 @@
     <?php 
     // FAB for adding new rehearsal
     $icon = 'plus';
-    $href = '/rehearsals/create';
+    $href = '/' . $_SESSION['current_orchestra_id'] . '/rehearsals/create';
     $title = 'Neue Probe hinzufügen';
     include __DIR__ . '/../components/fab.php';
     ?>
@@ -90,10 +90,22 @@ document.addEventListener('click', function(event) {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
+                        'Accept': 'application/json'
                     },
                     body: 'id=' + id
                 })
-                .then(response => response.json())
+                .then(async (response) => {
+                    const contentType = response.headers.get('content-type') || '';
+                    const text = await response.text().catch(() => '');
+                    const isJson = contentType.includes('application/json');
+                    const parseJson = () => { try { return JSON.parse(text); } catch (e) { return null; } };
+                    if (!response.ok) {
+                        const data = isJson ? parseJson() : null;
+                        const message = (data && (data.message || data.error)) || text || `HTTP ${response.status}`;
+                        throw new Error(message);
+                    }
+                    return isJson ? (parseJson() || { success: false }) : { success: false };
+                })
                 .then(data => {
                     if (data.success) {
                         if (window.notifySuccess) {
@@ -130,7 +142,7 @@ document.addEventListener('click', function(event) {
     if (event.target.closest('.edit-btn')) {
         const editBtn = event.target.closest('.edit-btn');
         const buttonId = editBtn.id;
-        window.location.href = '/rehearsals/edit/' + buttonId;
+        window.location.href = '/<?= $_SESSION['current_orchestra_id'] ?>/rehearsals/edit/' + buttonId;
     }
 });
 </script> 
