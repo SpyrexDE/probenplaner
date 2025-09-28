@@ -85,6 +85,56 @@ include __DIR__ . '/form-input.php';
     margin-top: var(--space-2);
     font-size: var(--font-size-xs);
 }
+
+/* Login Divider */
+.login-divider {
+    text-align: center;
+    margin: var(--space-6) 0 var(--space-4) 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.login-divider::before {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--color-border);
+}
+
+.login-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--color-border);
+}
+
+.login-divider span {
+    padding: 0 var(--space-4);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    white-space: nowrap;
+}
+
+/* JMD Login Button Styling */
+.jmd-login-section {
+    margin-bottom: var(--space-4);
+}
+
+.jmd-login-btn {
+    width: 100%;
+    justify-content: flex-start;
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-3);
+}
+
+.jmd-logo {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
 </style>
 
 <?php
@@ -135,6 +185,21 @@ $registerUrl = $registerUrl ?? '/register';
         <button class="login-button" type="submit">
             <?= htmlspecialchars($submitText) ?>
         </button>
+
+        <?php if (defined('KEYCLOAK_ENABLED') && KEYCLOAK_ENABLED): ?>
+        <!-- Divider -->
+        <div class="login-divider">
+            <span>oder</span>
+        </div>
+        
+        <!-- JMD Login Button -->
+        <div class="jmd-login-section">
+            <a href="/auth/keycloak/login" class="btn-modern btn-secondary jmd-login-btn">
+                <img src="/assets/img/Logo.png" alt="JMD" class="jmd-logo">
+                Mit JMD Account einloggen
+            </a>
+        </div>
+        <?php endif; ?>
 
         <?php if ($registerUrl): ?>
         <div class="auth-links">

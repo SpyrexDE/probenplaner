@@ -464,4 +464,87 @@ class User extends Model
     {
         return parent::delete($userId);
     }
+
+    /**
+     * Find user by Keycloak ID
+     * 
+     * @param string $keycloakId
+     * @return array|null
+     */
+    public function findByKeycloakId(string $keycloakId): ?array
+    {
+        $sql = "SELECT * FROM {$this->table} WHERE keycloak_id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param('s', $keycloakId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $user = $result ? $result->fetch_assoc() : null;
+        $stmt->close();
+        return $user;
+    }
+
+    /**
+     * Find user by email
+     * 
+     * @param string $email
+     * @return array|null
+     */
+    public function findByEmail(string $email): ?array
+    {
+        $sql = "SELECT * FROM {$this->table} WHERE email = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param('s', $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $user = $result ? $result->fetch_assoc() : null;
+        $stmt->close();
+        return $user;
+    }
+
+    /**
+     * Create or link Keycloak user
+     * 
+     * @param array $keycloakUserInfo User info from Keycloak
+     * @return array User data or error array
+     */
+    public function createOrLinkKeycloakUser(array $keycloakUserInfo): array
+    {
+        $keycloakId = $keycloakUserInfo['sub'] ?? null;
+        $email = $keycloakUserInfo['email'] ?? null;
+        $username = $keycloakUserInfo['preferred_username'] ?? $email;
+        
+        if (!$keycloakId) {
+            return ['error' => true, 'message' => 'Keycloak ID fehlt'];
+        }
+        
+        // Check if user already exists by Keycloak ID
+        $existingUser = $this->findByKeycloakId($keycloakId);
+        if ($existingUser) {
+            return $existingUser;
+        }
+        
+        // Check if user exists by email/username
+        $existingUser = $this->findByEmail($email) ?: $this->findByUsername($username);
+        if ($existingUser) {
+            // Link existing account to Keycloak
+            $this->update($existingUser['id'], [
+                'keycloak_id' => $keycloakId,
+                'email' => $email,
+                'auth_provider' => 'keycloak'
+            ]);
+            return $existingUser;
+        }
+        
+        // Create new user
+        $userData = [
+            'username' => $username,
+            'keycloak_id' => $keycloakId,
+            'email' => $email,
+            'auth_provider' => 'keycloak',
+            'password' => null // No password for Keycloak users
+        ];
+        
+        $userId = $this->insert($userData);
+        return $userId ? $this->findById($userId) : ['error' => true, 'message' => 'Benutzer konnte nicht erstellt werden'];
+    }
 } 

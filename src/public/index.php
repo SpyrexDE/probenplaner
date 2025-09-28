@@ -89,6 +89,11 @@ $router->addRoute('/register', 'AuthController', 'showRegisterForm', 'GET');
 $router->addRoute('/register', 'AuthController', 'register', 'POST');
 $router->addRoute('/logout', 'AuthController', 'logout');
 
+// Keycloak authentication routes
+$router->addRoute('/auth/keycloak/login', 'AuthController', 'keycloakLogin');
+$router->addRoute('/auth/keycloak/callback', 'AuthController', 'keycloakCallback');
+$router->addRoute('/auth/keycloak/token', 'AuthController', 'keycloakTokenLogin', 'POST');
+
 // Orchestra selection routes (no orchestra context)
 $router->addRoute('/orchestras/select', 'OrchestraSelectionController', 'select');
 $router->addRoute('/orchestras/set-current', 'OrchestraSelectionController', 'setCurrentOrchestra', 'POST');

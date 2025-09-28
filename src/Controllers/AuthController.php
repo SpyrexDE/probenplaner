@@ -40,6 +40,13 @@ class AuthController extends Controller
      */
     public function login()
     {
+        // Check for JMD access token first (for mobile app integration)
+        $jmdToken = $_GET['jmd_accesstoken'] ?? $_POST['jmd_accesstoken'] ?? null;
+        if ($jmdToken && KEYCLOAK_ENABLED) {
+            $this->processJmdTokenLogin($jmdToken);
+            return;
+        }
+
         // If already logged in, redirect to orchestra selection or main app
         if ($this->isLoggedIn()) {
             // Check if user has selected an orchestra
@@ -339,6 +346,168 @@ class AuthController extends Controller
         setcookie("password", "", $cookieOptions);
         
         $this->redirect('/login');
+    }
+
+    /**
+     * Initiate Keycloak login
+     * 
+     * @return void
+     */
+    public function keycloakLogin()
+    {
+        if (!KEYCLOAK_ENABLED) {
+            $this->addAlert('Fehler!', 'Keycloak-Anmeldung ist nicht verfügbar.', 'error');
+            $this->redirect('/login');
+            return;
+        }
+        
+        $keycloakAuth = new \App\Core\KeycloakAuth();
+        $authUrl = $keycloakAuth->getAuthUrl();
+        
+        // Debug logging
+        error_log("Keycloak auth URL: " . $authUrl);
+        error_log("Keycloak config - Client ID: " . KEYCLOAK_CLIENT_ID . ", Redirect URI: " . KEYCLOAK_REDIRECT_URI);
+        
+        $this->redirect($authUrl);
+    }
+
+    /**
+     * Handle Keycloak callback
+     * 
+     * @return void
+     */
+    public function keycloakCallback()
+    {
+        if (!KEYCLOAK_ENABLED) {
+            $this->addAlert('Fehler!', 'Keycloak-Anmeldung ist nicht verfügbar.', 'error');
+            $this->redirect('/login');
+            return;
+        }
+        
+        $code = $_GET['code'] ?? null;
+        $state = $_GET['state'] ?? null;
+        
+        // Debug logging
+        error_log("Keycloak callback received. Code: " . ($code ? 'present' : 'missing') . ", State: " . ($state ? 'present' : 'missing'));
+        error_log("GET parameters: " . json_encode($_GET));
+        
+        // Validate state parameter
+        if (!$state || !isset($_SESSION['keycloak_state']) || $state !== $_SESSION['keycloak_state']) {
+            $this->addAlert('Sicherheitsfehler!', 'Ungültiger State-Parameter.', 'error');
+            $this->redirect('/login');
+            return;
+        }
+        
+        if (!$code) {
+            $this->addAlert('Fehler!', 'Autorisierungscode fehlt.', 'error');
+            $this->redirect('/login');
+            return;
+        }
+        
+        $keycloakAuth = new \App\Core\KeycloakAuth();
+        
+        // Exchange code for token
+        $tokenData = $keycloakAuth->exchangeCodeForToken($code);
+        if (!$tokenData || !isset($tokenData['access_token'])) {
+            error_log("Keycloak token exchange failed. Code: $code, Token data: " . json_encode($tokenData));
+            $this->addAlert('Fehler!', 'Token-Austausch fehlgeschlagen.', 'error');
+            $this->redirect('/login');
+            return;
+        }
+        
+        // Get user info
+        $userInfo = $keycloakAuth->getUserInfo($tokenData['access_token']);
+        if (!$userInfo) {
+            $this->addAlert('Fehler!', 'Benutzerinformationen konnten nicht abgerufen werden.', 'error');
+            $this->redirect('/login');
+            return;
+        }
+        
+        // Create or link user
+        $user = $this->userModel->createOrLinkKeycloakUser($userInfo);
+        if (isset($user['error'])) {
+            $this->addAlert('Fehler!', $user['message'], 'error');
+            $this->redirect('/login');
+            return;
+        }
+        
+        // Process successful login
+        $this->processSuccessfulLogin($user);
+    }
+
+    /**
+     * Handle Keycloak login with access token (for mobile app integration)
+     * 
+     * @return void
+     */
+    public function keycloakTokenLogin()
+    {
+        if (!KEYCLOAK_ENABLED) {
+            $this->addAlert('Fehler!', 'Keycloak-Anmeldung ist nicht verfügbar.', 'error');
+            $this->redirect('/login');
+            return;
+        }
+
+        $accessToken = $_POST['access_token'] ?? null;
+        
+        if (!$accessToken) {
+            $this->addAlert('Fehler!', 'Access Token fehlt.', 'error');
+            $this->redirect('/login');
+            return;
+        }
+
+        $keycloakAuth = new \App\Core\KeycloakAuth();
+        
+        // Process login with token
+        $userInfo = $keycloakAuth->loginWithToken($accessToken);
+        if (!$userInfo) {
+            $this->addAlert('Fehler!', 'Token-Validierung fehlgeschlagen.', 'error');
+            $this->redirect('/login');
+            return;
+        }
+        
+        // Create or link user
+        $user = $this->userModel->createOrLinkKeycloakUser($userInfo);
+        if (isset($user['error'])) {
+            $this->addAlert('Fehler!', $user['message'], 'error');
+            $this->redirect('/login');
+            return;
+        }
+        
+        // Process successful login
+        $this->processSuccessfulLogin($user);
+    }
+
+    /**
+     * Process JMD token login (for mobile app integration)
+     * 
+     * @param string $jmdToken JMD access token
+     * @return void
+     */
+    private function processJmdTokenLogin(string $jmdToken)
+    {
+        error_log("JMD token login attempt with token: " . substr($jmdToken, 0, 20) . "...");
+        
+        $keycloakAuth = new \App\Core\KeycloakAuth();
+        
+        // Process login with token
+        $userInfo = $keycloakAuth->loginWithToken($jmdToken);
+        if (!$userInfo) {
+            $this->setFlash('error', 'JMD Token ist ungültig oder abgelaufen. Bitte melden Sie sich erneut an.');
+            $this->redirect('/login');
+            return;
+        }
+        
+        // Create or link user
+        $user = $this->userModel->createOrLinkKeycloakUser($userInfo);
+        if (isset($user['error'])) {
+            $this->setFlash('error', 'Fehler beim Erstellen des Benutzerkontos: ' . $user['message']);
+            $this->redirect('/login');
+            return;
+        }
+        
+        // Process successful login
+        $this->processSuccessfulLogin($user);
     }
     
 } 

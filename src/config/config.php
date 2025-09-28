@@ -66,4 +66,12 @@ define('DEBUG_LOG_PASSWORDS', false); // Should always be false
 // Application Limits
 define('MAX_REHEARSALS_PER_PAGE', 50);
 define('MAX_USERS_PER_ORCHESTRA', 200);
-define('MAX_ORCHESTRA_NAME_LENGTH', 100); 
+define('MAX_ORCHESTRA_NAME_LENGTH', 100);
+
+// Keycloak Configuration
+define('KEYCLOAK_ENABLED', getenv('KEYCLOAK_ENABLED') ?: true);
+define('KEYCLOAK_BASE_URL', 'https://auth.digil.me');
+define('KEYCLOAK_REALM', 'jmd');
+define('KEYCLOAK_CLIENT_ID', 'starthere-appclient-prod');
+define('KEYCLOAK_CLIENT_SECRET', getenv('KEYCLOAK_CLIENT_SECRET'));
+define('KEYCLOAK_REDIRECT_URI', getenv('KEYCLOAK_REDIRECT_URI') ?: 'http://localhost:8080/*'); 
