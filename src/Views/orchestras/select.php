@@ -120,6 +120,13 @@ include __DIR__ . '/../components/user-badge.php';
 </style>
 
 <div class="login-container">
+    <div class="admin-verify-back">
+        <a href="/logout" class="back-link">
+            <i class="fas fa-sign-out-alt"></i>
+            Abmelden
+        </a>
+    </div>
+    
     <div class="login-form">
         <div class="login-logo">
             <img src="/assets/img/Logo.png" alt="Logo"/>
@@ -140,11 +147,17 @@ include __DIR__ . '/../components/user-badge.php';
                                         <?= htmlspecialchars($orchestra['orchestra_name']) ?>
                                     </h3>
                                     <div class="orchestra-meta">
+                                        <?php 
+                                        // Get display info using centralized utility
+                                        $displayInfo = \App\Core\Utilities::getUserDisplayInfo($orchestra['type'], $orchestra['role']);
+                                        ?>
+                                        <?php if ($displayInfo['type']): ?>
                                         <span>
-                                            <?php 
-                                            // Format instrument/type like in sidebar - replace underscores with spaces
-                                            echo htmlspecialchars(str_replace('_', ' ', $orchestra['type']));
-                                            ?>
+                                            <?= htmlspecialchars($displayInfo['type']) ?>
+                                        </span>
+                                        <?php endif; ?>
+                                        <span>
+                                            <?= htmlspecialchars($displayInfo['role']) ?>
                                         </span>
                                         <?php 
                                         // Add role badges next to the section/type, like username badges in sidebar
@@ -152,8 +165,6 @@ include __DIR__ . '/../components/user-badge.php';
                                             'role' => $orchestra['role'],
                                             'is_small_group' => false // This will be handled in new system
                                         ];
-                                        // Debug: show what we're getting
-                                        //echo " [DEBUG: role=" . htmlspecialchars($orchestra['role']) . "] ";
                                         $badges = \App\Core\Utilities::generateUserBadges($userData);
                                         echo $badges;
                                         ?>
@@ -193,8 +204,8 @@ include __DIR__ . '/../components/user-badge.php';
         <?php endif; ?>
         
         <div class="auth-links">
-            <a href="/logout" class="auth-link">
-                Abmelden
+            <a href="/orchestras/create" class="auth-link auth-link-secondary">
+                Neues Orchester erstellen
             </a>
         </div>
     </div>

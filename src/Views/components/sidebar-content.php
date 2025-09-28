@@ -30,8 +30,18 @@
                     $orchestra = substr($orchestra, 0, 9) . '...';
                 }
                 $parts[] = '<span class="orchestra">' . $orchestra . '</span>';
-                if (isset($_SESSION['current_type'])) {
-                    $parts[] = str_replace('_', ' ', $_SESSION['current_type']);
+                
+                // Get display info using centralized utility
+                $displayInfo = \App\Core\Utilities::getUserDisplayInfo(
+                    $_SESSION['current_type'] ?? '', 
+                    $_SESSION['current_role'] ?? ''
+                );
+                
+                if ($displayInfo['type']) {
+                    $parts[] = $displayInfo['type'];
+                }
+                if ($displayInfo['role']) {
+                    $parts[] = $displayInfo['role'];
                 }
                 echo implode(' · ', $parts);
                 ?>

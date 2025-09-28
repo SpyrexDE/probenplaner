@@ -25,7 +25,7 @@ include __DIR__ . '/../components/form-input.php';
         </div>
 
         <h2 class="verify-title">Neues Orchester erstellen</h2>
-        <p class="verify-subtitle">Konfiguration und Dirigenten-Account</p>
+        <p class="verify-subtitle">Orchester-Konfiguration</p>
         
         <!-- Orchestra Settings Section -->
         <div style="margin: var(--space-6) 0; padding: var(--space-4); background: var(--color-bg-secondary); border-radius: var(--radius-lg); border-left: 4px solid var(--color-primary);">
@@ -62,38 +62,13 @@ include __DIR__ . '/../components/form-input.php';
             <div class="form-text" style="margin-bottom: 0;">Für Stimmführer-Berechtigungen bei der Registrierung</div>
         </div>
         
-        <!-- Conductor Account Section -->  
-        <div style="margin: var(--space-6) 0; padding: var(--space-4); background: var(--color-bg-secondary); border-radius: var(--radius-lg); border-left: 4px solid var(--color-secondary);">
-            <h3 style="margin: 0 0 var(--space-3) 0; font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); color: var(--color-text-primary); display: flex; align-items: center; gap: var(--space-2);">
-                <i class="fas fa-user-tie" style="color: var(--color-secondary);"></i>
-                Dirigenten-Account
-            </h3>
-            
-            <input type="text" 
-                   class="login-input" 
-                   name="conductor_username" 
-                   placeholder="Benutzername (Dirigent)" 
-                   value="<?= isset($formData['conductor_username']) ? htmlspecialchars($formData['conductor_username']) : '' ?>" 
-                   style="margin-bottom: var(--space-1);"
-                   required>
-            <div class="form-text" style="margin-bottom: var(--space-4);">Eindeutiger Benutzername für Administrator</div>
-            
-            <input type="password" 
-                   class="login-input" 
-                   name="conductor_password" 
-                   placeholder="Passwort (Dirigent)" 
-                   style="margin-bottom: var(--space-1);"
-                   required>
-            <div class="form-text" style="margin-bottom: 0;">Starkes Passwort für den Administrator-Zugang</div>
-        </div>
-        
         <button type="submit" class="login-button">
             <i class="fas fa-plus-circle" style="margin-right: var(--space-2);"></i>
             Orchester erstellen
         </button>
         
         <div class="form-text" style="margin-top: var(--space-3); text-align: center;">
-            Sie erhalten sofort Zugang zu allen Administrationsfunktionen
+            Das Orchester wird erstellt und Sie können sich dann als Dirigent registrieren
         </div>
     </form>
     <?php else: ?>

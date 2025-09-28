@@ -26,11 +26,6 @@ class Utilities
             $badges[] = '<span class="user-badge" title="Stimmführer"><i class="fas fa-crown"></i></span>';
         }
         
-        // Add crown badge for conductors (Dirigent)
-        if (isset($user['role']) && $user['role'] === 'conductor') {
-            $badges[] = '<span class="user-badge" title="Dirigent"><i class="fas fa-crown"></i></span>';
-        }
-        
         // Add small group badge for small group members using modern system
         if (\App\Core\RehearsalTypeManager::isUserInSmallGroup($user)) {
             $badges[] = '<span class="user-badge" title="' . \App\Core\RehearsalTypeManager::LABEL_KLEINGRUPPE . '"><i class="fas fa-user-friends"></i></span>';
@@ -55,6 +50,41 @@ class Utilities
         $badges = self::generateUserBadges($user);
         
         return $username . $badges;
+    }
+    
+    /**
+     * Get display text for user type/role combination
+     * Handles the case where conductors have type='conductor' (same as role)
+     * 
+     * @param string $type User type (instrument/section)
+     * @param string $role User role (conductor, leader, member)
+     * @return array Array with 'type' and 'role' display strings
+     */
+    public static function getUserDisplayInfo(string $type, string $role): array
+    {
+        $result = [
+            'type' => null,
+            'role' => self::getRoleDisplayName($role)
+        ];
+        
+        // For conductors, skip showing type since they don't have a section
+        if ($type !== 'conductor' && $type !== 'none') {
+            $result['type'] = str_replace('_', ' ', $type);
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * Get German display name for a role
+     * 
+     * @param string $role Role key (conductor, leader, member)
+     * @return string German display name
+     */
+    public static function getRoleDisplayName(string $role): string
+    {
+        $roleTranslations = \App\Core\Constants::getUserRoles();
+        return $roleTranslations[$role] ?? $role;
     }
     
     /**

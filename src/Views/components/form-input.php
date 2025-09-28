@@ -439,8 +439,8 @@
 .auth-links {
     text-align: center;
     border-top: 1px solid var(--color-gray-200);
-    padding-top: var(--space-4);
-    margin-top: var(--space-2);
+    padding-top: var(--space-2);
+    margin-top: var(--space-4);
     position: relative;
     z-index: 2;
 }

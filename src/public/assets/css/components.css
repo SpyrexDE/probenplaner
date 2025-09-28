@@ -101,7 +101,6 @@
 
 .auth-link-secondary {
   display: block;
-  margin-top: var(--space-2);
   font-size: var(--font-size-xs);
   color: var(--color-gray-500);
 }
@@ -588,3 +587,16 @@
 
 /* NOTE: PWA install card styles moved to /Views/components/pwa-install-card.php */
 /* NOTE: Theme selection component styles moved to /Views/components/theme-selector.php */
+
+/* === ANALYTICS CARD STYLING === */
+.analytics-card {
+    position: relative;
+    background: var(--color-white);
+    border-radius: var(--radius-xl);
+    padding: 0;
+    box-shadow: var(--shadow-lg);
+    border: none;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    min-height: 280px;
+}

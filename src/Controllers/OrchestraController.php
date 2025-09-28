@@ -5,6 +5,7 @@ use App\Core\Controller;
 use App\Core\Validator;
 use App\Models\Orchestra;
 use App\Models\User;
+use App\Models\UserOrchestra;
 
 /**
  * Orchestra Controller
@@ -23,6 +24,11 @@ class OrchestraController extends Controller
     private $userModel;
     
     /**
+     * @var UserOrchestra
+     */
+    private $userOrchestraModel;
+    
+    /**
      * Constructor
      */
     public function __construct()
@@ -30,6 +36,7 @@ class OrchestraController extends Controller
         parent::__construct();
         $this->orchestraModel = new Orchestra();
         $this->userModel = new User();
+        $this->userOrchestraModel = new UserOrchestra();
     }
     
     /**
@@ -39,6 +46,12 @@ class OrchestraController extends Controller
      */
     public function create()
     {
+        // Must be logged in to create orchestra
+        if (!$this->isLoggedIn()) {
+            $this->redirect('/login');
+            return;
+        }
+        
         // Check if we have form data from a failed validation - this means admin was already verified
         $formData = [];
         $adminVerified = false;
@@ -93,6 +106,12 @@ class OrchestraController extends Controller
      */
     public function store()
     {
+        // Must be logged in to create orchestra
+        if (!$this->isLoggedIn()) {
+            $this->redirect('/login');
+            return;
+        }
+        
         // CSRF protection
         try {
             $this->protectCSRF();
@@ -123,34 +142,26 @@ class OrchestraController extends Controller
         $name = Validator::sanitizeUtf8($_POST['name'] ?? '');
         $token = Validator::sanitizeUtf8($_POST['token'] ?? '');
         $leaderPassword = Validator::sanitizeUtf8($_POST['leader_password'] ?? '');
-        $conductorUsername = Validator::sanitizeUtf8($_POST['conductor_username'] ?? '');
-        $conductorPassword = $_POST['conductor_password'] ?? '';
         
         // Store form data for repopulation on validation failure
         $formData = [
             'name' => $name,
             'token' => $token,
             'leader_password' => $leaderPassword,
-            'conductor_username' => $conductorUsername,
-            // Don't store password for security reasons
         ];
         
         // Log input
-        error_log("Orchestra creation attempt - Name: $name, Token: $token, ConductorUser: $conductorUsername");
+        error_log("Orchestra creation attempt - Name: $name, Token: $token");
         
         // Validate required fields
         $requiredValidation = Validator::validateRequired([
             'name' => $name,
             'token' => $token,
-            'leader_password' => $leaderPassword,
-            'conductor_username' => $conductorUsername,
-            'conductor_password' => $conductorPassword
-        ], ['name', 'token', 'leader_password', 'conductor_username', 'conductor_password']);
+            'leader_password' => $leaderPassword
+        ], ['name', 'token', 'leader_password']);
         
         // Validate individual fields
         $tokenValidation = Validator::validateToken($token);
-        $usernameValidation = Validator::validateUsername($conductorUsername);
-        $passwordValidation = Validator::validatePassword($conductorPassword);
         
         // Check for duplicate token
         $tokenErrors = [];
@@ -162,8 +173,6 @@ class OrchestraController extends Controller
         $validation = Validator::mergeResults([
             $requiredValidation,
             $tokenValidation,
-            $usernameValidation,
-            $passwordValidation,
             ['valid' => empty($tokenErrors), 'errors' => $tokenErrors]
         ]);
         
@@ -192,40 +201,32 @@ class OrchestraController extends Controller
                 throw new \Exception("Fehler beim Erstellen des Orchesters.");
             }
             
-            // Create conductor
-            $userResult = $this->userModel->register(
-                $conductorUsername, 
-                $conductorPassword,
-                'Dirigent', 
-                $orchestraId,
-                'conductor'
-            );
+            // Automatically join the creator as conductor
+            $joinResult = $this->userOrchestraModel->joinOrchestra($_SESSION['user_id'], $orchestraId, 'none', 'conductor');
             
-            if (is_array($userResult) && isset($userResult['error'])) {
-                // Handle error from user creation
+            if (is_array($joinResult) && isset($joinResult['error'])) {
+                // Handle error from joining orchestra
                 // Rollback by deleting the orchestra
                 $this->orchestraModel->delete($orchestraId);
                 
                 // Store form data in session to repopulate the form
                 $_SESSION['orchestra_form_data'] = $formData;
                 
-                $this->addAlert('Fehler!', $userResult['message'], 'error', $userResult['details'] ?? '');
+                $this->addAlert('Fehler!', $joinResult['message'], 'error');
                 $this->redirect('/orchestras/create');
                 return;
             }
             
-            $conductorId = $userResult;
-            
             // Update orchestra with the conductor ID
-            $this->orchestraModel->update($orchestraId, ['conductor_id' => $conductorId]);
+            $this->orchestraModel->update($orchestraId, ['conductor_id' => $_SESSION['user_id']]);
             
             // Clear any stored form data on success
             if (isset($_SESSION['orchestra_form_data'])) {
                 unset($_SESSION['orchestra_form_data']);
             }
             
-            $this->setFlash('success', 'Das Orchester wurde erfolgreich erstellt.');
-            $this->redirect('/login');
+            $this->setFlash('success', 'Das Orchester wurde erfolgreich erstellt. Sie sind automatisch als Dirigent beigetreten.');
+            $this->redirect('/orchestras/select');
             
         } catch (\Exception $e) {
             error_log("Exception during orchestra creation: " . $e->getMessage());
