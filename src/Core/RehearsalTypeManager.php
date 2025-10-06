@@ -35,10 +35,39 @@ class RehearsalTypeManager
     
     /**
      * Check if a user is in a small group
+     * 
+     * @param array $user User data array
+     * @param int|null $orchestraId Orchestra ID (optional, uses session if not provided)
+     * @return bool
      */
-    public static function isUserInSmallGroup(array $user): bool
+    public static function isUserInSmallGroup(array $user, ?int $orchestraId = null): bool
     {
-        return isset($user['is_small_group']) && 
+        // Resolve orchestra context if not provided
+        if ($orchestraId === null) {
+            $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
+        }
+
+        // If we have an orchestra context, try relation-based lookup first
+        if ($orchestraId) {
+            // Prefer explicit user id, otherwise try session
+            $userId = isset($user['id']) ? (int)$user['id'] : (int)($_SESSION['user_id'] ?? 0);
+
+            if ($userId > 0) {
+                $userOrchestraModel = new \App\Models\UserOrchestra();
+                return $userOrchestraModel->isUserInSmallGroup($userId, (int)$orchestraId);
+            }
+
+            // No reliable user id available, fall back to provided flag if present
+            if (isset($user['is_small_group'])) {
+                return (int)$user['is_small_group'] === self::SMALL_GROUP_ENABLED;
+            }
+
+            // Conservative default
+            return false;
+        }
+
+        // No orchestra context: fall back to provided flag for backward compatibility
+        return isset($user['is_small_group']) &&
                (int)$user['is_small_group'] === self::SMALL_GROUP_ENABLED;
     }
     

@@ -54,8 +54,15 @@ class UserController extends Controller
         if (isset($_SESSION['current_role'])) {
             $user['role'] = $_SESSION['current_role'];
         }
-        // TODO: Handle is_small_group in new multi-orchestra system
-        $user['is_small_group'] = false;
+        
+        // Get small group status from user_orchestras table
+        $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
+        if ($orchestraId) {
+            $userOrchestraModel = new \App\Models\UserOrchestra();
+            $user['is_small_group'] = $userOrchestraModel->isUserInSmallGroup((int)$user['id'], (int)$orchestraId);
+        } else {
+            $user['is_small_group'] = false;
+        }
         
         // Handle form submission
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -326,7 +333,12 @@ class UserController extends Controller
                     $relationChangesMade = true;
                 }
             }
-            // small_group: not stored in users; skip until relation supports it
+            
+            // Process small group status
+            $smallGroupUpdated = $userOrchestraModel->updateUserSmallGroupStatus((int)$user['id'], (int)$orchestraId, $smallGroup);
+            if ($smallGroupUpdated) {
+                $relationChangesMade = true;
+            }
         }
         
         // Process group leader status

@@ -53,8 +53,16 @@ class ApiController extends Controller
             foreach ($rehearsals as $rehearsal) {
                 // Check if user is relevant for this rehearsal using modern system
                 $groups = $this->rehearsalModel->getGroupsAsAssoc($rehearsal['id']);
-                $user = ['is_small_group' => false]; // TODO: Handle small group logic in new multi-orchestra system
-                $isSmallGroup = \App\Core\RehearsalTypeManager::isUserInSmallGroup($user);
+                
+                // Get small group status from user_orchestras table
+                $isSmallGroup = false;
+                $userId = $_SESSION['user_id'] ?? null;
+                $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
+                if ($userId && $orchestraId) {
+                    $userOrchestraModel = new \App\Models\UserOrchestra();
+                    $isSmallGroup = $userOrchestraModel->isUserInSmallGroup((int)$userId, (int)$orchestraId);
+                }
+                $user = ['is_small_group' => $isSmallGroup];
                 $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal);
                 
                 if ($this->rehearsalModel->isUserInRehearsalGroup($_SESSION['current_type'] ?? '', $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {

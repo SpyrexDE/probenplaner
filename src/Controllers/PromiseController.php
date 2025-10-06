@@ -62,8 +62,16 @@ class PromiseController extends Controller
         
         // Get rehearsals for the user's type using modern system
         $userType = $_SESSION['current_type'];
-        $user = ['is_small_group' => false]; // TODO: Handle small group logic in new multi-orchestra system
-        $isSmallGroup = \App\Core\RehearsalTypeManager::isUserInSmallGroup($user);
+        
+        // Get small group status from user_orchestras table
+        $isSmallGroup = false;
+        $userId = $_SESSION['user_id'] ?? null;
+        $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
+        if ($userId && $orchestraId) {
+            $userOrchestraModel = new \App\Models\UserOrchestra();
+            $isSmallGroup = $userOrchestraModel->isUserInSmallGroup((int)$userId, (int)$orchestraId);
+        }
+        $user = ['is_small_group' => $isSmallGroup];
         $rehearsals = $this->rehearsalModel->getForUser($userType, $_SESSION['current_orchestra_id'], $showOld, $isSmallGroup);
         
         // Get user's promises from the user_promises table
@@ -118,9 +126,15 @@ class PromiseController extends Controller
         // Clean up section name for database queries
         $sectionName = str_replace(' ', '_', $userType);
         
-        // Get rehearsals for the section using modern system
-        $user = ['is_small_group' => false]; // TODO: Handle small group logic in new multi-orchestra system
-        $isSmallGroup = \App\Core\RehearsalTypeManager::isUserInSmallGroup($user);
+        // Get small group status from user_orchestras table
+        $isSmallGroup = false;
+        $userId = $_SESSION['user_id'] ?? null;
+        $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
+        if ($userId && $orchestraId) {
+            $userOrchestraModel = new \App\Models\UserOrchestra();
+            $isSmallGroup = $userOrchestraModel->isUserInSmallGroup((int)$userId, (int)$orchestraId);
+        }
+        $user = ['is_small_group' => $isSmallGroup];
         $rehearsals = $this->rehearsalModel->getForUser($sectionName, $_SESSION['current_orchestra_id'], $showOld, $isSmallGroup);
         
         // Get orchestra to check settings (leaders can view all sections?)
@@ -624,8 +638,16 @@ class PromiseController extends Controller
         
         // Get user info
         $userType = $_SESSION['current_type'];
-        $user = ['is_small_group' => false]; // TODO: Handle small group logic in new multi-orchestra system
-        $isSmallGroup = \App\Core\RehearsalTypeManager::isUserInSmallGroup($user);
+        
+        // Get small group status from user_orchestras table
+        $isSmallGroup = false;
+        $userId = $_SESSION['user_id'] ?? null;
+        $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
+        if ($userId && $orchestraId) {
+            $userOrchestraModel = new \App\Models\UserOrchestra();
+            $isSmallGroup = $userOrchestraModel->isUserInSmallGroup((int)$userId, (int)$orchestraId);
+        }
+        $user = ['is_small_group' => $isSmallGroup];
         
         // Get past rehearsals with limit and offset
         $allPastRehearsals = $this->rehearsalModel->getForUser($userType, $_SESSION['current_orchestra_id'], true, $isSmallGroup);

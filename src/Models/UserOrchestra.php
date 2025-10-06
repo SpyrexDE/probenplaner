@@ -233,6 +233,42 @@ class UserOrchestra extends Model
     }
     
     /**
+     * Update user small group status in orchestra
+     * 
+     * @param int $userId
+     * @param int $orchestraId
+     * @param bool $isSmallGroup Whether user is in small group
+     * @return bool Success or failure
+     */
+    public function updateUserSmallGroupStatus(int $userId, int $orchestraId, bool $isSmallGroup): bool
+    {
+        $relation = $this->getUserOrchestraRelation($userId, $orchestraId, true);
+        
+        if (!$relation) {
+            return false;
+        }
+        
+        return $this->update($relation['id'], [
+            'is_small_group' => $isSmallGroup ? 1 : 0,
+            'updated_at' => date('Y-m-d H:i:s')
+        ]);
+    }
+    
+    /**
+     * Check if user is in small group for orchestra
+     * 
+     * @param int $userId
+     * @param int $orchestraId
+     * @return bool
+     */
+    public function isUserInSmallGroup(int $userId, int $orchestraId): bool
+    {
+        $relation = $this->getUserOrchestraRelation($userId, $orchestraId, true);
+        
+        return $relation && (int)$relation['is_small_group'] === 1;
+    }
+    
+    /**
      * Check if user has specific role in orchestra
      * 
      * @param int $userId

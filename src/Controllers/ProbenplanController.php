@@ -47,7 +47,15 @@ class ProbenplanController extends Controller
             // Get only rehearsals relevant to the user
             $userType = $_SESSION['current_type'] ?? '';
             $userGroups = $_SESSION['groups'] ?? []; // TODO: Handle groups in new multi-orchestra system
-            $isSmallGroup = false; // TODO: Handle small group logic in new multi-orchestra system
+            
+            // Get small group status from user_orchestras table
+            $isSmallGroup = false;
+            $userId = $_SESSION['user_id'] ?? null;
+            $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
+            if ($userId && $orchestraId) {
+                $userOrchestraModel = new \App\Models\UserOrchestra();
+                $isSmallGroup = $userOrchestraModel->isUserInSmallGroup((int)$userId, (int)$orchestraId);
+            }
             
             $rehearsals = $this->rehearsalModel->getRelevantForUser(
                 $_SESSION['current_orchestra_id'],

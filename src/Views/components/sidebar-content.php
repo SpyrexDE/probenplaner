@@ -15,9 +15,18 @@
             <div class="sidebar-name">
                 <?= $_SESSION['username'] ?? 'User' ?>
                 <?php 
+                // Get small group status from user_orchestras table
+                $isSmallGroup = false;
+                $userId = $_SESSION['user_id'] ?? null;
+                $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
+                if ($userId && $orchestraId) {
+                    $userOrchestraModel = new \App\Models\UserOrchestra();
+                    $isSmallGroup = $userOrchestraModel->isUserInSmallGroup((int)$userId, (int)$orchestraId);
+                }
+                
                 $userData = [
                     'role' => $_SESSION['current_role'] ?? 'member',
-                    'is_small_group' => false // TODO: Handle this in new multi-orchestra system
+                    'is_small_group' => $isSmallGroup
                 ];
                 echo \App\Core\Utilities::generateUserBadges($userData);
                 ?>
