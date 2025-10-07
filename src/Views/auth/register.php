@@ -53,9 +53,6 @@ include __DIR__ . '/../components/form-input.php';
             <a href="/login" class="auth-link">
                 Bereits registriert? <span class="auth-link-primary">Einloggen</span>
             </a>
-            <a href="/orchestras/create" class="auth-link auth-link-secondary">
-                Neues Orchester erstellen
-            </a>
         </div>
     </form>
 </div>
