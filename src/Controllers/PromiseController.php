@@ -240,9 +240,12 @@ class PromiseController extends Controller
                 $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal);
                 
                 foreach ($members as $member) {
-                    $isSmallGroup = isset($member['is_small_group']) && $member['is_small_group'];
+                    // Get small-group membership from user_orchestras relation
+                    $isSmallGroup = isset($member['is_small_group']) && (int)$member['is_small_group'] === 1;
+                    
                     if ($this->rehearsalModel->isUserInRehearsalGroup($member['type'], $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
-                        $userPromises = $this->userModel->getPromises($member['id']);
+                        // Use user_id from the user_orchestras relation
+                        $userPromises = $this->userModel->getPromises((int)$member['user_id']);
                         $found = false;
                         $status = 'no_response';
                         $note = '';
@@ -285,7 +288,8 @@ class PromiseController extends Controller
                             'status' => $status,
                             'note' => $note,
                             'role' => $member['role'] ?? null,
-                            'is_small_group' => $member['is_small_group'] ?? false
+                            'is_small_group' => $isSmallGroup ? \App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED : \App\Core\RehearsalTypeManager::SMALL_GROUP_DISABLED,
+                            'id' => $member['user_id'] // Use 'id' not 'user_id' for badge lookup
                         ];
                         
                         $membersBySection[$rehearsalId]['all'][] = $memberInfo;
@@ -572,9 +576,12 @@ class PromiseController extends Controller
                     continue;
                 }
                 
-                $isSmallGroup = isset($user['is_small_group']) && $user['is_small_group'];
+                // Get small-group membership from user_orchestras relation
+                $isSmallGroup = isset($user['is_small_group']) && (int)$user['is_small_group'] === 1;
+                
                 if ($this->rehearsalModel->isUserInRehearsalGroup($user['type'], $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
-                    $userPromises = $this->userModel->getPromises($user['id']);
+                    // Use users.id (available as user_id in relation row)
+                    $userPromises = $this->userModel->getPromises((int)$user['user_id']);
                     $found = false;
                     $status = 'no_response';
                     $note = '';
@@ -598,7 +605,8 @@ class PromiseController extends Controller
                         'status' => $status,
                         'note' => $note,
                         'role' => $user['role'] ?? null,
-                        'is_small_group' => $user['is_small_group'] ?? false
+                        'is_small_group' => $isSmallGroup ? \App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED : \App\Core\RehearsalTypeManager::SMALL_GROUP_DISABLED,
+                        'id' => $user['user_id'] // Use 'id' not 'user_id' for badge lookup
                     ];
                     
                     $membersBySection[$rehearsalId]['all'][] = $memberInfo;

@@ -151,8 +151,8 @@ class User extends Model
             
             if ($result === false) {
                 $mysqli = $this->db->getConnection();
-                $errorCode = $mysqli->errno;
-                $errorMsg = $mysqli->error;
+                $errorCode = $mysqli ? $mysqli->errno : 0;
+                $errorMsg = $mysqli ? $mysqli->error : 'Unknown database error';
                 
                 return [
                     'error' => true,
@@ -222,6 +222,7 @@ class User extends Model
             
             if ($result === false) {
                 $error = $this->db->getLastError();
+                $error = is_string($error) ? $error : '';
                 error_log("User profile update failed - Database error: " . $error);
                 
                 // Check for specific error types
