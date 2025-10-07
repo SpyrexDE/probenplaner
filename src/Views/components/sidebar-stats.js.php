@@ -107,7 +107,19 @@ document.addEventListener('DOMContentLoaded', function() {
           setStatsLoadingState(true);
       }
       
-      // Use the proper API endpoint instead of scraping HTML
+      // Use statistics passed from the view instead of making API call
+      <?php 
+      $sidebarStats = $sidebarStats ?? null;
+      ?>
+      
+      <?php if ($sidebarStats !== null): ?>
+      // We have statistics passed from the view, use them directly
+      const stats = <?= json_encode($sidebarStats) ?>;
+      
+      // Update the sidebar with the passed statistics and rehearsal info
+      updateStatsDisplay(stats);
+      <?php else: ?>
+      // No statistics passed, make API call as fallback
       <?php $orchestraId = $_SESSION['current_orchestra_id'] ?? 1; ?>
       fetch('/<?= $orchestraId ?>/api/user-stats', {
           method: 'GET',
@@ -155,6 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
               setStatsLoadingState(false);
           }
       });
+      <?php endif; ?>
   }
    
    // Function to set loading state for stats

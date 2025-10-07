@@ -52,7 +52,8 @@ class RehearsalTypeManager
             // Prefer explicit user id, otherwise try session
             $userId = isset($user['id']) ? (int)$user['id'] : (int)($_SESSION['user_id'] ?? 0);
 
-            if ($userId > 0) {
+            if ($userId > 0 && isset($user['id'])) {
+                // Only do database lookup if we have a valid user ID from the user array
                 $userOrchestraModel = new \App\Models\UserOrchestra();
                 return $userOrchestraModel->isUserInSmallGroup($userId, (int)$orchestraId);
             }

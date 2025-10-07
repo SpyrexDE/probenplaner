@@ -134,16 +134,12 @@ class UserPromise extends Model
                 ];
                 
                 if ($promise) {
-                    if ($promise['status'] === 'yes') {
+                    if ($promise['attending']) {
                         $userStat['status'] = 'attending';
                         $stats['attending']++;
-                    } elseif ($promise['status'] === 'no') {
+                    } else {
                         $userStat['status'] = 'not_attending';
                         $stats['not_attending']++;
-                    } else {
-                        // 'maybe' or any other status counts as no response
-                        $userStat['status'] = 'no_response';
-                        $stats['no_response']++;
                     }
                     
                     $userStat['note'] = $promise['note'] ?? '';

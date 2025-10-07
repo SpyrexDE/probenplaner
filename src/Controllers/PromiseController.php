@@ -630,7 +630,20 @@ class PromiseController extends Controller
             'stats' => $stats,
             'membersBySection' => $membersBySection,
             'showOld' => $showOld,
-            'showRehearsalInsights' => $showRehearsalInsights
+            'showRehearsalInsights' => $showRehearsalInsights,
+            'sidebarStats' => !empty($rehearsals) ? array_merge(
+                $stats[$rehearsals[0]['id']] ?? ['attending' => 0, 'not_attending' => 0, 'no_response' => 0],
+                [
+                    'next_rehearsal' => [
+                        'id' => $rehearsals[0]['id'],
+                        'date' => $rehearsals[0]['date'],
+                        'date_formatted' => $rehearsals[0]['date_formatted'] ?? date('d.m.Y', strtotime($rehearsals[0]['date'])),
+                        'type' => $rehearsals[0]['type'] ?? 'Probe',
+                        'location' => $rehearsals[0]['location'] ?? '',
+                        'is_small_group' => $rehearsals[0]['is_small_group'] ?? false
+                    ]
+                ]
+            ) : null
         ]);
     }
     

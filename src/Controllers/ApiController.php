@@ -132,6 +132,7 @@ class ApiController extends Controller
             // Get statistics for this rehearsal
             $stats = $this->userPromiseModel->getPromiseStats($nextRehearsal['id'], $orchestraId);
             
+            
             // Add rehearsal info to the response
             $stats['next_rehearsal'] = [
                 'id' => $nextRehearsal['id'],
