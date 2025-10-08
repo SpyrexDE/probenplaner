@@ -2,21 +2,21 @@
 
 <?php include __DIR__ . '/../components/promises-resources.php'; ?>
 
-<?php if (isset($memberPromises) && !empty($_SESSION['role']) && $_SESSION['role'] === 'leader'): ?>
-<div style="margin-bottom: var(--space-6); text-align: right;">
-    <div style="display: inline-flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--color-white); border-radius: var(--radius-lg); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);" title="<?php echo empty($leadersCanViewAllSections) ? 'Nicht verfügbar: vom Dirigenten deaktiviert' : ''; ?>">
-        <span style="font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); color: var(--color-text-secondary);">Alle Register anzeigen</span>
+<?php if (!empty($_SESSION['current_role']) && $_SESSION['current_role'] === 'leader'): ?>
+<div style="margin-bottom: 20px; text-align: right;">
+    <div style="display: inline-flex; align-items: center; gap: 12px; padding: 12px 16px; background: white; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1); <?php echo empty($leadersCanViewAllSections) ? 'opacity: 0.6;' : ''; ?>" title="<?php echo empty($leadersCanViewAllSections) ? 'Nicht verfügbar: vom Dirigenten deaktiviert' : ''; ?>">
+        <span style="font-size: 14px; font-weight: 500; color: <?php echo empty($leadersCanViewAllSections) ? '#999' : '#666'; ?>;">Alle Register anzeigen</span>
         <label style="position: relative; display: inline-block; width: 50px; height: 24px;">
             <input type="checkbox" id="viewToggle" <?php echo empty($leadersCanViewAllSections) ? 'disabled' : ''; ?> 
                    <?php echo ($currentlyViewingAll ?? false) ? 'checked' : ''; ?>
-                   style="opacity: 0; width: 0; height: 0;" />
-            <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--color-gray-300); border-radius: 24px; transition: .3s;"></span>
-            <span style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: .3s;"></span>
+                   style="opacity: 0; width: 0; height: 0; position: absolute;" />
+            <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; border-radius: 24px; transition: .3s;"></span>
+            <span class="toggle-dot" style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: .3s;"></span>
         </label>
     </div>
     <?php if (empty($leadersCanViewAllSections)): ?>
-    <div style="margin-top: var(--space-2); text-align: right;">
-        <span style="font-size: var(--font-size-xs); color: var(--color-text-muted); background: var(--color-gray-100); padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); display: inline-block;">
+    <div style="margin-top: 8px; text-align: right;">
+        <span style="font-size: 12px; color: #999; background: #f5f5f5; padding: 4px 8px; border-radius: 4px; display: inline-block;">
             Vom Dirigenten deaktiviert
         </span>
     </div>
@@ -36,42 +36,28 @@ include __DIR__ . '/../components/promises-dashboard-wrapper.php';
 document.addEventListener('DOMContentLoaded', function() {
     const toggle = document.getElementById('viewToggle');
     if (toggle) {
-        toggle.addEventListener('change', function() {
-            const slider = this.nextElementSibling;
-            const dot = slider.nextElementSibling;
-            
-            // Update URL parameter and reload page
-            const url = new URL(window.location);
-            if (this.checked) {
-                // Show all sections
-                url.searchParams.set('viewAll', '1');
-                slider.style.backgroundColor = 'var(--color-primary)';
-                dot.style.transform = 'translateX(26px)';
-            } else {
-                // Show only own section
-                url.searchParams.delete('viewAll');
-                slider.style.backgroundColor = 'var(--color-gray-300)';
-                dot.style.transform = 'translateX(0px)';
-            }
-            
-            // Reload page with new parameter
-            window.location.href = url.toString();
-        });
+        // Initialize the view toggle functionality from promises-shared.js
+        initializeViewToggle();
         
-        // Initialize toggle state based on current view mode
-        const currentlyViewingAll = <?= json_encode($currentlyViewingAll ?? false) ?>;
+        // Update slider styling based on toggle state
         const slider = toggle.nextElementSibling;
         const dot = slider.nextElementSibling;
         
-        if (currentlyViewingAll) {
-            slider.style.backgroundColor = 'var(--color-primary)';
+        if (toggle.disabled) {
+            // Disabled state: gray out and show as disabled
+            slider.style.backgroundColor = '#e0e0e0';
+            slider.style.cursor = 'not-allowed';
+            slider.style.opacity = '0.6';
+            dot.style.opacity = '0.6';
+        } else if (toggle.checked) {
+            slider.style.backgroundColor = '#007bff';
             dot.style.transform = 'translateX(26px)';
         } else {
-            slider.style.backgroundColor = 'var(--color-gray-300)';
+            slider.style.backgroundColor = '#ccc';
             dot.style.transform = 'translateX(0px)';
         }
         
-        console.log('Leader view initialized - Currently viewing all:', currentlyViewingAll);
+        console.log('Leader view initialized - Toggle checked:', toggle.checked, 'Disabled:', toggle.disabled);
     }
 });
 </script>

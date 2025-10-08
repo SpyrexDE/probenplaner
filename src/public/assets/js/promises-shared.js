@@ -337,31 +337,36 @@ function initializeViewToggle() {
         });
         
         updateLabels(showSectional);
-        
-        // Store preference in localStorage
-        localStorage.setItem('leaderViewMode', showSectional ? 'sectional' : 'simple');
     }
     
-    // Load saved preference
-    const savedMode = localStorage.getItem('leaderViewMode');
-    if (savedMode === 'sectional') {
+    // Check URL parameter to determine initial state (takes precedence over localStorage)
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewAllParam = urlParams.get('viewAll');
+    
+    if (viewAllParam === '1') {
+        // URL says show all sections
         viewToggle.checked = true;
         toggleViews(true);
     } else {
+        // URL says show only own section (or no parameter)
+        viewToggle.checked = false;
+        toggleViews(false);
         updateLabels(false);
     }
     
     // Handle toggle change
     viewToggle.addEventListener('change', function() {
-        toggleViews(this.checked);
-        
-        // Add smooth transition effect
-        const container = document.querySelector('.container-fluid');
-        if (container) {
-            container.style.opacity = '0.7';
-            setTimeout(() => {
-                container.style.opacity = '1';
-            }, 200);
+        // Update URL parameter and reload page
+        const url = new URL(window.location);
+        if (this.checked) {
+            // Show all sections
+            url.searchParams.set('viewAll', '1');
+        } else {
+            // Show only own section
+            url.searchParams.delete('viewAll');
         }
+        
+        // Reload page with new parameter
+        window.location.href = url.toString();
     });
 }
