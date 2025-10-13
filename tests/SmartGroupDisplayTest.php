@@ -83,6 +83,27 @@ class SmartGroupDisplayTest
         $allExceptPercussion = ["Violine_1", "Violine_2", "Bratsche", "Cello", "Kontrabass", 
                                "Flöte", "Oboe", "Klarinette", "Fagott", "Horn", "Trompete", "Posaune", "Tuba"];
         $this->runTest("Tutti ohne Schlagwerk", $allExceptPercussion, "Tutti ohne Schlagwerk");
+        
+        // Test case: Exception labels at the end (user-reported issue)
+        // Flöte, Schlagwerk, Andere + most strings (missing Cello)
+        // Should show: "Flöte, Schlagwerk, Andere und Streicher ohne Cello"
+        // NOT: "Streicher ohne Cello, Flöte, Schlagwerk und Andere"
+        $this->runTest("Exception labels at end", ["Violine_1", "Violine_2", "Bratsche", "Kontrabass", "Flöte", "Schlagwerk", "Andere"], "Flöte, Schlagwerk, Andere und Streicher ohne Cello");
+        
+        // Test case: Subgroup compression should still work
+        // Tutti without all brass instruments should compress to "Tutti ohne Blechbläser"
+        // NOT: "Tutti ohne Horn, Trompete, Posaune und Tuba"
+        $allExceptBrass = ["Violine_1", "Violine_2", "Bratsche", "Cello", "Kontrabass", 
+                          "Flöte", "Oboe", "Klarinette", "Fagott", "Schlagwerk"];
+        $this->runTest("Subgroup compression", $allExceptBrass, "Tutti ohne Blechbläser");
+        
+        // Test case: Complex case with redundant selections (user-reported)
+        // Input: Streicher + individual strings + Flöte + Fagott + Percussion + Other
+        // Should compress to: "Tutti ohne Oboe, Klarinette und Blechbläser"
+        // NOT: "Holzbläser ohne Oboe und Klarinette und Tutti ohne Bläser"
+        $complexCase = ["Streicher", "Violine_1", "Violine_2", "Bratsche", "Cello", "Kontrabass", 
+                       "Flöte", "Fagott", "Schlagwerk", "Andere"];
+        $this->runTest("Complex redundant case", $complexCase, "Tutti ohne Oboe, Klarinette und Blechbläser");
     }
     
     private function testComplexCombinations(): void
