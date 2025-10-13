@@ -35,8 +35,8 @@
                 <?php 
                 $parts = [];
                 $orchestra = isset($_SESSION['current_orchestra_name']) ? $_SESSION['current_orchestra_name'] : APP_NAME;
-                if (strlen($orchestra) > 12) {
-                    $orchestra = substr($orchestra, 0, 9) . '...';
+                if (strlen($orchestra) > 22) {
+                    $orchestra = substr($orchestra, 0, 19) . '...';
                 }
                 $parts[] = '<span class="orchestra">' . $orchestra . '</span>';
                 
