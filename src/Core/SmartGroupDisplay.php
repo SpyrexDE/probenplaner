@@ -123,7 +123,7 @@ class SmartGroupDisplay
         
         // Check if most of the root is selected (high coverage)
         $coverage = count($selectedInstruments) / count($rootInstruments);
-        if ($coverage < 0.6) { // Lowered threshold to 60% - be more permissive for root exclusions
+        if ($coverage < 0.5) {
             return null;
         }
         
