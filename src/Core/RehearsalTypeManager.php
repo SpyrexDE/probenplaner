@@ -77,15 +77,15 @@ class RehearsalTypeManager
      */
     public static function getRehearsalType(array $rehearsal): string
     {
-        return $rehearsal['type'] ?? self::TYPE_PROBE;
+        return $rehearsal['type'] ?? '';
     }
     
     /**
-     * Check if rehearsal type should be displayed (not default "Probe")
+     * Check if rehearsal type should be displayed (not default "Probe" or empty)
      */
     public static function shouldDisplayType(string $type): bool
     {
-        return $type !== self::TYPE_PROBE;
+        return !empty($type) && $type !== self::TYPE_PROBE;
     }
     
     /**

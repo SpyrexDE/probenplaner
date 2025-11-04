@@ -125,7 +125,7 @@ class RehearsalController extends Controller
                 // Save rehearsal
                 $rehearsalData = [
                     'date' => $date,
-                    'type' => !empty($rehearsalType) ? $rehearsalType : 'Probe',
+                    'type' => $rehearsalType,
                     'start_time' => $start_time,
                     'end_time' => $end_time,
                     'location' => $location,
@@ -273,7 +273,7 @@ class RehearsalController extends Controller
                 // Update rehearsal
                 $updateData = [
                     'date' => $date,
-                    'type' => !empty($rehearsalType) ? $rehearsalType : 'Probe',
+                    'type' => $rehearsalType,
                     'start_time' => $start_time,
                     'end_time' => $end_time,
                     'location' => $location,
@@ -325,7 +325,7 @@ class RehearsalController extends Controller
             }
             
             // Get rehearsal type from the new type field
-            $rehearsalType = $rehearsal['type'] ?? 'Probe';
+            $rehearsalType = $rehearsal['type'] ?? '';
             $groups = $rehearsal['groups'] ?? [];
             
             // Use the proper form data generation to handle tutti-with-exclusions

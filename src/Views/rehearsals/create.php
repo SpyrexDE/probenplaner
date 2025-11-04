@@ -49,28 +49,15 @@ include __DIR__ . '/../components/checkbox.php';
             </div>
 
             <div class="form-section">
-                <h3 class="form-section-title">Sondertermin (maximal eins)</h3>
-                <div class="checkbox-group">
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="Konzertreise" name="rehearsal_type" value="Konzertreise" <?= ($formData['rehearsal_type'] ?? '') === 'Konzertreise' ? 'checked' : '' ?>>
-                        <label for="Konzertreise">Konzertreise</label>
-                    </div>
-                    
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="Konzert" name="rehearsal_type" value="Konzert" <?= ($formData['rehearsal_type'] ?? '') === 'Konzert' ? 'checked' : '' ?>>
-                        <label for="Konzert">Konzert</label>
-                    </div>
-                    
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="Generalprobe" name="rehearsal_type" value="Generalprobe" <?= ($formData['rehearsal_type'] ?? '') === 'Generalprobe' ? 'checked' : '' ?>>
-                        <label for="Generalprobe">Generalprobe</label>
-                    </div>
-                    
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="Registerprobe" name="rehearsal_type" value="Registerprobe" <?= ($formData['rehearsal_type'] ?? '') === 'Registerprobe' ? 'checked' : '' ?>>
-                        <label for="Registerprobe">Registerprobe</label>
-                    </div>
-                </div>
+                <?php 
+                $name = 'rehearsal_type';
+                $id = 'rehearsal_type';
+                $label = 'Sondertermin';
+                $value = $formData['rehearsal_type'] ?? '';
+                $suggestions = ['Konzertreise', 'Konzert', 'Generalprobe', 'Registerprobe', 'Probenwochenende', 'Dozentenregisterprobe'];
+                $placeholder = 'Sondertermin eingeben oder auswählen';
+                include __DIR__ . '/../components/autocomplete-input.php'; 
+                ?>
             </div>
             
             <div class="form-section">
@@ -99,21 +86,6 @@ include __DIR__ . '/../components/checkbox.php';
 <script src="/assets/js/compact-color-picker.js"></script>
 <script>
 // Color picker functionality is now handled by compact-color-picker.js
-
-// Rehearsal type radio-like behavior (only one can be selected)
-document.querySelectorAll('input[name="rehearsal_type"]').forEach(function(checkbox) {
-    checkbox.addEventListener('change', function() {
-        const currentCheckbox = this;
-        if (this.checked) {
-            // Uncheck all other rehearsal type checkboxes
-            document.querySelectorAll('input[name="rehearsal_type"]').forEach(function(otherCheckbox) {
-                if (otherCheckbox !== currentCheckbox) {
-                    otherCheckbox.checked = false;
-                }
-            });
-        }
-    });
-});
 
 // Group selection is now handled by the dynamic-group-selector component
 </script> 
