@@ -356,4 +356,35 @@ class Controller
         
         return true;
     }
+    
+    /**
+     * Send a JSON success response and exit
+     * 
+     * @param array $data Additional data to include in the response
+     * @param int $statusCode HTTP status code (default: 200)
+     * @return void
+     */
+    protected function jsonSuccess(array $data = [], int $statusCode = 200): void
+    {
+        http_response_code($statusCode);
+        header('Content-Type: application/json');
+        echo json_encode(array_merge(['success' => true], $data));
+        exit;
+    }
+    
+    /**
+     * Send a JSON error response and exit
+     * 
+     * @param string $message Error message
+     * @param array $data Additional data to include in the response (e.g., 'details', 'errors')
+     * @param int $statusCode HTTP status code (default: 400)
+     * @return void
+     */
+    protected function jsonError(string $message, array $data = [], int $statusCode = 400): void
+    {
+        http_response_code($statusCode);
+        header('Content-Type: application/json');
+        echo json_encode(array_merge(['success' => false, 'message' => $message], $data));
+        exit;
+    }
 } 

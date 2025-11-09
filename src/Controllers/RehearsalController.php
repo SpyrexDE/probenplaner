@@ -309,8 +309,7 @@ class RehearsalController extends Controller
             $this->requireRole('conductor');
         } catch (\Exception $e) {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-                exit;
+                $this->jsonError('Unauthorized', [], 401);
             }
             $this->redirect('/login');
             return;
@@ -326,8 +325,7 @@ class RehearsalController extends Controller
         
         if ($rehearsalId <= 0) {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                echo json_encode(['success' => false, 'message' => 'Invalid rehearsal ID']);
-                exit;
+                $this->jsonError('Invalid rehearsal ID');
             }
             $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
             return;
@@ -338,14 +336,12 @@ class RehearsalController extends Controller
         
         if ($result) {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                echo json_encode(['success' => true]);
-                exit;
+                $this->jsonSuccess();
             }
             $this->setFlash('success', 'Rehearsal deleted successfully');
         } else {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                echo json_encode(['success' => false, 'message' => 'Failed to delete rehearsal']);
-                exit;
+                $this->jsonError('Failed to delete rehearsal', [], 500);
             }
             $this->setFlash('error', 'Failed to delete rehearsal');
         }
@@ -397,15 +393,12 @@ class RehearsalController extends Controller
         }
         
         // Return JSON response
-        header('Content-Type: application/json');
-        echo json_encode([
-            'success' => true,
+        $this->jsonSuccess([
             'html' => $html,
             'hasMore' => $hasMore,
             'total' => $totalPastRehearsals,
             'loaded' => $offset + count($paginatedRehearsals)
         ]);
-        exit;
     }
     
     /**

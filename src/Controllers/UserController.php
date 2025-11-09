@@ -507,36 +507,28 @@ class UserController extends Controller
         // Check if user is authorized (either conductor or group leader)
         $this->requireRole('leader'); // This allows both leader and conductor
         
-        // Always return JSON for this endpoint
-        header('Content-Type: application/json');
-
         // Check if username parameter exists
         if (!isset($_GET['username'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'No username provided']);
-            return;
+            $this->jsonError('No username provided');
         }
         
         $username = $_GET['username'];
         $user = $this->userModel->findByUsername($username);
         
         if (!$user) {
-            http_response_code(404);
-            echo json_encode(['error' => 'User not found']);
-            return;
+            $this->jsonError('User not found', [], 404);
         }
         
         // Check which operation is requested
         if (isset($_GET['getLastLogin'])) {
             // Return the last login time
             $lastLogin = $user['last_login'] ?? 'N/A';
-            echo json_encode(['last_login' => $lastLogin]);
-            return;
+            $this->jsonSuccess(['last_login' => $lastLogin]);
         }
         
         // Default behavior - return full user details excluding password
         unset($user['password']);
-        echo json_encode($user);
+        $this->jsonSuccess($user);
     }
     
     /**
@@ -553,23 +545,16 @@ class UserController extends Controller
         // Check if user is authorized (either conductor or group leader)
         $this->requireRole('leader'); // This allows both leader and conductor
         
-        // Always return JSON for this endpoint
-        header('Content-Type: application/json');
-
         // Check if username parameter exists
         if (!isset($_GET['username'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'No username provided']);
-            return;
+            $this->jsonError('No username provided');
         }
         
         $username = $_GET['username'];
         $user = $this->userModel->findByUsername($username);
         
         if (!$user) {
-            http_response_code(404);
-            echo json_encode(['error' => 'User not found']);
-            return;
+            $this->jsonError('User not found', [], 404);
         }
         
         // Generate a secure random password (min 8 chars, at least one upper and one lower)
@@ -577,15 +562,14 @@ class UserController extends Controller
         $result = $this->userModel->updateProfile($user['id'], ['password' => $newPassword]);
         
         if ($result === true) {
-            echo json_encode([
-                'success' => true,
+            $this->jsonSuccess([
                 'message' => "Das Passwort des Nutzers $username wurde zurückgesetzt: $newPassword"
             ]);
         } else {
-            http_response_code(500);
-            echo json_encode([
-                'error' => is_array($result) && isset($result['message']) ? $result['message'] : "Fehler beim Zurücksetzen des Passworts."
-            ]);
+            $errorMsg = is_array($result) && isset($result['message']) 
+                ? $result['message'] 
+                : "Fehler beim Zurücksetzen des Passworts.";
+            $this->jsonError($errorMsg, [], 500);
         }
     }
 
@@ -638,38 +622,27 @@ class UserController extends Controller
         // Check if user is authorized (either conductor or group leader)
         $this->requireRole('leader'); // This allows both leader and conductor
         
-        // Always return JSON for this endpoint
-        header('Content-Type: application/json');
-
         // Check if username parameter exists
         if (!isset($_GET['username'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'No username provided']);
-            return;
+            $this->jsonError('No username provided');
         }
         
         $username = $_GET['username'];
         $user = $this->userModel->findByUsername($username);
         
         if (!$user) {
-            http_response_code(404);
-            echo json_encode(['error' => 'User not found']);
-            return;
+            $this->jsonError('User not found', [], 404);
         }
         
         // Delete the user account
         $result = $this->userModel->delete($user['id']);
         
         if ($result) {
-            echo json_encode([
-                'success' => true,
+            $this->jsonSuccess([
                 'message' => "Der Nutzer $username wurde erfolgreich gelöscht."
             ]);
         } else {
-            http_response_code(500);
-            echo json_encode([
-                'error' => "Fehler beim Löschen des Accounts."
-            ]);
+            $this->jsonError("Fehler beim Löschen des Accounts.", [], 500);
         }
     }
     
@@ -680,47 +653,34 @@ class UserController extends Controller
      */
     public function switchTheme()
     {
-        // Set content type to JSON
-        header('Content-Type: application/json');
-        
         // Check if user is logged in
         if (!$this->isLoggedIn()) {
-            http_response_code(401);
-            echo json_encode(['success' => false, 'message' => 'Nicht authentifiziert']);
-            return;
+            $this->jsonError('Nicht authentifiziert', [], 401);
         }
         
         // Only allow POST requests
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['success' => false, 'message' => 'Methode nicht erlaubt']);
-            return;
+            $this->jsonError('Methode nicht erlaubt', [], 405);
         }
         
         try {
             // CSRF protection
             $this->protectCSRF();
         } catch (\Exception $e) {
-            http_response_code(403);
-            echo json_encode(['success' => false, 'message' => 'CSRF-Fehler: ' . $e->getMessage()]);
-            return;
+            $this->jsonError('CSRF-Fehler: ' . $e->getMessage(), [], 403);
         }
         
         // Get and validate theme
         $theme = Validator::sanitizeUtf8($_POST['theme'] ?? '');
         
         if (empty($theme)) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Kein Theme angegeben']);
-            return;
+            $this->jsonError('Kein Theme angegeben');
         }
         
         // Validate theme using ThemeManager
         $themeValidation = \App\Core\ThemeManager::validateThemePreference($theme);
         if (!$themeValidation['valid']) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'message' => implode(", ", $themeValidation['errors'])]);
-            return;
+            $this->jsonError(implode(", ", $themeValidation['errors']));
         }
         
         // Get current user
@@ -728,9 +688,7 @@ class UserController extends Controller
         $user = $this->userModel->findByUsername($username);
         
         if (!$user) {
-            http_response_code(404);
-            echo json_encode(['success' => false, 'message' => 'Benutzer nicht gefunden']);
-            return;
+            $this->jsonError('Benutzer nicht gefunden', [], 404);
         }
         
         // Update theme preference
@@ -741,8 +699,7 @@ class UserController extends Controller
             $_SESSION['theme'] = $theme;
             
             // Return success
-            echo json_encode([
-                'success' => true,
+            $this->jsonSuccess([
                 'theme' => $theme,
                 'message' => 'Theme erfolgreich gewechselt'
             ]);
@@ -753,8 +710,7 @@ class UserController extends Controller
                 $errorMessage = $result['message'];
             }
             
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => $errorMessage]);
+            $this->jsonError($errorMessage, [], 500);
         }
     }
     
