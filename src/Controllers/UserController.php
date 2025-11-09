@@ -146,8 +146,8 @@ class UserController extends Controller
             $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/conductor/profile');
             return;
         }
+        
         // Validate and sanitize input
-        $oldUsername = $user['username'];
         $newUsername = Validator::sanitizeUtf8($_POST['username'] ?? '');
         $currentPassword = $_POST['current_password'] ?? '';
         $newPassword = $_POST['new_password'] ?? '';
@@ -155,60 +155,19 @@ class UserController extends Controller
         
         $updateData = [];
         $usernameChanged = false;
+        $redirectPath = '/' . $_SESSION['current_orchestra_id'] . '/conductor/profile';
         
         // Process username changes if provided
-        if (!empty($newUsername) && $newUsername != $oldUsername) {
-            // Validate username using the model's validation method
-            $usernameValidation = $this->userModel->validateUserInput(
-                $newUsername,
-                null,
-                $user['id']
-            );
-            
-            if (!$usernameValidation['valid']) {
-                $this->addAlert('Fehler!', implode(", ", $usernameValidation['errors']), 'error');
-                $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/conductor/profile');
-                return;
-            }
-            
-            $updateData['username'] = $newUsername;
-            $usernameChanged = true;
+        $usernameResult = $this->validateAndUpdateUsername($user, $newUsername, $redirectPath);
+        if ($usernameResult !== null) {
+            $updateData['username'] = $usernameResult['username'];
+            $usernameChanged = $usernameResult['changed'];
         }
         
         // Process password changes if provided
-        if (!empty($newPassword)) {
-            $hasPassword = !empty($user['password']);
-            if ($hasPassword) {
-                if (empty($currentPassword)) {
-                    $this->addAlert('Fehler!', 'Bitte geben Sie Ihr aktuelles Passwort ein.', 'error');
-                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/conductor/profile');
-                    return;
-                }
-                
-                // Verify current password
-                if (!password_verify($currentPassword, $user['password'])) {
-                    $this->addAlert('Fehler!', 'Das aktuelle Passwort ist falsch.', 'error');
-                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/conductor/profile');
-                    return;
-                }
-            }
-            
-            // Validate password using the model's validation method
-            $passwordValidation = $this->userModel->validateUserInput(null, $newPassword);
-            if (!$passwordValidation['valid']) {
-                $this->addAlert('Fehler!', implode(", ", $passwordValidation['errors']), 'error');
-                $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/conductor/profile');
-                return;
-            }
-            
-            // Check passwords match
-            if ($newPassword !== $confirmPassword) {
-                $this->addAlert('Fehler!', 'Die neuen Passwörter stimmen nicht überein.', 'error');
-                $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/conductor/profile');
-                return;
-            }
-            
-            $updateData['password'] = $newPassword;
+        $validatedPassword = $this->validateAndUpdatePassword($user, $currentPassword, $newPassword, $confirmPassword, $redirectPath);
+        if ($validatedPassword !== null) {
+            $updateData['password'] = $validatedPassword;
         }
         
         // If no changes were made
@@ -252,8 +211,8 @@ class UserController extends Controller
             $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
             return;
         }
+        
         // Validate and sanitize input
-        $oldUsername = $user['username'];
         $newUsername = Validator::sanitizeUtf8($_POST['username'] ?? '');
         $currentPassword = $_POST['current_password'] ?? '';
         $newPassword = $_POST['new_password'] ?? '';
@@ -266,60 +225,19 @@ class UserController extends Controller
         $updateData = [];
         $relationChangesMade = false;
         $usernameChanged = false;
+        $redirectPath = '/' . $_SESSION['current_orchestra_id'] . '/profile';
         
         // Process username changes if provided
-        if (!empty($newUsername) && $newUsername != $oldUsername) {
-            // Validate username using the model's validation method
-            $usernameValidation = $this->userModel->validateUserInput(
-                $newUsername,
-                null,
-                $user['id']
-            );
-            
-            if (!$usernameValidation['valid']) {
-                $this->addAlert('Fehler!', implode(", ", $usernameValidation['errors']), 'error');
-                $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
-                return;
-            }
-            
-            $updateData['username'] = $newUsername;
-            $usernameChanged = true;
+        $usernameResult = $this->validateAndUpdateUsername($user, $newUsername, $redirectPath);
+        if ($usernameResult !== null) {
+            $updateData['username'] = $usernameResult['username'];
+            $usernameChanged = $usernameResult['changed'];
         }
         
         // Process password changes if provided
-        if (!empty($newPassword)) {
-            $hasPassword = !empty($user['password']);
-            if ($hasPassword) {
-                if (empty($currentPassword)) {
-                    $this->addAlert('Fehler!', 'Bitte geben Sie Ihr aktuelles Passwort ein.', 'error');
-                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
-                    return;
-                }
-                
-                // Verify current password
-                if (!password_verify($currentPassword, $user['password'])) {
-                    $this->addAlert('Fehler!', 'Das aktuelle Passwort ist falsch.', 'error');
-                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
-                    return;
-                }
-            }
-            
-            // Validate password using the model's validation method
-            $passwordValidation = $this->userModel->validateUserInput(null, $newPassword);
-            if (!$passwordValidation['valid']) {
-                $this->addAlert('Fehler!', implode(", ", $passwordValidation['errors']), 'error');
-                $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
-                return;
-            }
-            
-            // Check passwords match
-            if ($newPassword !== $confirmPassword) {
-                $this->addAlert('Fehler!', 'Die neuen Passwörter stimmen nicht überein.', 'error');
-                $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
-                return;
-            }
-            
-            $updateData['password'] = $newPassword;
+        $validatedPassword = $this->validateAndUpdatePassword($user, $currentPassword, $newPassword, $confirmPassword, $redirectPath);
+        if ($validatedPassword !== null) {
+            $updateData['password'] = $validatedPassword;
         }
         
         // Process group type changes in user_orchestras relation
@@ -838,5 +756,96 @@ class UserController extends Controller
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => $errorMessage]);
         }
+    }
+    
+    /**
+     * Validate and process username update
+     * 
+     * @param array $user Current user data
+     * @param string $newUsername New username to validate
+     * @param string $redirectPath Path to redirect on error
+     * @return array|null Returns associative array with 'username' and 'changed' keys if valid, 
+     *                    null if no change or redirects on error
+     */
+    private function validateAndUpdateUsername($user, $newUsername, $redirectPath)
+    {
+        $oldUsername = $user['username'];
+        
+        // Check if username actually changed
+        if (empty($newUsername) || $newUsername === $oldUsername) {
+            return null;
+        }
+        
+        // Validate username using the model's validation method
+        $usernameValidation = $this->userModel->validateUserInput(
+            $newUsername,
+            null,
+            $user['id']
+        );
+        
+        if (!$usernameValidation['valid']) {
+            $this->addAlert('Fehler!', implode(", ", $usernameValidation['errors']), 'error');
+            $this->redirect($redirectPath);
+            return null; // This line won't be reached due to redirect, but kept for clarity
+        }
+        
+        return [
+            'username' => $newUsername,
+            'changed' => true
+        ];
+    }
+    
+    /**
+     * Validate and process password update
+     * 
+     * @param array $user Current user data
+     * @param string $currentPassword Current password (for verification if user has password)
+     * @param string $newPassword New password to set
+     * @param string $confirmPassword Password confirmation
+     * @param string $redirectPath Path to redirect on error
+     * @return string|null Returns the validated new password if valid, null if no password change,
+     *                     or redirects on error
+     */
+    private function validateAndUpdatePassword($user, $currentPassword, $newPassword, $confirmPassword, $redirectPath)
+    {
+        // Check if password change was requested
+        if (empty($newPassword)) {
+            return null;
+        }
+        
+        $hasPassword = !empty($user['password']);
+        
+        // If user has an existing password, verify it
+        if ($hasPassword) {
+            if (empty($currentPassword)) {
+                $this->addAlert('Fehler!', 'Bitte geben Sie Ihr aktuelles Passwort ein.', 'error');
+                $this->redirect($redirectPath);
+                return null; // This line won't be reached due to redirect
+            }
+            
+            // Verify current password
+            if (!password_verify($currentPassword, $user['password'])) {
+                $this->addAlert('Fehler!', 'Das aktuelle Passwort ist falsch.', 'error');
+                $this->redirect($redirectPath);
+                return null; // This line won't be reached due to redirect
+            }
+        }
+        
+        // Validate password using the model's validation method
+        $passwordValidation = $this->userModel->validateUserInput(null, $newPassword);
+        if (!$passwordValidation['valid']) {
+            $this->addAlert('Fehler!', implode(", ", $passwordValidation['errors']), 'error');
+            $this->redirect($redirectPath);
+            return null; // This line won't be reached due to redirect
+        }
+        
+        // Check passwords match
+        if ($newPassword !== $confirmPassword) {
+            $this->addAlert('Fehler!', 'Die neuen Passwörter stimmen nicht überein.', 'error');
+            $this->redirect($redirectPath);
+            return null; // This line won't be reached due to redirect
+        }
+        
+        return $newPassword;
     }
 } 
