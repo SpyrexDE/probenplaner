@@ -74,4 +74,4 @@ define('KEYCLOAK_BASE_URL', 'https://auth.digil.me');
 define('KEYCLOAK_REALM', 'jmd');
 define('KEYCLOAK_CLIENT_ID', 'starthere-appclient-prod');
 define('KEYCLOAK_CLIENT_SECRET', getenv('KEYCLOAK_CLIENT_SECRET'));
-define('KEYCLOAK_REDIRECT_URI', getenv('KEYCLOAK_REDIRECT_URI') ?: 'http://localhost:8080/*'); 
+define('KEYCLOAK_REDIRECT_URI', getenv('KEYCLOAK_REDIRECT_URI') ?: 'http://localhost:8080'); 
