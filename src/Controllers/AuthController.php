@@ -148,12 +148,29 @@ class AuthController extends Controller
      */
     private function processSuccessfulLogin($user)
     {
-        // Regenerate session ID to prevent session fixation attacks
-        session_regenerate_id(true);
+        // Validate user data before proceeding
+        if (!$user || !isset($user['id']) || !isset($user['username'])) {
+            error_log("processSuccessfulLogin: Invalid user data: " . json_encode($user));
+            $this->addAlert('Fehler!', 'Benutzerdaten konnten nicht geladen werden.', 'error');
+            $this->redirect('/login');
+            return;
+        }
         
-        // Set basic session variables (no orchestra context yet)
+        // Set basic session variables first (before regenerating session ID)
+        // This ensures the data is in the session before we regenerate
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = $user['username'];
+        
+        // Regenerate session ID to prevent session fixation attacks
+        // This will copy the existing session data to the new session ID
+        session_regenerate_id(true);
+        
+        // Verify session data is set (should be copied by regenerate_id)
+        if (!isset($_SESSION['user_id']) || !isset($_SESSION['username'])) {
+            error_log("processSuccessfulLogin: Session data lost after regenerate_id. Re-setting...");
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['username'] = $user['username'];
+        }
         
         // Set secure cookies
         $cookieOptions = [
@@ -427,6 +444,14 @@ class AuthController extends Controller
         $user = $this->userModel->createOrLinkKeycloakUser($userInfo);
         if (isset($user['error'])) {
             $this->addAlert('Fehler!', $user['message'], 'error');
+            $this->redirect('/login');
+            return;
+        }
+        
+        // Additional validation: ensure user data is complete
+        if (!$user || !isset($user['id']) || !isset($user['username'])) {
+            error_log("keycloakCallback: Invalid user data after createOrLinkKeycloakUser: " . json_encode($user));
+            $this->addAlert('Fehler!', 'Benutzerdaten konnten nicht geladen werden.', 'error');
             $this->redirect('/login');
             return;
         }
