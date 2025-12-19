@@ -407,10 +407,13 @@ class AuthController extends Controller
         // Debug logging
         error_log("Keycloak callback received. Code: " . ($code ? 'present' : 'missing') . ", State: " . ($state ? 'present' : 'missing'));
         error_log("GET parameters: " . json_encode($_GET));
+        error_log("Session keycloak_state: " . (isset($_SESSION['keycloak_state']) ? $_SESSION['keycloak_state'] : 'NOT SET'));
+        error_log("Session ID: " . session_id());
         
         // Validate state parameter
         if (!$state || !isset($_SESSION['keycloak_state']) || $state !== $_SESSION['keycloak_state']) {
-            $this->addAlert('Sicherheitsfehler!', 'Ungültiger State-Parameter.', 'error');
+            error_log("Keycloak state validation failed. URL state: $state, Session state: " . ($_SESSION['keycloak_state'] ?? 'NOT SET'));
+            $this->addAlert('Sicherheitsfehler!', 'Ungültiger State-Parameter. Bitte versuchen Sie es erneut.', 'error');
             $this->redirect('/login');
             return;
         }
@@ -443,7 +446,8 @@ class AuthController extends Controller
         // Create or link user
         $user = $this->userModel->createOrLinkKeycloakUser($userInfo);
         if (isset($user['error'])) {
-            $this->addAlert('Fehler!', $user['message'], 'error');
+            error_log("keycloakCallback: createOrLinkKeycloakUser failed: " . json_encode($user));
+            $this->addAlert('Fehler!', $user['message'] ?? 'Benutzerkonto konnte nicht erstellt werden.', 'error');
             $this->redirect('/login');
             return;
         }
