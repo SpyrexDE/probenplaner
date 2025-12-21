@@ -129,6 +129,12 @@ return [
                 'display_name' => 'Schlagwerk',
                 'type' => 'section'
             ],
+            'harp' => [
+                'id' => 'Harfe',
+                'display_name' => 'Harfe',
+                'plural' => 'Harfen',
+                'type' => 'section'
+            ],
             'other' => [
                 'id' => 'Andere',
                 'display_name' => 'Andere',
