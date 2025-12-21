@@ -328,8 +328,6 @@ class User extends Model
         
         $promises = [];
         while ($row = $result->fetch_assoc()) {
-            // Convert status to attending boolean for backward compatibility
-            $row['attending'] = ($row['status'] === 'yes');
             $promises[] = $row;
         }
         

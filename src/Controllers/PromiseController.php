@@ -82,7 +82,7 @@ class PromiseController extends Controller
             $userPromises = $this->userModel->getPromises($user['id']);
             foreach ($userPromises as $promise) {
                 $promises[$promise['rehearsal_id']] = [
-                    'attending' => (bool)$promise['attending'],
+                    'attending' => ($promise['status'] === 'yes'),
                     'note' => $promise['note']
                 ];
             }
@@ -252,7 +252,7 @@ class PromiseController extends Controller
                         
                         foreach ($userPromises as $promise) {
                             if ($promise['rehearsal_id'] == $rehearsalId) {
-                                $status = $promise['attending'] ? 'attending' : 'not_attending';
+                                $status = ($promise['status'] === 'yes') ? 'attending' : 'not_attending';
                                 $note = $promise['note'];
                                 $found = true;
                                 break;
@@ -331,7 +331,7 @@ class PromiseController extends Controller
                     
                     foreach ($promises as $promise) {
                         if ($promise['rehearsal_id'] == $rehearsalId) {
-                            $category = $promise['attending'] ? 'attending' : 'not_attending';
+                            $category = ($promise['status'] === 'yes') ? 'attending' : 'not_attending';
                             $memberPromises[$rehearsalId][$category][] = [
                                 'username' => $member['username'],
                                 'type' => $member['type'],
@@ -493,7 +493,7 @@ class PromiseController extends Controller
         // Get current promise status from user_promises table
         $promiseModel = new UserPromise();
         $existingPromise = $promiseModel->findByUserAndRehearsal($user['id'], $rehearsalId);
-        $status = $existingPromise ? (bool)$existingPromise['attending'] : false;
+        $status = $existingPromise && isset($existingPromise['status']) ? ($existingPromise['status'] === 'yes') : false;
         
         // Update promise with note
         $result = $this->userModel->updatePromise($user['id'], $rehearsalId, $status, $note);
@@ -588,7 +588,7 @@ class PromiseController extends Controller
                     
                     foreach ($userPromises as $promise) {
                         if ($promise['rehearsal_id'] == $rehearsalId) {
-                            $status = $promise['attending'] ? 'attending' : 'not_attending';
+                            $status = ($promise['status'] === 'yes') ? 'attending' : 'not_attending';
                             $note = $promise['note'];
                             $found = true;
                             break;
@@ -695,7 +695,7 @@ class PromiseController extends Controller
             $userPromises = $this->userModel->getPromises($user['id']);
             foreach ($userPromises as $promise) {
                 $promises[$promise['rehearsal_id']] = [
-                    'attending' => (bool)$promise['attending'],
+                    'attending' => ($promise['status'] === 'yes'),
                     'note' => $promise['note']
                 ];
             }
