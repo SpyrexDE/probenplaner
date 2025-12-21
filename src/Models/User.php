@@ -506,9 +506,10 @@ class User extends Model
      * Create or link Keycloak user
      * 
      * @param array $keycloakUserInfo User info from Keycloak
+     * @param bool $isJmdToken Whether this is from a JMD token login
      * @return array User data or error array
      */
-    public function createOrLinkKeycloakUser(array $keycloakUserInfo): array
+    public function createOrLinkKeycloakUser(array $keycloakUserInfo, bool $isJmdToken = false): array
     {
         $keycloakId = $keycloakUserInfo['sub'] ?? null;
         $email = $keycloakUserInfo['email'] ?? null;
@@ -544,6 +545,11 @@ class User extends Model
             'auth_provider' => 'keycloak',
             'password' => null // No password for Keycloak users
         ];
+        
+        // Set jeunesse theme for new users registered via JMD token
+        if ($isJmdToken) {
+            $userData['theme'] = 'jeunesse';
+        }
         
         $userId = $this->insert($userData);
         return $userId ? $this->findById($userId) : ['error' => true, 'message' => 'Benutzer konnte nicht erstellt werden'];

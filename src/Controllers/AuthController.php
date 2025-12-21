@@ -528,7 +528,7 @@ class AuthController extends Controller
         }
         
         // Create or link user
-        $user = $this->userModel->createOrLinkKeycloakUser($userInfo);
+        $user = $this->userModel->createOrLinkKeycloakUser($userInfo, true);
         if (isset($user['error'])) {
             $this->setFlash('error', 'Fehler beim Erstellen des Benutzerkontos: ' . $user['message']);
             $this->redirect('/login');

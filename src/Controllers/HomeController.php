@@ -67,7 +67,7 @@ class HomeController extends Controller
         
         // Create or link user
         $userModel = new \App\Models\User();
-        $user = $userModel->createOrLinkKeycloakUser($userInfo);
+        $user = $userModel->createOrLinkKeycloakUser($userInfo, true);
         if (isset($user['error'])) {
             $this->setFlash('error', 'Fehler beim Erstellen des Benutzerkontos: ' . $user['message']);
             $this->redirect('/login');
