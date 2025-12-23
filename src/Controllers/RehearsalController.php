@@ -76,50 +76,17 @@ class RehearsalController extends Controller
         
         // Process form submission
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // Sanitize form data
-            $date = \App\Core\Validator::sanitizeUtf8($_POST['date'] ?? '');
-            $start_time = \App\Core\Validator::sanitizeUtf8($_POST['start_time'] ?? '');
-            $end_time = \App\Core\Validator::sanitizeUtf8($_POST['end_time'] ?? '');
-            $location = \App\Core\Validator::sanitizeUtf8($_POST['location'] ?? '');
-            $color = \App\Core\Validator::sanitizeUtf8($_POST['color'] ?? '');
-            
-            // Process groups data using the new processor
-            $rehearsalType = \App\Core\Validator::sanitizeUtf8($_POST['rehearsal_type'] ?? '');
-            $finalGroups = \App\Core\RehearsalGroupProcessor::processGroups($_POST);
-            $groupValidationErrors = \App\Core\RehearsalGroupProcessor::validateGroups($finalGroups);
-            
-            // Check if it's a small group rehearsal
-            $isSmallGroup = isset($_POST['is_small_group']) && $_POST['is_small_group'] === (string)\App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED;
-            
-            // Validate input using Validator class
-            $requiredValidation = \App\Core\Validator::validateRequired([
-                'date' => $date,
-                'start_time' => $start_time,
-                'end_time' => $end_time,
-                'location' => $location
-            ], ['date', 'start_time', 'end_time', 'location']);
-            
-            $dateValidation = \App\Core\Validator::validateDate($date);
-            $startTimeValidation = \App\Core\Validator::validateTime($start_time, 'Startzeit');
-            $endTimeValidation = \App\Core\Validator::validateTime($end_time, 'Endzeit');
-            
-            // Check if end time is after start time
-            $timeOrderErrors = [];
-            if (!empty($start_time) && !empty($end_time) && strtotime($end_time) <= strtotime($start_time)) {
-                $timeOrderErrors[] = 'Die Endzeit muss nach der Startzeit liegen';
-            }
-            
-            // Merge all validations
-            $validation = \App\Core\Validator::mergeResults([
-                $requiredValidation,
-                $dateValidation,
-                $startTimeValidation,
-                $endTimeValidation,
-                ['valid' => empty($timeOrderErrors), 'errors' => $timeOrderErrors],
-                ['valid' => empty($groupValidationErrors), 'errors' => $groupValidationErrors]
-            ]);
-            
-            $errors = $validation['errors'];
+            // Validate and sanitize form data
+            $validatedData = $this->validateRehearsalFormData();
+            $date = $validatedData['date'];
+            $start_time = $validatedData['start_time'];
+            $end_time = $validatedData['end_time'];
+            $location = $validatedData['location'];
+            $color = $validatedData['color'];
+            $rehearsalType = $validatedData['rehearsal_type'];
+            $finalGroups = $validatedData['finalGroups'];
+            $isSmallGroup = $validatedData['isSmallGroup'];
+            $errors = $validatedData['errors'];
             
             if (empty($errors)) {
                 // Save rehearsal
@@ -224,50 +191,17 @@ class RehearsalController extends Controller
         
         // Process form submission
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // Sanitize form data
-            $date = \App\Core\Validator::sanitizeUtf8($_POST['date'] ?? '');
-            $start_time = \App\Core\Validator::sanitizeUtf8($_POST['start_time'] ?? '');
-            $end_time = \App\Core\Validator::sanitizeUtf8($_POST['end_time'] ?? '');
-            $location = \App\Core\Validator::sanitizeUtf8($_POST['location'] ?? '');
-            $color = \App\Core\Validator::sanitizeUtf8($_POST['color'] ?? '');
-            
-            // Process groups data using the new processor
-            $rehearsalType = \App\Core\Validator::sanitizeUtf8($_POST['rehearsal_type'] ?? '');
-            $finalGroups = \App\Core\RehearsalGroupProcessor::processGroups($_POST);
-            $groupValidationErrors = \App\Core\RehearsalGroupProcessor::validateGroups($finalGroups);
-            
-            // Check if it's a small group rehearsal
-            $isSmallGroup = isset($_POST['is_small_group']) && $_POST['is_small_group'] === (string)\App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED;
-            
-            // Validate input using Validator class
-            $requiredValidation = \App\Core\Validator::validateRequired([
-                'date' => $date,
-                'start_time' => $start_time,
-                'end_time' => $end_time,
-                'location' => $location
-            ], ['date', 'start_time', 'end_time', 'location']);
-            
-            $dateValidation = \App\Core\Validator::validateDate($date);
-            $startTimeValidation = \App\Core\Validator::validateTime($start_time, 'Startzeit');
-            $endTimeValidation = \App\Core\Validator::validateTime($end_time, 'Endzeit');
-            
-            // Check if end time is after start time
-            $timeOrderErrors = [];
-            if (!empty($start_time) && !empty($end_time) && strtotime($end_time) <= strtotime($start_time)) {
-                $timeOrderErrors[] = 'Die Endzeit muss nach der Startzeit liegen';
-            }
-            
-            // Merge all validations
-            $validation = \App\Core\Validator::mergeResults([
-                $requiredValidation,
-                $dateValidation,
-                $startTimeValidation,
-                $endTimeValidation,
-                ['valid' => empty($timeOrderErrors), 'errors' => $timeOrderErrors],
-                ['valid' => empty($groupValidationErrors), 'errors' => $groupValidationErrors]
-            ]);
-            
-            $errors = $validation['errors'];
+            // Validate and sanitize form data
+            $validatedData = $this->validateRehearsalFormData();
+            $date = $validatedData['date'];
+            $start_time = $validatedData['start_time'];
+            $end_time = $validatedData['end_time'];
+            $location = $validatedData['location'];
+            $color = $validatedData['color'];
+            $rehearsalType = $validatedData['rehearsal_type'];
+            $finalGroups = $validatedData['finalGroups'];
+            $isSmallGroup = $validatedData['isSmallGroup'];
+            $errors = $validatedData['errors'];
             
             if (empty($errors)) {
                 // Update rehearsal
@@ -375,8 +309,7 @@ class RehearsalController extends Controller
             $this->requireRole('conductor');
         } catch (\Exception $e) {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-                exit;
+                $this->jsonError('Unauthorized', [], 401);
             }
             $this->redirect('/login');
             return;
@@ -392,8 +325,7 @@ class RehearsalController extends Controller
         
         if ($rehearsalId <= 0) {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                echo json_encode(['success' => false, 'message' => 'Invalid rehearsal ID']);
-                exit;
+                $this->jsonError('Invalid rehearsal ID');
             }
             $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
             return;
@@ -404,14 +336,12 @@ class RehearsalController extends Controller
         
         if ($result) {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                echo json_encode(['success' => true]);
-                exit;
+                $this->jsonSuccess();
             }
             $this->setFlash('success', 'Rehearsal deleted successfully');
         } else {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                echo json_encode(['success' => false, 'message' => 'Failed to delete rehearsal']);
-                exit;
+                $this->jsonError('Failed to delete rehearsal', [], 500);
             }
             $this->setFlash('error', 'Failed to delete rehearsal');
         }
@@ -463,14 +393,77 @@ class RehearsalController extends Controller
         }
         
         // Return JSON response
-        header('Content-Type: application/json');
-        echo json_encode([
-            'success' => true,
+        $this->jsonSuccess([
             'html' => $html,
             'hasMore' => $hasMore,
             'total' => $totalPastRehearsals,
             'loaded' => $offset + count($paginatedRehearsals)
         ]);
-        exit;
+    }
+    
+    /**
+     * Validate and sanitize rehearsal form data
+     * 
+     * @return array Associative array with keys: date, start_time, end_time, location, color, 
+     *               rehearsal_type, finalGroups, isSmallGroup, errors
+     */
+    private function validateRehearsalFormData()
+    {
+        // Sanitize form data
+        $date = \App\Core\Validator::sanitizeUtf8($_POST['date'] ?? '');
+        $start_time = \App\Core\Validator::sanitizeUtf8($_POST['start_time'] ?? '');
+        $end_time = \App\Core\Validator::sanitizeUtf8($_POST['end_time'] ?? '');
+        $location = \App\Core\Validator::sanitizeUtf8($_POST['location'] ?? '');
+        $color = \App\Core\Validator::sanitizeUtf8($_POST['color'] ?? '');
+        
+        // Process groups data using the new processor
+        $rehearsalType = \App\Core\Validator::sanitizeUtf8($_POST['rehearsal_type'] ?? '');
+        $finalGroups = \App\Core\RehearsalGroupProcessor::processGroups($_POST);
+        $groupValidationErrors = \App\Core\RehearsalGroupProcessor::validateGroups($finalGroups);
+        
+        // Check if it's a small group rehearsal
+        $isSmallGroup = isset($_POST['is_small_group']) && $_POST['is_small_group'] === (string)\App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED;
+        
+        // Validate input using Validator class
+        $requiredValidation = \App\Core\Validator::validateRequired([
+            'date' => $date,
+            'start_time' => $start_time,
+            'end_time' => $end_time,
+            'location' => $location
+        ], ['date', 'start_time', 'end_time', 'location']);
+        
+        $dateValidation = \App\Core\Validator::validateDate($date);
+        $startTimeValidation = \App\Core\Validator::validateTime($start_time, 'Startzeit');
+        $endTimeValidation = \App\Core\Validator::validateTime($end_time, 'Endzeit');
+        
+        // Check if end time is after start time
+        $timeOrderErrors = [];
+        if (!empty($start_time) && !empty($end_time) && strtotime($end_time) <= strtotime($start_time)) {
+            $timeOrderErrors[] = 'Die Endzeit muss nach der Startzeit liegen';
+        }
+        
+        // Merge all validations
+        $validation = \App\Core\Validator::mergeResults([
+            $requiredValidation,
+            $dateValidation,
+            $startTimeValidation,
+            $endTimeValidation,
+            ['valid' => empty($timeOrderErrors), 'errors' => $timeOrderErrors],
+            ['valid' => empty($groupValidationErrors), 'errors' => $groupValidationErrors]
+        ]);
+        
+        $errors = $validation['errors'];
+        
+        return [
+            'date' => $date,
+            'start_time' => $start_time,
+            'end_time' => $end_time,
+            'location' => $location,
+            'color' => $color,
+            'rehearsal_type' => $rehearsalType,
+            'finalGroups' => $finalGroups,
+            'isSmallGroup' => $isSmallGroup,
+            'errors' => $errors
+        ];
     }
 } 

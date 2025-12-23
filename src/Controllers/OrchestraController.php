@@ -153,28 +153,8 @@ class OrchestraController extends Controller
         // Log input
         error_log("Orchestra creation attempt - Name: $name, Token: $token");
         
-        // Validate required fields
-        $requiredValidation = Validator::validateRequired([
-            'name' => $name,
-            'token' => $token,
-            'leader_password' => $leaderPassword
-        ], ['name', 'token', 'leader_password']);
-        
-        // Validate individual fields
-        $tokenValidation = Validator::validateToken($token);
-        
-        // Check for duplicate token
-        $tokenErrors = [];
-        if (!empty($token) && $this->orchestraModel->findByToken($token)) {
-            $tokenErrors[] = "Dieser Token wird bereits verwendet";
-        }
-        
-        // Merge all validations
-        $validation = Validator::mergeResults([
-            $requiredValidation,
-            $tokenValidation,
-            ['valid' => empty($tokenErrors), 'errors' => $tokenErrors]
-        ]);
+        // Validate orchestra data
+        $validation = $this->validateOrchestraData($name, $token, $leaderPassword);
         
         // If validation errors, show them
         if (!$validation['valid']) {
@@ -297,28 +277,8 @@ class OrchestraController extends Controller
         $token = Validator::sanitizeUtf8($_POST['token'] ?? '');
         $leaderPassword = Validator::sanitizeUtf8($_POST['leader_password'] ?? '');
         
-        // Validate required fields
-        $requiredValidation = Validator::validateRequired([
-            'name' => $name,
-            'token' => $token,
-            'leader_password' => $leaderPassword
-        ], ['name', 'token', 'leader_password']);
-        
-        // Validate individual fields
-        $tokenValidation = Validator::validateToken($token);
-        
-        // Check token uniqueness (only if changed)
-        $tokenErrors = [];
-        if ($token !== $context['orchestra']['token'] && $this->orchestraModel->findByToken($token)) {
-            $tokenErrors[] = "Dieser Token wird bereits verwendet";
-        }
-        
-        // Merge all validations
-        $validation = Validator::mergeResults([
-            $requiredValidation,
-            $tokenValidation,
-            ['valid' => empty($tokenErrors), 'errors' => $tokenErrors]
-        ]);
+        // Validate orchestra data (pass current token to allow keeping same token)
+        $validation = $this->validateOrchestraData($name, $token, $leaderPassword, $context['orchestra']['token']);
         
         // If validation errors, show them
         if (!$validation['valid']) {
@@ -415,6 +375,42 @@ class OrchestraController extends Controller
             $this->addAlert('Fehler!', 'Das Orchester konnte nicht gelöscht werden.', 'error');
             $this->redirect('/' . $context['orchestra_id'] . '/orchestras/settings');
         }
+    }
+    
+    /**
+     * Validate orchestra form data (name, token, leader_password)
+     * 
+     * @param string $name Orchestra name
+     * @param string $token Orchestra token
+     * @param string $leaderPassword Leader password
+     * @param string|null $currentToken Current token (for updates) - if provided, uniqueness check allows this token
+     * @return array Validation result with 'valid' boolean and 'errors' array
+     */
+    private function validateOrchestraData($name, $token, $leaderPassword, $currentToken = null)
+    {
+        // Validate required fields
+        $requiredValidation = Validator::validateRequired([
+            'name' => $name,
+            'token' => $token,
+            'leader_password' => $leaderPassword
+        ], ['name', 'token', 'leader_password']);
+        
+        // Validate individual fields
+        $tokenValidation = Validator::validateToken($token);
+        
+        // Check token uniqueness
+        $tokenErrors = [];
+        $isDifferentToken = ($currentToken === null || $token !== $currentToken);
+        if (!empty($token) && $isDifferentToken && $this->orchestraModel->findByToken($token)) {
+            $tokenErrors[] = "Dieser Token wird bereits verwendet";
+        }
+        
+        // Merge all validations
+        return Validator::mergeResults([
+            $requiredValidation,
+            $tokenValidation,
+            ['valid' => empty($tokenErrors), 'errors' => $tokenErrors]
+        ]);
     }
     
 } 
