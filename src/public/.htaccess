@@ -23,7 +23,8 @@ AddDefaultCharset UTF-8
 # Set security headers
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
-    Header set X-Frame-Options "SAMEORIGIN"
+    # Header set X-Frame-Options "SAMEORIGIN"
+    Header set Content-Security-Policy "frame-ancestors 'self' https://chat.digil.me;"
     Header set X-XSS-Protection "1; mode=block"
 </IfModule>
 
