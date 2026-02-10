@@ -42,7 +42,7 @@ class UserController extends Controller
         $user = $this->userModel->findByUsername($username);
         
         if (!$user) {
-            $this->addAlert('Fehler!', 'Benutzer nicht gefunden.', 'error');
+            $this->addAlert('Fehler!', 'Benutzer*in nicht gefunden.', 'error');
             $this->redirect('/orchestras/select');
             return;
         }
@@ -108,7 +108,7 @@ class UserController extends Controller
         $user = $this->userModel->findByUsername($username);
         
         if (!$user) {
-            $this->addAlert('Fehler!', 'Benutzer nicht gefunden.', 'error');
+            $this->addAlert('Fehler!', 'Benutzer*in nicht gefunden.', 'error');
             $this->redirect('/orchestras/select');
             return;
         }
@@ -349,7 +349,7 @@ class UserController extends Controller
             $leaderPassword = $this->getLeaderPassword();
             // Use case-insensitive comparison
             if (strtolower($groupLeaderPassword) !== strtolower($leaderPassword)) {
-                $this->addAlert('Fehler!', 'Das Stimmführer-Passwort ist falsch.', 'error');
+                $this->addAlert('Fehler!', 'Das Stimmführungs-Passwort ist falsch.', 'error');
                 $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
                 return;
             }

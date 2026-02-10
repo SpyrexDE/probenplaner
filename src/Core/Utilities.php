@@ -23,7 +23,7 @@ class Utilities
         
         // Add crown badge for section leaders (Stimmführer)
         if (isset($user['role']) && $user['role'] === 'leader') {
-            $badges[] = '<span class="user-badge" title="Stimmführer"><i class="fas fa-crown"></i></span>';
+            $badges[] = '<span class="user-badge" title="Stimmführung"><i class="fas fa-crown"></i></span>';
         }
         
         // Add small group badge for small group members using modern system

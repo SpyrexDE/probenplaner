@@ -163,14 +163,13 @@ include __DIR__ . '/../components/theme-selector.php';
                             <div class="modern-checkbox-group">
                                 <div class="flex items-start">
                                     <input type="checkbox" id="group_leader" name="group_leader" 
-                                           class="modern-checkbox" 
-                                           <?php echo ($user['role'] === 'leader') ? 'checked' : ''; ?>>
+                                           class="modern-checkbox"                                            <?php echo ($user['role'] === 'leader') ? 'checked' : ''; ?>>
                                     <div class="ml-3 flex-1">
                                         <label for="group_leader" class="modern-checkbox-label">
-                                            Stimmführer
+                                            Stimmführung
                                         </label>
                                         <p class="modern-checkbox-description">
-                                            Erweiterte Berechtigungen für Stimmgruppen-Verwaltung
+                                            Erweiterte Berechtigungen für Stimmführung
                                         </p>
                                     </div>
                                 </div>
@@ -373,14 +372,14 @@ $(document).ready(function(){
     $('#group_leader').on('change', function(){
         if($(this).is(':checked')){
             Swal.fire({
-                title: 'Stimmführer-Berechtigung',
+                title: 'Berechtigung für Stimmführung',
                 html: `
                     <div class="text-left mb-4">
-                        <p class="text-gray-600 mb-3">Um Stimmführer-Berechtigungen zu erhalten, benötigst du das entsprechende Passwort.</p>
+                        <p class="text-gray-600 mb-3">Um Berechtigungen für Stimmführung zu erhalten, benötigst du das entsprechende Passwort.</p>
                     </div>
                 `,
                 input: 'password',
-                inputPlaceholder: 'Stimmführer-Passwort eingeben',
+                inputPlaceholder: 'Stimmführungs-Passwort eingeben',
                 inputAttributes: {
                     autocapitalize: 'off',
                     autocorrect: 'off'

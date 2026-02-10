@@ -13,7 +13,7 @@ include __DIR__ . '/../components/theme-selector.php';
             <div class="inline-flex items-center justify-center w-16 h-16 bg-primary-500 rounded-full mb-4 shadow-lg">
                 <?= icon('user-tie', 'text-white text-2xl') ?>
             </div>
-            <h1 class="text-3xl font-bold text-gray-900">Dirigent-Profil</h1>
+            <h1 class="text-3xl font-bold text-gray-900">Profil (Dirigent*in)</h1>
         </div>
 
         <!-- Theme Selection Card -->

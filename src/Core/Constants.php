@@ -93,8 +93,8 @@ class Constants
     {
         return [
             self::ROLE_MEMBER => 'Mitglied',
-            self::ROLE_LEADER => 'Stimmführer',
-            self::ROLE_CONDUCTOR => 'Dirigent'
+            self::ROLE_LEADER => 'Stimmführung',
+            self::ROLE_CONDUCTOR => 'Dirigent*in'
         ];
     }
 }
