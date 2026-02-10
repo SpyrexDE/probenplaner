@@ -10,4 +10,4 @@ if (APP_ENV === 'development') {
 }
 
 // Initialize the application
-require_once __DIR__ . '/bootstrap.php'; 
+require_once __DIR__ . '/bootstrap.php';

@@ -185,13 +185,14 @@ $currentDate = new DateTime($startDate);
 // Begin transaction
 $conn->begin_transaction();
 
+$defaultRehearsalType = \App\Core\RehearsalTypeManager::TYPE_REHEARSAL;
 try {
     for ($i = 0; $i < $numRehearsals; $i++) {
         $rehearsalDate = clone $currentDate;
         $rehearsalDate->add(new DateInterval('P' . ($i * $daysBetween) . 'D'));
         
         // Create rehearsal
-        $stmt = $conn->prepare("INSERT INTO rehearsals (date, type, start_time, end_time, location, orchestra_id, is_small_group) VALUES (?, 'Probe', ?, ?, ?, ?, 0)");
+        $stmt = $conn->prepare("INSERT INTO rehearsals (date, type, start_time, end_time, location, orchestra_id, is_small_group) VALUES (?, ?, ?, ?, ?, ?, 0)");
         if (!$stmt) {
             throw new Exception("Failed to prepare rehearsal insert statement: " . $conn->error);
         }
@@ -199,7 +200,7 @@ try {
         $endTime = '20:00:00';
         $location = 'Proberaum ' . ($i + 1);
         $rehearsalDateStr = $rehearsalDate->format('Y-m-d');
-        $stmt->bind_param('ssssi', $rehearsalDateStr, $startTime, $endTime, $location, $orchestraId);
+        $stmt->bind_param('sssssi', $rehearsalDateStr, $defaultRehearsalType, $startTime, $endTime, $location, $orchestraId);
         
         if (!$stmt->execute()) {
             throw new Exception("Failed to create rehearsal: " . $stmt->error);

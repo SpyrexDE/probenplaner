@@ -321,4 +321,5 @@ class GroupManager
         }
         return $result;
     }
+
 }

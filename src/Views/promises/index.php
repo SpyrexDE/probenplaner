@@ -8,25 +8,26 @@
 // Helper function to sort groups by importance
 function sortGroups($groups) {
     $groupArray = array_keys($groups);
-    
-    usort($groupArray, function($a, $b) {
-        $userType = $_SESSION['type'];
-        
-        if ($b == "Konzertreise") {
+    $tm = \App\Core\RehearsalTypeManager::class;
+
+    usort($groupArray, function($a, $b) use ($tm) {
+        $userType = $_SESSION['current_type'] ?? '';
+
+        if ($b == $tm::TYPE_CONCERT_TOUR) {
             return 1;
-        } elseif ($b == "Konzert" && $a != "Konzertreise") {
+        } elseif ($b == $tm::TYPE_CONCERT && $a != $tm::TYPE_CONCERT_TOUR) {
             return 1;
-        } elseif ($b == "Generalprobe" && $a != "Konzert") {
+        } elseif ($b == $tm::TYPE_DRESS_REHEARSAL && $a != $tm::TYPE_CONCERT) {
             return 1;
-        } elseif ($b == "Registerprobe" && $a != "Generalprobe" && $a != "Konzert") {
+        } elseif ($b == $tm::TYPE_SECTIONAL && $a != $tm::TYPE_DRESS_REHEARSAL && $a != $tm::TYPE_CONCERT) {
             return 1;
-        } elseif ($b == $userType && $a != "Registerprobe" && $a != "Generalprobe" && $a != "Konzert") {
+        } elseif ($b == $userType && $a != $tm::TYPE_SECTIONAL && $a != $tm::TYPE_DRESS_REHEARSAL && $a != $tm::TYPE_CONCERT) {
             return 1;
         } else {
             return -1;
         }
     });
-    
+
     return $groupArray;
 }
 ?>

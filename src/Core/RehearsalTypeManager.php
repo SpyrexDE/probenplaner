@@ -9,20 +9,20 @@ namespace App\Core;
  */
 class RehearsalTypeManager
 {
-    // Rehearsal Type Constants
-    public const TYPE_PROBE = 'Probe';
-    public const TYPE_REGISTERPROBE = 'Registerprobe';
-    public const TYPE_KONZERT = 'Konzert';
-    public const TYPE_GENERALPROBE = 'Generalprobe';
-    public const TYPE_KONZERTREISE = 'Konzertreise';
+    // Rehearsal Type Constants (values kept for DB/display compatibility)
+    public const TYPE_REHEARSAL = 'Probe';
+    public const TYPE_SECTIONAL = 'Registerprobe';
+    public const TYPE_CONCERT = 'Konzert';
+    public const TYPE_DRESS_REHEARSAL = 'Generalprobe';
+    public const TYPE_CONCERT_TOUR = 'Konzertreise';
     
     // Small Group Constants
     public const SMALL_GROUP_ENABLED = 1;
     public const SMALL_GROUP_DISABLED = 0;
     
-    // Display Labels
-    public const LABEL_KLEINGRUPPE = 'Kleingruppe';
-    public const LABEL_KLEINGRUPPENPROBE = 'Kleingruppenprobe';
+    // Display Labels (values for UI)
+    public const LABEL_SMALL_GROUP = 'Kleingruppe';
+    public const LABEL_SMALL_GROUP_REHEARSAL = 'Kleingruppenprobe';
     
     /**
      * Check if a rehearsal is a small group rehearsal
@@ -85,7 +85,7 @@ class RehearsalTypeManager
      */
     public static function shouldDisplayType(string $type): bool
     {
-        return !empty($type) && $type !== self::TYPE_PROBE;
+        return !empty($type) && $type !== self::TYPE_REHEARSAL;
     }
     
     /**
@@ -110,11 +110,11 @@ class RehearsalTypeManager
     public static function getAllTypes(): array
     {
         return [
-            self::TYPE_PROBE,
-            self::TYPE_REGISTERPROBE,
-            self::TYPE_KONZERT,
-            self::TYPE_GENERALPROBE,
-            self::TYPE_KONZERTREISE,
+            self::TYPE_REHEARSAL,
+            self::TYPE_SECTIONAL,
+            self::TYPE_CONCERT,
+            self::TYPE_DRESS_REHEARSAL,
+            self::TYPE_CONCERT_TOUR,
         ];
     }
     

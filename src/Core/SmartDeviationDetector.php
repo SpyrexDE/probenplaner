@@ -302,7 +302,7 @@ class SmartDeviationDetector {
             
             if ($zScore > $this->zScoreThreshold) {
                 $isPositive = $currentData['attendance_rate'] > $stats['mean'];
-                $direction = $isPositive ? 'höher' : 'niedriger';
+                $direction = $isPositive ? 'higher' : 'lower';
                 $percentageDiff = abs($currentData['attendance_rate'] - $stats['mean']);
                 // Only show significant deviations
                 if ($percentageDiff > \App\Core\DashboardConstants::PERCENTAGE_DIFFERENCE_THRESHOLD) {
@@ -313,7 +313,8 @@ class SmartDeviationDetector {
                         'current_rate' => $currentData['attendance_rate'],
                         'historical_mean' => $stats['mean'],
                         'section' => $sectionId,
-                        'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($percentageDiff, 0) . "% " . ($direction === 'niedriger' ? 'weniger' : 'mehr') . " Teilnahme als üblich"
+                        'comparison_kind' => 'usual',
+                        'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($percentageDiff, 0) . "% " . ($direction === 'lower' ? 'weniger' : 'mehr') . " Teilnahme als üblich"
                     ];
                 }
             }
@@ -328,6 +329,7 @@ class SmartDeviationDetector {
                     'current_rate' => $currentData['attendance_rate'],
                     'historical_min' => $stats['min'],
                     'section' => $sectionId,
+                    'comparison_kind' => 'all_time',
                     'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($percentageDiff, 0) . "% weniger Teilnahme als je zuvor"
                 ];
         }
@@ -341,6 +343,7 @@ class SmartDeviationDetector {
                 'current_rate' => $currentData['attendance_rate'],
                 'historical_max' => $stats['max'],
                 'section' => $sectionId,
+                'comparison_kind' => 'all_time',
                 'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($percentageDiff, 0) . "% mehr Teilnahme als je zuvor"
             ];
         }
@@ -359,7 +362,7 @@ class SmartDeviationDetector {
             
             if ($zScore > $this->zScoreThreshold) {
                 $isPositive = $currentData['response_rate'] > $stats['response_mean'];
-                $direction = $isPositive ? 'höher' : 'niedriger';
+                $direction = $isPositive ? 'higher' : 'lower';
                 $percentageDiff = abs($currentData['response_rate'] - $stats['response_mean']);
                 // Only show significant deviations
                 if ($percentageDiff > \App\Core\DashboardConstants::PERCENTAGE_DIFFERENCE_THRESHOLD) {
@@ -370,7 +373,8 @@ class SmartDeviationDetector {
                         'current_rate' => $currentData['response_rate'],
                         'historical_mean' => $stats['response_mean'],
                         'section' => $sectionId,
-                        'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($percentageDiff, 0) . "% " . ($direction === 'niedriger' ? 'weniger' : 'mehr') . " Rückmeldungen als üblich"
+                        'comparison_kind' => 'usual',
+                        'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($percentageDiff, 0) . "% " . ($direction === 'lower' ? 'weniger' : 'mehr') . " Rückmeldungen als üblich"
                     ];
                 }
             }
@@ -385,6 +389,7 @@ class SmartDeviationDetector {
                 'current_rate' => $currentData['response_rate'],
                 'historical_min' => $stats['response_min'],
                 'section' => $sectionId,
+                'comparison_kind' => 'all_time',
                 'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($percentageDiff, 0) . "% weniger Rückmeldungen als je zuvor"
             ];
         }
@@ -398,6 +403,7 @@ class SmartDeviationDetector {
                 'current_rate' => $currentData['response_rate'],
                 'historical_max' => $stats['response_max'],
                 'section' => $sectionId,
+                'comparison_kind' => 'all_time',
                 'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($percentageDiff, 0) . "% mehr Rückmeldungen als je zuvor"
             ];
         }
@@ -434,14 +440,14 @@ class SmartDeviationDetector {
             $trendChange = abs($recentAvg - $olderAvg);
             if ($trendChange > \App\Core\DashboardConstants::TREND_CHANGE_THRESHOLD) {
                 $isPositive = $recentAvg > $olderAvg;
-                $direction = $isPositive ? 'steigend' : 'fallend';
-                
+                $direction = $isPositive ? 'rising' : 'falling';
+
                 // Don't show positive trend messages when current attendance is 0%
-                // This prevents misleading messages like "38% more attendance than before" 
+                // This prevents misleading messages like "38% more attendance than before"
                 // when the current rehearsal actually has no attendees
                 $currentHasZeroAttendance = $currentData['attendance_rate'] == 0;
                 $shouldSkipPositiveTrend = $isPositive && $currentHasZeroAttendance;
-                
+
                 if (!$shouldSkipPositiveTrend) {
                     $deviations[] = [
                         'type' => $isPositive ? 'positive_trend_change' : 'negative_trend_change',
@@ -450,7 +456,8 @@ class SmartDeviationDetector {
                         'recent_avg' => $recentAvg,
                         'older_avg' => $olderAvg,
                         'section' => $sectionId,
-                        'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($trendChange, 0) . "% " . ($direction === 'steigend' ? 'mehr' : 'weniger') . " Teilnahme als früher"
+                        'comparison_kind' => 'trend',
+                        'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($trendChange, 0) . "% " . ($direction === 'rising' ? 'mehr' : 'weniger') . " Teilnahme als früher"
                     ];
                 }
             }

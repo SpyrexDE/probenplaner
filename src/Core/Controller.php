@@ -97,7 +97,7 @@ class Controller
      */
     protected function isAdmin(): bool
     {
-        return isset($_SESSION['type']) && $_SESSION['type'] === 'Dirigent';
+        return isset($_SESSION['current_role']) && $_SESSION['current_role'] === 'conductor';
     }
     
     /**
@@ -107,7 +107,7 @@ class Controller
      */
     protected function isLeader(): bool
     {
-        return isset($_SESSION['role']) && $_SESSION['role'] === 'leader';
+        return isset($_SESSION['current_role']) && $_SESSION['current_role'] === 'leader';
     }
     
     /**

@@ -328,7 +328,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                 <div class="date-info">
                                     <div class="date-text"><?= date('d.m.Y', strtotime($rehearsal['date'])) ?></div>
                                     <div class="date-subtitle">
-                                    <?= htmlspecialchars($rehearsal['type'] ?? 'Probe') ?>
+                                    <?= htmlspecialchars($rehearsal['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL) ?>
                                     <?php if ($rehearsal['is_small_group'] ?? false): ?>
                                         <span style="color: #6b7280;"> (Kleingruppe)</span>
                                     <?php endif; ?>
@@ -613,14 +613,24 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                         $players = $sectionPlayers['all'];
                                         $sectionId = 'all';
                                     } else {
-                                        // Look through available section keys to find players for leader's section
-                                        
-                                        // Check if data exists under "Streicher" key (leader's parent section)
-                                        if (!empty($sectionPlayers['Streicher']) && is_array($sectionPlayers['Streicher'])) {
-                                            $players = $sectionPlayers['Streicher'];
-                                            $sectionId = 'Streicher';
-                                        } else {
-                                            // Look through all available section keys to find non-empty one
+                                        // Use leader's section id from context (no hardcoded section name)
+                                        $found = false;
+                                        if (!empty($leaderSection) && isset($sectionPlayers[$leaderSection]) && is_array($sectionPlayers[$leaderSection])) {
+                                            $players = $sectionPlayers[$leaderSection];
+                                            $sectionId = $leaderSection;
+                                            $found = true;
+                                        }
+                                        if (!$found && !empty($leaderSectionNames) && is_array($leaderSectionNames)) {
+                                            foreach ($leaderSectionNames as $candidateId) {
+                                                if (!empty($sectionPlayers[$candidateId]) && is_array($sectionPlayers[$candidateId])) {
+                                                    $players = $sectionPlayers[$candidateId];
+                                                    $sectionId = $candidateId;
+                                                    $found = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        if (!$found) {
                                             foreach ($sectionPlayers as $key => $sectionData) {
                                                 if (!empty($sectionData) && is_array($sectionData)) {
                                                     $players = $sectionData;
@@ -798,7 +808,7 @@ function initializeCharts() {
         },
         xaxis: {
             categories: <?= json_encode(array_map(function($rehearsal) {
-                return ($rehearsal['type'] ?? 'Probe') . ' ' . date('d.m', strtotime($rehearsal['date']));
+                return ($rehearsal['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL) . ' ' . date('d.m', strtotime($rehearsal['date']));
             }, $rehearsalsForCharts ?? [])) ?>
         },
         stroke: {
@@ -841,7 +851,7 @@ function initializeCharts() {
             x: {
                 formatter: function(val, opts) {
                     const categories = <?= json_encode(array_map(function($rehearsal) {
-                        return ($rehearsal['type'] ?? 'Probe') . ' ' . date('d.m', strtotime($rehearsal['date']));
+                        return ($rehearsal['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL) . ' ' . date('d.m', strtotime($rehearsal['date']));
                     }, $rehearsalsForCharts ?? [])) ?>;
                     return categories[opts.dataPointIndex] || val;
                 }
@@ -918,7 +928,7 @@ function initializeCharts() {
             x: {
                 formatter: function(val, opts) {
                     const categories = <?= json_encode(array_map(function($rehearsal) {
-                        return ($rehearsal['type'] ?? 'Probe') . ' ' . date('d.m', strtotime($rehearsal['date']));
+                        return ($rehearsal['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL) . ' ' . date('d.m', strtotime($rehearsal['date']));
                     }, $rehearsalsForCharts ?? [])) ?>;
                     return categories[opts.dataPointIndex] || val;
                 }
@@ -985,89 +995,85 @@ function initializeTreeView() {
 
 <?php
 /**
- * Merge participation messages for the same section to avoid duplication
- * Example: "Trompete: 14% mehr Teilnahme als je zuvor" + "Trompete: 23% mehr Teilnahme als früher" 
- * becomes "Trompete: 23% mehr Teilnahme als früher (14% mehr als je zuvor!)"
+ * Merge participation messages for the same section to avoid duplication.
+ * Uses comparison_kind (usual, all_time, trend) when present; falls back to parsing message.
  */
 function mergeParticipationMessages($messages) {
     $sectionGroups = [];
     $otherMessages = [];
-    
-    // Group messages by section and type
+    $priorityByKind = ['all_time' => 3, 'trend' => 2, 'usual' => 1];
+    $kindToDisplay = ['usual' => 'üblich', 'all_time' => 'je zuvor', 'trend' => 'früher'];
+    $legacyPriority = ['je zuvor' => 3, 'früher' => 2, 'üblich' => 1];
+
     foreach ($messages as $deviation) {
         $message = $deviation['message'];
-        
-        // Check if this is a participation or response message
-        if (preg_match('/^([^:]+):\s*(\d+)%\s*(mehr|weniger)\s+(Teilnahme|Rückmeldungen)\s+als\s+(üblich|je zuvor|früher)/', $message, $matches)) {
+        $hasKind = isset($deviation['comparison_kind']);
+
+        if ($hasKind && preg_match('/^([^:]+):\s*(\d+)%\s*(mehr|weniger)\s+(Teilnahme|Rückmeldungen)\s+als\s+/', $message, $matches)) {
             $section = $matches[1];
-            $percentage = $matches[2];
-            $direction = $matches[3]; // mehr/weniger
-            $type = $matches[4]; // Teilnahme/Rückmeldungen
-            $comparison = $matches[5]; // üblich/je zuvor/früher
-            
-            if (!isset($sectionGroups[$section])) {
-                $sectionGroups[$section] = [];
-            }
-            if (!isset($sectionGroups[$section][$type])) {
-                $sectionGroups[$section][$type] = [];
-            }
-            if (!isset($sectionGroups[$section][$type][$direction])) {
-                $sectionGroups[$section][$type][$direction] = [];
-            }
-            
-            $sectionGroups[$section][$type][$direction][] = [
-                'deviation' => $deviation,
-                'percentage' => intval($percentage),
-                'comparison' => $comparison,
-                'message' => $message
-            ];
+            $percentage = intval($matches[2]);
+            $direction = $matches[3];
+            $type = $matches[4];
+            $comparisonKey = $deviation['comparison_kind'];
+            $comparisonDisplay = $kindToDisplay[$comparisonKey] ?? $comparisonKey;
+        } elseif (preg_match('/^([^:]+):\s*(\d+)%\s*(mehr|weniger)\s+(Teilnahme|Rückmeldungen)\s+als\s+(üblich|je zuvor|früher)/', $message, $matches)) {
+            $section = $matches[1];
+            $percentage = intval($matches[2]);
+            $direction = $matches[3];
+            $type = $matches[4];
+            $comparisonKey = $matches[5];
+            $comparisonDisplay = $comparisonKey;
         } else {
-            // Keep non-participation messages as-is
             $otherMessages[] = $deviation;
+            continue;
         }
+
+        if (!isset($sectionGroups[$section])) {
+            $sectionGroups[$section] = [];
+        }
+        if (!isset($sectionGroups[$section][$type])) {
+            $sectionGroups[$section][$type] = [];
+        }
+        if (!isset($sectionGroups[$section][$type][$direction])) {
+            $sectionGroups[$section][$type][$direction] = [];
+        }
+        $sectionGroups[$section][$type][$direction][] = [
+            'deviation' => $deviation,
+            'percentage' => $percentage,
+            'comparison_key' => $comparisonKey,
+            'comparison_display' => $comparisonDisplay,
+            'message' => $message
+        ];
     }
-    
-    // Merge messages within each section/type/direction group
+
     $mergedMessages = [];
     foreach ($sectionGroups as $section => $types) {
         foreach ($types as $type => $directions) {
             foreach ($directions as $direction => $comparisons) {
                 if (count($comparisons) > 1) {
-                    // Prioritize "je zuvor" as primary message (historical records are most impactful)
-                    // Everything else goes in brackets
-                    $priority = ['je zuvor' => 3, 'früher' => 2, 'üblich' => 1];
-                    usort($comparisons, function($a, $b) use ($priority) {
-                        return ($priority[$b['comparison']] ?? 0) - ($priority[$a['comparison']] ?? 0);
+                    $priority = $priorityByKind + $legacyPriority;
+                    usort($comparisons, function ($a, $b) use ($priority) {
+                        return ($priority[$b['comparison_key']] ?? 0) - ($priority[$a['comparison_key']] ?? 0);
                     });
-                    
-                    // Use the highest priority comparison as primary, others as additional info
                     $primary = $comparisons[0];
                     $additionalInfo = [];
-                    
                     for ($i = 1; $i < count($comparisons); $i++) {
                         $additional = $comparisons[$i];
-                        $additionalInfo[] = $additional['percentage'] . '% ' . $direction . ' als ' . $additional['comparison'];
+                        $additionalInfo[] = $additional['percentage'] . '% ' . $direction . ' als ' . $additional['comparison_display'];
                     }
-                    
-                    // Create merged message
-                    $mergedMessage = $section . ': ' . $primary['percentage'] . '% ' . $direction . ' ' . $type . ' als ' . $primary['comparison'];
+                    $mergedMessage = $section . ': ' . $primary['percentage'] . '% ' . $direction . ' ' . $type . ' als ' . $primary['comparison_display'];
                     if (!empty($additionalInfo)) {
                         $mergedMessage .= ' (' . implode(', ', $additionalInfo) . '!)';
                     }
-                    
-                    // Use the deviation with the highest priority
                     $mergedDeviation = $primary['deviation'];
                     $mergedDeviation['message'] = $mergedMessage;
                     $mergedMessages[] = $mergedDeviation;
                 } else {
-                    // Single message, keep as-is
                     $mergedMessages[] = $comparisons[0]['deviation'];
                 }
             }
         }
     }
-    
-    // Add back non-participation messages
     return array_merge($mergedMessages, $otherMessages);
 }
 

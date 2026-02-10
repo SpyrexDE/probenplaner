@@ -221,8 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
            }
            
            if (titleElement) {
-               // Show rehearsal type if it's not "Probe", otherwise just "Probe"
-               const rehearsalType = stats.next_rehearsal.type || 'Probe';
+               const rehearsalType = stats.next_rehearsal.type || <?= json_encode(\App\Core\RehearsalTypeManager::TYPE_REHEARSAL) ?>;
                titleElement.textContent = rehearsalType;
            }
        } else if (isError && dateElement) {

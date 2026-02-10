@@ -140,7 +140,7 @@ class ApiController extends Controller
                 'date_formatted' => $nextRehearsal['date_formatted'],
                 'start_time' => $nextRehearsal['start_time'],
                 'end_time' => $nextRehearsal['end_time'],
-                'type' => $nextRehearsal['type'] ?? 'Probe'
+                'type' => $nextRehearsal['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL
             ];
 
             $this->jsonResponse(['success' => true, 'stats' => $stats]);

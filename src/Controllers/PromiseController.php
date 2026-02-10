@@ -572,7 +572,7 @@ class PromiseController extends Controller
             
             foreach ($users as $user) {
                 // Skip conductors - they shouldn't be displayed in the attendance list
-                if ($user['role'] === 'conductor' || $user['type'] === 'Dirigent') {
+                if ($user['role'] === 'conductor') {
                     continue;
                 }
                 
@@ -638,7 +638,7 @@ class PromiseController extends Controller
                         'id' => $rehearsals[0]['id'],
                         'date' => $rehearsals[0]['date'],
                         'date_formatted' => $rehearsals[0]['date_formatted'] ?? date('d.m.Y', strtotime($rehearsals[0]['date'])),
-                        'type' => $rehearsals[0]['type'] ?? 'Probe',
+                        'type' => $rehearsals[0]['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL,
                         'location' => $rehearsals[0]['location'] ?? '',
                         'is_small_group' => $rehearsals[0]['is_small_group'] ?? false
                     ]

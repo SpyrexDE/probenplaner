@@ -502,8 +502,7 @@ class UserController extends Controller
             }
         }
         
-        // Fallback default password
-        return 'stimmfuehrer';
+        return defined('DEFAULT_LEADER_PASSWORD') ? DEFAULT_LEADER_PASSWORD : 'stimmfuehrer';
     }
     
     /**

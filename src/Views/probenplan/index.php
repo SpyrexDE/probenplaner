@@ -99,8 +99,8 @@ include __DIR__ . '/../components/table.php';
                                         $rehearsalType = \App\Core\RehearsalTypeManager::getRehearsalType($rehearsal);
                                         if (\App\Core\RehearsalTypeManager::shouldDisplayType($rehearsalType)) {
                                             echo htmlspecialchars($rehearsalType);
-                                        } elseif ($rehearsalType === \App\Core\RehearsalTypeManager::TYPE_PROBE) {
-                                            echo 'Probe';
+                                        } elseif ($rehearsalType === \App\Core\RehearsalTypeManager::TYPE_REHEARSAL) {
+                                            echo \App\Core\RehearsalTypeManager::TYPE_REHEARSAL;
                                         } else {
                                             echo '';
                                         }

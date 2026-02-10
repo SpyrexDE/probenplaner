@@ -151,7 +151,7 @@ include __DIR__ . '/../components/theme-selector.php';
                                            <?php echo \App\Core\RehearsalTypeManager::isUserInSmallGroup($user) ? 'checked' : ''; ?>>
                                     <div class="ml-3 flex-1">
                                         <label for="small_group" class="modern-checkbox-label">
-                                            <?= \App\Core\RehearsalTypeManager::LABEL_KLEINGRUPPE ?>
+                                            <?= \App\Core\RehearsalTypeManager::LABEL_SMALL_GROUP ?>
                                         </label>
                                         <p class="modern-checkbox-description">
                                             Zusätzliche Proben für Stücke mit geringer Besetzung

@@ -28,7 +28,7 @@ class Utilities
         
         // Add small group badge for small group members using modern system
         if (\App\Core\RehearsalTypeManager::isUserInSmallGroup($user)) {
-            $badges[] = '<span class="user-badge" title="' . \App\Core\RehearsalTypeManager::LABEL_KLEINGRUPPE . '"><i class="fas fa-user-friends"></i></span>';
+            $badges[] = '<span class="user-badge" title="' . \App\Core\RehearsalTypeManager::LABEL_SMALL_GROUP . '"><i class="fas fa-user-friends"></i></span>';
         }
         
         return implode('', $badges);
