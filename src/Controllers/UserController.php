@@ -502,7 +502,7 @@ class UserController extends Controller
             }
         }
         
-        return defined('DEFAULT_LEADER_PASSWORD') ? DEFAULT_LEADER_PASSWORD : 'stimmfuehrer';
+        return DEFAULT_LEADER_PASSWORD;
     }
     
     /**

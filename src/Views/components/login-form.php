@@ -186,7 +186,7 @@ $registerUrl = $registerUrl ?? '/register';
             <?= htmlspecialchars($submitText) ?>
         </button>
 
-        <?php if (defined('KEYCLOAK_ENABLED') && KEYCLOAK_ENABLED): ?>
+        <?php if (KEYCLOAK_ENABLED): ?>
         <!-- Divider -->
         <div class="login-divider">
             <span>oder</span>

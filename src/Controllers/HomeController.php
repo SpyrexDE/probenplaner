@@ -18,7 +18,7 @@ class HomeController extends Controller
     {
         // Check for JMD access token first (for mobile app integration)
         $jmdToken = $_GET['jmd_accesstoken'] ?? $_POST['jmd_accesstoken'] ?? null;
-        if ($jmdToken && defined('KEYCLOAK_ENABLED') && KEYCLOAK_ENABLED) {
+        if ($jmdToken && KEYCLOAK_ENABLED) {
             $this->processJmdTokenLogin($jmdToken);
             return;
         }

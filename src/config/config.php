@@ -71,8 +71,8 @@ define('MAX_ORCHESTRA_NAME_LENGTH', 100);
 
 // Keycloak Configuration
 define('KEYCLOAK_ENABLED', getenv('KEYCLOAK_ENABLED') ?: true);
-define('KEYCLOAK_BASE_URL', 'https://auth.digil.me');
-define('KEYCLOAK_REALM', 'jmd');
-define('KEYCLOAK_CLIENT_ID', 'starthere-appclient-prod');
+define('KEYCLOAK_BASE_URL', getenv('KEYCLOAK_BASE_URL') ?: 'https://auth.digil.me');
+define('KEYCLOAK_REALM', getenv('KEYCLOAK_REALM') ?: 'jmd');
+define('KEYCLOAK_CLIENT_ID', getenv('KEYCLOAK_CLIENT_ID') ?: 'starthere-appclient-prod');
 define('KEYCLOAK_CLIENT_SECRET', getenv('KEYCLOAK_CLIENT_SECRET'));
-define('KEYCLOAK_REDIRECT_URI', getenv('KEYCLOAK_REDIRECT_URI') ?: 'http://localhost:8080'); 
+define('KEYCLOAK_REDIRECT_URI', getenv('KEYCLOAK_REDIRECT_URI') ?: 'http://localhost:8080');
