@@ -208,11 +208,11 @@ $icon = '';
 if ($type === 'check') {
     $classes[] = 'checkBtn';
     $icon = 'check';
-    $title = $title ?: 'Mark as attending';
+    $title = $title ?: 'Als teilnehmend markieren';
 } else {
     $classes[] = 'crossBtn';
     $icon = 'times';
-    $title = $title ?: 'Mark as not attending';
+    $title = $title ?: 'Als nicht teilnehmend markieren';
 }
 
 if (!$selected) {

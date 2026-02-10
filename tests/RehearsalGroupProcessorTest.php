@@ -392,7 +392,7 @@ class RehearsalGroupProcessorTest
         $groups = [];
         $errors = RehearsalGroupProcessor::validateGroups($groups);
         $this->assert(!empty($errors), "Empty groups should fail validation");
-        $this->assert(in_array('At least one group must be selected', $errors), 
+        $this->assert(in_array('Es muss mindestens eine Gruppe ausgewählt werden.', $errors), 
             "Should have specific error message for empty groups");
         
         echo "\n";

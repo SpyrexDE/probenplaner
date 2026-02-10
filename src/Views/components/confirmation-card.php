@@ -237,13 +237,13 @@ if (!$renderComponent) {
 }
 
 // Set defaults for component rendering
-$title = $title ?? 'Confirm Action';
-$message = $message ?? 'Are you sure you want to proceed?';
+$title = $title ?? 'Aktion bestätigen';
+$message = $message ?? 'Möchtest du fortfahren?';
 $details = $details ?? '';
 $icon = $icon ?? 'exclamation-triangle';
 $rehearsalInfo = $rehearsalInfo ?? [];
-$confirmText = $confirmText ?? 'Confirm';
-$cancelText = $cancelText ?? 'Cancel';
+$confirmText = $confirmText ?? 'Bestätigen';
+$cancelText = $cancelText ?? 'Abbrechen';
 $confirmAction = $confirmAction ?? '';
 $cancelAction = $cancelAction ?? 'history.back()';
 $showAsModal = $showAsModal ?? false;

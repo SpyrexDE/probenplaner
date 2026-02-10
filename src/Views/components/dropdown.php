@@ -61,7 +61,7 @@
 
 <?php
 // Set defaults
-$triggerText = $triggerText ?? 'Options';
+$triggerText = $triggerText ?? 'Optionen';
 $triggerIcon = $triggerIcon ?? 'fas fa-chevron-down';
 $triggerClass = $triggerClass ?? '';
 $items = $items ?? [];

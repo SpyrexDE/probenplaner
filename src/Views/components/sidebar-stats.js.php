@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
               updateStatsDisplay(data.stats);
               setStatsLoadingState(false);
           } else {
-              console.error('API returned error:', data.error || 'Unknown error');
+              console.error('API returned error:', data.error || 'Unbekannter Fehler');
               // Try again if we haven't exceeded max retries
               if (retryCount < MAX_RETRIES) {
                   setTimeout(() => window.loadUserStats(retryCount + 1), 1000 * (retryCount + 1));

@@ -183,7 +183,7 @@ $sectionElementId = 'section-' . preg_replace('/[^a-zA-Z0-9]/', '', $sectionId) 
                                 
                                 <div class="player-info">
                                     <div class="player-name">
-                                        <?= htmlspecialchars($player['username'] ?? $player['name'] ?? 'Unknown') ?>
+                                        <?= htmlspecialchars($player['username'] ?? $player['name'] ?? 'Unbekannt') ?>
                                         <?php if (!empty($player['badges'])): ?>
                                             <?php foreach ($player['badges'] as $badge): ?>
                                                 <span class="user-badge">
@@ -244,7 +244,7 @@ $sectionElementId = 'section-' . preg_replace('/[^a-zA-Z0-9]/', '', $sectionId) 
                                 
                                 <div class="player-info">
                                     <div class="player-name">
-                                        <?= htmlspecialchars($player['username'] ?? $player['name'] ?? 'Unknown') ?>
+                                        <?= htmlspecialchars($player['username'] ?? $player['name'] ?? 'Unbekannt') ?>
                                         <?php if ($sectionId === 'Andere' && !empty($player['type'])): ?>
                                             <span class="player-instrument">(<?= str_replace('_', ' ', htmlspecialchars($player['type'])) ?>)</span>
                                         <?php endif; ?>

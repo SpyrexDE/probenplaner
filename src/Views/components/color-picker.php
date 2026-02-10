@@ -242,7 +242,7 @@ if (!$renderComponent) {
 }
 
 // Set defaults for component rendering
-$label = $label ?? 'Choose Color';
+$label = $label ?? 'Farbe wählen';
 $name = $name ?? 'color';
 $selectedColor = $selectedColor ?? '';
 $colors = $colors ?? [

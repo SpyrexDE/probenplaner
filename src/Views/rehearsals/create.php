@@ -1,4 +1,4 @@
-<?php $this->layout('layouts/default', ['title' => 'Create Rehearsal', 'currentPage' => $currentPage ?? 'rehearsals']) ?>
+<?php $this->layout('layouts/default', ['title' => 'Probe anlegen', 'currentPage' => $currentPage ?? 'rehearsals']) ?>
 
 <?php
 // Load form and checkbox styles (components used for styles only)

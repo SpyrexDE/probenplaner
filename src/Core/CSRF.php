@@ -93,7 +93,7 @@ class CSRF
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!self::validatePostToken()) {
-                throw new \Exception('CSRF token validation failed. Please try again.');
+                throw new \Exception('CSRF-Prüfung fehlgeschlagen. Bitte versuchen Sie es erneut.');
             }
         }
     }

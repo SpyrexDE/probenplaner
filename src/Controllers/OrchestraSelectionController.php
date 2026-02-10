@@ -471,6 +471,6 @@ class OrchestraSelectionController extends Controller
         }
         
         // Configuration is malformed
-        throw new \Exception("Orchestra groups configuration is malformed or missing 'tutti' section. Please check src/config/orchestra_groups.php");
+        throw new \Exception("Orchestra groups configuration is malformed or missing 'tutti' section. Please check src/config/orchestra_groups.php.");
     }
 }

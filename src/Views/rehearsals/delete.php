@@ -1,4 +1,4 @@
-<?php $this->layout('layouts/default', ['title' => 'Delete Rehearsal', 'currentPage' => $currentPage ?? 'rehearsals']) ?>
+<?php $this->layout('layouts/default', ['title' => 'Probe löschen', 'currentPage' => $currentPage ?? 'rehearsals']) ?>
 
 <div class="container-app">
     

@@ -64,7 +64,7 @@
 
 <?php
 // Set defaults
-$triggerText = $triggerText ?? 'Toggle';
+$triggerText = $triggerText ?? 'Ein-/Ausblenden';
 $triggerIcon = $triggerIcon ?? 'fas fa-chevron-down';
 $triggerClass = $triggerClass ?? '';
 $content = $content ?? '';

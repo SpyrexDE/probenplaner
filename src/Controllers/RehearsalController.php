@@ -134,13 +134,13 @@ class RehearsalController extends Controller
                 $result = $this->rehearsalModel->create($rehearsalData, $finalGroups);
                 
                 if ($result && !is_array($result)) {
-                    $this->setFlash('success', 'Rehearsal created successfully');
+                    $this->setFlash('success', 'Probe wurde erfolgreich erstellt.');
                     $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
                     return;
                 } else {
                     $errorMessage = is_array($result) && isset($result['message']) 
-                        ? 'Failed to create rehearsal: ' . $result['message']
-                        : 'Failed to create rehearsal';
+                        ? 'Probe konnte nicht erstellt werden: ' . $result['message']
+                        : 'Probe konnte nicht erstellt werden';
                     
                     $errorDetails = is_array($result) ? ($result['details'] ?? $result['data'] ?? null) : null;
                     if (is_array($errorDetails)) {
@@ -213,7 +213,7 @@ class RehearsalController extends Controller
         $rehearsal = $this->rehearsalModel->findById($rehearsalId);
         
         if (!$rehearsal) {
-            $this->setFlash('error', 'Rehearsal not found');
+            $this->setFlash('error', 'Probe nicht gefunden');
             $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
             return;
         }
@@ -276,13 +276,13 @@ class RehearsalController extends Controller
                 $result = $this->rehearsalModel->updateRehearsal($rehearsalId, $updateData, $finalGroups);
                 
                 if ($result === true) {
-                    $this->setFlash('success', 'Rehearsal updated successfully');
+                    $this->setFlash('success', 'Probe wurde erfolgreich aktualisiert.');
                     $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
                     return;
                 } else {
                     $errorMessage = is_array($result) && isset($result['message']) 
-                        ? 'Failed to update rehearsal: ' . $result['message']
-                        : 'Failed to update rehearsal';
+                        ? 'Probe konnte nicht aktualisiert werden: ' . $result['message']
+                        : 'Probe konnte nicht aktualisiert werden';
                     
                     $errorDetails = is_array($result) ? ($result['details'] ?? $result['data'] ?? null) : null;
                     if (is_array($errorDetails)) {
@@ -351,7 +351,7 @@ class RehearsalController extends Controller
             $this->requireRole('conductor');
         } catch (\Exception $e) {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                echo json_encode(['success' => false, 'message' => 'Nicht berechtigt']);
                 exit;
             }
             $this->redirect('/login');
@@ -368,7 +368,7 @@ class RehearsalController extends Controller
         
         if ($rehearsalId <= 0) {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                echo json_encode(['success' => false, 'message' => 'Invalid rehearsal ID']);
+                echo json_encode(['success' => false, 'message' => 'Ungültige Proben-ID']);
                 exit;
             }
             $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
@@ -383,13 +383,13 @@ class RehearsalController extends Controller
                 echo json_encode(['success' => true]);
                 exit;
             }
-            $this->setFlash('success', 'Rehearsal deleted successfully');
+            $this->setFlash('success', 'Probe wurde erfolgreich gelöscht.');
         } else {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                echo json_encode(['success' => false, 'message' => 'Failed to delete rehearsal']);
+                echo json_encode(['success' => false, 'message' => 'Probe konnte nicht gelöscht werden']);
                 exit;
             }
-            $this->setFlash('error', 'Failed to delete rehearsal');
+            $this->setFlash('error', 'Probe konnte nicht gelöscht werden');
         }
         
         $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');

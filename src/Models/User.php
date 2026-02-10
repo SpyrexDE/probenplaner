@@ -152,7 +152,7 @@ class User extends Model
             if ($result === false) {
                 $mysqli = $this->db->getConnection();
                 $errorCode = $mysqli ? $mysqli->errno : 0;
-                $errorMsg = $mysqli ? $mysqli->error : 'Unknown database error';
+                $errorMsg = $mysqli ? $mysqli->error : 'Unbekannter Datenbankfehler';
                 
                 return [
                     'error' => true,

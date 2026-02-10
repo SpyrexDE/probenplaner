@@ -112,7 +112,7 @@ class RehearsalGroupProcessor
         $errors = [];
         
         if (empty($groups)) {
-            $errors[] = 'At least one group must be selected';
+            $errors[] = 'Es muss mindestens eine Gruppe ausgewählt werden.';
         }
         
         return $errors;

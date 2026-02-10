@@ -1,4 +1,4 @@
-<?php $this->layout('layouts/default', ['title' => 'My Rehearsal Responses', 'currentPage' => $currentPage ?? 'promises']) ?>
+<?php $this->layout('layouts/default', ['title' => 'Meine Proben-Rückmeldungen', 'currentPage' => $currentPage ?? 'promises']) ?>
 
 <?php 
 /**

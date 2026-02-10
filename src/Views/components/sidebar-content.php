@@ -13,7 +13,7 @@
         </div>
         <div class="sidebar-info">
             <div class="sidebar-name">
-                <?= $_SESSION['username'] ?? 'User' ?>
+                <?= $_SESSION['username'] ?? 'Benutzer' ?>
                 <?php 
                 // Get small group status from user_orchestras table
                 $isSmallGroup = false;

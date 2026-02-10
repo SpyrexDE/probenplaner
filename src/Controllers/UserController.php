@@ -411,7 +411,7 @@ class UserController extends Controller
                 
                 if (strpos($errorMsg, 'Unknown column') !== false) {
                     throw new \Exception(
-                        'Es fehlt eine Spalte in der Datenbank. Bitte führen Sie die Migrationen aus, um die Datenbankstruktur zu aktualisieren.'
+                        'Missing database column. Please run migrations to update the database schema.'
                     );
                 } else {
                     $this->addAlert('Fehler!', 'Fehler beim Aktualisieren des Profils.', 'error', $errorMsg);
@@ -570,7 +570,7 @@ class UserController extends Controller
         }
         
         // Configuration is malformed - this should not happen with proper setup
-        throw new \Exception("Orchestra groups configuration is malformed or missing 'tutti' section. Please check src/config/orchestra_groups.php");
+        throw new \Exception("Orchestra groups configuration is malformed or missing 'tutti' section. Please check src/config/orchestra_groups.php.");
     }
     
     /**
@@ -594,7 +594,7 @@ class UserController extends Controller
         // Check if username parameter exists
         if (!isset($_GET['username'])) {
             http_response_code(400);
-            echo json_encode(['error' => 'No username provided']);
+            echo json_encode(['error' => 'Kein Benutzername angegeben']);
             return;
         }
         
@@ -603,14 +603,14 @@ class UserController extends Controller
         
         if (!$user) {
             http_response_code(404);
-            echo json_encode(['error' => 'User not found']);
+            echo json_encode(['error' => 'Benutzer nicht gefunden']);
             return;
         }
         
         // Check which operation is requested
         if (isset($_GET['getLastLogin'])) {
             // Return the last login time
-            $lastLogin = $user['last_login'] ?? 'N/A';
+            $lastLogin = $user['last_login'] ?? '–';
             echo json_encode(['last_login' => $lastLogin]);
             return;
         }
@@ -640,7 +640,7 @@ class UserController extends Controller
         // Check if username parameter exists
         if (!isset($_GET['username'])) {
             http_response_code(400);
-            echo json_encode(['error' => 'No username provided']);
+            echo json_encode(['error' => 'Kein Benutzername angegeben']);
             return;
         }
         
@@ -649,7 +649,7 @@ class UserController extends Controller
         
         if (!$user) {
             http_response_code(404);
-            echo json_encode(['error' => 'User not found']);
+            echo json_encode(['error' => 'Benutzer nicht gefunden']);
             return;
         }
         
@@ -725,7 +725,7 @@ class UserController extends Controller
         // Check if username parameter exists
         if (!isset($_GET['username'])) {
             http_response_code(400);
-            echo json_encode(['error' => 'No username provided']);
+            echo json_encode(['error' => 'Kein Benutzername angegeben']);
             return;
         }
         
@@ -734,7 +734,7 @@ class UserController extends Controller
         
         if (!$user) {
             http_response_code(404);
-            echo json_encode(['error' => 'User not found']);
+            echo json_encode(['error' => 'Benutzer nicht gefunden']);
             return;
         }
         

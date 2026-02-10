@@ -100,7 +100,7 @@ if (!$renderComponent) {
 }
 
 // Set defaults for component rendering
-$message = $message ?? 'Saving...';
+$message = $message ?? 'Speichern...';
 $show = $show ?? false;
 $type = $type ?? 'default'; // default, success, error
 $icon = $icon ?? 'spinner';

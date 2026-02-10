@@ -26,7 +26,7 @@ class ApiController extends Controller
     {
         // Ensure user is logged in and has orchestra context
         if (!isset($_SESSION['user_id']) || !isset($_SESSION['current_orchestra_id'])) {
-            $this->jsonResponse(['success' => false, 'error' => 'Not authenticated or no orchestra selected'], 401);
+            $this->jsonResponse(['success' => false, 'error' => 'Nicht angemeldet oder kein Orchester ausgewählt'], 401);
             return;
         }
 
@@ -99,7 +99,7 @@ class ApiController extends Controller
 
             $this->jsonResponse(['success' => true, 'stats' => $stats]);
         } catch (\Exception $e) {
-            $this->jsonResponse(['success' => false, 'error' => 'Failed to load stats'], 500);
+            $this->jsonResponse(['success' => false, 'error' => 'Statistiken konnten nicht geladen werden'], 500);
         }
     }
 
@@ -145,7 +145,7 @@ class ApiController extends Controller
 
             $this->jsonResponse(['success' => true, 'stats' => $stats]);
         } catch (\Exception $e) {
-            $this->jsonResponse(['success' => false, 'error' => 'Failed to load conductor stats'], 500);
+            $this->jsonResponse(['success' => false, 'error' => 'Dirigenten-Statistiken konnten nicht geladen werden'], 500);
         }
     }
 
@@ -154,7 +154,7 @@ class ApiController extends Controller
      */
     public function test()
     {
-        $this->jsonResponse(['success' => true, 'message' => 'API is working']);
+        $this->jsonResponse(['success' => true, 'message' => 'API funktioniert']);
     }
 
     /**
