@@ -83,4 +83,71 @@ if (function_exists('error_log')) {
 }
 
 // Initialize the database connection
-\App\Core\Database::getInstance(); 
+\App\Core\Database::getInstance();
+
+// Set global exception handler
+set_exception_handler(function ($e) {
+    // Log exception first
+    $context = [
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+        'trace' => $e->getTraceAsString()
+    ];
+    \App\Core\ErrorHandler::log($e->getMessage(), $context);
+    
+    // Check if it's an AJAX/JSON request
+    $isJson = (
+        !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest'
+        || isset($_SERVER['CONTENT_TYPE']) && strpos($_SERVER['CONTENT_TYPE'], 'application/json') !== false
+        || isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false
+    );
+    
+    $message = "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.";
+    $details = "Fehler: " . $e->getMessage() . "\n" .
+               "Datei: " . $e->getFile() . " (" . $e->getLine() . ")\n\n" .
+               "Stack Trace:\n" . $e->getTraceAsString();
+    
+    if ($isJson) {
+        // Return JSON response
+        if (!headers_sent()) {
+            header('Content-Type: application/json');
+            http_response_code(500);
+        }
+        echo json_encode([
+            'success' => false,
+            'message' => $message,
+            'details' => $details
+        ]);
+    } else {
+        // Render error page or redirect
+        if (!headers_sent() && isset($_SESSION)) {
+            // If session is active, try to use flash message and redirect
+            // Helper function to set flash without using Controller class directly
+            if (!isset($_SESSION['alerts'])) {
+                $_SESSION['alerts'] = [];
+            }
+            $_SESSION['alerts'][] = ['Fehler!', $message, 'error', $details];
+            
+            // Redirect to previous page or home
+            $referrer = $_SERVER['HTTP_REFERER'] ?? '/';
+            // Avoid redirect loops if we are already on an error path (though uncommon here)
+            header("Location: " . $referrer);
+        } else {
+            // Fallback: Simple error output
+            if (!headers_sent()) {
+                http_response_code(500);
+            }
+            // Basic HTML error page
+            echo '<!DOCTYPE html><html><head><title>Systemfehler</title><style>body{font-family:sans-serif;padding:20px;text-align:center;color:#333;}.error-box{background:#fee;border:1px solid #eba;padding:15px;border-radius:5px;max-width:600px;margin:20px auto;}.details{display:none;text-align:left;background:#fff;padding:10px;border:1px solid #ddd;overflow:auto;margin-top:10px;font-size:12px;}</style></head><body>';
+            echo '<h1>Uups! Etwas ist schiefgelaufen.</h1>';
+            echo '<div class="error-box">';
+            echo '<p>' . htmlspecialchars($message) . '</p>';
+            echo '<button onclick="var d=document.getElementById(\'d\');d.style.display=d.style.display===\'block\'?\'none\':\'block\';this.innerText=d.style.display===\'block\'?\'Details ausblenden\':\'Details anzeigen\'">Details anzeigen</button>';
+            echo '<div id="d" class="details"><pre>' . htmlspecialchars($details) . '</pre></div>';
+            echo '</div>';
+            echo '<p><a href="/">Zurück zur Startseite</a></p>';
+            echo '</body></html>';
+        }
+    }
+    exit;
+}); 

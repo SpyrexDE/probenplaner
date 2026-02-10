@@ -21,24 +21,21 @@ include __DIR__ . '/../components/checkbox.php';
     <div class="form-container">
         <form method="post" action="/<?= $_SESSION['current_orchestra_id'] ?>/rehearsals/create" class="form">
             <div class="form-group">
-                <label for="date" class="form-label">Datum</label>
-                <input type="date" id="date" name="date" value="<?= htmlspecialchars($formData['date'] ?? '') ?>" class="form-input" required>
-            </div>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="start_time" class="form-label">Startzeit</label>
-                    <input type="time" id="start_time" name="start_time" value="<?= htmlspecialchars($formData['start_time'] ?? '') ?>" class="form-input" required>
-                </div>
-                <div class="form-group">
-                    <label for="end_time" class="form-label">Endzeit</label>
-                    <input type="time" id="end_time" name="end_time" value="<?= htmlspecialchars($formData['end_time'] ?? '') ?>" class="form-input" required>
-                </div>
+                <?php 
+                $start_value = $formData['start'] ?? '';
+                $end_value = $formData['end'] ?? '';
+                $start_name = 'start';
+                $end_name = 'end';
+                $label_start = 'Anfang';
+                $label_end = 'Ende';
+                $required = true;
+                include __DIR__ . '/../components/datetime-range-picker.php'; 
+                ?>
             </div>
             
             <div class="form-group">
                 <label for="location" class="form-label">Ort</label>
-                <input type="text" id="location" name="location" value="<?= htmlspecialchars($formData['location'] ?? '') ?>" class="form-input" required minlength="3" maxlength="50">
+                <input type="text" id="location" name="location" value="<?= htmlspecialchars($formData['location'] ?? '') ?>" class="form-input" maxlength="50">
             </div>
             
             <div class="form-group">
@@ -56,6 +53,7 @@ include __DIR__ . '/../components/checkbox.php';
                 $value = $formData['rehearsal_type'] ?? '';
                 $suggestions = ['Konzertreise', 'Konzert', 'Generalprobe', 'Registerprobe', 'Probenwochenende', 'Dozentenregisterprobe'];
                 $placeholder = 'Sondertermin eingeben oder auswählen';
+                $required = false;
                 include __DIR__ . '/../components/autocomplete-input.php'; 
                 ?>
             </div>

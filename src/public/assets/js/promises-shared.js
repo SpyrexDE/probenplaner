@@ -9,7 +9,7 @@
 /* Shared JavaScript functionality for promise views (admin and leader) */
 
 // Initialize promise view functionality
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initializeCollapseControls();
     initializeUserClickHandlers();
     initializeViewToggle();
@@ -19,17 +19,17 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeCollapseControls() {
     const treeHeaders = document.querySelectorAll('.tree-node-header[data-toggle="collapse"]');
     treeHeaders.forEach(header => {
-        header.addEventListener('click', function() {
+        header.addEventListener('click', function () {
             const expanded = this.getAttribute('aria-expanded') === 'true';
             const newExpanded = !expanded;
             this.setAttribute('aria-expanded', newExpanded);
-            
+
             // Toggle the parent tree node expanded class
             const treeNode = this.closest('.tree-node');
             if (treeNode) {
                 treeNode.classList.toggle('tree-node-expanded', newExpanded);
             }
-            
+
             // Get target content element
             const targetId = this.getAttribute('href');
             if (targetId) {
@@ -59,16 +59,16 @@ function initializeUserClickHandlers() {
     userSpans.forEach(span => {
         if (span) {
             span.style.cursor = 'pointer';
-            
-            span.addEventListener('click', function(e) {
+
+            span.addEventListener('click', function (e) {
                 // Prevent click from affecting parent elements
                 e.stopPropagation();
-                
+
                 // Extract user information (only username, exclude note)
                 const usernameElement = this.querySelector('.tree-user-item-name');
                 const username = usernameElement ? usernameElement.textContent.trim() : this.innerText.split('-')[0].trim();
                 const stats = getUserStats(username);
-                
+
                 // Show SweetAlert with user statistics
                 Swal.fire({
                     title: username,
@@ -114,12 +114,12 @@ function getUserStats(username) {
         const usernameElement = span.querySelector('.tree-user-item-name');
         return usernameElement ? usernameElement.textContent.trim() === username : span.textContent.includes(username);
     });
-    
+
     // Count each status type
     let attending = 0;
     let notAttending = 0;
     let noResponse = 0;
-    
+
     userSpans.forEach(span => {
         if (span.querySelector('.fa-check-circle')) {
             attending++;
@@ -129,7 +129,7 @@ function getUserStats(username) {
             noResponse++;
         }
     });
-    
+
     return { attending, notAttending, noResponse };
 }
 
@@ -170,7 +170,10 @@ function deleteAccount(username) {
                 })
                 .catch(error => {
                     console.error('Error deleting account:', error);
-                    showErrorToast(error.message || "Die Anfrage konnte nicht verarbeitet werden.");
+                    window.notifyErrorWithDetails(
+                        "Die Anfrage konnte nicht verarbeitet werden.",
+                        error.message
+                    );
                 });
         }
     });
@@ -213,25 +216,25 @@ function resetPassword(username) {
                     const password = passwordMatch ? passwordMatch[1] : '';
                     const userMatch = msg.match(/Nutzers\s+(\S+)\s+wurde/);
                     const username = userMatch ? userMatch[1] : '';
-                    
+
                     Swal.fire({
                         title: 'Passwort zurückgesetzt',
                         html: '<div style="text-align: left; margin: 15px 0;">' +
-                                  '<p style="margin-bottom: 15px;">Das Passwort des Nutzers <strong>' + username + '</strong> wurde zurückgesetzt</p>' +
-                                  '<div style="background: #f8f9fa; padding: 15px; border-radius: 4px; border: 1px solid #dee2e6; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">' +
-                                      '<div style="font-family: monospace; font-size: 18px; font-weight: bold; color: #495057;">' +
-                                          password +
-                                      '</div>' +
-                                      '<button id="copyPasswordBtn" style="background: #478cf4; border: none; border-radius: 4px; color: white; padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.2s ease; display: flex; align-items: center; gap: 4px; margin-left: 15px;" onmouseover="this.style.background=\'#3b7ae0\'" onmouseout="this.style.background=\'#478cf4\'">' +
-                                          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-                                              '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>' +
-                                              '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>' +
-                                          '</svg>' +
-                                          'Kopieren' +
-                                      '</button>' +
-                                  '</div>' +
-                                  '<small style="color: #6c757d;">Teile dieses Passwort sicher mit dem Benutzer</small>' +
-                               '</div>',
+                            '<p style="margin-bottom: 15px;">Das Passwort des Nutzers <strong>' + username + '</strong> wurde zurückgesetzt</p>' +
+                            '<div style="background: #f8f9fa; padding: 15px; border-radius: 4px; border: 1px solid #dee2e6; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">' +
+                            '<div style="font-family: monospace; font-size: 18px; font-weight: bold; color: #495057;">' +
+                            password +
+                            '</div>' +
+                            '<button id="copyPasswordBtn" style="background: #478cf4; border: none; border-radius: 4px; color: white; padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.2s ease; display: flex; align-items: center; gap: 4px; margin-left: 15px;" onmouseover="this.style.background=\'#3b7ae0\'" onmouseout="this.style.background=\'#478cf4\'">' +
+                            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                            '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>' +
+                            '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>' +
+                            '</svg>' +
+                            'Kopieren' +
+                            '</button>' +
+                            '</div>' +
+                            '<small style="color: #6c757d;">Teile dieses Passwort sicher mit dem Benutzer</small>' +
+                            '</div>',
                         icon: 'success',
                         confirmButtonText: 'Verstanden',
                         confirmButtonColor: '#478cf4',
@@ -257,7 +260,7 @@ function resetPassword(username) {
                                         textArea.select();
                                         document.execCommand('copy');
                                         document.body.removeChild(textArea);
-                                        
+
                                         copyBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"></polyline></svg> Kopiert!';
                                         copyBtn.style.background = '#28a745';
                                         setTimeout(() => {
@@ -272,7 +275,10 @@ function resetPassword(username) {
                 })
                 .catch(error => {
                     console.error('Error resetting password:', error);
-                    showErrorToast(error.message || "Die Anfrage konnte nicht verarbeitet werden.", 10000);
+                    window.notifyErrorWithDetails(
+                        "Die Anfrage konnte nicht verarbeitet werden.",
+                        error.message
+                    );
                 });
         }
     });
@@ -296,6 +302,21 @@ function standardApiCall(url, options = {}) {
             throw new Error(message);
         }
         return isJson ? (parseJson() || {}) : {};
+    }).catch(error => {
+        // Automatically check if the error coming from the server has details/message structure
+        let details = error.message;
+        // Try to see if message is a JSON object with details
+        try {
+            const parsed = JSON.parse(error.message);
+            if (parsed && typeof parsed === 'object') {
+                if (parsed.message) error.message = parsed.message;
+                if (parsed.details) details = parsed.details;
+            }
+        } catch (e) { }
+
+        // Re-throw to allow specific handling if needed, but ensure we have a good message
+        error.details = details;
+        throw error;
     });
 }
 
@@ -309,11 +330,11 @@ function initializeViewToggle() {
     const viewToggle = document.getElementById('viewToggle');
     if (!viewToggle) return; // Only exists on leader view
     if (viewToggle.disabled) return; // Disabled by settings: leave both views in default (simple) and gray out
-    
+
     const simpleViews = document.querySelectorAll('.simple-view');
     const sectionalViews = document.querySelectorAll('.sectional-view');
     const toggleLabels = document.querySelectorAll('.toggle-label');
-    
+
     // Update label styling based on toggle state
     function updateLabels(isChecked) {
         // Single label variant: highlight when ON
@@ -321,7 +342,7 @@ function initializeViewToggle() {
             toggleLabels[0].classList.toggle('active', isChecked);
         }
     }
-    
+
     // Toggle views
     function toggleViews(showSectional) {
         simpleViews.forEach(view => {
@@ -329,20 +350,20 @@ function initializeViewToggle() {
                 view.style.display = showSectional ? 'none' : 'block';
             }
         });
-        
+
         sectionalViews.forEach(view => {
             if (view) {
                 view.style.display = showSectional ? 'block' : 'none';
             }
         });
-        
+
         updateLabels(showSectional);
     }
-    
+
     // Check URL parameter to determine initial state (takes precedence over localStorage)
     const urlParams = new URLSearchParams(window.location.search);
     const viewAllParam = urlParams.get('viewAll');
-    
+
     if (viewAllParam === '1') {
         // URL says show all sections
         viewToggle.checked = true;
@@ -353,9 +374,9 @@ function initializeViewToggle() {
         toggleViews(false);
         updateLabels(false);
     }
-    
+
     // Handle toggle change
-    viewToggle.addEventListener('change', function() {
+    viewToggle.addEventListener('change', function () {
         // Update URL parameter and reload page
         const url = new URL(window.location);
         if (this.checked) {
@@ -365,7 +386,7 @@ function initializeViewToggle() {
             // Show only own section
             url.searchParams.delete('viewAll');
         }
-        
+
         // Reload page with new parameter
         window.location.href = url.toString();
     });

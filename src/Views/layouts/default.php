@@ -144,7 +144,7 @@ if (!\App\Core\ThemeManager::themeExists($currentUserTheme)) {
     <!-- JavaScript Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="/assets/js/jquery.min.js"></script>
-    <script src="/assets/js/notifications.js"></script>
+    <script src="/assets/js/notifications.js?v=<?= time() + 2 ?>"></script>
     
     <!-- Tippy.js for tooltips -->
     <script src="https://unpkg.com/@popperjs/core@2"></script>

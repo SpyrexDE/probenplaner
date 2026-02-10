@@ -90,27 +90,32 @@ class ErrorHandler
     {
         error_log("Database Error in {$operation}: " . $e->getMessage());
         
-        // Check for specific MySQL error codes
         $code = $e->getCode();
-        $message = $e->getMessage();
+        $technicalDetails = $e->getMessage();
         
+        $userMessage = null;
         switch ($code) {
-            case 1062: // Duplicate entry
-                return self::error("Dieser Eintrag existiert bereits.");
-                
-            case 1452: // Foreign key constraint fails
-                return self::error("Ungültige Referenz - der referenzierte Datensatz existiert nicht.");
-                
-            case 1054: // Unknown column
-                return self::error("Datenbankstruktur veraltet. Bitte führen Sie Migrationen aus.");
-                
-            case 2002: // Connection refused
-                return self::error("Datenbankverbindung fehlgeschlagen. Bitte versuchen Sie es später erneut.");
-                
+            case 1062:
+                $userMessage = "Dieser Eintrag existiert bereits.";
+                break;
+            case 1452:
+                $userMessage = "Ungültige Referenz - der referenzierte Datensatz existiert nicht.";
+                break;
+            case 1054:
+                $userMessage = "Datenbankstruktur veraltet. Bitte führen Sie Migrationen aus.";
+                break;
+            case 2002:
+                $userMessage = "Datenbankverbindung fehlgeschlagen. Bitte versuchen Sie es später erneut.";
+                break;
             default:
-                // Generic database error - don't expose internal details
-                return self::error("Es ist ein Datenbankfehler aufgetreten. Bitte versuchen Sie es später erneut.");
+                $userMessage = "Es ist ein Datenbankfehler aufgetreten. Bitte versuchen Sie es später erneut.";
         }
+        
+        return [
+            'error' => true,
+            'message' => $userMessage,
+            'details' => $technicalDetails
+        ];
     }
     
     /**

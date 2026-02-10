@@ -116,10 +116,10 @@ class Controller
      * @param string $title Alert title
      * @param string|array $message Alert message(s)
      * @param string $type Alert type (success, error, info)
-     * @param string|null $details Optional detailed information
+     * @param string|array|null $details Optional detailed information
      * @return void
      */
-    protected function addAlert(string $title, $message, string $type, ?string $details = null): void
+    protected function addAlert(string $title, $message, string $type, $details = null): void
     {
         if (!isset($_SESSION['alerts']) || !is_array($_SESSION['alerts'])) {
             $_SESSION['alerts'] = [];
@@ -128,6 +128,11 @@ class Controller
         // Handle array messages
         if (is_array($message)) {
             $message = implode(', ', $message);
+        }
+
+        // Handle array details
+        if (is_array($details)) {
+            $details = json_encode($details, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         }
         
         $_SESSION['alerts'][] = [$title, $message, $type, $details];

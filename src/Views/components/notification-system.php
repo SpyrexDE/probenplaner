@@ -12,30 +12,14 @@
             const type = '<?= $message['type'] ?>';
             const text = '<?= htmlspecialchars($message['message']) ?>';
             const details = <?= isset($message['details']) && $message['details'] ? json_encode($message['details']) : 'null' ?>;
+            
             if (type === 'error' && details) {
-                Swal.fire({
-                    title: text,
-                    html: `${text}<br><button id="flashDetailsBtn_<?= $key ?>" style="margin-top:10px;" class="swal2-styled">Details anzeigen</button><div id="flashErrorDetails_<?= $key ?>" style="display:none; margin-top:10px; text-align:left; font-size:12px; color:#a94442; background:#f9f2f4; border:1px solid #ebccd1; padding:10px; border-radius:4px; white-space:pre-wrap;">${details}</div>`,
-                    icon: 'error',
-                    confirmButtonColor: '#478cf4',
-                    didOpen: () => {
-                        const btn = document.getElementById('flashDetailsBtn_<?= $key ?>');
-                        const detailsEl = document.getElementById('flashErrorDetails_<?= $key ?>');
-                        if (btn && detailsEl) {
-                            btn.onclick = function() {
-                                if (detailsEl.style.display === 'none') {
-                                    detailsEl.style.display = 'block';
-                                    btn.textContent = 'Details ausblenden';
-                                } else {
-                                    detailsEl.style.display = 'none';
-                                    btn.textContent = 'Details anzeigen';
-                                }
-                            };
-                        }
-                    }
-                });
+                window.notifyErrorWithDetails(text, details);
             } else {
-                if (type === 'success') window.notifySuccess(text); else if (type === 'warning') window.notifyInfo(text); else window.notifyInfo(text);
+                if (type === 'success') window.notifySuccess(text);
+                else if (type === 'error') window.notifyError(text);
+                else if (type === 'warning') window.notifyInfo(text); // Warning maps to info for now, or could use specific icon
+                else window.notifyInfo(text);
             }
         })();
     <?php unset($_SESSION['flash_messages'][$key]); endforeach; ?>
@@ -51,35 +35,20 @@
             const message = `<?= nl2br(htmlspecialchars($alert[1])) ?>`;
             const hasDetails = <?= isset($alert[3]) && $alert[3] ? 'true' : 'false' ?>;
             const details = `<?= isset($alert[3]) ? htmlspecialchars($alert[3]) : '' ?>`;
+            
+            // Combine title and message for the toast/modal
+            const fullMessage = type === 'error' ? message : (title + ': ' + message);
+            
             if (type === 'error') {
-                Swal.fire({
-                    title: title,
-                    html: hasDetails ? `${message}<br><button id="showDetailsBtn_<?= $key ?>" style="margin-top:10px;" class="swal2-styled">Details anzeigen</button><div id="errorDetails_<?= $key ?>" style="display:none; margin-top:10px; text-align:left; font-size:12px; color:#a94442; background:#f9f2f4; border:1px solid #ebccd1; padding:10px; border-radius:4px; white-space:pre-wrap;">${details}</div>` : message,
-                    icon: 'error',
-                    confirmButtonColor: '#478cf4',
-                    showConfirmButton: true,
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                    didOpen: () => {
-                        const btn = document.getElementById('showDetailsBtn_<?= $key ?>');
-                        const detailsEl = document.getElementById('errorDetails_<?= $key ?>');
-                        if (btn && detailsEl) {
-                            btn.onclick = function() {
-                                if (detailsEl.style.display === 'none') {
-                                    detailsEl.style.display = 'block';
-                                    btn.textContent = 'Details ausblenden';
-                                } else {
-                                    detailsEl.style.display = 'none';
-                                    btn.textContent = 'Details anzeigen';
-                                }
-                            };
-                        }
-                    }
-                });
+                if (hasDetails) {
+                    window.notifyErrorWithDetails(message, details);
+                } else {
+                    window.notifyError(message);
+                }
             } else if (type === 'success') {
-                window.notifySuccess(message.replace(/<br\/>/g, ' '));
+                window.notifySuccess(fullMessage.replace(/<br\/>/g, ' '));
             } else {
-                window.notifyInfo(message.replace(/<br\/>/g, ' '));
+                window.notifyInfo(fullMessage.replace(/<br\/>/g, ' '));
             }
         })();
     <?php unset($_SESSION['alerts'][$key]); endforeach; ?>

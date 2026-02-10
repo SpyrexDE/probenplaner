@@ -30,10 +30,10 @@ class Rehearsal extends Model
         $sql = "SELECT * FROM {$this->table} WHERE orchestra_id = {$orchestraId}";
         
         if (!$includeOld) {
-            $sql .= " AND date >= CURDATE()";
+            $sql .= " AND start >= NOW()";
         }
         
-        $sql .= " ORDER BY date, start_time";
+        $sql .= " ORDER BY start ASC";
         
         $result = $this->db->query($sql);
         
@@ -44,8 +44,10 @@ class Rehearsal extends Model
         
         $rehearsals = [];
         while ($row = $result->fetch_assoc()) {
-            // Create formatted date field while preserving original
-            $row['date_formatted'] = \App\Core\Utilities::formatDate($row['date']);
+            // Create formatted date field
+            $row['date_formatted'] = \App\Core\Utilities::formatDate(date('Y-m-d', strtotime($row['start'])));
+            $row['start_formatted'] = date('H:i', strtotime($row['start']));
+            $row['end_formatted'] = date('H:i', strtotime($row['end']));
             
             // Add related groups
             $row['groups'] = $this->getGroups($row['id']);
@@ -136,15 +138,14 @@ class Rehearsal extends Model
     public function getForUser(string $userType, int $orchestraId, bool $includeOld = false, bool $isSmallGroup = false): array
     {
         $orchestraId = (int)$orchestraId;
-        $today = date('Y-m-d');
         
         $sql = "SELECT * FROM {$this->table} WHERE orchestra_id = {$orchestraId} ";
         
         if (!$includeOld) {
-            $sql .= "AND date >= '{$today}' ";
+            $sql .= "AND start >= NOW() ";
         }
         
-        $sql .= "ORDER BY date, start_time";
+        $sql .= "ORDER BY start ASC";
         
         $result = $this->db->query($sql);
         
@@ -155,7 +156,9 @@ class Rehearsal extends Model
                 $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($row);
                 
                 if ($this->isUserInRehearsalGroup($userType, $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
-                    $row['date_formatted'] = \App\Core\Utilities::formatDate($row['date']);
+                    $row['date_formatted'] = \App\Core\Utilities::formatDate(date('Y-m-d', strtotime($row['start'])));
+                    $row['start_formatted'] = date('H:i', strtotime($row['start']));
+                    $row['end_formatted'] = date('H:i', strtotime($row['end']));
                     $row['groups'] = $this->getGroups($row['id']);
                     $rehearsals[] = $row;
                 }
@@ -236,12 +239,9 @@ class Rehearsal extends Model
         $this->db->getConnection()->begin_transaction();
         
         try {
-            // Set explicit timestamp values in MySQL format - this is confirmed to work
+            // Set timestamp values
             $data['created_at'] = date('Y-m-d H:i:s');
             $data['updated_at'] = date('Y-m-d H:i:s');
-            
-            // Debug output before insert
-            error_log("Raw rehearsal data before insert: " . json_encode($data));
             
             // Insert rehearsal
             $rehearsalId = $this->insert($data);
@@ -261,7 +261,7 @@ class Rehearsal extends Model
                     $details .= "\nUngültige Referenz auf einen anderen Datensatz.";
                 }
                 
-                throw new \Exception($error ? $error : "Failed to create rehearsal record", $errno);
+                throw new \Exception($details, $errno);
             }
             
             // Add groups
@@ -288,7 +288,7 @@ class Rehearsal extends Model
                         $details .= "\nUngültige Referenz auf einen anderen Datensatz.";
                     }
                     
-                    throw new \Exception($error, $errno);
+                    throw new \Exception($details, $errno);
                 }
             }
             }
@@ -319,7 +319,7 @@ class Rehearsal extends Model
         $this->db->getConnection()->begin_transaction();
         
         try {
-            // Set explicit timestamp value in MySQL format - this is confirmed to work
+            // Set timestamp value
             $data['updated_at'] = date('Y-m-d H:i:s');
             
             // Update rehearsal
@@ -340,7 +340,7 @@ class Rehearsal extends Model
                 throw new \Exception($stmt->error);
             }
             
-                        // Add new groups if provided
+            // Add new groups if provided
             if ($groups && is_array($groups)) {
                 foreach ($groups as $group) {
                     $sql = "INSERT INTO rehearsal_groups (rehearsal_id, name) VALUES (?, ?)";
@@ -389,9 +389,15 @@ class Rehearsal extends Model
         $rehearsal = parent::findById($id);
         
         if ($rehearsal) {
-            // Make sure date is in Y-m-d format for forms
-            // Don't convert to dd.mm.yyyy here since the controller needs Y-m-d for the date input
             $rehearsal['groups'] = $this->getGroups($id);
+            // Format for display/forms
+            if (isset($rehearsal['start'])) {
+                $rehearsal['date_formatted'] = \App\Core\Utilities::formatDate(date('Y-m-d', strtotime($rehearsal['start'])));
+                $rehearsal['start_formatted'] = date('H:i', strtotime($rehearsal['start']));
+            }
+            if (isset($rehearsal['end'])) {
+                $rehearsal['end_formatted'] = date('H:i', strtotime($rehearsal['end']));
+            }
         }
         
         return $rehearsal;
@@ -410,15 +416,14 @@ class Rehearsal extends Model
     public function getRelevantForUser($orchestraId, $userType, $userGroups = [], $includeOld = false, $isSmallGroup = false)
     {
         $orchestraId = (int)$orchestraId;
-        $today = date('Y-m-d');
         
         $sql = "SELECT * FROM {$this->table} WHERE orchestra_id = {$orchestraId} ";
         
         if (!$includeOld) {
-            $sql .= "AND date >= '{$today}' ";
+            $sql .= "AND start >= NOW() ";
         }
         
-        $sql .= "ORDER BY date, start_time";
+        $sql .= "ORDER BY start ASC";
         
         $result = $this->db->query($sql);
         
@@ -430,7 +435,9 @@ class Rehearsal extends Model
                 
                 if ($this->isUserInRehearsalGroup($userType, $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
                     // Format the date in a user-friendly format
-                    $row['date_formatted'] = \App\Core\Utilities::formatDate($row['date']);
+                    $row['date_formatted'] = \App\Core\Utilities::formatDate(date('Y-m-d', strtotime($row['start'])));
+                    $row['start_formatted'] = date('H:i', strtotime($row['start']));
+                    $row['end_formatted'] = date('H:i', strtotime($row['end']));
                     $row['groups'] = $this->getGroups($row['id']);
                     $rehearsals[] = $row;
                 }

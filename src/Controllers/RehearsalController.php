@@ -77,44 +77,38 @@ class RehearsalController extends Controller
         // Process form submission
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Sanitize form data
-            $date = \App\Core\Validator::sanitizeUtf8($_POST['date'] ?? '');
-            $start_time = \App\Core\Validator::sanitizeUtf8($_POST['start_time'] ?? '');
-            $end_time = \App\Core\Validator::sanitizeUtf8($_POST['end_time'] ?? '');
+            $start = \App\Core\Validator::sanitizeUtf8($_POST['start'] ?? '');
+            $end = \App\Core\Validator::sanitizeUtf8($_POST['end'] ?? '');
             $location = \App\Core\Validator::sanitizeUtf8($_POST['location'] ?? '');
             $color = \App\Core\Validator::sanitizeUtf8($_POST['color'] ?? '');
             
-            // Process groups data using the new processor
+            // Process groups data
             $rehearsalType = \App\Core\Validator::sanitizeUtf8($_POST['rehearsal_type'] ?? '');
             $finalGroups = \App\Core\RehearsalGroupProcessor::processGroups($_POST);
             $groupValidationErrors = \App\Core\RehearsalGroupProcessor::validateGroups($finalGroups);
             
-            // Check if it's a small group rehearsal
             $isSmallGroup = isset($_POST['is_small_group']) && $_POST['is_small_group'] === (string)\App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED;
             
-            // Validate input using Validator class
+            // Validate input
             $requiredValidation = \App\Core\Validator::validateRequired([
-                'date' => $date,
-                'start_time' => $start_time,
-                'end_time' => $end_time,
-                'location' => $location
-            ], ['date', 'start_time', 'end_time', 'location']);
+                'start' => $start,
+                'end' => $end
+            ], ['start', 'end']);
             
-            $dateValidation = \App\Core\Validator::validateDate($date);
-            $startTimeValidation = \App\Core\Validator::validateTime($start_time, 'Startzeit');
-            $endTimeValidation = \App\Core\Validator::validateTime($end_time, 'Endzeit');
+            $startValidation = \App\Core\Validator::validateDateTime($start);
+            $endValidation = \App\Core\Validator::validateDateTime($end);
             
             // Check if end time is after start time
             $timeOrderErrors = [];
-            if (!empty($start_time) && !empty($end_time) && strtotime($end_time) <= strtotime($start_time)) {
+            if (!empty($start) && !empty($end) && strtotime($end) <= strtotime($start)) {
                 $timeOrderErrors[] = 'Die Endzeit muss nach der Startzeit liegen';
             }
             
             // Merge all validations
             $validation = \App\Core\Validator::mergeResults([
                 $requiredValidation,
-                $dateValidation,
-                $startTimeValidation,
-                $endTimeValidation,
+                $startValidation,
+                $endValidation,
                 ['valid' => empty($timeOrderErrors), 'errors' => $timeOrderErrors],
                 ['valid' => empty($groupValidationErrors), 'errors' => $groupValidationErrors]
             ]);
@@ -124,10 +118,9 @@ class RehearsalController extends Controller
             if (empty($errors)) {
                 // Save rehearsal
                 $rehearsalData = [
-                    'date' => $date,
+                    'start' => $start,
+                    'end' => $end,
                     'type' => $rehearsalType,
-                    'start_time' => $start_time,
-                    'end_time' => $end_time,
                     'location' => $location,
                     'orchestra_id' => (int)$_SESSION['current_orchestra_id'],
                     'is_small_group' => $isSmallGroup ? 1 : 0
@@ -149,11 +142,16 @@ class RehearsalController extends Controller
                         ? 'Failed to create rehearsal: ' . $result['message']
                         : 'Failed to create rehearsal';
                     
-                    // Add detailed error information
-                    $this->addAlert('Fehler!', $errorMessage, 'error', 
-                        is_array($result) && isset($result['details']) ? $result['details'] : null);
+                    $errorDetails = is_array($result) ? ($result['details'] ?? $result['data'] ?? null) : null;
+                    if (is_array($errorDetails)) {
+                        $errorDetails = json_encode($errorDetails, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+                    }
+                    if (empty($errorDetails)) {
+                        $errorDetails = $errorMessage;
+                    }
+                    $this->addAlert('Fehler!', $errorMessage, 'error', $errorDetails);
                     
-                    $errors[] = $errorMessage;
+                    // Don't add to errors array to avoid duplicate notification (addAlert handles it with details)
                 }
             }
             
@@ -162,9 +160,8 @@ class RehearsalController extends Controller
                 'currentPage' => 'rehearsals',
                 'errors' => $errors,
                 'formData' => [
-                    'date' => $date, // HTML date input expects Y-m-d format
-                    'start_time' => $start_time,
-                    'end_time' => $end_time,
+                    'start' => $start,
+                    'end' => $end,
                     'location' => $location,
                     'color' => $color,
                     'rehearsal_type' => $rehearsalType,
@@ -178,9 +175,8 @@ class RehearsalController extends Controller
                 'currentPage' => 'rehearsals',
                 'errors' => [],
                 'formData' => [
-                    'date' => '',
-                    'start_time' => '',
-                    'end_time' => '',
+                    'start' => '',
+                    'end' => '',
                     'location' => '',
                     'color' => Constants::COLOR_WHITE,
                     'rehearsal_type' => '',
@@ -225,44 +221,38 @@ class RehearsalController extends Controller
         // Process form submission
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Sanitize form data
-            $date = \App\Core\Validator::sanitizeUtf8($_POST['date'] ?? '');
-            $start_time = \App\Core\Validator::sanitizeUtf8($_POST['start_time'] ?? '');
-            $end_time = \App\Core\Validator::sanitizeUtf8($_POST['end_time'] ?? '');
+            $start = \App\Core\Validator::sanitizeUtf8($_POST['start'] ?? '');
+            $end = \App\Core\Validator::sanitizeUtf8($_POST['end'] ?? '');
             $location = \App\Core\Validator::sanitizeUtf8($_POST['location'] ?? '');
             $color = \App\Core\Validator::sanitizeUtf8($_POST['color'] ?? '');
             
-            // Process groups data using the new processor
+            // Process groups data
             $rehearsalType = \App\Core\Validator::sanitizeUtf8($_POST['rehearsal_type'] ?? '');
             $finalGroups = \App\Core\RehearsalGroupProcessor::processGroups($_POST);
             $groupValidationErrors = \App\Core\RehearsalGroupProcessor::validateGroups($finalGroups);
             
-            // Check if it's a small group rehearsal
             $isSmallGroup = isset($_POST['is_small_group']) && $_POST['is_small_group'] === (string)\App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED;
             
-            // Validate input using Validator class
+            // Validate input
             $requiredValidation = \App\Core\Validator::validateRequired([
-                'date' => $date,
-                'start_time' => $start_time,
-                'end_time' => $end_time,
-                'location' => $location
-            ], ['date', 'start_time', 'end_time', 'location']);
+                'start' => $start,
+                'end' => $end
+            ], ['start', 'end']);
             
-            $dateValidation = \App\Core\Validator::validateDate($date);
-            $startTimeValidation = \App\Core\Validator::validateTime($start_time, 'Startzeit');
-            $endTimeValidation = \App\Core\Validator::validateTime($end_time, 'Endzeit');
+            $startValidation = \App\Core\Validator::validateDateTime($start);
+            $endValidation = \App\Core\Validator::validateDateTime($end);
             
             // Check if end time is after start time
             $timeOrderErrors = [];
-            if (!empty($start_time) && !empty($end_time) && strtotime($end_time) <= strtotime($start_time)) {
+            if (!empty($start) && !empty($end) && strtotime($end) <= strtotime($start)) {
                 $timeOrderErrors[] = 'Die Endzeit muss nach der Startzeit liegen';
             }
             
             // Merge all validations
             $validation = \App\Core\Validator::mergeResults([
                 $requiredValidation,
-                $dateValidation,
-                $startTimeValidation,
-                $endTimeValidation,
+                $startValidation,
+                $endValidation,
                 ['valid' => empty($timeOrderErrors), 'errors' => $timeOrderErrors],
                 ['valid' => empty($groupValidationErrors), 'errors' => $groupValidationErrors]
             ]);
@@ -272,10 +262,9 @@ class RehearsalController extends Controller
             if (empty($errors)) {
                 // Update rehearsal
                 $updateData = [
-                    'date' => $date,
+                    'start' => $start,
+                    'end' => $end,
                     'type' => $rehearsalType,
-                    'start_time' => $start_time,
-                    'end_time' => $end_time,
                     'location' => $location,
                     'is_small_group' => $isSmallGroup ? 1 : 0
                 ];
@@ -294,19 +283,26 @@ class RehearsalController extends Controller
                     $errorMessage = is_array($result) && isset($result['message']) 
                         ? 'Failed to update rehearsal: ' . $result['message']
                         : 'Failed to update rehearsal';
-                    $errors[] = $errorMessage;
+                    
+                    $errorDetails = is_array($result) ? ($result['details'] ?? $result['data'] ?? null) : null;
+                    if (is_array($errorDetails)) {
+                        $errorDetails = json_encode($errorDetails, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+                    }
+                    if (empty($errorDetails)) {
+                        $errorDetails = $errorMessage;
+                    }
+                    $this->addAlert('Fehler!', $errorMessage, 'error', $errorDetails);
                 }
             }
-            
+
             // If we get here, there were errors
             $this->render('rehearsals/edit', [
                 'currentPage' => 'rehearsals',
                 'rehearsal' => $rehearsal,
                 'errors' => $errors,
                 'formData' => [
-                    'date' => $date,
-                    'start_time' => $start_time,
-                    'end_time' => $end_time,
+                    'start' => $start,
+                    'end' => $end,
                     'location' => $location,
                     'color' => $color,
                     'rehearsal_type' => $rehearsalType,
@@ -315,15 +311,6 @@ class RehearsalController extends Controller
                 ]
             ]);
         } else {
-            // Convert date from Y-m-d to dd.mm.yyyy format for display
-            $displayDate = '';
-            if (!empty($rehearsal['date'])) {
-                // For HTML date input, we need Y-m-d format
-                // The date from the database is likely in Y-m-d format already
-                // But if it's been formatted to dd.mm.yyyy by the model, convert it back
-                $displayDate = \App\Core\Utilities::formatDateForDb($rehearsal['date']);
-            }
-            
             // Get rehearsal type from the new type field
             $rehearsalType = $rehearsal['type'] ?? '';
             $groups = $rehearsal['groups'] ?? [];
@@ -331,25 +318,14 @@ class RehearsalController extends Controller
             // Use the proper form data generation to handle tutti-with-exclusions
             $formData = \App\Core\RehearsalGroupProcessor::generateFormData($groups);
             
-            // Format times for HTML time inputs (strip seconds if present)
-            $startTime = '';
-            $endTime = '';
-            if (!empty($rehearsal['start_time'])) {
-                $startTime = substr($rehearsal['start_time'], 0, 5); // Convert HH:MM:SS to HH:MM
-            }
-            if (!empty($rehearsal['end_time'])) {
-                $endTime = substr($rehearsal['end_time'], 0, 5); // Convert HH:MM:SS to HH:MM
-            }
-            
             // Display the form
             $this->render('rehearsals/edit', [
                 'currentPage' => 'rehearsals',
                 'rehearsal' => $rehearsal,
                 'errors' => [],
                 'formData' => [
-                    'date' => $displayDate,
-                    'start_time' => $startTime,
-                    'end_time' => $endTime,
+                    'start' => $rehearsal['start'] ?? '',
+                    'end' => $rehearsal['end'] ?? '',
                     'location' => $rehearsal['location'],
                     'color' => $rehearsal['color'] ?? '',
                     'rehearsal_type' => $rehearsalType,
@@ -435,12 +411,15 @@ class RehearsalController extends Controller
         // Filter only past rehearsals and apply pagination
         $today = date('Y-m-d');
         $pastRehearsals = array_filter($allPastRehearsals, function($rehearsal) use ($today) {
-            return $rehearsal['date'] < $today;
+            $rehearsalDate = isset($rehearsal['start']) ? substr($rehearsal['start'], 0, 10) : ($rehearsal['date'] ?? '');
+            return $rehearsalDate < $today;
         });
         
         // Sort by date descending (newest first)
         usort($pastRehearsals, function($a, $b) {
-            return strtotime($b['date']) - strtotime($a['date']);
+            $dateA = isset($a['start']) ? $a['start'] : ($a['date'] ?? '');
+            $dateB = isset($b['start']) ? $b['start'] : ($b['date'] ?? '');
+            return strtotime($dateB) - strtotime($dateA);
         });
         
         $totalPastRehearsals = count($pastRehearsals);

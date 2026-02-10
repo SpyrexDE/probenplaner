@@ -256,4 +256,39 @@ class Validator
             'errors' => $allErrors
         ];
     }
+
+    /**
+     * Validate datetime format (Y-m-d\TH:i)
+     * 
+     * @param string $datetime Datetime to validate
+     * @return array Array with 'valid' boolean and 'errors' array
+     */
+    public static function validateDateTime(string $datetime): array
+    {
+        $errors = [];
+        
+        if (empty($datetime)) {
+            $errors[] = "Datum und Zeit fehlen";
+        } elseif (!preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $datetime) && !preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $datetime)) {
+            // Support both HTML5 datetime-local (T) and MySQL format (space)
+            $errors[] = "Ungültiges Datumsformat";
+        } else {
+            try {
+                $dt = new \DateTime($datetime);
+                // Check if it's a valid date (e.g. not 2023-02-30)
+                // strict check is logically tricky with different separators, so rely on DateTime throwing or checking last errors
+                $lastErrors = \DateTime::getLastErrors();
+                if ($lastErrors['warning_count'] > 0 || $lastErrors['error_count'] > 0) {
+                     $errors[] = "Ungültiges Datum oder Zeit";
+                }
+            } catch (\Exception $e) {
+                $errors[] = "Ungültiges Datum oder Zeit";
+            }
+        }
+        
+        return [
+            'valid' => empty($errors),
+            'errors' => $errors
+        ];
+    }
 }

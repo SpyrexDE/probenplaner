@@ -8,7 +8,7 @@
  * - Rehearsal type badges via RehearsalTypeManager
  * - Conditional UI based on user role and context
  * - Advanced date/time formatting
- * - NOW USES: Tailwind utility classes + minimal custom CSS for sophisticated effects
+ * - Uses Tailwind utility classes + minimal custom CSS
  * 
  * Usage for AI:
  * $context = 'promises|rehearsals';
@@ -275,7 +275,8 @@ $time_display = $start_time . ' - ' . $end_time;
 
 // Get German weekday abbreviations
 $germanWeekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-$dayOfWeek = date('w', strtotime($rehearsal['date']));
+$dateForWeekday = $rehearsal['start'] ?? $rehearsal['date'] ?? null;
+$dayOfWeek = $dateForWeekday ? (int)date('w', strtotime($dateForWeekday)) : 0;
 $weekdayShort = $germanWeekdays[$dayOfWeek];
 
 // Get rehearsal type using modern manager
@@ -312,17 +313,37 @@ $cardClasses = 'rehearsal-card';
                     
                     <!-- Content Row: Weekday + Date/Time -->
                     <div class="rehearsal-content-row flex items-center gap-2" style="margin-bottom: 8px;">
+                        <?php
+                        // Calculate dates and times from start/end
+                        $startDt = new DateTime($rehearsal['start']);
+                        $endDt = new DateTime($rehearsal['end']);
+                        $isSameDay = $startDt->format('Y-m-d') === $endDt->format('Y-m-d');
+                        
+                        // Weekday
+                        $germanWeekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+                        $dayOfWeek = $startDt->format('w');
+                        $weekdayShort = $germanWeekdays[$dayOfWeek];
+                        
+                        // Date String
+                        if ($isSameDay) {
+                            $dateDisplay = \App\Core\Utilities::formatDate($startDt->format('Y-m-d'));
+                            $timeDisplay = $startDt->format('H:i') . ' - ' . $endDt->format('H:i');
+                        } else {
+                            $dateDisplay = \App\Core\Utilities::formatDate($startDt->format('Y-m-d')) . ' - ' . \App\Core\Utilities::formatDate($endDt->format('Y-m-d'));
+                            $timeDisplay = $startDt->format('H:i') . ' - ' . $endDt->format('H:i');
+                        }
+                        ?>
                         <!-- Weekday with sophisticated underline effect -->
                         <div class="rehearsal-weekday"><?= strtoupper($weekdayShort) ?></div>
                         
                         <!-- Date/Time Block -->
                         <div class="flex flex-col gap-0">
                             <div class="rehearsal-date" style="font-size: var(--font-size-lg); font-weight: var(--font-weight-bold); color: var(--color-text-primary); line-height: 1.2; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; width: fit-content;">
-                                <?= htmlspecialchars($rehearsal['date_formatted'] ?? $rehearsal['date']) ?>
+                                <?= htmlspecialchars($dateDisplay) ?>
                             </div>
                             <div style="height: 18px; overflow: hidden; position: relative; margin-top: -2px; width: 100%;">
                                 <div style="font-size: var(--font-size-sm); color: var(--color-text-secondary); font-weight: var(--font-weight-medium); line-height: 1; font-family: 'Kantumruy Pro', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace; white-space: nowrap; position: absolute; top: 50%; left: 0; transform: translateY(-50%); transform-origin: left center;">
-                                    <?= htmlspecialchars($time_display) ?>
+                                    <?= htmlspecialchars($timeDisplay) ?>
                                 </div>
                             </div>
                         </div>

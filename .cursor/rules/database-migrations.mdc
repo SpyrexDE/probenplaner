@@ -1,5 +1,6 @@
 ---
 description: If you need to do a schema change on the db create a corresponding migration file using the command './probenplaner.sh migrate:create [name]' and tell the user to apply it. Dont edit existing migration files.
+When the migrations are ready, apply them using the command './probenplaner.sh migrate:up'.
 globs: 
 alwaysApply: false
 ---
