@@ -21,11 +21,11 @@
                     <h4>Termin-Details:</h4>
                     <div class="detail-item">
                         <span class="detail-label">Datum:</span>
-                        <span class="detail-value"><?= htmlspecialchars($rehearsal['date_formatted'] ?? $rehearsal['date']) ?></span>
+                        <span class="detail-value"><?= htmlspecialchars($rehearsal['date_formatted']) ?></span>
                     </div>
                     <?php 
-                        $start_time_del = isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, 5) : '??:??';
-                        $end_time_del = isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, 5) : '??:??';
+                        $start_time_del = substr($rehearsal['start_time'], 0, 5);
+                        $end_time_del = substr($rehearsal['end_time'], 0, 5);
                         $time_display_del = $start_time_del . ' - ' . $end_time_del;
                     ?>
                     <div class="detail-item">

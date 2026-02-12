@@ -58,8 +58,7 @@ function sortGroups($groups) {
         $today = date('Y-m-d');
         
         foreach ($rehearsals as $rehearsal) {
-            $rehearsalDate = $rehearsal['date'] ?? (isset($rehearsal['start']) ? substr($rehearsal['start'], 0, 10) : '');
-            if ($rehearsalDate >= $today) {
+            if ($rehearsal['date'] >= $today) {
                 $currentRehearsals[] = $rehearsal;
             } else {
                 $pastRehearsals[] = $rehearsal;

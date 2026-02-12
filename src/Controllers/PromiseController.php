@@ -637,7 +637,7 @@ class PromiseController extends Controller
                     'next_rehearsal' => [
                         'id' => $rehearsals[0]['id'],
                         'date' => $rehearsals[0]['date'],
-                        'date_formatted' => $rehearsals[0]['date_formatted'] ?? date('d.m.Y', strtotime($rehearsals[0]['date'])),
+                        'date_formatted' => $rehearsals[0]['date_formatted'],
                         'type' => $rehearsals[0]['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL,
                         'location' => $rehearsals[0]['location'] ?? '',
                         'is_small_group' => $rehearsals[0]['is_small_group'] ?? false

@@ -142,7 +142,7 @@ if (!$showOld) {
 
     foreach ($rehearsalsForCharts as $rehearsal) {
         $rehearsalId = $rehearsal['id'];
-        $rehearsalDates[] = $rehearsal['date'] ?? (isset($rehearsal['start']) ? date('Y-m-d', strtotime($rehearsal['start'])) : '');
+        $rehearsalDates[] = $rehearsal['date'];
         
         if (isset($stats[$rehearsalId])) {
             $attending = $stats[$rehearsalId]['attending'] ?? 0;
@@ -271,9 +271,9 @@ foreach ($rehearsals ?? [] as $rehearsal) {
             <?php foreach ($rehearsals as $rehearsal): ?>
                 <?php
                     $rehearsalId = $rehearsal['id'];
-                    $rehearsalDate = $rehearsal['date'] ?? (isset($rehearsal['start']) ? date('Y-m-d', strtotime($rehearsal['start'])) : '');
-                    $rehearsalStartTime = $rehearsal['start_time'] ?? (isset($rehearsal['start']) ? date('H:i', strtotime($rehearsal['start'])) : '');
-                    $rehearsalEndTime = $rehearsal['end_time'] ?? (isset($rehearsal['end']) ? date('H:i', strtotime($rehearsal['end'])) : '');
+                    $rehearsalDate = $rehearsal['date'];
+                    $rehearsalStartTime = $rehearsal['start_time'];
+                    $rehearsalEndTime = $rehearsal['end_time'];
                     $attendingCount = $stats[$rehearsalId]['attending'] ?? 0;
                     $notAttendingCount = $stats[$rehearsalId]['not_attending'] ?? 0;
                     $noResponseCount = $stats[$rehearsalId]['no_response'] ?? 0;
@@ -322,13 +322,13 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                         <div class="rehearsal-modern-title">
                             <?php
                             $germanWeekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-                            $dayOfWeek = $rehearsalDate ? date('w', strtotime($rehearsalDate)) : 0;
+                            $dayOfWeek = date('w', strtotime($rehearsalDate));
                             $weekdayShort = $germanWeekdays[$dayOfWeek];
                             ?>
                             <div class="rehearsal-date-display">
                                 <div class="weekday-letter"><?= strtoupper($weekdayShort) ?></div>
                                 <div class="date-info">
-                                    <div class="date-text"><?= $rehearsalDate ? date('d.m.Y', strtotime($rehearsalDate)) : '—' ?></div>
+                                    <div class="date-text"><?= date('d.m.Y', strtotime($rehearsalDate)) ?></div>
                                     <div class="date-subtitle">
                                     <?= htmlspecialchars($rehearsal['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL) ?>
                                     <?php if ($rehearsal['is_small_group'] ?? false): ?>
@@ -810,8 +810,7 @@ function initializeCharts() {
         },
         xaxis: {
             categories: <?= json_encode(array_map(function($rehearsal) {
-                $d = $rehearsal['date'] ?? (isset($rehearsal['start']) ? date('Y-m-d', strtotime($rehearsal['start'])) : '');
-                return ($rehearsal['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL) . ' ' . ($d ? date('d.m', strtotime($d)) : '');
+                return ($rehearsal['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL) . ' ' . date('d.m', strtotime($rehearsal['date']));
             }, $rehearsalsForCharts ?? [])) ?>
         },
         stroke: {
@@ -854,8 +853,7 @@ function initializeCharts() {
             x: {
                 formatter: function(val, opts) {
                     const categories = <?= json_encode(array_map(function($rehearsal) {
-                        $d = $rehearsal['date'] ?? (isset($rehearsal['start']) ? date('Y-m-d', strtotime($rehearsal['start'])) : '');
-                        return ($rehearsal['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL) . ' ' . ($d ? date('d.m', strtotime($d)) : '');
+                        return ($rehearsal['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL) . ' ' . date('d.m', strtotime($rehearsal['date']));
                     }, $rehearsalsForCharts ?? [])) ?>;
                     return categories[opts.dataPointIndex] || val;
                 }
@@ -932,8 +930,7 @@ function initializeCharts() {
             x: {
                 formatter: function(val, opts) {
                     const categories = <?= json_encode(array_map(function($rehearsal) {
-                        $d = $rehearsal['date'] ?? (isset($rehearsal['start']) ? date('Y-m-d', strtotime($rehearsal['start'])) : '');
-                        return ($rehearsal['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL) . ' ' . ($d ? date('d.m', strtotime($d)) : '');
+                        return ($rehearsal['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL) . ' ' . date('d.m', strtotime($rehearsal['date']));
                     }, $rehearsalsForCharts ?? [])) ?>;
                     return categories[opts.dataPointIndex] || val;
                 }

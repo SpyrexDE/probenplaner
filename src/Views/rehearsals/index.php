@@ -18,7 +18,7 @@
         $today = date('Y-m-d');
         
         foreach ($rehearsals as $rehearsal) {
-            $rehearsalDate = isset($rehearsal['start']) ? substr($rehearsal['start'], 0, 10) : ($rehearsal['date'] ?? '');
+            $rehearsalDate = $rehearsal['date'];
             if ($rehearsalDate >= $today) {
                 $currentRehearsals[] = $rehearsal;
             } else {

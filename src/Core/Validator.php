@@ -225,8 +225,8 @@ class Validator
             'conductor_username' => 'Dirigent*in Benutzername',
             'conductor_password' => 'Dirigent*in Passwort',
             'date' => 'Datum',
-            'start_time' => 'Startzeit',
-            'end_time' => 'Endzeit',
+            'start' => 'Anfang',
+            'end' => 'Ende',
             'location' => 'Ort'
         ];
         

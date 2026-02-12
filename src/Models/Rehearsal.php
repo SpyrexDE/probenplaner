@@ -44,21 +44,12 @@ class Rehearsal extends Model
         
         $rehearsals = [];
         while ($row = $result->fetch_assoc()) {
-            if (isset($row['start'])) {
-                $row['date'] = date('Y-m-d', strtotime($row['start']));
-                $row['start_time'] = date('H:i', strtotime($row['start']));
-                $row['end_time'] = isset($row['end']) ? date('H:i', strtotime($row['end'])) : null;
-                $row['date_formatted'] = \App\Core\Utilities::formatDate($row['date']);
-                $row['start_formatted'] = $row['start_time'];
-                $row['end_formatted'] = $row['end_time'];
-            } else {
-                $row['date'] = $row['date'] ?? null;
-                $row['start_time'] = $row['start_time'] ?? null;
-                $row['end_time'] = $row['end_time'] ?? null;
-                $row['date_formatted'] = isset($row['date']) ? \App\Core\Utilities::formatDate($row['date']) : '';
-                $row['start_formatted'] = $row['start_time'] ?? '';
-                $row['end_formatted'] = $row['end_time'] ?? '';
-            }
+            $row['date'] = date('Y-m-d', strtotime($row['start']));
+            $row['start_time'] = date('H:i', strtotime($row['start']));
+            $row['end_time'] = date('H:i', strtotime($row['end']));
+            $row['date_formatted'] = \App\Core\Utilities::formatDate($row['date']);
+            $row['start_formatted'] = $row['start_time'];
+            $row['end_formatted'] = $row['end_time'];
             $row['groups'] = $this->getGroups($row['id']);
             $rehearsals[] = $row;
         }
@@ -165,9 +156,12 @@ class Rehearsal extends Model
                 $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($row);
                 
                 if ($this->isUserInRehearsalGroup($userType, $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
-                    $row['date_formatted'] = \App\Core\Utilities::formatDate(date('Y-m-d', strtotime($row['start'])));
-                    $row['start_formatted'] = date('H:i', strtotime($row['start']));
-                    $row['end_formatted'] = date('H:i', strtotime($row['end']));
+                    $row['date'] = date('Y-m-d', strtotime($row['start']));
+                    $row['start_time'] = date('H:i', strtotime($row['start']));
+                    $row['end_time'] = date('H:i', strtotime($row['end']));
+                    $row['date_formatted'] = \App\Core\Utilities::formatDate($row['date']);
+                    $row['start_formatted'] = $row['start_time'];
+                    $row['end_formatted'] = $row['end_time'];
                     $row['groups'] = $this->getGroups($row['id']);
                     $rehearsals[] = $row;
                 }
@@ -399,16 +393,12 @@ class Rehearsal extends Model
         
         if ($rehearsal) {
             $rehearsal['groups'] = $this->getGroups($id);
-            if (isset($rehearsal['start'])) {
-                $rehearsal['date'] = date('Y-m-d', strtotime($rehearsal['start']));
-                $rehearsal['start_time'] = date('H:i', strtotime($rehearsal['start']));
-                $rehearsal['date_formatted'] = \App\Core\Utilities::formatDate($rehearsal['date']);
-                $rehearsal['start_formatted'] = $rehearsal['start_time'];
-            }
-            if (isset($rehearsal['end'])) {
-                $rehearsal['end_time'] = date('H:i', strtotime($rehearsal['end']));
-                $rehearsal['end_formatted'] = $rehearsal['end_time'];
-            }
+            $rehearsal['date'] = date('Y-m-d', strtotime($rehearsal['start']));
+            $rehearsal['start_time'] = date('H:i', strtotime($rehearsal['start']));
+            $rehearsal['end_time'] = date('H:i', strtotime($rehearsal['end']));
+            $rehearsal['date_formatted'] = \App\Core\Utilities::formatDate($rehearsal['date']);
+            $rehearsal['start_formatted'] = $rehearsal['start_time'];
+            $rehearsal['end_formatted'] = $rehearsal['end_time'];
         }
         
         return $rehearsal;
@@ -445,10 +435,12 @@ class Rehearsal extends Model
                 $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($row);
                 
                 if ($this->isUserInRehearsalGroup($userType, $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
-                    // Format the date in a user-friendly format
-                    $row['date_formatted'] = \App\Core\Utilities::formatDate(date('Y-m-d', strtotime($row['start'])));
-                    $row['start_formatted'] = date('H:i', strtotime($row['start']));
-                    $row['end_formatted'] = date('H:i', strtotime($row['end']));
+                    $row['date'] = date('Y-m-d', strtotime($row['start']));
+                    $row['start_time'] = date('H:i', strtotime($row['start']));
+                    $row['end_time'] = date('H:i', strtotime($row['end']));
+                    $row['date_formatted'] = \App\Core\Utilities::formatDate($row['date']);
+                    $row['start_formatted'] = $row['start_time'];
+                    $row['end_formatted'] = $row['end_time'];
                     $row['groups'] = $this->getGroups($row['id']);
                     $rehearsals[] = $row;
                 }

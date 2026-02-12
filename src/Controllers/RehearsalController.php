@@ -411,15 +411,11 @@ class RehearsalController extends Controller
         // Filter only past rehearsals and apply pagination
         $today = date('Y-m-d');
         $pastRehearsals = array_filter($allPastRehearsals, function($rehearsal) use ($today) {
-            $rehearsalDate = isset($rehearsal['start']) ? substr($rehearsal['start'], 0, 10) : ($rehearsal['date'] ?? '');
-            return $rehearsalDate < $today;
+            return $rehearsal['date'] < $today;
         });
         
-        // Sort by date descending (newest first)
         usort($pastRehearsals, function($a, $b) {
-            $dateA = isset($a['start']) ? $a['start'] : ($a['date'] ?? '');
-            $dateB = isset($b['start']) ? $b['start'] : ($b['date'] ?? '');
-            return strtotime($dateB) - strtotime($dateA);
+            return strtotime($b['date']) - strtotime($a['date']);
         });
         
         $totalPastRehearsals = count($pastRehearsals);

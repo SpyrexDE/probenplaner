@@ -35,7 +35,7 @@ class SmartDeviationDetectorTest {
         echo "✓ Testing rehearsal analysis...\n";
         
         // Get a rehearsal ID for testing
-        $stmt = $this->db->prepare("SELECT id FROM rehearsals ORDER BY date DESC LIMIT 1");
+        $stmt = $this->db->prepare("SELECT id FROM rehearsals ORDER BY start DESC LIMIT 1");
         $stmt->execute();
         $rehearsal = $stmt->fetch(PDO::FETCH_ASSOC);
         

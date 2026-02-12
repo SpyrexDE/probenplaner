@@ -111,11 +111,7 @@ class SmartDeviationDetector {
             // Determine appropriate context text
             $contextText = $isSmallGroup ? "in der Kleingruppe" : "in allen Registern";
             
-            $rehearsalDateStr = $rehearsal['date'] ?? $rehearsal['start'] ?? null;
-            if (!$rehearsalDateStr) {
-                return ['deviations' => $deviations];
-            }
-            $rehearsalDate = new \DateTime($rehearsalDateStr);
+            $rehearsalDate = new \DateTime($rehearsal['start']);
             $today = new \DateTime();
             $daysDifference = $today->diff($rehearsalDate)->days;
             $isFutureRehearsal = $rehearsalDate > $today;

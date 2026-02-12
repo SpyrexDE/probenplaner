@@ -24,8 +24,8 @@ include __DIR__ . '/../components/table.php';
                 <?php if (!empty($rehearsals)): ?>
                     <div class="print-range">
                         <?php 
-                        $firstDate = reset($rehearsals)['date_formatted'] ?? reset($rehearsals)['date'];
-                        $lastDate = end($rehearsals)['date_formatted'] ?? end($rehearsals)['date'];
+                        $firstDate = reset($rehearsals)['date_formatted'];
+                        $lastDate = end($rehearsals)['date_formatted'];
                         if ($firstDate === $lastDate) {
                             echo $firstDate;
                         } else {
@@ -85,13 +85,13 @@ include __DIR__ . '/../components/table.php';
                         <?php else: ?>
                             <?php foreach ($rehearsals as $i => $rehearsal): ?>
                                 <?php
-                                    $start_time_pp = isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, 5) : '??:??';
-                                    $end_time_pp = isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, 5) : '??:??';
+                                    $start_time_pp = substr($rehearsal['start_time'], 0, 5);
+                                    $end_time_pp = substr($rehearsal['end_time'], 0, 5);
                                     $time_display_pp = $start_time_pp . ' - ' . $end_time_pp;
                                 ?>
                                 <tr class="<?= !empty($rehearsal['color']) ? '' : '' ?>">
                                     <td style="<?= !empty($rehearsal['color']) ? 'border-left: 4px solid ' . $rehearsal['color'] . ';' : '' ?>"><?= isset($days[$i]) ? $days[$i] : '' ?></td>
-                                    <td><?= $rehearsal['date_formatted'] ?? $rehearsal['date'] ?></td>
+                                    <td><?= $rehearsal['date_formatted'] ?></td>
                                     <td><?= htmlspecialchars($time_display_pp) ?></td>
                                     <td><?= $rehearsal['location'] ?></td>
                                     <td>

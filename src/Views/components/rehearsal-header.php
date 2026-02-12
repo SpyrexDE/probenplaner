@@ -12,9 +12,9 @@
 use App\Core\RehearsalTypeManager;
 
 $rehearsalId = $rehearsal['id'];
-$date = $rehearsal['date_formatted'] ?? $rehearsal['date'];
-$start_time = isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, 5) : '??:??';
-$end_time = isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, 5) : '??:??';
+$date = $rehearsal['date_formatted'];
+$start_time = substr($rehearsal['start_time'], 0, 5);
+$end_time = substr($rehearsal['end_time'], 0, 5);
 $time_display = $start_time . ' - ' . $end_time;
 
 // Get rehearsal type using modern system
@@ -43,7 +43,7 @@ $groupsText = $smartDisplay->generateDescription(
     
     <div class="tree-node-title">
         <span class="tree-node-title-text">
-            <?= htmlspecialchars($rehearsal['date_formatted'] ?? $date) ?> - <?= htmlspecialchars($time_display) ?>
+            <?= htmlspecialchars($date) ?> - <?= htmlspecialchars($time_display) ?>
         </span>
         <?php if (!empty($rehearsalType)): ?>
             <span class="tree-node-subtitle"><?= htmlspecialchars($rehearsalType) ?></span>

@@ -269,13 +269,13 @@ $groupsText = $smartDisplay->generateDescription(
 );
 
 // Prepare time display
-$start_time = isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, 5) : '??:??';
-$end_time = isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, 5) : '??:??';
+$start_time = substr($rehearsal['start_time'], 0, 5);
+$end_time = substr($rehearsal['end_time'], 0, 5);
 $time_display = $start_time . ' - ' . $end_time;
 
 // Get German weekday abbreviations
 $germanWeekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-$dateForWeekday = $rehearsal['start'] ?? $rehearsal['date'] ?? null;
+$dateForWeekday = $rehearsal['start'];
 $dayOfWeek = $dateForWeekday ? (int)date('w', strtotime($dateForWeekday)) : 0;
 $weekdayShort = $germanWeekdays[$dayOfWeek];
 
