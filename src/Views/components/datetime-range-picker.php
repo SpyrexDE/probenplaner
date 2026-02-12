@@ -171,10 +171,20 @@ $endValue = formatForInput($endValue);
             }
         }
         
-        startInput.addEventListener('change', validateRange);
+        startInput.addEventListener('input', function() {
+            if (!endInput.value && startInput.value) {
+                endInput.value = startInput.value;
+            }
+            validateRange();
+        });
+        startInput.addEventListener('change', function() {
+            if (!endInput.value && startInput.value) {
+                endInput.value = startInput.value;
+            }
+            validateRange();
+        });
         endInput.addEventListener('change', validateRange);
-        
-        // Initial check
+
         validateRange();
     });
     </script>
