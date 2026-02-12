@@ -8,3 +8,5 @@ If you need to do a schema change on the db create a corresponding migration fil
 When the migrations are ready, apply them using the command './probenplaner.sh migrate:up'.
 
 Do never edit existing migration files.
+
+When doing migrations you need to make sure to update ALL existing code to the new schema.

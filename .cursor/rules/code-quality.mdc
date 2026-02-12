@@ -1,0 +1,11 @@
+---
+description: Code quality standards — DRY, KISS, components, comments, migrations
+alwaysApply: true
+---
+
+# Code Quality
+
+- Write **professional, solid code**: DRY, KISS, and scalable.
+- Prefer **custom components** in `src/Views/components` with styling in the same file. Match existing application styling.
+- **Comments**: Short and precise. Docstrings describe *how to use* something, not implementation. Never use comments as thinking notes.
+- **Backwards compatibility**: Do not preserve it except for migrations. When changing the schema via migrations, update **all** existing code to the new schema.
