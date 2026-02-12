@@ -142,7 +142,7 @@ if (!$showOld) {
 
     foreach ($rehearsalsForCharts as $rehearsal) {
         $rehearsalId = $rehearsal['id'];
-        $rehearsalDates[] = $rehearsal['date'];
+        $rehearsalDates[] = $rehearsal['date'] ?? (isset($rehearsal['start']) ? date('Y-m-d', strtotime($rehearsal['start'])) : '');
         
         if (isset($stats[$rehearsalId])) {
             $attending = $stats[$rehearsalId]['attending'] ?? 0;
@@ -269,8 +269,11 @@ foreach ($rehearsals ?? [] as $rehearsal) {
             ?>
         <?php else: ?>
             <?php foreach ($rehearsals as $rehearsal): ?>
-                <?php 
+                <?php
                     $rehearsalId = $rehearsal['id'];
+                    $rehearsalDate = $rehearsal['date'] ?? (isset($rehearsal['start']) ? date('Y-m-d', strtotime($rehearsal['start'])) : '');
+                    $rehearsalStartTime = $rehearsal['start_time'] ?? (isset($rehearsal['start']) ? date('H:i', strtotime($rehearsal['start'])) : '');
+                    $rehearsalEndTime = $rehearsal['end_time'] ?? (isset($rehearsal['end']) ? date('H:i', strtotime($rehearsal['end'])) : '');
                     $attendingCount = $stats[$rehearsalId]['attending'] ?? 0;
                     $notAttendingCount = $stats[$rehearsalId]['not_attending'] ?? 0;
                     $noResponseCount = $stats[$rehearsalId]['no_response'] ?? 0;
@@ -318,15 +321,14 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                          <?= ($rehearsalColor) ? 'style="--rehearsal-color: ' . $rehearsalColor . '"' : '' ?>>
                         <div class="rehearsal-modern-title">
                             <?php
-                            // Get German weekday abbreviations
                             $germanWeekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-                            $dayOfWeek = date('w', strtotime($rehearsal['date']));
+                            $dayOfWeek = $rehearsalDate ? date('w', strtotime($rehearsalDate)) : 0;
                             $weekdayShort = $germanWeekdays[$dayOfWeek];
                             ?>
                             <div class="rehearsal-date-display">
                                 <div class="weekday-letter"><?= strtoupper($weekdayShort) ?></div>
                                 <div class="date-info">
-                                    <div class="date-text"><?= date('d.m.Y', strtotime($rehearsal['date'])) ?></div>
+                                    <div class="date-text"><?= $rehearsalDate ? date('d.m.Y', strtotime($rehearsalDate)) : '—' ?></div>
                                     <div class="date-subtitle">
                                     <?= htmlspecialchars($rehearsal['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL) ?>
                                     <?php if ($rehearsal['is_small_group'] ?? false): ?>
@@ -339,7 +341,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                         
                         <div class="rehearsal-compact-right">
                                                     <div class="rehearsal-compact-meta">
-                            <span><i class="fas fa-clock"></i> <?= isset($rehearsal['start_time']) ? substr($rehearsal['start_time'], 0, DashboardConstants::TIME_SUBSTRING_LENGTH) : '??:??' ?> - <?= isset($rehearsal['end_time']) ? substr($rehearsal['end_time'], 0, DashboardConstants::TIME_SUBSTRING_LENGTH) : '??:??' ?></span>
+                            <span><i class="fas fa-clock"></i> <?= $rehearsalStartTime ? substr($rehearsalStartTime, 0, DashboardConstants::TIME_SUBSTRING_LENGTH) : '??:??' ?> - <?= $rehearsalEndTime ? substr($rehearsalEndTime, 0, DashboardConstants::TIME_SUBSTRING_LENGTH) : '??:??' ?></span>
                                 <?php if (!empty($rehearsal['location'])): ?>
                                     <span><i class="fas fa-map-marker-alt"></i> <?= htmlspecialchars($rehearsal['location']) ?></span>
                                 <?php endif; ?>
@@ -808,7 +810,8 @@ function initializeCharts() {
         },
         xaxis: {
             categories: <?= json_encode(array_map(function($rehearsal) {
-                return ($rehearsal['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL) . ' ' . date('d.m', strtotime($rehearsal['date']));
+                $d = $rehearsal['date'] ?? (isset($rehearsal['start']) ? date('Y-m-d', strtotime($rehearsal['start'])) : '');
+                return ($rehearsal['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL) . ' ' . ($d ? date('d.m', strtotime($d)) : '');
             }, $rehearsalsForCharts ?? [])) ?>
         },
         stroke: {
@@ -851,7 +854,8 @@ function initializeCharts() {
             x: {
                 formatter: function(val, opts) {
                     const categories = <?= json_encode(array_map(function($rehearsal) {
-                        return ($rehearsal['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL) . ' ' . date('d.m', strtotime($rehearsal['date']));
+                        $d = $rehearsal['date'] ?? (isset($rehearsal['start']) ? date('Y-m-d', strtotime($rehearsal['start'])) : '');
+                        return ($rehearsal['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL) . ' ' . ($d ? date('d.m', strtotime($d)) : '');
                     }, $rehearsalsForCharts ?? [])) ?>;
                     return categories[opts.dataPointIndex] || val;
                 }
@@ -928,7 +932,8 @@ function initializeCharts() {
             x: {
                 formatter: function(val, opts) {
                     const categories = <?= json_encode(array_map(function($rehearsal) {
-                        return ($rehearsal['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL) . ' ' . date('d.m', strtotime($rehearsal['date']));
+                        $d = $rehearsal['date'] ?? (isset($rehearsal['start']) ? date('Y-m-d', strtotime($rehearsal['start'])) : '');
+                        return ($rehearsal['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL) . ' ' . ($d ? date('d.m', strtotime($d)) : '');
                     }, $rehearsalsForCharts ?? [])) ?>;
                     return categories[opts.dataPointIndex] || val;
                 }

@@ -111,8 +111,11 @@ class SmartDeviationDetector {
             // Determine appropriate context text
             $contextText = $isSmallGroup ? "in der Kleingruppe" : "in allen Registern";
             
-            // Check if rehearsal is too far in the future for meaningful response rate analysis
-            $rehearsalDate = new \DateTime($rehearsal['date']);
+            $rehearsalDateStr = $rehearsal['date'] ?? $rehearsal['start'] ?? null;
+            if (!$rehearsalDateStr) {
+                return ['deviations' => $deviations];
+            }
+            $rehearsalDate = new \DateTime($rehearsalDateStr);
             $today = new \DateTime();
             $daysDifference = $today->diff($rehearsalDate)->days;
             $isFutureRehearsal = $rehearsalDate > $today;
@@ -185,7 +188,7 @@ class SmartDeviationDetector {
         $stmt = $this->db->prepare("
             SELECT 
                 r.id as rehearsal_id,
-                r.date,
+                r.start as date,
                 COUNT(up.id) as total_players,
                 SUM(CASE WHEN up.status = 'yes' THEN 1 ELSE 0 END) as attending,
                 SUM(CASE WHEN up.status = 'no' THEN 1 ELSE 0 END) as not_attending,
@@ -196,16 +199,18 @@ class SmartDeviationDetector {
             JOIN user_orchestras uo ON u.id = uo.user_id
             WHERE uo.type = ? AND uo.orchestra_id = r.orchestra_id AND uo.is_active = 1
             AND r.id != ?
-            AND r.date < (SELECT date FROM rehearsals WHERE id = ?)
-            AND r.date >= DATE_SUB((SELECT date FROM rehearsals WHERE id = ?), INTERVAL 6 MONTH)
-            GROUP BY r.id, r.date
-            ORDER BY r.date DESC
+            AND r.start < (SELECT start FROM rehearsals WHERE id = ?)
+            AND r.start >= DATE_SUB((SELECT start FROM rehearsals WHERE id = ?), INTERVAL 6 MONTH)
+            GROUP BY r.id, r.start
+            ORDER BY r.start DESC
         ");
-        
+        if ($stmt === false) {
+            return [];
+        }
         $stmt->bind_param('siii', $sectionId, $excludeRehearsalId, $excludeRehearsalId, $excludeRehearsalId);
         $stmt->execute();
         $result = $stmt->get_result();
-        return $result->fetch_all(MYSQLI_ASSOC);
+        return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     }
     
     /**
@@ -224,14 +229,32 @@ class SmartDeviationDetector {
             JOIN rehearsals r ON up.rehearsal_id = r.id
             WHERE uo.type = ? AND up.rehearsal_id = ? AND uo.orchestra_id = r.orchestra_id AND uo.is_active = 1
         ");
-        
+        if ($stmt === false) {
+            return [
+                'total' => 0,
+                'attending' => 0,
+                'not_attending' => 0,
+                'no_response' => 0,
+                'attendance_rate' => 0,
+                'response_rate' => 0
+            ];
+        }
         $stmt->bind_param('si', $sectionId, $rehearsalId);
         $stmt->execute();
         $result = $stmt->get_result();
-        $data = $result->fetch_assoc();
-        
-        $total = $data['total_players'];
-        $totalResponded = $data['attending'] + $data['not_attending'];
+        $data = $result ? $result->fetch_assoc() : null;
+        if (!$data) {
+            return [
+                'total' => 0,
+                'attending' => 0,
+                'not_attending' => 0,
+                'no_response' => 0,
+                'attendance_rate' => 0,
+                'response_rate' => 0
+            ];
+        }
+        $total = (int) $data['total_players'];
+        $totalResponded = (int) $data['attending'] + (int) $data['not_attending'];
         
         // Attendance rate should only consider people who actually responded (yes/no)
         // People with no response or "maybe" are not counted in attendance rate
@@ -487,7 +510,9 @@ class SmartDeviationDetector {
             HAVING user_count > 0
             ORDER BY uo.type
         ");
-        
+        if ($stmt === false) {
+            return [];
+        }
         $stmt->bind_param('i', $rehearsalId);
         $stmt->execute();
         $result = $stmt->get_result();

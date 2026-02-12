@@ -318,19 +318,22 @@ class User extends Model
     {
         $userId = (int)$userId;
         
-        $sql = "SELECT up.*, r.date, r.start_time, r.end_time, r.location, r.color, r.is_small_group
+        $sql = "SELECT up.*, DATE(r.start) AS date, TIME(r.start) AS start_time, TIME(r.end) AS end_time, r.location, r.color, r.is_small_group
                 FROM user_promises up
                 JOIN rehearsals r ON up.rehearsal_id = r.id
                 WHERE up.user_id = {$userId}
-                ORDER BY r.date, r.start_time";
+                ORDER BY r.start";
                 
         $result = $this->db->query($sql);
-        
+        if ($result === false) {
+            return [];
+        }
+
         $promises = [];
         while ($row = $result->fetch_assoc()) {
             $promises[] = $row;
         }
-        
+
         return $promises;
     }
     
