@@ -36,9 +36,7 @@ include __DIR__ . '/../components/promises-dashboard-wrapper.php';
 document.addEventListener('DOMContentLoaded', function() {
     const toggle = document.getElementById('viewToggle');
     if (toggle) {
-        // Initialize view toggle
-        
-        // Update slider styling
+        const slider = toggle.nextElementSibling;
         const dot = slider.nextElementSibling;
         
         if (toggle.disabled) {

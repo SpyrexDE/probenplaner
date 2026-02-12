@@ -1,19 +1,14 @@
 <!DOCTYPE html>
 <?php
 // Theme Initialization
-
-// Retrieve theme source
+$currentUserTheme = null;
 if (isset($_SESSION['user_id'])) {
-    // Database retrieval
     $userModel = new \App\Models\User();
     $currentUserTheme = $userModel->getUserTheme($_SESSION['user_id']);
 } elseif (isset($_SESSION['theme'])) {
-    // Session retrieval
     $currentUserTheme = $_SESSION['theme'];
 }
-
-// Validate theme
-if (!\App\Core\ThemeManager::themeExists($currentUserTheme)) {
+if ($currentUserTheme === null || !\App\Core\ThemeManager::themeExists($currentUserTheme)) {
     $currentUserTheme = \App\Core\ThemeManager::getDefaultTheme();
 }
 ?>
@@ -203,13 +198,15 @@ if ($showSidebar): ?>
         <!-- Modern Sidebar -->
         <div id="sidebar-wrapper" class="sidebar">
             <?php 
-            // Component styles
+            // Component styles (load styles only, don't render components)
+            $renderComponent = false;
             include __DIR__ . '/../components/pwa-install-card.php';
             include __DIR__ . '/../components/sidebar.php';
             include __DIR__ . '/../components/user-badge.php'; // For generateUserBadges() styling
             include __DIR__ . '/../components/top-navigation.php';
             include __DIR__ . '/../components/tree-view.php';
             include __DIR__ . '/../components/page-header.php';
+            $renderComponent = true; // Reset for sidebar-content
             ?>
             <?php include __DIR__ . '/../components/sidebar-content.php'; ?>
         </div>

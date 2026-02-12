@@ -260,11 +260,11 @@ $buttons = $options['buttons'] ?? [];
 $rehearsalId = $rehearsal['id'];
 $groupArray = $rehearsal['groups'] ?? [];
 
-// Format group description
+$smartDisplay = $smartDisplay ?? new \App\Core\SmartGroupDisplay();
 $groupsText = $smartDisplay->generateDescription(
-    $groupArray, 
-    $rehearsal, 
-    false // Not admin view
+    $groupArray,
+    $rehearsal,
+    false
 );
 
 $start_time = substr($rehearsal['start_time'], 0, 5);

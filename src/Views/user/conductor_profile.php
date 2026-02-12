@@ -252,11 +252,10 @@ $(document).ready(function(){
     }
     
     // Password field handlers
-    // Field handlers
+    $('#new_password').on('input', function() {
         const password = $(this).val();
         checkPasswordStrength(password);
         
-        // Check if passwords match
         const confirmPassword = $('#confirm_password').val();
         if (confirmPassword && password !== confirmPassword) {
             $('#confirm_password').addClass('error');
