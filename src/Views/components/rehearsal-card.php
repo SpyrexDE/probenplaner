@@ -248,7 +248,7 @@
 
 <?php
 
-// Set default values
+// Default configuration
 $context = $context ?? 'rehearsals';
 $options = $options ?? [];
 $status = $options['status'] ?? 'pending';
@@ -256,42 +256,38 @@ $note = $options['note'] ?? '';
 $showButtons = $options['showButtons'] ?? true;
 $buttons = $options['buttons'] ?? [];
 
-// Get rehearsal data
+// Extract rehearsal details
 $rehearsalId = $rehearsal['id'];
 $groupArray = $rehearsal['groups'] ?? [];
 
-// Generate smart display text with integrated Kleingruppe handling
-$smartDisplay = new \App\Core\SmartGroupDisplay();
+// Format group description
 $groupsText = $smartDisplay->generateDescription(
     $groupArray, 
     $rehearsal, 
     false // Not admin view
 );
 
-// Prepare time display
 $start_time = substr($rehearsal['start_time'], 0, 5);
 $end_time = substr($rehearsal['end_time'], 0, 5);
 $time_display = $start_time . ' - ' . $end_time;
 
-// Get German weekday abbreviations
 $germanWeekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 $dateForWeekday = $rehearsal['start'];
 $dayOfWeek = $dateForWeekday ? (int)date('w', strtotime($dateForWeekday)) : 0;
 $weekdayShort = $germanWeekdays[$dayOfWeek];
 
-// Get rehearsal type using modern manager
+// Resolve rehearsal type
 $rehearsalType = \App\Core\RehearsalTypeManager::getRehearsalType($rehearsal);
 
-// Check if we should show the rehearsal type badge
+// Determine badge visibility
 $showRehearsalType = \App\Core\RehearsalTypeManager::shouldDisplayType($rehearsalType);
 
-// Check if location is different from normal rehearsal
+// Highlight non-standard locations
 $normalLocation = 'Probenraum'; // Default normal rehearsal location
 $showLocation = !empty($rehearsal['location']) && 
                $rehearsal['location'] !== $normalLocation &&
                strtolower($rehearsal['location']) !== strtolower($normalLocation);
 
-// Determine CSS classes based on context
 $cardClasses = 'rehearsal-card';
 ?>
 
@@ -314,17 +310,14 @@ $cardClasses = 'rehearsal-card';
                     <!-- Content Row: Weekday + Date/Time -->
                     <div class="rehearsal-content-row flex items-center gap-2" style="margin-bottom: 8px;">
                         <?php
-                        // Calculate dates and times from start/end
                         $startDt = new DateTime($rehearsal['start']);
                         $endDt = new DateTime($rehearsal['end']);
                         $isSameDay = $startDt->format('Y-m-d') === $endDt->format('Y-m-d');
                         
-                        // Weekday
                         $germanWeekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
                         $dayOfWeek = $startDt->format('w');
                         $weekdayShort = $germanWeekdays[$dayOfWeek];
                         
-                        // Date String
                         if ($isSameDay) {
                             $dateDisplay = \App\Core\Utilities::formatDate($startDt->format('Y-m-d'));
                             $timeDisplay = $startDt->format('H:i') . ' - ' . $endDt->format('H:i');

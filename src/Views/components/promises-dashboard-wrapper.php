@@ -8,10 +8,10 @@
 
 use App\Core\DashboardConstants;
 
-// Only calculate statistics if not showing old rehearsals
+// Statistics calculation
 $showOld = $showOld ?? false;
 
-// Initialize variables with default values
+// Variable initialization
 $overallAttendanceRate = 0;
 $overallResponseRate = 0;
 $attendanceTrend = 'neutral';
@@ -20,7 +20,7 @@ $attendanceTrendValue = 0;
 $responseTrendValue = 0;
 
 if (!$showOld) {
-    // Calculate overall statistics across last 10 rehearsals
+    // Overall statistics (last 10)
     $rehearsalsForStats = array_slice($rehearsals ?? [], -10);
     $totalRehearsals = count($rehearsalsForStats);
     $totalPromises = 0;
@@ -28,7 +28,7 @@ if (!$showOld) {
     $totalNotAttending = 0;
     $totalNoResponse = 0;
 
-    // Critical sections counter
+    // Section counters
     $criticalSections = 0;
     $warningSections = 0;
 
@@ -42,23 +42,23 @@ if (!$showOld) {
         }
     }
 
-    // Calculate percentages
+    // Percentage calculation
     $overallAttendanceRate = $totalPromises > 0 ? ($totalAttending / $totalPromises) * 100 : 0;
     $overallResponseRate = $totalPromises > 0 ? (($totalAttending + $totalNotAttending) / $totalPromises) * 100 : 0;
 
-    // Calculate real trends by comparing current period vs previous period
+    // Trend calculation
     $attendanceTrend = 'neutral';
     $responseTrend = 'neutral';
     $attendanceTrendValue = 0;
     $responseTrendValue = 0;
 
-    // Get more historical data for trend calculation (last 20 rehearsals)
+    // Historical data (last 20)
     $rehearsalsForTrends = array_slice($rehearsals ?? [], -20);
     $currentPeriodRehearsals = array_slice($rehearsalsForTrends, -10); // Last 10
     $previousPeriodRehearsals = array_slice($rehearsalsForTrends, 0, 10); // Previous 10
 
     if (count($currentPeriodRehearsals) >= 5 && count($previousPeriodRehearsals) >= 5) {
-        // Calculate current period averages
+        // Current period averages
         $currentAttendanceTotal = 0;
         $currentResponseTotal = 0;
         $currentTotalPromises = 0;
@@ -79,7 +79,7 @@ if (!$showOld) {
             }
         }
         
-        // Calculate previous period averages
+        // Previous period averages
         $previousAttendanceTotal = 0;
         $previousResponseTotal = 0;
         $previousTotalPromises = 0;
@@ -100,7 +100,7 @@ if (!$showOld) {
             }
         }
         
-        // Calculate trend values
+        // Trend values
         if ($currentTotalPromises > 0 && $previousTotalPromises > 0) {
             $currentAttendanceAvg = $currentAttendanceTotal / $currentTotalPromises;
             $previousAttendanceAvg = $previousAttendanceTotal / $previousTotalPromises;
@@ -124,20 +124,20 @@ if (!$showOld) {
 
 ?>
 
-<!-- Include the dashboard CSS and ApexCharts -->
+<!-- Assets -->
 <link rel="stylesheet" href="<?= '/assets/css/promises-dashboard.css' ?>">
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
 <?php
-// Generate time-based data for charts (last 10 rehearsals only)
+// Chart data generation
 $attendanceHistory = [];
 $responseHistory = [];
 $rehearsalDates = [];
 $currentRehearsalIndex = 0;
 
-// Only process chart data if not showing old rehearsals
+// Chart data processing
 if (!$showOld) {
-    // Get only the last 10 rehearsals for chart data
+    // Last 10 rehearsals
     $rehearsalsForCharts = array_slice($rehearsals ?? [], -10);
 
     foreach ($rehearsalsForCharts as $rehearsal) {
@@ -164,7 +164,7 @@ if (!$showOld) {
     }
 }
 
-// Calculate critical sections
+// Critical sections calculation
 $criticalSectionsCount = 0;
 $warningSectionsCount = 0;
 
@@ -282,7 +282,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                     // Calculate rehearsal attendance rate
                     $rehearsalAttendanceRate = $totalCount > 0 ? ($attendingCount / $totalCount) * 100 : 0;
                     
-                    // Group members dynamically using GroupManager
+                    // Dynamic member grouping
                     $groupManager = new \App\Core\GroupManager();
                     $sectionPlayers = [];
 
@@ -311,7 +311,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                         }
                     }
                     
-                    // Determine rehearsal color
+                    // Rehearsal color
                     $rehearsalColor = $rehearsal['color'] ?? null;
                 ?>
                 
@@ -381,19 +381,19 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                     </div>
                     
                     <?php
-                    // Use smart deviation detection system
+                    // Smart deviation detection
                     require_once __DIR__ . '/../../Core/SmartDeviationDetector.php';
                     $deviationDetector = new SmartDeviationDetector(\App\Core\Database::getInstance());
                     $deviationAnalysis = $deviationDetector->analyzeRehearsal($rehearsal['id']);
                     
-                    // Get rehearsal groups to determine which sections should participate
+                    // Rehearsal groups
                     $rehearsalModel = new \App\Models\Rehearsal(\App\Core\Database::getInstance());
                     $rehearsalGroups = $rehearsalModel->getGroupsAsAssoc($rehearsalId);
                     
-                    // Calculate critical sections (show individual instruments with low attendance, fallback to sections)
+                    // Critical section identification
                     $rehearsalCriticalSections = [];
                     
-                    // First check individual instruments for more specific critical items
+                    // Instrument check
                     $individualInstruments = [];
                     foreach ($membersBySection[$rehearsalId]['all'] ?? [] as $member) {
                         $instrumentId = $member['type'];
@@ -403,7 +403,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                         $individualInstruments[$instrumentId][] = $member;
                     }
                     
-                    // Calculate attendance for individual instruments
+                    // Instrument attendance
                     foreach ($individualInstruments as $instrumentId => $players) {
                         $attending = count(array_filter($players, function($m) { return $m['status'] === 'attending'; }));
                         $total = count($players);
@@ -420,7 +420,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                         }
                     }
                     
-                    // If no individual instruments with low attendance, check top-level sections
+                    // Top-level section check
                     if (empty($rehearsalCriticalSections)) {
                         foreach ($sectionPlayers as $sectionId => $players) {
                             $attending = count(array_filter($players, function($m) { return $m['status'] === 'attending'; }));
@@ -441,23 +441,23 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                     
 
                     
-                    // Sort by attendance rate and take top most critical
+                    // Sort and limit
                     usort($rehearsalCriticalSections, function($a, $b) {
                         return $a['rate'] - $b['rate'];
                     });
                     $rehearsalCriticalSections = array_slice($rehearsalCriticalSections, 0, DashboardConstants::MAX_CRITICAL_SECTIONS_DISPLAY);
                     
-                    // Only show critical sections if they actually have low attendance
+                    // Filter low attendance
                     $rehearsalCriticalSections = array_filter($rehearsalCriticalSections, function($critical) {
                         return $critical['rate'] < DashboardConstants::CRITICAL_ATTENDANCE_THRESHOLD;
                     });
                     
-                    // Get critical section names for filtering
+                    // Critical section names
                     $criticalSectionNames = array_map(function($critical) {
                         return $critical['name'];
                     }, $rehearsalCriticalSections);
                     
-                    // Filter out deviations that are already shown in critical sections and only show warning/critical ones
+                    // Deviation filtering
                     $rehearsalSmartDeviations = array_filter($deviationAnalysis['deviations'], function($deviation) use ($criticalSectionNames) {
                         // Only show warning and critical severity (skip info)
                         if (($deviation['severity'] ?? 'info') === 'info') {
@@ -471,12 +471,12 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                         return !in_array($deviation['section'], $criticalSectionNames);
                     });
                     
-                    // Remove duplicate messages and group similar ones
+                    // Deduplicate messages
                     $uniqueDeviations = [];
                     $seenMessages = [];
                     $groupedMessages = [];
                     
-                    // Separate group performance messages to handle them specially
+                    // Group performance messages
                     $groupPerformanceMessages = [];
                     $otherMessages = [];
                     
@@ -488,7 +488,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                         }
                     }
                     
-                    // Keep only the most critical group performance message
+                    // Most critical message
                     if (!empty($groupPerformanceMessages)) {
                         usort($groupPerformanceMessages, function($a, $b) {
                             return $a['mean_rate'] - $b['mean_rate']; // Lowest rate first (most critical)
@@ -496,7 +496,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                         $uniqueDeviations[] = $groupPerformanceMessages[0]; // Only the most critical one
                     }
                     
-                    // Handle other messages - merge participation messages for same sections
+                    // Merge messages
                     $mergedMessages = mergeParticipationMessages($otherMessages);
                     
                     foreach ($mergedMessages as $deviation) {
@@ -508,7 +508,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                     }
                     $rehearsalSmartDeviations = $uniqueDeviations;
                     
-                    // Sort deviations by severity (critical first, then warning, then info)
+                    // Sort by severity
                     usort($rehearsalSmartDeviations, function($a, $b) {
                         $severityOrder = ['critical' => 3, 'warning' => 2, 'info' => 1];
                         $aSeverity = $severityOrder[$a['severity'] ?? 'info'] ?? 1;
@@ -568,11 +568,11 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                         <div class="tree-view">
                             <ul class="tree-list">
                                 <?php
-                                // Get the root group dynamically
+                                // Root group retrieval
                                 $allGroups = $groupManager->getAllGroups();
                                 $rootGroup = null;
                                 
-                                // Find the special group that affects all users
+                                // Find affects-all group
                                 foreach ($allGroups as $group) {
                                     if (($group['type'] ?? '') === 'special' && 
                                         isset($group['special_rules']['affects_all']) && 
@@ -582,7 +582,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                     }
                                 }
                                 
-                                // Fallback: find the first group with no parent (top-level)
+                                // Fallback to top-level
                                 if (!$rootGroup) {
                                     foreach ($allGroups as $group) {
                                         $parent = $groupManager->getParent($group['id']);
@@ -593,7 +593,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                     }
                                 }
                                 
-                                // Check if this is leader-only view
+                                // Leader view check
                                 $isLeaderOnlyView = isset($isLeaderOnlyView) && $isLeaderOnlyView;
                                 $rootDisplayName = $rootGroup['display_name'] ?? 'Tutti';
                                 
@@ -601,12 +601,12 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                 } else {
                                 }
                                 
-                                // For leader-only view, show leader's section as root
+                                // Leader section root
                                 if ($isLeaderOnlyView && !empty($leaderResolvedType)) {
                                     $groupManager = new \App\Core\GroupManager();
                                     $rootDisplayName = $groupManager->getDisplayName($leaderResolvedType);
                                     
-                                    // In leader-only view, find players under the correct section key
+                                    // Find player section
                                     $players = [];
                                     $sectionId = 'all';
                                     
@@ -645,7 +645,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                     
                                     if (!empty($players)) {
                                         
-                                        // Calculate section stats
+                                        // Section statistics
                                         $sectionAttending = count(array_filter($players, function($m) { return $m['status'] === 'attending'; }));
                                         $sectionNotAttending = count(array_filter($players, function($m) { return $m['status'] === 'not_attending'; }));
                                         $sectionNoResponse = count(array_filter($players, function($m) { return $m['status'] === 'no_response'; }));
@@ -678,9 +678,9 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                     <div id="leader-root-<?= $rehearsalId ?>" class="tree-node-content collapse">
                                         <ul class="tree-list">
                                             <?php
-                                            // For leader-only view, show players directly without section grouping
+                                            // Direct player list
                                             if (!empty($players)) {
-                                                // Sort players by status: not_attending first, then attending, then no_response
+                                                // Sort players
                                                 usort($players, function($a, $b) {
                                                     $statusOrder = ['not_attending' => 0, 'attending' => 1, 'no_response' => 2];
                                                     $aOrder = $statusOrder[$a['status']] ?? 3;
@@ -710,7 +710,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                 </li>
                                 <?php
                                     } else {
-                                        // No players found, show empty state
+                                        // Empty state
                                         ?>
                                         <li class="tree-node tree-depth-0">
                                             <div class="tree-node-header">
@@ -722,7 +722,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                         <?php
                                     }
                                 } else {
-                                    // Normal view with tutti as root
+                                    // Normal view
                                     ?>
                                 <!-- Main root node -->
                                 <li class="tree-node tree-depth-0">
@@ -753,7 +753,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                         <ul class="tree-list">
                                             <?php foreach ($sectionPlayers as $sectionId => $players): ?>
                                                 <?php
-                                                    // Only include sections that have players
+                                                    // Filter empty sections
                                                     if (!empty($players)) {
                                                         // Include the tree-style dynamic section component
                                                         include __DIR__ . '/dynamic-section-component.php';
@@ -776,18 +776,18 @@ foreach ($rehearsals ?? [] as $rehearsal) {
 
 <script src="/assets/js/promises-shared.js"></script>
 <script>
-// Dashboard interaction handlers
+// Interactions
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize ApexCharts
+    // Initialize charts
     initializeCharts();
     
-    // Initialize tree view functionality
+    // Initialize tree view
     initializeTreeView();
 });
 
 function initializeCharts() {
     <?php if (!$showOld): ?>
-    // Only initialize charts when not showing old rehearsals
+    // Chart initialization check
     
     // Attendance chart
     const attendanceOptions = {

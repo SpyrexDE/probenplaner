@@ -214,7 +214,7 @@
 </style>
 
 <?php
-// Check if this is styles-only mode
+// Styles-only mode check
 $renderComponent = $renderComponent ?? true;
 
 if (!$renderComponent) {
@@ -222,11 +222,10 @@ if (!$renderComponent) {
     return;
 }
 
-// Set defaults for component rendering
+// Component defaults
 $items = $items ?? [];
 $groupClass = $groupClass ?? '';
 
-// Build group classes
 $groupClasses = ['checkbox-group'];
 if ($groupClass) $groupClasses[] = $groupClass;
 $groupClassString = implode(' ', $groupClasses);
@@ -235,7 +234,6 @@ $groupClassString = implode(' ', $groupClasses);
 <div class="<?= $groupClassString ?>">
     <?php foreach ($items as $item): ?>
         <?php
-        // Build item classes
         $itemClasses = ['checkbox-item'];
         if (isset($item['level']) && $item['level'] > 0) {
             $itemClasses[] = 'level-' . $item['level'];
@@ -243,7 +241,6 @@ $groupClassString = implode(' ', $groupClasses);
         
         $itemClassString = implode(' ', $itemClasses);
         
-        // Build attributes
         $checked = $item['checked'] ?? false;
         $disabled = $item['disabled'] ?? false;
         $indeterminate = $item['indeterminate'] ?? false;

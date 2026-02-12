@@ -85,7 +85,6 @@ class UserPromise extends Model
             'details' => []
         ];
         
-        // Get rehearsal
         $rehearsalModel = new Rehearsal();
         $rehearsal = $rehearsalModel->findById($rehearsalId);
         
@@ -93,7 +92,6 @@ class UserPromise extends Model
             return $stats;
         }
         
-        // Get relevant groups for this rehearsal
         $sql = "SELECT name FROM rehearsal_groups WHERE rehearsal_id = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param('i', $rehearsalId);
@@ -105,24 +103,21 @@ class UserPromise extends Model
             $groups[$row['name']] = true;
         }
         
-        // Get all users from this orchestra
         $userOrchestraModel = new UserOrchestra();
         $users = $userOrchestraModel->getOrchestraUsers($orchestraId);
         
-        // Check which users should attend this rehearsal
         foreach ($users as $user) {
             // Skip conductors for attendance tracking
             if ($user['role'] === 'conductor') {
                 continue;
             }
             
-            // Check if user is relevant for this rehearsal
+            // Determine relevance based on group membership
             $isSmallGroup = isset($user['is_small_group']) && $user['is_small_group'];
             $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal);
             if ($rehearsalModel->isUserInRehearsalGroup($user['type'], $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
                 $stats['total']++;
                 
-                // Check user's promise
                 $promise = $this->findByUserAndRehearsal($user['id'], $rehearsalId);
                 
                 $userStat = [

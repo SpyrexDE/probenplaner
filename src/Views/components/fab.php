@@ -69,7 +69,7 @@
 </style>
 
 <?php
-// Check if this is styles-only mode
+// Styles-only mode check
 $renderComponent = $renderComponent ?? true;
 
 if (!$renderComponent) {
@@ -77,7 +77,7 @@ if (!$renderComponent) {
     return;
 }
 
-// Set defaults for component rendering
+// Component defaults
 $icon = $icon ?? 'plus';
 $onclick = $onclick ?? '';
 $href = $href ?? '#';
@@ -85,7 +85,6 @@ $title = $title ?? '';
 $id = $id ?? '';
 $variant = $variant ?? 'primary';
 
-// Build attributes
 $attributes = '';
 if ($title) {
     $attributes .= ' title="' . htmlspecialchars($title) . '"';
@@ -94,7 +93,6 @@ if ($id) {
     $attributes .= ' id="' . htmlspecialchars($id) . '"';
 }
 
-// Determine if we should render as button or link
 $isButton = !empty($onclick);
 ?>
 
@@ -109,7 +107,7 @@ $isButton = !empty($onclick);
 <?php endif; ?>
 
 <script>
-// Ensure FAB is fixed to viewport bottom-right regardless of parent containers
+// Move FAB to body to prevent stacking context issues
 (function() {
     function ensureFabInBody() {
         var fabs = document.querySelectorAll('.fab');

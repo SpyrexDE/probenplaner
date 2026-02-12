@@ -1,6 +1,6 @@
 <?php
-// Load form, card, modern checkbox, and theme selector styles (components used for styles only)
-$renderComponent = false; // Just load styles, don't render component
+// Component styles
+$renderComponent = false;
 include __DIR__ . '/../components/form-input.php';
 include __DIR__ . '/../components/modern-checkbox.php';
 include __DIR__ . '/../components/theme-selector.php';
@@ -111,7 +111,7 @@ include __DIR__ . '/../components/theme-selector.php';
                                 Instrument / Stimmgruppe
                             </label>
                             <?php
-                            // Ensure type is correctly retrieved, falling back to empty string
+                            // Current type fallback
                             $currentType = '';
                             if (isset($user['type']) && !empty($user['type'])) {
                                 $currentType = $user['type'];
@@ -125,12 +125,11 @@ include __DIR__ . '/../components/theme-selector.php';
                                 function renderTypeOptions($structure, $level = 0, $currentType = '') {
                                     foreach ($structure as $key => $value) {
                                         if (is_array($value)) {
-                                            // Group header
+
                                             echo '<option value="" disabled class="font-bold text-gray-600">' . str_replace('_', ' ', $key) . '</option>';
                                             renderTypeOptions($value, $level + 1, $currentType);
                                         } else {
-                                            // Selectable option
-                                            // Compare exact string values for more reliable matching
+
                                             $selected = ($value === $currentType) ? ' selected' : '';
                                             echo '<option value="' . $value . '"' . $selected . '>' . str_repeat('&nbsp;&nbsp;', $level) . str_replace('_', ' ', $value) . '</option>';
                                         }
@@ -285,7 +284,7 @@ include __DIR__ . '/../components/theme-selector.php';
 <script>
 $(document).ready(function(){
     const hasPassword = <?php echo isset($hasPassword) && $hasPassword ? 'true' : 'false'; ?>;
-    // Password strength checker
+    // Strength checker
     function checkPasswordStrength(password) {
         const strengthIndicator = $('#passwordStrength');
         const strengthFill = $('#strengthFill');
@@ -301,18 +300,18 @@ $(document).ready(function(){
         let score = 0;
         let feedback = [];
         
-        // Length check
+        // Check length
         if (password.length >= 8) score += 2;
         else if (password.length >= 4) score += 1;
         else feedback.push('Mindestens 4 Zeichen erforderlich');
         
-        // Complexity checks
+        // Check complexity
         if (/[a-z]/.test(password)) score += 1;
         if (/[A-Z]/.test(password)) score += 1;
         if (/[0-9]/.test(password)) score += 1;
         if (/[^a-zA-Z0-9]/.test(password)) score += 1;
         
-        // Update visual indicator
+
         const percentage = Math.min((score / 6) * 100, 100);
         strengthFill.css('width', percentage + '%');
         
@@ -331,12 +330,12 @@ $(document).ready(function(){
         strengthText.text(strengthLabel + (feedback.length > 0 ? ' - ' + feedback.join(', ') : ''));
     }
     
-    // Password field handlers
+    // Password handlers
     $('#new_password').on('input', function() {
         const password = $(this).val();
         checkPasswordStrength(password);
         
-        // Check if passwords match
+        // Match check
         const confirmPassword = $('#confirm_password').val();
         if (confirmPassword && password !== confirmPassword) {
             $('#confirm_password').addClass('error');
@@ -356,7 +355,7 @@ $(document).ready(function(){
         }
     });
     
-    // Ensure the correct option is selected
+    // Type selection
     const currentType = $('#current_type').val();
     if (currentType) {
         // Find the option that matches the current type
@@ -368,7 +367,7 @@ $(document).ready(function(){
         });
     }
     
-    // Modern Stimmführer checkbox handler
+    // Leader checkbox handler
     $('#group_leader').on('change', function(){
         if($(this).is(':checked')){
             Swal.fire({
@@ -402,7 +401,7 @@ $(document).ready(function(){
                     const password = result.value;
                     $('#group_leader_password').val(password);
                     
-                    // Show loading
+
                     Swal.fire({
                         title: 'Überprüfung...',
                         html: 'Das Passwort wird überprüft',
@@ -413,14 +412,14 @@ $(document).ready(function(){
                         }
                     });
                     
-                    // AJAX request to verify the password
+                    // Password verification
                     <?php $orchestraId = $_SESSION['current_orchestra_id'] ?? 1; ?>
                     $.ajax({
                         type: "POST",
                         url: "/<?= $orchestraId ?>/profile/check-leader-password",
                         data: { password: password },
                         success: function(response){
-                            // Parse response if it's a string
+                            // Response parsing
                             if (typeof response === 'string') {
                                 try {
                                     response = JSON.parse(response);
@@ -453,19 +452,19 @@ $(document).ready(function(){
                         }
                     });
                 } else {
-                    // User cancelled, uncheck the checkbox
+
                     $(this).prop('checked', false);
                 }
             });
         } else {
-            // User unchecked, clear the password
+
             $('#group_leader_password').val('');
         }
     });
     
-    // Enhanced form validation
+    // Form validation
     $('form').on('submit', function(e) {
-        // Check if instrument/type is selected
+
         if (!$('#group_type').val()) {
             e.preventDefault();
             window.notifyError('Bitte wähle dein Instrument bzw. deine Stimmgruppe aus.');
@@ -477,9 +476,9 @@ $(document).ready(function(){
         const confirmPassword = $('#confirm_password').val();
         const currentPassword = $('#current_password').val ? $('#current_password').val() : '';
         
-        // If trying to change password
+        // Password change validation
         if (newPassword || confirmPassword || currentPassword) {
-            // All password fields must be filled
+
             if (!newPassword || !confirmPassword || (hasPassword && !currentPassword)) {
                 e.preventDefault();
                 if (hasPassword && !currentPassword) {
@@ -490,7 +489,7 @@ $(document).ready(function(){
                 return false;
             }
             
-            // Passwords must match
+
             if (newPassword !== confirmPassword) {
                 e.preventDefault();
                 window.notifyError('Die Passwörter stimmen nicht überein.');
@@ -498,7 +497,7 @@ $(document).ready(function(){
                 return false;
             }
             
-            // Minimum password length
+
             if (newPassword.length < 4) {
                 e.preventDefault();
                 window.notifyError('Das Passwort muss mindestens 4 Zeichen lang sein.');
@@ -507,13 +506,13 @@ $(document).ready(function(){
             }
         }
         
-        // Show loading state
+
         const submitBtn = $(this).find('button[type="submit"]');
         const originalText = submitBtn.html();
         submitBtn.html('<div class="inline-flex items-center"><div class="loading-spinner mr-2"></div>Speichere...</div>');
         submitBtn.prop('disabled', true);
         
-        // Re-enable button after a delay (in case of validation errors)
+
         setTimeout(() => {
             submitBtn.html(originalText);
             submitBtn.prop('disabled', false);
@@ -522,7 +521,7 @@ $(document).ready(function(){
         return true;
     });
     
-    // Modern account deletion with better UX
+    // Account deletion logic
     $('#deleteAccount').click(function(){
         Swal.fire({
             title: 'Account dauerhaft löschen?',
@@ -554,7 +553,7 @@ $(document).ready(function(){
             }
         }).then((result) => {
             if (result.isConfirmed) {
-                // Show loading state
+
                 Swal.fire({
                     title: 'Account wird gelöscht...',
                     html: 'Bitte warten...',
@@ -565,13 +564,13 @@ $(document).ready(function(){
                     }
                 });
                 
-                // Redirect to deletion endpoint
+                // Execute deletion
                 window.location.href = "/<?= $orchestraId ?>/profile/delete";
             }
         });
     });
     
-    // Enhanced input interactions
+    // Input interactions
     $('.form-input-modern').on('focus', function() {
         $(this).closest('.form-group-modern').addClass('focused');
     }).on('blur', function() {
@@ -583,7 +582,7 @@ $(document).ready(function(){
         }
     });
     
-    // Initial state for filled inputs
+    // Filled state initialization
     $('.form-input-modern').each(function() {
         if ($(this).val()) {
             $(this).closest('.form-group-modern').addClass('filled');
@@ -597,15 +596,15 @@ $(document).ready(function(){
             const themeKey = $(this).data('theme-key');
             const themeName = $(this).closest('.theme-option-compact').find('.theme-name-compact').text();
             
-            // Add switching state
+
             $('.theme-selection-compact').addClass('theme-switching');
             
-            // Apply theme instantly via AJAX
+
             switchThemeInstantly(themeKey, themeName);
         }
     });
     
-    // Function to switch theme instantly
+    // Instant theme switch
     function switchThemeInstantly(themeKey, themeName) {
         <?php $orchestraId = $_SESSION['current_orchestra_id'] ?? 1; ?>
         $.ajax({
@@ -627,27 +626,27 @@ $(document).ready(function(){
                 }
                 
                 if (response.success) {
-                    // Apply theme to current page
+
                     applyThemeToPage(themeKey);
                     
-                    // Show success notification
+
                     window.notifySuccess(`Theme "${themeName}" aktiviert`, 'Sofort angewendet!');
                     
-                    // Add applied animation
+
                     $('body').addClass('theme-applying');
                     setTimeout(() => {
                         $('body').removeClass('theme-applying');
                     }, 600);
                 } else {
-                    // Handle error
+
                     window.notifyError('Fehler beim Wechseln des Themes', response.message || 'Unbekannter Fehler');
                     
-                    // Reset selection to previous theme
+
                     const currentTheme = $('body').data('current-theme') || 'default';
                     $(`input[data-theme-key="${currentTheme}"]`).prop('checked', true);
                 }
                 
-                // Remove switching state
+
                 $('.theme-selection-compact').removeClass('theme-switching');
                 
             },
@@ -655,16 +654,16 @@ $(document).ready(function(){
                 window.notifyError('Netzwerkfehler', 'Theme konnte nicht gewechselt werden');
                 $('.theme-selection-compact').removeClass('theme-switching');
                 
-                // Reset selection to previous theme
+
                 const currentTheme = $('body').data('current-theme') || 'default';
                 $(`input[data-theme-key="${currentTheme}"]`).prop('checked', true);
             }
         });
     }
     
-    // Function to apply theme to current page
+    // Apply theme
     function applyThemeToPage(themeKey) {
-        // Find the current theme link and update it
+
         const currentThemeLink = $('link[data-theme]');
         if (currentThemeLink.length > 0) {
             const newThemeHref = `/assets/css/themes/theme-${themeKey}.css`;
@@ -672,10 +671,10 @@ $(document).ready(function(){
             currentThemeLink.attr('data-theme', themeKey);
         }
         
-        // Update body data attribute
+
         $('body').attr('data-current-theme', themeKey);
         
-        // Store in session storage for consistency
+
         if (typeof(Storage) !== 'undefined') {
             sessionStorage.setItem('current-theme', themeKey);
         }

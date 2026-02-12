@@ -1,8 +1,8 @@
 <?php $this->layout('layouts/default', ['title' => 'Probe bearbeiten', 'currentPage' => $currentPage ?? 'rehearsals']) ?>
 
 <?php
-// Load form and checkbox styles (components used for styles only)
-$renderComponent = false; // Just load styles, don't render component
+// Component styles
+$renderComponent = false;
 include __DIR__ . '/../components/form-input.php';
 include __DIR__ . '/../components/tree-checkbox.php';
 include __DIR__ . '/../components/checkbox.php';
@@ -68,7 +68,7 @@ include __DIR__ . '/../components/checkbox.php';
                 </div>
                 
                 <?php 
-                // Use the dynamic group selector component
+                // Dynamic group selector
                 include __DIR__ . '/../components/dynamic-group-selector.php';
                 ?>
             </div>
@@ -83,7 +83,4 @@ include __DIR__ . '/../components/checkbox.php';
 
 <script src="/assets/js/compact-color-picker.js"></script>
 <script>
-// Color picker functionality is now handled by compact-color-picker.js
-
-// Group selection is now handled by the dynamic-group-selector component
-</script> 
+</script>

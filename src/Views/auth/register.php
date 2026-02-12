@@ -1,8 +1,8 @@
 <?php $this->layout('layouts/default', ['title' => 'Registrierung', 'currentPage' => $currentPage]) ?>
 
 <?php 
-// Load form styles (form-input component used for styles only)
-$renderComponent = false; // Just load styles, don't render component
+// Component styles
+$renderComponent = false;
 include __DIR__ . '/../components/form-input.php'; 
 ?>
 
@@ -58,6 +58,6 @@ include __DIR__ . '/../components/form-input.php';
 </div>
 
 <?php
-// Include notification system to display alerts
+// Notifications
 include __DIR__ . '/../components/notification-system.php';
 ?>

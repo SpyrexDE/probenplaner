@@ -21,15 +21,14 @@
 ?>
 
 <?php 
-// Load sophisticated login and card styles from form-input component
+// Import form styles
 $renderComponent = false; // Just load styles, don't render component
 include __DIR__ . '/form-input.php'; 
 ?>
 
 <style>
-/* LOGIN FORM COMPONENT - Additional component-specific styles */
+/* LOGIN FORM COMPONENT - Additional styles */
 
-/* Logo styling */
 .login-logo {
     text-align: center;
     margin-bottom: var(--space-8);
@@ -46,7 +45,6 @@ include __DIR__ . '/form-input.php';
     filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
 }
 
-/* Form text/helper text */
 .form-text {
     font-size: var(--font-size-xs);
     color: var(--color-gray-600);
@@ -55,7 +53,6 @@ include __DIR__ . '/form-input.php';
     text-align: center;
 }
 
-/* Auth links styling */
 .auth-links {
     text-align: center;
     border-top: 1px solid var(--color-gray-200);
@@ -86,7 +83,6 @@ include __DIR__ . '/form-input.php';
     font-size: var(--font-size-xs);
 }
 
-/* Login Divider */
 .login-divider {
     text-align: center;
     margin: var(--space-6) 0 var(--space-4) 0;
@@ -117,7 +113,6 @@ include __DIR__ . '/form-input.php';
     white-space: nowrap;
 }
 
-/* JMD Login Button Styling */
 .jmd-login-section {
     margin-bottom: var(--space-4);
 }
@@ -138,7 +133,7 @@ include __DIR__ . '/form-input.php';
 </style>
 
 <?php
-// Set defaults
+// Component defaults
 $csrf_token = $csrf_token ?? '';
 $action = $action ?? '/login';
 $logoPath = $logoPath ?? '/assets/img/Logo.png';

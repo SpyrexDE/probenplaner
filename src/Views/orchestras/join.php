@@ -1,8 +1,8 @@
 <?php $this->layout('layouts/default', ['title' => 'Orchester beitreten', 'currentPage' => 'join_orchestra']) ?>
 
 <?php 
-// Load form styles 
-$renderComponent = false; // Just load styles, don't render component
+// Component styles
+$renderComponent = false;
 include __DIR__ . '/../components/form-input.php'; 
 ?>
 
@@ -42,7 +42,7 @@ include __DIR__ . '/../components/form-input.php';
 </div>
 
 <?php
-// Clear form data from session
+// Clear session data
 if (isset($_SESSION['form_data'])) {
     unset($_SESSION['form_data']);
 }

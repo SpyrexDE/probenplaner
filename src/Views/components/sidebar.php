@@ -18,9 +18,9 @@
 ?>
 
 <style>
-/* SIDEBAR COMPONENT - Uses utilities + unique navigation behavior */
+/* SIDEBAR COMPONENT */
 .sidebar {
-  /* ✨ ESSENTIAL LAYOUT - Must preserve exact original layout */
+  /* Layout preservation */
   width: var(--sidebar-width);
   background-color: var(--color-white);
   position: fixed;
@@ -71,7 +71,6 @@
   transform: translateX(0);
 }
 
-/* Basic sidebar sections */
 .sidebar-header {
   padding: var(--space-3) var(--space-3);
   border-bottom: 1px solid var(--color-border-light);
@@ -132,7 +131,6 @@
   font-weight: var(--font-weight-medium);
 }
 
-/* === SIDEBAR STATS === */
 .sidebar-stats {
   padding: var(--space-4);
   background: linear-gradient(31deg, var(--color-bg-tertiary), var(--color-primary-100));
@@ -324,7 +322,6 @@
   border-radius: 0 2px 2px 0;
 }
 
-/* === SIDEBAR FOOTER === */
 .sidebar-footer {
   margin-top: auto;
   padding: var(--space-3) var(--space-4);
@@ -341,7 +338,7 @@
 </style>
 
 <?php
-// Check if this is styles-only mode
+// Styles-only mode check
 $renderComponent = $renderComponent ?? true;
 
 if (!$renderComponent) {
@@ -349,8 +346,7 @@ if (!$renderComponent) {
     return;
 }
 
-// This component is typically rendered by the layout file directly
-// So this section would contain the actual sidebar HTML if needed
+// Component rendering
 ?>
 
 <?php

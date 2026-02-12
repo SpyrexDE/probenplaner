@@ -49,19 +49,18 @@ function generateGroupCheckboxes($groups, $level = 0, $formData = [], $parentCla
         
         $html .= '<div class="' . implode(' ', $classes) . '">' . "\n";
         
-        // Check if this group should be checked
+        // Determine checked state
         $isChecked = in_array($groupId, $formData['groups'] ?? []);
         
-        // Render checkbox - tutti is just another group
+        // Render checkbox
         $html .= '  <input type="checkbox" id="' . htmlspecialchars($groupId) . '" name="groups[]" value="' . htmlspecialchars($groupId) . '" ' . ($isChecked ? 'checked' : '') . '>' . "\n";
         
-        // Removed legacy '!EXCLUDED!' hidden inputs; we submit only positive selections now
+        // Legacy exclusion logic removed
         
-        // Render label normally
         $html .= '  <label for="' . htmlspecialchars($groupId) . '">' . htmlspecialchars($displayName) . '</label>' . "\n";
         $html .= '</div>' . "\n";
         
-        // Process children if they exist
+        // Recursive children rendering
         if (isset($group['children']) && is_array($group['children']) && !empty($group['children'])) {
             $html .= '<div class="' . $levelClass . '">' . "\n";
             $html .= generateGroupCheckboxes($group['children'], $level + 1, $formData, $levelClass);
@@ -97,7 +96,7 @@ function initializeHierarchicalCheckboxes() {
             // Find all checkboxes that have children and update their states
             const allCheckboxes = document.querySelectorAll('input[type="checkbox"][name="groups[]"]');
             
-            // Process from deepest level upwards to ensure children are calculated first
+            // Bottom-up processing
             const checkboxesByDepth = [];
             allCheckboxes.forEach(checkbox => {
                 const item = checkbox.closest('.checkbox-item');
@@ -106,7 +105,6 @@ function initializeHierarchicalCheckboxes() {
                 checkboxesByDepth[depth].push(checkbox);
             });
             
-            // Process from deepest to shallowest (bottom-up)
             for (let depth = checkboxesByDepth.length - 1; depth >= 0; depth--) {
                 if (checkboxesByDepth[depth]) {
                     checkboxesByDepth[depth].forEach(checkbox => {

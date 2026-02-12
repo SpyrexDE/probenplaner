@@ -3,7 +3,7 @@
  * Promise Button Component - Component-colocated styling
  * Attendance buttons for rehearsal promises (check/cross buttons)
  * 
- * Usage:
+
  * <?php 
  * $type = 'check'; // check, cross
  * $selected = true;
@@ -20,9 +20,9 @@
 ?>
 
 <style>
-/* PROMISE BUTTON COMPONENT - All styles colocated */
+/* Promise Button Styles */
 
-/* Base promise button styles */
+/* Base styles */
 .promise-btn {
     display: inline-flex;
     align-items: center;
@@ -30,15 +30,15 @@
     min-width: 44px;
     height: 44px;
     padding: var(--space-2) var(--space-3);
-    /* border: 2px solid var(--color-border); → form-border-2 utility */
+    /* form-border-2 */
     border-radius: var(--radius-base);
     font-size: var(--font-size-lg);
     font-weight: var(--font-weight-medium);
     cursor: pointer;
-    /* transition: all var(--transition-base); → form-transition utility */
+    /* form-transition */
     position: relative;
-    /* overflow: hidden; → card-overflow utility */
-    /* background-color: var(--color-bg-primary); → card-bg utility */
+    /* card-overflow */
+    /* card-bg */
 }
 
 .promise-btn::before {
@@ -65,7 +65,7 @@
     transform: translateY(0);
 }
 
-/* Check button (attending) */
+/* Attending state */
 .checkBtn {
     color: var(--color-success);
     background-color: var(--color-bg-primary);
@@ -113,7 +113,7 @@
     filter: grayscale(50%);
 }
 
-/* Cross button (not attending) */
+/* Not-attending state */
 .crossBtn {
     color: var(--color-error);
     background-color: var(--color-bg-primary);
@@ -175,7 +175,7 @@
     to { transform: rotate(360deg); }
 }
 
-/* Mobile adjustments */
+/* Mobile */
 @media (max-width: 768px) {
     .promise-btn {
         min-width: 40px;
@@ -186,22 +186,22 @@
 </style>
 
 <?php
-// Check if this is styles-only mode
+// Styles-only check
 $renderComponent = $renderComponent ?? true;
 
 if (!$renderComponent) {
-    // Styles-only mode: just load the styles and exit
+    // Exit if styles-only
     return;
 }
 
-// Set defaults for component rendering
+// Defaults
 $type = $type ?? 'check'; // check, cross
 $selected = $selected ?? false;
 $loading = $loading ?? false;
 $onclick = $onclick ?? '';
 $title = $title ?? '';
 
-// Determine classes and icon  
+// Classes and icon  
 $classes = ['btn-base', 'promise-btn', 'card-bg', 'form-border-2', 'form-transition', 'card-overflow'];
 $icon = '';
 
@@ -226,7 +226,7 @@ if ($loading) {
 
 $classString = implode(' ', $classes);
 
-// Build attributes
+// Attributes
 $attributes = '';
 if ($title) {
     $attributes .= ' title="' . htmlspecialchars($title) . '"';

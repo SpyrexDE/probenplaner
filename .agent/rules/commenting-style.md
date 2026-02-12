@@ -1,0 +1,25 @@
+---
+trigger: always_on
+---
+
+### Code Commenting Standards
+
+1. **NO Low-Level Narration (The "What")**:
+   - **Banned**: Comments that just translate the code syntax into English.
+   - *Example (Bad)*: `// Get the user from the database` above `$user = $db->find($id);`
+   - *Example (Bad)*: `// Check if user is logged in` above `if (!$user->isLoggedIn())`
+
+2. **NO Meta-Commentary (The "Prompt")**:
+   - **Banned**: References to the prompt, instructions, or "ensuring" things.
+   - *Example (Bad)*: `// As requested, verify the token.`
+   - *Example (Bad)*: `// Ensure that the value is not null.`
+   - *Example (Bad)*: `// Update the array.`
+
+3. **YES High-Level Summaries (The "Intent")**:
+   - **Allowed**: Brief headlines for complex blocks of logic.
+   - *Example (Good)*: `// Validate token uniqueness` (above a 5-line DB check)
+   - *Example (Good)*: `// Merge and dedup validation errors`
+
+4. **YES Explanations (The "Why")**:
+   - **Allowed**: Explaining strictly *why* a decision was made.
+   - *Example (Good)*: `// 500ms delay to prevent accidental double-clicks`

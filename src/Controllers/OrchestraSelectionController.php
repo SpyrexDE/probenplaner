@@ -39,26 +39,17 @@ class OrchestraSelectionController extends Controller
         $this->userOrchestraModel = new UserOrchestra();
     }
     
-    /**
-     * Display orchestra selection screen
-     * 
-     * @return void
-     */
     public function select()
     {
-        // Must be logged in to select orchestra
         if (!$this->isLoggedIn()) {
             $this->redirect('/login');
             return;
         }
         
-        // Allow users to switch orchestras even if they have one selected
-        // (No redirect - show orchestra selection)
+        // No redirect - show orchestra selection
         
-        // Get user's orchestras
         $userOrchestras = $this->userOrchestraModel->getUserOrchestras($_SESSION['user_id']);
         
-        // Display orchestra selection
         $this->render('orchestras/select', [
             'currentPage' => 'orchestra_select',
             'orchestras' => $userOrchestras,
@@ -73,13 +64,11 @@ class OrchestraSelectionController extends Controller
      */
     public function setCurrentOrchestra()
     {
-        // Must be logged in
         if (!$this->isLoggedIn()) {
             $this->redirect('/login');
             return;
         }
         
-        // CSRF protection
         try {
             $this->protectCSRF();
         } catch (\Exception $e) {
@@ -101,7 +90,6 @@ class OrchestraSelectionController extends Controller
             return;
         }
         
-        // Verify user has access to this orchestra
         $relation = $this->userOrchestraModel->getUserOrchestraRelation($_SESSION['user_id'], $orchestraId, true);
         
         if (!$relation) {
@@ -110,7 +98,6 @@ class OrchestraSelectionController extends Controller
             return;
         }
         
-        // Get orchestra details
         $orchestra = $this->orchestraModel->findById($orchestraId);
         
         if (!$orchestra) {
@@ -119,7 +106,6 @@ class OrchestraSelectionController extends Controller
             return;
         }
         
-        // Set current orchestra context in session
         $_SESSION['current_orchestra_id'] = $orchestraId;
         $_SESSION['current_orchestra_name'] = $orchestra['name'];
         $_SESSION['current_type'] = $relation['type'];
@@ -142,7 +128,6 @@ class OrchestraSelectionController extends Controller
      */
     public function showJoinForm()
     {
-        // Must be logged in
         if (!$this->isLoggedIn()) {
             $this->redirect('/login');
             return;
@@ -163,13 +148,11 @@ class OrchestraSelectionController extends Controller
      */
     public function join()
     {
-        // Must be logged in
         if (!$this->isLoggedIn()) {
             $this->redirect('/login');
             return;
         }
         
-        // CSRF protection
         try {
             $this->protectCSRF();
         } catch (\Exception $e) {
@@ -183,10 +166,8 @@ class OrchestraSelectionController extends Controller
             return;
         }
         
-        // Get and sanitize POST data
         $token = Validator::sanitizeUtf8($_POST['token'] ?? '');
         
-        // Validate required fields
         $requiredValidation = Validator::validateRequired([
             'token' => $token
         ], ['token']);
@@ -201,7 +182,6 @@ class OrchestraSelectionController extends Controller
             return;
         }
         
-        // Validate token format
         $tokenValidation = Validator::validateToken($token);
         if (!$tokenValidation['valid']) {
             $this->addAlert(
@@ -213,7 +193,6 @@ class OrchestraSelectionController extends Controller
             return;
         }
         
-        // Find orchestra by token
         $orchestra = $this->orchestraModel->findByToken($token);
         
         if (!$orchestra) {
@@ -227,7 +206,6 @@ class OrchestraSelectionController extends Controller
             return;
         }
         
-        // Check if user is already a member of this orchestra
         $existingRelation = $this->userOrchestraModel->getUserOrchestraRelation($_SESSION['user_id'], $orchestra['id'], true);
         if ($existingRelation) {
             $this->addAlert(
@@ -239,10 +217,8 @@ class OrchestraSelectionController extends Controller
             return;
         }
         
-        // Store orchestra info in session for step 2
         $_SESSION['join_orchestra'] = $orchestra;
         
-        // Redirect to section selection
         $this->redirect('/orchestras/select-section');
     }
     
@@ -253,7 +229,6 @@ class OrchestraSelectionController extends Controller
      */
     public function showSectionSelection()
     {
-        // Must be logged in
         if (!$this->isLoggedIn()) {
             $this->redirect('/login');
             return;
@@ -268,7 +243,6 @@ class OrchestraSelectionController extends Controller
         
         $orchestra = $_SESSION['join_orchestra'];
         
-        // Display section selection form with orchestra-specific type structure
         $this->render('orchestras/select-section', [
             'currentPage' => 'select_section',
             'orchestra' => $orchestra,
@@ -284,7 +258,6 @@ class OrchestraSelectionController extends Controller
      */
     public function completeJoin()
     {
-        // Must be logged in
         if (!$this->isLoggedIn()) {
             $this->redirect('/login');
             return;
@@ -297,7 +270,6 @@ class OrchestraSelectionController extends Controller
             return;
         }
         
-        // CSRF protection
         try {
             $this->protectCSRF();
         } catch (\Exception $e) {
@@ -314,10 +286,8 @@ class OrchestraSelectionController extends Controller
         $orchestra = $_SESSION['join_orchestra'];
         $orchestraId = (int)$orchestra['id'];
         
-        // Get and sanitize POST data
         $type = Validator::sanitizeUtf8($_POST['type'] ?? '');
         
-        // Validate required fields
         $requiredValidation = Validator::validateRequired([
             'type' => $type
         ], ['type']);
@@ -332,7 +302,6 @@ class OrchestraSelectionController extends Controller
             return;
         }
         
-        // Join the orchestra
         $result = $this->userOrchestraModel->joinOrchestra($_SESSION['user_id'], $orchestraId, $type, 'member');
         
         if (is_array($result) && isset($result['error'])) {
@@ -346,18 +315,15 @@ class OrchestraSelectionController extends Controller
         }
         
         if ($result) {
-            // Clear join session data
             unset($_SESSION['join_orchestra']);
             
             $this->setFlash('success', 'Sie sind dem Orchester "' . $orchestra['name'] . '" erfolgreich beigetreten.');
             
-            // Automatically set as current orchestra
             $_SESSION['current_orchestra_id'] = $orchestraId;
             $_SESSION['current_orchestra_name'] = $orchestra['name'];
             $_SESSION['current_type'] = $type;
             $_SESSION['current_role'] = 'member';
             
-            // Redirect to main app
             $this->redirect('/' . $orchestraId . '/promises');
         } else {
             $this->addAlert(
@@ -377,7 +343,6 @@ class OrchestraSelectionController extends Controller
      */
     public function switchOrchestra($params = [])
     {
-        // Must be logged in
         if (!$this->isLoggedIn()) {
             $this->redirect('/login');
             return;
@@ -391,7 +356,6 @@ class OrchestraSelectionController extends Controller
             return;
         }
         
-        // Verify user has access to this orchestra
         $relation = $this->userOrchestraModel->getUserOrchestraRelation($_SESSION['user_id'], $orchestraId, true);
         
         if (!$relation) {
@@ -400,7 +364,6 @@ class OrchestraSelectionController extends Controller
             return;
         }
         
-        // Get orchestra details
         $orchestra = $this->orchestraModel->findById($orchestraId);
         
         if (!$orchestra) {
@@ -435,7 +398,6 @@ class OrchestraSelectionController extends Controller
         $groupManager = new \App\Core\GroupManager();
         $config = $groupManager->getConfig();
         
-        // Extract the structure for the join form
         if (isset($config['tutti']['children'])) {
             $structure = [];
             

@@ -233,7 +233,7 @@
 </style>
 
 <?php
-// Check if this is styles-only mode
+// Styles-only mode check
 $renderComponent = $renderComponent ?? true;
 
 if (!$renderComponent) {
@@ -241,7 +241,7 @@ if (!$renderComponent) {
     return;
 }
 
-// Set defaults for component rendering
+// Component defaults
 $label = $label ?? 'Farbe wählen';
 $name = $name ?? 'color';
 $selectedColor = $selectedColor ?? '';
@@ -251,7 +251,7 @@ $colors = $colors ?? [
     '#14b8a6', '#6366f1', '#6b7280', '#475569'
 ];
 
-// Helper function to get CSS class name from hex color
+// Convert hex to CSS class
 function getColorClass($hex) {
     return 'color-' . ltrim($hex, '#');
 }

@@ -228,7 +228,7 @@
 </style>
 
 <?php
-// Check if this is styles-only mode
+// Styles-only mode check
 $renderComponent = $renderComponent ?? true;
 
 if (!$renderComponent) {
@@ -236,7 +236,7 @@ if (!$renderComponent) {
     return;
 }
 
-// Set defaults for component rendering
+// Component defaults
 $title = $title ?? 'Aktion bestätigen';
 $message = $message ?? 'Möchtest du fortfahren?';
 $details = $details ?? '';

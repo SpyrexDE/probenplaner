@@ -91,7 +91,7 @@
 </style>
 
 <?php
-// Check if this is styles-only mode
+// Styles-only mode check
 $renderComponent = $renderComponent ?? true;
 
 if (!$renderComponent) {
@@ -99,13 +99,12 @@ if (!$renderComponent) {
     return;
 }
 
-// Set defaults for component rendering
+// Component defaults
 $message = $message ?? 'Speichern...';
 $show = $show ?? false;
 $type = $type ?? 'default'; // default, success, error
 $icon = $icon ?? 'spinner';
 
-// Build classes
 $classes = ['save-indicator'];
 if ($show) $classes[] = 'show';
 if ($type !== 'default') $classes[] = $type;

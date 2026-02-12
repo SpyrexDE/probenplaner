@@ -1,8 +1,8 @@
 <?php $this->layout('layouts/default', ['title' => 'Orchester auswählen', 'currentPage' => 'orchestra_select']) ?>
 
 <?php 
-// Load form styles and user badge styles
-$renderComponent = false; // Just load styles, don't render component
+// Component styles
+$renderComponent = false;
 include __DIR__ . '/../components/form-input.php'; 
 include __DIR__ . '/../components/user-badge.php'; 
 ?>
@@ -148,7 +148,7 @@ include __DIR__ . '/../components/user-badge.php';
                                     </h3>
                                     <div class="orchestra-meta">
                                         <?php 
-                                        // Get display info using centralized utility
+                                        // Display info
                                         $displayInfo = \App\Core\Utilities::getUserDisplayInfo($orchestra['type'], $orchestra['role']);
                                         ?>
                                         <?php if ($displayInfo['type']): ?>
@@ -160,7 +160,7 @@ include __DIR__ . '/../components/user-badge.php';
                                             <?= htmlspecialchars($displayInfo['role']) ?>
                                         </span>
                                         <?php 
-                                        // Add role badges next to the section/type, like username badges in sidebar
+                                        // Role badges
                                         $userData = [
                                             'role' => $orchestra['role'],
                                             'is_small_group' => false // This will be handled in new system

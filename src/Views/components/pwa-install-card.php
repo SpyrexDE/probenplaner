@@ -138,7 +138,7 @@
 </style>
 
 <?php
-// Check if this is styles-only mode
+// Styles-only mode check
 $renderComponent = $renderComponent ?? true;
 
 if (!$renderComponent) {
@@ -146,20 +146,18 @@ if (!$renderComponent) {
     return;
 }
 
-// Set defaults for component rendering
+// Component defaults
 $title = $title ?? 'App installieren';
 $subtitle = $subtitle ?? 'Für bessere Performance';
 $icon = $icon ?? 'download';
 $onclick = $onclick ?? '';
 $hidden = $hidden ?? false;
 
-// Build classes
 $classes = ['sidebar-install-card'];
 if ($hidden) $classes[] = 'hidden';
 
 $classString = implode(' ', $classes);
 
-// Build attributes
 $attributes = '';
 if ($onclick) {
     $attributes .= ' onclick="' . htmlspecialchars($onclick) . '"';

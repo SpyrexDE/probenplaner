@@ -499,7 +499,7 @@
 </style>
 
 <?php
-// Check if this is styles-only mode
+// Styles-only mode check
 $renderComponent = $renderComponent ?? true;
 
 if (!$renderComponent) {
@@ -507,7 +507,7 @@ if (!$renderComponent) {
     return;
 }
 
-// Set defaults for component rendering
+// Component defaults
 $type = $type ?? 'text';
 $name = $name ?? '';
 $id = $id ?? $name;
@@ -533,7 +533,6 @@ $labelSizeClasses = [
     'lg' => 'text-base'
 ];
 
-// Build attributes
 $attributes = '';
 if ($required) $attributes .= ' required';
 if ($disabled) $attributes .= ' disabled';
@@ -541,15 +540,15 @@ if ($placeholder) $attributes .= ' placeholder="' . htmlspecialchars($placeholde
 if (isset($autocomplete)) $attributes .= ' autocomplete="' . htmlspecialchars($autocomplete) . '"';
 if (isset($readonly) && $readonly) $attributes .= ' readonly';
 
-// Tailwind classes for form inputs - CRITICAL: Must include .form-input-modern for JavaScript
+// Input classes (Critical: .form-input-modern required for JS)
 $inputClasses = "form-input-base form-input-modern w-full leading-normal border-2 rounded-md transition-all duration-200";
 $inputClasses .= " focus:outline-none focus:ring-0 " . $sizeClasses[$size];
 $inputClasses .= $disabled ? " opacity-50 cursor-not-allowed" : "";
 
-// Use CSS variables for colors that change with themes
+// Dynamic theme colors
 $inputStyle = "color: var(--color-text-primary); background: var(--color-bg-primary); border-color: var(--color-border);";
 
-// Container classes - CRITICAL: Must include .form-group-modern for JavaScript  
+// Container classes (Critical: .form-group-modern required for JS)  
 $containerClasses = "form-group form-group-modern mb-6 relative";
 if ($error) $containerClasses .= " error";
 ?>

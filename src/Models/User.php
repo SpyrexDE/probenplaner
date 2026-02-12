@@ -250,7 +250,7 @@ class User extends Model
      * @param string $note
      * @return array|bool Array with error info or true on success
      */
-    public function updatePromise(int $userId, int $rehearsalId, bool $attending, string $note = '')
+    public function updatePromise(int $userId, int $rehearsalId, $attending, string $note = '')
     {
         try {
             $promiseModel = new UserPromise();
@@ -266,10 +266,18 @@ class User extends Model
                 return ['error' => true, 'message' => 'Die Probe wurde nicht gefunden.', 'details' => 'Die angegebene Probe existiert nicht mehr.'];
             }
             
-            // Convert boolean attending to status enum
-            $status = $attending ? 'yes' : 'no';
+            // Convert boolean attending to status enum or handle reset
+            $status = ($attending === 'reset' || $attending === null) ? null : ($attending ? 'yes' : 'no');
             
-            if ($existingPromise) {
+            if ($status === null) {
+                // Delete promise (reset)
+                if ($existingPromise) {
+                    $result = $promiseModel->delete($existingPromise['id']);
+                } else {
+                    // Nothing to delete, consider it a success
+                    $result = true;
+                }
+            } elseif ($existingPromise) {
                 // Update existing promise
                 $result = $promiseModel->update($existingPromise['id'], [
                     'status' => $status,

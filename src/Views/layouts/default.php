@@ -1,19 +1,18 @@
 <!DOCTYPE html>
 <?php
-// Get current theme for JavaScript
-$currentUserTheme = 'default'; // Default fallback
+// Theme Initialization
 
-// Try to get user theme from various sources
+// Retrieve theme source
 if (isset($_SESSION['user_id'])) {
-    // Get from database if logged in
+    // Database retrieval
     $userModel = new \App\Models\User();
     $currentUserTheme = $userModel->getUserTheme($_SESSION['user_id']);
 } elseif (isset($_SESSION['theme'])) {
-    // Get from session
+    // Session retrieval
     $currentUserTheme = $_SESSION['theme'];
 }
 
-// Ensure theme is valid
+// Validate theme
 if (!\App\Core\ThemeManager::themeExists($currentUserTheme)) {
     $currentUserTheme = \App\Core\ThemeManager::getDefaultTheme();
 }
@@ -185,7 +184,7 @@ if ($showSidebar): ?>
         $displayTitle = isset($currentPage) ? getPageTitle($currentPage) : 'Probenplaner';
         $title = $displayTitle;
         $showMenuToggle = true;
-        // Actions array currently only includes help icon when relevant; component supports both href and onclick
+        // Actions array
         $currentUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         $showHelpButton = in_array($currentUri, ['/promises', '/promises/leader', '/promises/admin', 
                                                 '/rehearsals', '/probenplan', '/profile', '/conductor/profile']) 
@@ -204,8 +203,7 @@ if ($showSidebar): ?>
         <!-- Modern Sidebar -->
         <div id="sidebar-wrapper" class="sidebar">
             <?php 
-            // Load component styles (components used for styles only)
-            $renderComponent = false; // Just load styles, don't render component
+            // Component styles
             include __DIR__ . '/../components/pwa-install-card.php';
             include __DIR__ . '/../components/sidebar.php';
             include __DIR__ . '/../components/user-badge.php'; // For generateUserBadges() styling
@@ -224,7 +222,7 @@ if ($showSidebar): ?>
     </div>
 <?php else: ?>
 <?php 
-// Hide topbar on login, register, orchestra selection pages, and admin verify pages
+// Conditional Navbar visibility
 $hideNavbar = false;
 if (isset($currentPage) && in_array($currentPage, ['login', 'register', 'create_orchestra', 'orchestra_select', 'join_orchestra', 'select_section'])) {
     $hideNavbar = true;

@@ -336,7 +336,7 @@
 </style>
 
 <?php
-// Check if this is styles-only mode
+// Styles-only mode check
 $renderComponent = $renderComponent ?? true;
 
 if (!$renderComponent) {
@@ -344,7 +344,7 @@ if (!$renderComponent) {
     return;
 }
 
-// Set defaults for component rendering
+// Component defaults
 $themes = $themes ?? [
     ['id' => 'default', 'name' => 'Standard', 'description' => 'Klassisches Design mit modernen Elementen', 'colors' => ['#3b82f6', '#10b981', '#f59e0b']],
     ['id' => 'jeunesse', 'name' => 'Jeunesse', 'description' => 'Jugendliches Design mit lebendigen Farben', 'colors' => ['#ec4899', '#8b5cf6', '#f97316']]

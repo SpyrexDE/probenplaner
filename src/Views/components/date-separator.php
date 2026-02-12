@@ -8,7 +8,7 @@ $showOld = isset($_GET['showOld']) && ($_GET['showOld'] === '1' || $_GET['showOl
 ?>
 
 <div class="date-separator-wrapper" id="dateSeparator">
-    <!-- Load Past Rehearsals Button (only shown when past rehearsals are not loaded) -->
+    <!-- Past rehearsals load trigger -->
     <?php if (!$showOld): ?>
     <div class="load-past-button-wrapper">
         <button class="load-past-button" id="loadPastButton">
@@ -18,7 +18,6 @@ $showOld = isset($_GET['showOld']) && ($_GET['showOld'] === '1' || $_GET['showOl
     </div>
     <?php endif; ?>
     
-    <!-- Minimal Separator -->
     <div class="minimal-separator">
         <div class="separator-line"></div>
         <span class="separator-text">HEUTE</span>
@@ -238,18 +237,18 @@ function loadPastRehearsals(offset = 0) {
     const sectionButton = document.getElementById('loadPastButtonInSection');
     let pastSection = document.getElementById('pastRehearsalsSection');
     
-    // Add loading state to the active button
+    // Loading state
     const activeButton = sectionButton || loadButton;
     if (activeButton) {
         activeButton.classList.add('loading');
         activeButton.disabled = true;
     }
     
-    // Get the scroll container - use window for proper scroll preservation
+    // Scroll container (Window used for precision)
     const scrollContainer = document.documentElement;
     const containerApp = document.querySelector('.container-app');
     
-    // Determine the current page URL for the AJAX request
+    // AJAX request setup
     const currentPath = window.location.pathname;
     const urlParams = new URLSearchParams(window.location.search);
     urlParams.set('ajax', '1');
@@ -275,7 +274,7 @@ function loadPastRehearsals(offset = 0) {
         .then(data => {
             if (data.success) {
                 if (offset === 0) {
-                    // First load - create past rehearsals section with button at top
+                    // Initial past rehearsals load
                     if (!pastSection) {
                         const separator = document.getElementById('dateSeparator');
                         pastSection = document.createElement('div');
@@ -284,31 +283,29 @@ function loadPastRehearsals(offset = 0) {
                         separator.parentNode.insertBefore(pastSection, separator);
                     }
                     
-                    // Clear existing content
                     pastSection.innerHTML = '';
                     
-                    // Create button wrapper - this stays at the very top always
+                    // Sticky button wrapper
                     const newButtonWrapper = document.createElement('div');
                     newButtonWrapper.className = 'load-past-button-wrapper';
                     newButtonWrapper.innerHTML = '<button class="load-past-button" id="loadPastButtonInSection"><i class="fas fa-history"></i><span>Vergangene Proben laden</span></button>';
                     
-                    // Create content container for all rehearsals
+                    // Rehearsals container
                     const rehearsalsContainer = document.createElement('div');
                     rehearsalsContainer.className = 'past-rehearsals-content';
                     rehearsalsContainer.innerHTML = data.html;
                     
-                    // Measure original button height including margins BEFORE hiding it
+                    // Measure button for scroll adjustment
                     const originalButton = document.getElementById('loadPastButton');
                     let originalButtonHeight = 0;
                     if (originalButton && originalButton.parentElement) {
                         originalButtonHeight = originalButton.parentElement.getBoundingClientRect().height;
                     }
                     
-                    // Add button at top, then rehearsals container
                     pastSection.appendChild(newButtonWrapper);
                     pastSection.appendChild(rehearsalsContainer);
                     
-                    // Preserve scroll position, accounting for button replacement
+                    // Adjust scroll for content insertion
                     if (containerApp) {
                         const scrollTop = scrollContainer.scrollTop;
                         // Force layout and get full height including margins
@@ -319,20 +316,18 @@ function loadPastRehearsals(offset = 0) {
                         scrollContainer.scrollTop = scrollTop + netHeightChange;
                     }
                     
-                    // Hide original button AFTER measuring
                     if (originalButton) {
                         originalButton.parentElement.style.display = 'none';
                     }
                 } else {
-                    // Load more - add new rehearsals right after the button, before existing rehearsals
+                    // Load more rehearsals
                     const contentWrapper = document.createElement('div');
                     contentWrapper.innerHTML = data.html;
                     
-                    // Find the rehearsals content container within pastSection and add new content at its beginning
+                    // Prepend new content
                     const rehearsalsContainer = pastSection ? pastSection.querySelector('.past-rehearsals-content') : null;
                     
                     if (rehearsalsContainer) {
-                        // Use proper scroll preservation but add to the correct nested container
                         prependWithScrollPreservation(rehearsalsContainer, contentWrapper);
                     } else {
                         console.warn('Could not find rehearsals container for load more');
@@ -341,11 +336,10 @@ function loadPastRehearsals(offset = 0) {
                 
                 currentOffset = offset + rehearsalsPerPage;
                 
-                // Update button text and state - be more explicit about button management
+                // Update button state
                 const sectionButton = document.getElementById('loadPastButtonInSection');
                 const originalButton = document.getElementById('loadPastButton');
                 
-                // Always update the active button (section button takes priority)
                 const activeButton = sectionButton || originalButton;
                 
                 if (activeButton) {
@@ -354,13 +348,12 @@ function loadPastRehearsals(offset = 0) {
                     
                     if (data.hasMore) {
                         activeButton.innerHTML = '<i class="fas fa-history"></i><span>Weitere vergangene Proben laden</span>';
-                        // Remove old event listener and add new one
                         activeButton.onclick = null;
                         activeButton.addEventListener('click', function() { 
                             loadPastRehearsals(currentOffset); 
                         });
                     } else {
-                        // Hide button completely if no more rehearsals
+                        // Hide button given no further data
                         activeButton.style.display = 'none';
                         // Also hide the wrapper if it exists
                         const buttonWrapper = activeButton.closest('.load-past-button-wrapper');

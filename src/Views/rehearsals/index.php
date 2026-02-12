@@ -12,7 +12,7 @@
         ?>
     <?php else: ?>
         <?php 
-        // Separate current/future and past rehearsals
+        // Separate rehearsals
         $currentRehearsals = [];
         $pastRehearsals = [];
         $today = date('Y-m-d');
@@ -27,12 +27,12 @@
         }
         ?>
         
-        <!-- Past Rehearsals (only shown if showOld is true) -->
+        <!-- Past Rehearsals -->
         <?php if ($showOld && !empty($pastRehearsals)): ?>
             <div class="past-rehearsals-section" id="pastRehearsalsSection">
                 <?php foreach ($pastRehearsals as $rehearsal): ?>
                     <?php 
-                    // Set options for the rehearsal card component
+                    // Card options
                     $context = 'rehearsals';
                     $options = [
                         'showButtons' => true
@@ -43,7 +43,7 @@
             </div>
         <?php endif; ?>
         
-        <!-- Date Separator and Load Past Button -->
+        <!-- Separator and Past Button -->
         <?php if (!empty($currentRehearsals) || !empty($pastRehearsals)): ?>
             <?php include __DIR__ . '/../components/date-separator.php'; ?>
         <?php endif; ?>
@@ -51,7 +51,7 @@
         <!-- Current/Future Rehearsals -->
         <?php foreach ($currentRehearsals as $rehearsal): ?>
             <?php 
-            // Set options for the rehearsal card component
+            // Card options
             $context = 'rehearsals';
             $options = [
                 'showButtons' => true
@@ -62,7 +62,7 @@
     <?php endif; ?>
     
     <?php 
-    // FAB for adding new rehearsal
+    // Add Button
     $icon = 'plus';
     $href = '/' . $_SESSION['current_orchestra_id'] . '/rehearsals/create';
     $title = 'Neue Probe hinzufügen';
@@ -71,7 +71,7 @@
 </div>
 
 <script>
-// Delete rehearsal with AJAX and Sweetalert2 (using event delegation)
+// Delete handler
 document.addEventListener('click', function(event) {
     if (event.target.closest('.delete-btn')) {
         const deleteBtn = event.target.closest('.delete-btn');
@@ -138,7 +138,7 @@ document.addEventListener('click', function(event) {
     }
 });
 
-// Edit rehearsal redirect (using event delegation)
+// Edit handler
 document.addEventListener('click', function(event) {
     if (event.target.closest('.edit-btn')) {
         const editBtn = event.target.closest('.edit-btn');

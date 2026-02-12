@@ -42,28 +42,22 @@ class PromiseController extends Controller
      */
     public function index($params = [])
     {
-        // Validate orchestra context and set session variables
         $this->validateOrchestraContext($params);
         
-        // Redirect conductors to the admin page
         if ($_SESSION['current_role'] === 'conductor') {
             $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/promises/admin');
             return;
         }
         
-        // Check if this is an AJAX request for past rehearsals only
         if (isset($_GET['ajax']) && $_GET['pastOnly']) {
             $this->handlePastRehearsalsAjax();
             return;
         }
         
-        // Get show old parameter
         $showOld = isset($_GET['showOld']);
         
-        // Get rehearsals for the user's type using modern system
         $userType = $_SESSION['current_type'];
         
-        // Get small group status from user_orchestras table
         $isSmallGroup = false;
         $userId = $_SESSION['user_id'] ?? null;
         $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
@@ -74,7 +68,6 @@ class PromiseController extends Controller
         $user = ['is_small_group' => $isSmallGroup];
         $rehearsals = $this->rehearsalModel->getForUser($userType, $_SESSION['current_orchestra_id'], $showOld, $isSmallGroup);
         
-        // Get user's promises from the user_promises table
         $promises = [];
         $user = $this->userModel->findByUsername($_SESSION['username']);
         
@@ -88,13 +81,11 @@ class PromiseController extends Controller
             }
         }
         
-        // Determine current page based on URL
         $currentPage = 'promises';
         if (strpos($_SERVER['REQUEST_URI'], '/rehearsals') === 0) {
             $currentPage = 'rehearsals';
         }
         
-        // Render view
         $this->render('promises/index', [
             'currentPage' => $currentPage,
             'rehearsals' => $rehearsals,
@@ -111,16 +102,12 @@ class PromiseController extends Controller
      */
     public function leader($params = [])
     {
-        // Validate orchestra context and set session variables
         $this->validateOrchestraContext($params);
         
-        // Check if user is a section leader
         $this->requireRole('leader');
         
-        // Get show old parameter
         $showOld = isset($_GET['showOld']);
         
-        // Get user type (section)
         $userType = $_SESSION['current_type'];
 
         // Clean up section name for database queries
@@ -137,30 +124,24 @@ class PromiseController extends Controller
         $user = ['is_small_group' => $isSmallGroup];
         $rehearsals = $this->rehearsalModel->getForUser($sectionName, $_SESSION['current_orchestra_id'], $showOld, $isSmallGroup);
         
-        // Get orchestra to check settings (leaders can view all sections?)
         $orchestraModel = new \App\Models\Orchestra();
         $orchestra = $orchestraModel->findById($_SESSION['current_orchestra_id']);
         $leadersCanViewAllEnabled = !empty($orchestra['leaders_can_view_all_sections']);
-        
-        // Check if user wants to view all sections (from URL parameter or toggle state)
         // Default to own section view when the feature is enabled
         $viewAllSections = isset($_GET['viewAll']) && $_GET['viewAll'] === '1';
         $leadersCanViewAll = $leadersCanViewAllEnabled && $viewAllSections;
         
 
-        // Get members: either only own section or all sections based on setting
         $userOrchestraModel = new \App\Models\UserOrchestra();
         if ($leadersCanViewAll) {
             $members = $userOrchestraModel->getOrchestraUsers($_SESSION['current_orchestra_id']);
         } else {
             $members = $userOrchestraModel->getUsersByType($sectionName, $_SESSION['current_orchestra_id']);
             
-            // If no exact match found, try with the original user type (without underscore replacement)
             if (empty($members)) {
                 $members = $userOrchestraModel->getUsersByType($userType, $_SESSION['current_orchestra_id']);
             }
             
-            // If still no exact match, search for similar section names using GroupManager
             if (empty($members)) {
                 $groupManager = new \App\Core\GroupManager();
                 $resolvedType = $groupManager->resolveAlias($userType);
@@ -172,7 +153,6 @@ class PromiseController extends Controller
                     $leaderSectionInfo = $groupManager->getSectionForInstrument($resolvedType);
                     $memberSectionInfo = $groupManager->getSectionForInstrument($memberType);
                     
-                    // Check if they're in the same section
                     if ($leaderSectionInfo && $memberSectionInfo) {
                         return $leaderSectionInfo === $memberSectionInfo;
                     }
@@ -187,7 +167,6 @@ class PromiseController extends Controller
             }
         }
         
-        // Ensure we have an array
         if (!is_array($members)) {
             $members = [];
         }
@@ -202,7 +181,6 @@ class PromiseController extends Controller
         $groupManager = new \App\Core\GroupManager();
         $allSections = $groupManager->getAllSections();
         
-        // Calculate statistics for each rehearsal (similar to admin view)
         $stats = [];
         $membersBySection = [];
         
@@ -211,7 +189,7 @@ class PromiseController extends Controller
         $leaderSectionInfo = $groupManager->getSectionForInstrument($leaderResolvedType);
         $leaderSectionId = $leaderSectionInfo ?? $leaderResolvedType;
         
-        // Process rehearsals - filter by leader's section when not viewing all
+        // For leaders viewing only their section, structure data differently
         foreach ($rehearsals as $rehearsal) {
             $rehearsalId = $rehearsal['id'];
             $stats[$rehearsalId] = [
@@ -312,7 +290,7 @@ class PromiseController extends Controller
             }
         }
         
-        // Get promises for each member and organize by rehearsal (for backward compatibility)
+        // Group promises by rehearsal
         $memberPromises = [];
         
         foreach ($rehearsals as $rehearsal) {
@@ -368,7 +346,6 @@ class PromiseController extends Controller
             $firstRehearsalId = $firstRehearsal['id'];
         }
         
-        // Render view
         $this->render('promises/leader', [
             'currentPage' => 'leader',
             'rehearsals' => $rehearsals,
@@ -393,23 +370,27 @@ class PromiseController extends Controller
      */
     public function update()
     {
-        // Check if user is logged in
         if (!$this->isLoggedIn()) {
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'Nicht eingeloggt', 'details' => 'Bitte melden Sie sich erneut an.']);
             return;
         }
         
-        // Check if Ajax request
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'Ungültige Anfrage', 'details' => 'Diese Aktion ist nur über AJAX erlaubt.']);
             return;
         }
         
-        // Get parameters
         $rehearsalId = isset($_POST['id']) ? intval($_POST['id']) : 0;
-        $status = isset($_POST['status']) ? (bool)$_POST['status'] : false;
+        
+        $statusParam = $_POST['status'] ?? null;
+        if ($statusParam === 'reset') {
+            $status = 'reset';
+        } else {
+            $status = (bool)$statusParam;
+        }
+        
         $note = isset($_POST['note']) ? trim($_POST['note']) : '';
         
         if ($rehearsalId <= 0) {
@@ -418,7 +399,6 @@ class PromiseController extends Controller
             return;
         }
         
-        // Get user from session
         $username = $_SESSION['username'];
         $user = $this->userModel->findByUsername($username);
         
@@ -428,7 +408,6 @@ class PromiseController extends Controller
             return;
         }
         
-        // Update promise
         $result = $this->userModel->updatePromise($user['id'], $rehearsalId, $status, $note);
         
         header('Content-Type: application/json');
@@ -456,21 +435,18 @@ class PromiseController extends Controller
      */
     public function note()
     {
-        // Check if user is logged in
         if (!$this->isLoggedIn()) {
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'Nicht eingeloggt', 'details' => 'Bitte melden Sie sich erneut an.']);
             return;
         }
         
-        // Check if Ajax request
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'Ungültige Anfrage', 'details' => 'Diese Aktion ist nur über AJAX erlaubt.']);
             return;
         }
         
-        // Get parameters
         $rehearsalId = isset($_POST['id']) ? intval($_POST['id']) : 0;
         $note = Validator::sanitizeUtf8($_POST['note'] ?? '');
         
@@ -480,7 +456,6 @@ class PromiseController extends Controller
             return;
         }
         
-        // Get user from session
         $username = $_SESSION['username'];
         $user = $this->userModel->findByUsername($username);
         
@@ -490,7 +465,6 @@ class PromiseController extends Controller
             return;
         }
         
-        // Get current promise status from user_promises table
         $promiseModel = new UserPromise();
         $existingPromise = $promiseModel->findByUserAndRehearsal($user['id'], $rehearsalId);
         $status = $existingPromise && isset($existingPromise['status']) ? ($existingPromise['status'] === 'yes') : false;
@@ -523,13 +497,11 @@ class PromiseController extends Controller
      */
     public function admin($params = [])
     {
-        // Validate orchestra context and set session variables
         $this->validateOrchestraContext($params);
         
         // Check if user is a conductor
         $this->requireRole('conductor');
         
-        // Get show old parameter
         $showOld = isset($_GET['showOld']);
         
         // Get all rehearsals
@@ -548,7 +520,6 @@ class PromiseController extends Controller
         $groupManager = new \App\Core\GroupManager();
         $allSections = $groupManager->getAllSections();
         
-        // Calculate statistics for each rehearsal
         $stats = [];
         $membersBySection = [];
         
@@ -576,7 +547,6 @@ class PromiseController extends Controller
                     continue;
                 }
                 
-                // Get small-group membership from user_orchestras relation
                 $isSmallGroup = isset($user['is_small_group']) && (int)$user['is_small_group'] === 1;
                 
                 if ($this->rehearsalModel->isUserInRehearsalGroup($user['type'], $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
@@ -623,7 +593,6 @@ class PromiseController extends Controller
             }
         }
         
-        // Render view
         $this->render('promises/admin', [
             'currentPage' => 'admin',
             'rehearsals' => $rehearsals,
@@ -688,9 +657,6 @@ class PromiseController extends Controller
         $paginatedRehearsals = array_slice($pastRehearsals, $offset, $limit);
         $hasMore = ($offset + $limit) < $totalPastRehearsals;
         
-        // Get user's promises
-        $promises = [];
-        $user = $this->userModel->findByUsername($_SESSION['username']);
         if ($user) {
             $userPromises = $this->userModel->getPromises($user['id']);
             foreach ($userPromises as $promise) {
@@ -701,10 +667,7 @@ class PromiseController extends Controller
             }
         }
         
-        // Generate HTML for rehearsal cards
-        $html = '';
         foreach ($paginatedRehearsals as $rehearsal) {
-            // Determine status for this rehearsal
             $status = 'pending';
             $note = '';
             
@@ -724,7 +687,6 @@ class PromiseController extends Controller
                 false // Not admin view
             );
             
-            // Set options for the rehearsal card component
             $context = 'promises';
             $options = [
                 'status' => $status,

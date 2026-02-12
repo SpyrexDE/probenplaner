@@ -169,7 +169,6 @@ $(document).ready(function() {
         }
     });
     
-    // Initialize note displays for existing notes on page load
     $('.rehearsal-card input[id^="note"]').each(function() {
         var noteInput = $(this);
         var note = noteInput.val();
@@ -177,7 +176,6 @@ $(document).ready(function() {
         var container = $('.rehearsal-card').has('#note' + rehearsalId);
         
         if (note && note.trim() !== '') {
-            // Add note tag if not already present and card is declined  
             if (container.hasClass('status-not_attending') && container.find('.rehearsal-note-tag').length === 0) {
                 var noteHtml = '<div class="rehearsal-note-tag">' +
                                '<i class="fa-solid fa-quote-left rehearsal-note-icon"></i>' +
@@ -187,8 +185,77 @@ $(document).ready(function() {
         }
     });
     
+    let longPressTimer;
+    const longPressDuration = 500; // ms
+
+    function handleLongPressStart(element) {
+        if ($(element).hasClass('disabled')) return;
+        
+        longPressTimer = setTimeout(function() {
+            // Long press detected
+            var id = $(element).attr('id');
+            var container = $(element).closest('.rehearsal-card');
+            
+            if (container.find('.action-btn.selected').length === 0) {
+                // Already reset/no record -> do nothing
+                return;
+            }
+            
+            disableRehearsalButtons(id);
+            
+            container.find('.checkBtn, .crossBtn').removeClass('selected').addClass('deselected');
+            
+            container.removeClass('status-attending status-not_attending');
+            
+            container.find('.rehearsal-note-tag').remove();
+            
+            $('#note' + id).val('');
+            
+            // Queue reset update
+            queueUpdate("promise", id, 'reset', '');
+            
+            // Show feedback
+            // Assuming window.notifySuccess exists as per promises-shared.js usage
+            if (typeof window.notifySuccess === 'function') {
+                window.notifySuccess("Status zurückgesetzt", { timer: 1500 });
+            }
+            
+            // Update stats
+            if (typeof window.loadUserStats === 'function') {
+                setTimeout(function() { window.loadUserStats(); }, 100);
+            }
+            
+            // Prevent the click event that might follow
+            $(element).data('longPressed', true);
+            
+        }, longPressDuration);
+    }
+
+    // Helper to handle long press end
+    function handleLongPressEnd(element) {
+        clearTimeout(longPressTimer);
+    }
+    
+    // Attach long press events to buttons
+    $(document).on('mousedown touchstart', '.checkBtn, .crossBtn', function(e) {
+        // Reset longPressed flag
+        $(this).data('longPressed', false);
+        handleLongPressStart(this);
+    });
+    
+    $(document).on('mouseup touchend mouseleave', '.checkBtn, .crossBtn', function(e) {
+        handleLongPressEnd(this);
+    });
+
     // Handle attend/not attend button clicks (using event delegation for dynamic content)
-    $(document).on('click', '.checkBtn', function() {
+    $(document).on('click', '.checkBtn', function(e) {
+        // If it was a long press, ignore the click
+        if ($(this).data('longPressed')) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+        }
+
         if ($(this).hasClass('disabled')) {
             return;
         }
@@ -222,7 +289,14 @@ $(document).ready(function() {
         }
     });
     
-    $(document).on('click', '.crossBtn', function() {
+    $(document).on('click', '.crossBtn', function(e) {
+        // If it was a long press, ignore the click
+        if ($(this).data('longPressed')) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+        }
+
         if ($(this).hasClass('disabled')) {
             return;
         }
@@ -366,15 +440,24 @@ $(document).ready(function() {
     
     function updatePromise(id, attending, note) {
         <?php $orchestraId = $_SESSION['current_orchestra_id'] ?? 1; ?>
+        
+        // Prepare data
+        var data = {
+            id: id,
+            note: note,
+            csrf_token: $('meta[name="csrf-token"]').attr('content')
+        };
+        
+        if (attending === 'reset') {
+            data.status = 'reset';
+        } else {
+            data.status = attending ? 1 : 0;
+        }
+
         $.ajax({
             url: '/<?= $orchestraId ?>/promises/update',
             type: 'POST',
-            data: {
-                id: id,
-                status: attending ? 1 : 0,
-                note: note,
-                csrf_token: $('meta[name="csrf-token"]').attr('content')
-            },
+            data: data,
             success: function(response) {
                 if (response.success) {
                     // Success handled in UI already

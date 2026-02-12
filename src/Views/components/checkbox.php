@@ -168,7 +168,7 @@
 </style>
 
 <?php
-// Check if this is styles-only mode
+// Styles-only mode check
 $renderComponent = $renderComponent ?? true;
 
 if (!$renderComponent) {
@@ -176,7 +176,7 @@ if (!$renderComponent) {
     return;
 }
 
-// Set defaults for component rendering
+// Component defaults
 $name = $name ?? '';
 $id = $id ?? $name;
 $label = $label ?? '';
@@ -187,7 +187,6 @@ $size = $size ?? 'normal'; // small, normal, large
 $inline = $inline ?? false;
 $class = $class ?? '';
 
-// Build classes
 $classes = ['custom-checkbox'];
 if ($size !== 'normal') $classes[] = $size;
 if ($inline) $classes[] = 'inline';
@@ -195,7 +194,6 @@ if ($class) $classes[] = $class;
 
 $classString = implode(' ', $classes);
 
-// Build attributes
 $attributes = '';
 if ($disabled) $attributes .= ' disabled';
 if ($checked) $attributes .= ' checked';

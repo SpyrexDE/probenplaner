@@ -25,26 +25,24 @@
 <?php endif; ?>
 
 <?php 
-// Set leader context for dashboard
+// Dashboard context
 $isAdmin = false;
 $isLeader = true;
 include __DIR__ . '/../components/promises-dashboard-wrapper.php'; 
 ?>
 
 <script>
-// Leader-specific toggle functionality
+// Toggle functionality
 document.addEventListener('DOMContentLoaded', function() {
     const toggle = document.getElementById('viewToggle');
     if (toggle) {
-        // Initialize the view toggle functionality from promises-shared.js
-        initializeViewToggle();
+        // Initialize view toggle
         
-        // Update slider styling based on toggle state
-        const slider = toggle.nextElementSibling;
+        // Update slider styling
         const dot = slider.nextElementSibling;
         
         if (toggle.disabled) {
-            // Disabled state: gray out and show as disabled
+            // Disabled state
             slider.style.backgroundColor = '#e0e0e0';
             slider.style.cursor = 'not-allowed';
             slider.style.opacity = '0.6';

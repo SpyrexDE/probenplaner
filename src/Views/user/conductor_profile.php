@@ -1,6 +1,6 @@
 <?php
-// Load form, card, and modern checkbox styles (components used for styles only)
-$renderComponent = false; // Just load styles, don't render component
+// Component styles
+$renderComponent = false;
 include __DIR__ . '/../components/form-input.php';
 include __DIR__ . '/../components/modern-checkbox.php';
 include __DIR__ . '/../components/theme-selector.php';
@@ -205,7 +205,7 @@ include __DIR__ . '/../components/theme-selector.php';
 <script>
 $(document).ready(function(){
     const hasPassword = <?php echo isset($hasPassword) && $hasPassword ? 'true' : 'false'; ?>;
-    // Password strength checker
+    // Strength checker
     function checkPasswordStrength(password) {
         const strengthIndicator = $('#passwordStrength');
         const strengthFill = $('#strengthFill');
@@ -226,7 +226,7 @@ $(document).ready(function(){
         else if (password.length >= 4) score += 1;
         else feedback.push('Mindestens 4 Zeichen erforderlich');
         
-        // Complexity checks
+        // Complexity calculation
         if (/[a-z]/.test(password)) score += 1;
         if (/[A-Z]/.test(password)) score += 1;
         if (/[0-9]/.test(password)) score += 1;
@@ -252,7 +252,7 @@ $(document).ready(function(){
     }
     
     // Password field handlers
-    $('#new_password').on('input', function() {
+    // Field handlers
         const password = $(this).val();
         checkPasswordStrength(password);
         
@@ -276,7 +276,7 @@ $(document).ready(function(){
         }
     });
     
-    // Enhanced form validation
+    // Form validation
     $('form').on('submit', function(e) {
         const newPassword = $('#new_password').val();
         const confirmPassword = $('#confirm_password').val();
@@ -327,7 +327,7 @@ $(document).ready(function(){
         return true;
     });
     
-    // Modern account deletion with better UX
+    // Account deletion
     $('#deleteAccount').click(function(){
         Swal.fire({
             title: 'Account dauerhaft löschen?',
@@ -376,7 +376,7 @@ $(document).ready(function(){
         });
     });
     
-    // Enhanced input interactions
+    // Input interactions
     $('.form-input-modern').on('focus', function() {
         $(this).closest('.form-group-modern').addClass('focused');
     }).on('blur', function() {
@@ -395,7 +395,7 @@ $(document).ready(function(){
         }
     });
     
-    // Compact theme selection with instant switching
+    // Theme selection
     $('.theme-radio-compact').on('change', function() {
         if ($(this).is(':checked')) {
             const selectedTheme = $(this).val();
@@ -410,7 +410,7 @@ $(document).ready(function(){
         }
     });
     
-    // Function to switch theme instantly
+    // Switch theme
     function switchThemeInstantly(themeKey, themeName) {
         $.ajax({
             type: 'POST',
@@ -469,7 +469,7 @@ $(document).ready(function(){
         });
     }
     
-    // Function to apply theme to current page
+    // Apply theme
     function applyThemeToPage(themeKey) {
         // Find the current theme link and update it
         const currentThemeLink = $('link[data-theme]');

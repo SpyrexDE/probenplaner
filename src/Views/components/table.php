@@ -71,7 +71,7 @@
 </style>
 
 <?php
-// Check if this is styles-only mode
+// Styles-only mode check
 $renderComponent = $renderComponent ?? true;
 
 if (!$renderComponent) {
@@ -79,7 +79,7 @@ if (!$renderComponent) {
     return;
 }
 
-// Set defaults for component rendering
+// Component defaults
 $headers = $headers ?? [];
 $rows = $rows ?? [];
 $compact = $compact ?? false;
@@ -87,7 +87,6 @@ $bordered = $bordered ?? false;
 $striped = $striped ?? true;
 $responsive = $responsive ?? true;
 
-// Build table classes
 $tableClasses = ['table-themed'];
 if ($compact) $tableClasses[] = 'table-compact';
 if ($bordered) $tableClasses[] = 'table-bordered';

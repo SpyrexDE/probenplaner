@@ -34,25 +34,19 @@ class RehearsalController extends Controller
      */
     public function index($params = [])
     {
-        // Validate orchestra context and set session variables
         $this->validateOrchestraContext($params);
         
-        // Check if user is a conductor
         $this->requireRole('conductor');
         
-        // Check if this is an AJAX request for past rehearsals only
         if (isset($_GET['ajax']) && $_GET['pastOnly']) {
             $this->handlePastRehearsalsAjax();
             return;
         }
         
-        // Get show old parameter
         $showOld = isset($_GET['showOld']);
         
-        // Get all rehearsals
         $rehearsals = $this->rehearsalModel->getUpcoming($_SESSION['current_orchestra_id'], $showOld);
         
-        // Render view
         $this->render('rehearsals/index', [
             'currentPage' => 'rehearsals',
             'rehearsals' => $rehearsals,
@@ -68,13 +62,10 @@ class RehearsalController extends Controller
      */
     public function create($params = [])
     {
-        // Validate orchestra context and set session variables
         $this->validateOrchestraContext($params);
         
-        // Check if user is a conductor
         $this->requireRole('conductor');
         
-        // Process form submission
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Sanitize form data
             $start = \App\Core\Validator::sanitizeUtf8($_POST['start'] ?? '');
@@ -82,15 +73,14 @@ class RehearsalController extends Controller
             $location = \App\Core\Validator::sanitizeUtf8($_POST['location'] ?? '');
             $color = \App\Core\Validator::sanitizeUtf8($_POST['color'] ?? '');
             
-            // Process groups data
-            $rehearsalType = \App\Core\Validator::sanitizeUtf8($_POST['rehearsal_type'] ?? '');
+        // Handle group assignments
+        $rehearsalType = \App\Core\Validator::sanitizeUtf8($_POST['rehearsal_type'] ?? '');
             $finalGroups = \App\Core\RehearsalGroupProcessor::processGroups($_POST);
             $groupValidationErrors = \App\Core\RehearsalGroupProcessor::validateGroups($finalGroups);
             
             $isSmallGroup = isset($_POST['is_small_group']) && $_POST['is_small_group'] === (string)\App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED;
             
-            // Validate input
-            $requiredValidation = \App\Core\Validator::validateRequired([
+        $requiredValidation = \App\Core\Validator::validateRequired([
                 'start' => $start,
                 'end' => $end
             ], ['start', 'end']);
@@ -104,8 +94,7 @@ class RehearsalController extends Controller
                 $timeOrderErrors[] = 'Die Endzeit muss nach der Startzeit liegen';
             }
             
-            // Merge all validations
-            $validation = \App\Core\Validator::mergeResults([
+        $validation = \App\Core\Validator::mergeResults([
                 $requiredValidation,
                 $startValidation,
                 $endValidation,
@@ -170,8 +159,7 @@ class RehearsalController extends Controller
                 ]
             ]);
         } else {
-            // Display the form
-            $this->render('rehearsals/create', [
+        $this->render('rehearsals/create', [
                 'currentPage' => 'rehearsals',
                 'errors' => [],
                 'formData' => [
@@ -195,10 +183,8 @@ class RehearsalController extends Controller
      */
     public function edit($params)
     {
-        // Validate orchestra context and set session variables
         $this->validateOrchestraContext($params);
         
-        // Check if user is a conductor
         $this->requireRole('conductor');
         
         // Get rehearsal ID from route parameters
@@ -209,7 +195,6 @@ class RehearsalController extends Controller
             return;
         }
         
-        // Get rehearsal data
         $rehearsal = $this->rehearsalModel->findById($rehearsalId);
         
         if (!$rehearsal) {
@@ -218,7 +203,6 @@ class RehearsalController extends Controller
             return;
         }
         
-        // Process form submission
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Sanitize form data
             $start = \App\Core\Validator::sanitizeUtf8($_POST['start'] ?? '');
@@ -226,15 +210,14 @@ class RehearsalController extends Controller
             $location = \App\Core\Validator::sanitizeUtf8($_POST['location'] ?? '');
             $color = \App\Core\Validator::sanitizeUtf8($_POST['color'] ?? '');
             
-            // Process groups data
-            $rehearsalType = \App\Core\Validator::sanitizeUtf8($_POST['rehearsal_type'] ?? '');
+        // Handle group assignments
+        $rehearsalType = \App\Core\Validator::sanitizeUtf8($_POST['rehearsal_type'] ?? '');
             $finalGroups = \App\Core\RehearsalGroupProcessor::processGroups($_POST);
             $groupValidationErrors = \App\Core\RehearsalGroupProcessor::validateGroups($finalGroups);
             
             $isSmallGroup = isset($_POST['is_small_group']) && $_POST['is_small_group'] === (string)\App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED;
             
-            // Validate input
-            $requiredValidation = \App\Core\Validator::validateRequired([
+        $requiredValidation = \App\Core\Validator::validateRequired([
                 'start' => $start,
                 'end' => $end
             ], ['start', 'end']);
@@ -248,8 +231,7 @@ class RehearsalController extends Controller
                 $timeOrderErrors[] = 'Die Endzeit muss nach der Startzeit liegen';
             }
             
-            // Merge all validations
-            $validation = \App\Core\Validator::mergeResults([
+        $validation = \App\Core\Validator::mergeResults([
                 $requiredValidation,
                 $startValidation,
                 $endValidation,
@@ -405,10 +387,8 @@ class RehearsalController extends Controller
         $offset = (int)($_GET['offset'] ?? 0);
         $limit = (int)($_GET['limit'] ?? 10);
         
-        // Get all past rehearsals
         $allPastRehearsals = $this->rehearsalModel->getUpcoming($_SESSION['current_orchestra_id'], true);
         
-        // Filter only past rehearsals and apply pagination
         $today = date('Y-m-d');
         $pastRehearsals = array_filter($allPastRehearsals, function($rehearsal) use ($today) {
             return $rehearsal['date'] < $today;
@@ -422,7 +402,6 @@ class RehearsalController extends Controller
         $paginatedRehearsals = array_slice($pastRehearsals, $offset, $limit);
         $hasMore = ($offset + $limit) < $totalPastRehearsals;
         
-        // Generate HTML for rehearsal cards
         $html = '';
         foreach ($paginatedRehearsals as $rehearsal) {
             // Set options for the rehearsal card component
@@ -437,8 +416,7 @@ class RehearsalController extends Controller
             $html .= ob_get_clean();
         }
         
-        // Return JSON response
-        header('Content-Type: application/json');
+        @header('Content-Type: application/json');
         echo json_encode([
             'success' => true,
             'html' => $html,

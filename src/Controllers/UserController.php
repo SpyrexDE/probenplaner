@@ -34,10 +34,8 @@ class UserController extends Controller
      */
     public function profile($params = [])
     {
-        // Validate orchestra context and set session variables
         $this->validateOrchestraContext($params);
         
-        // Get user data
         $username = $_SESSION['username'];
         $user = $this->userModel->findByUsername($username);
         
@@ -47,7 +45,7 @@ class UserController extends Controller
             return;
         }
         
-        // Add current orchestra context data to user array for display
+        // Enrich user data with current context
         if (isset($_SESSION['current_type'])) {
             $user['type'] = $_SESSION['current_type'];
         }
@@ -64,20 +62,17 @@ class UserController extends Controller
             $user['is_small_group'] = false;
         }
         
-        // Handle form submission
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->processProfileEdit($user);
             return;
         }
         
-        // Add debugging info for troubleshooting
         error_log("User data for profile: " . json_encode([
             'type' => $user['type'] ?? null,
             'is_small_group' => $user['is_small_group'] ?? null,
             'role' => $user['role'] ?? null
         ]));
         
-        // Render profile view
         $this->render('user/profile', [
             'currentPage' => 'profile',
             'user' => $user,
@@ -97,13 +92,10 @@ class UserController extends Controller
      */
     public function conductorProfile($params = [])
     {
-        // Validate orchestra context and set session variables
         $this->validateOrchestraContext($params);
         
-        // Check if user is a conductor
         $this->requireRole('conductor');
         
-        // Get user data
         $username = $_SESSION['username'];
         $user = $this->userModel->findByUsername($username);
         
@@ -113,13 +105,11 @@ class UserController extends Controller
             return;
         }
         
-        // Handle form submission
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->processConductorProfileEdit($user);
             return;
         }
         
-        // Render conductor profile view
         $this->render('user/conductor_profile', [
             'currentPage' => 'conductor_profile',
             'user' => $user,
@@ -138,7 +128,6 @@ class UserController extends Controller
      */
     private function processConductorProfileEdit($user)
     {
-        // CSRF protection
         try {
             $this->protectCSRF();
         } catch (\Exception $e) {
@@ -146,7 +135,6 @@ class UserController extends Controller
             $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/conductor/profile');
             return;
         }
-        // Validate and sanitize input
         $oldUsername = $user['username'];
         $newUsername = Validator::sanitizeUtf8($_POST['username'] ?? '');
         $currentPassword = $_POST['current_password'] ?? '';
@@ -156,7 +144,6 @@ class UserController extends Controller
         $updateData = [];
         $usernameChanged = false;
         
-        // Process username changes if provided
         if (!empty($newUsername) && $newUsername != $oldUsername) {
             // Validate username using the model's validation method
             $usernameValidation = $this->userModel->validateUserInput(
@@ -175,7 +162,6 @@ class UserController extends Controller
             $usernameChanged = true;
         }
         
-        // Process password changes if provided
         if (!empty($newPassword)) {
             $hasPassword = !empty($user['password']);
             if ($hasPassword) {
@@ -185,8 +171,7 @@ class UserController extends Controller
                     return;
                 }
                 
-                // Verify current password
-                if (!password_verify($currentPassword, $user['password'])) {
+        if (!password_verify($currentPassword, $user['password'])) {
                     $this->addAlert('Fehler!', 'Das aktuelle Passwort ist falsch.', 'error');
                     $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/conductor/profile');
                     return;
@@ -222,9 +207,9 @@ class UserController extends Controller
         $result = $this->userModel->updateProfile($user['id'], $updateData);
         
         if ($result) {
-            if ($usernameChanged) {
-                // If username changed, need to log out and back in
-                $this->setFlash('success', 'Profil aktualisiert. Bitte melden Sie sich erneut an.');
+        if ($usernameChanged) {
+            // Re-login required after username change
+            $this->setFlash('success', 'Profil aktualisiert. Bitte melden Sie sich erneut an.');
                 $this->logout();
             } else {
                 $this->setFlash('success', 'Profil erfolgreich aktualisiert.');
@@ -244,7 +229,6 @@ class UserController extends Controller
      */
     private function processProfileEdit($user)
     {
-        // CSRF protection
         try {
             $this->protectCSRF();
         } catch (\Exception $e) {
@@ -252,7 +236,6 @@ class UserController extends Controller
             $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
             return;
         }
-        // Validate and sanitize input
         $oldUsername = $user['username'];
         $newUsername = Validator::sanitizeUtf8($_POST['username'] ?? '');
         $currentPassword = $_POST['current_password'] ?? '';
@@ -267,7 +250,6 @@ class UserController extends Controller
         $relationChangesMade = false;
         $usernameChanged = false;
         
-        // Process username changes if provided
         if (!empty($newUsername) && $newUsername != $oldUsername) {
             // Validate username using the model's validation method
             $usernameValidation = $this->userModel->validateUserInput(
@@ -286,7 +268,6 @@ class UserController extends Controller
             $usernameChanged = true;
         }
         
-        // Process password changes if provided
         if (!empty($newPassword)) {
             $hasPassword = !empty($user['password']);
             if ($hasPassword) {
@@ -296,8 +277,7 @@ class UserController extends Controller
                     return;
                 }
                 
-                // Verify current password
-                if (!password_verify($currentPassword, $user['password'])) {
+        if (!password_verify($currentPassword, $user['password'])) {
                     $this->addAlert('Fehler!', 'Das aktuelle Passwort ist falsch.', 'error');
                     $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
                     return;
@@ -322,7 +302,7 @@ class UserController extends Controller
             $updateData['password'] = $newPassword;
         }
         
-        // Process group type changes in user_orchestras relation
+        // Sync user_orchestras relation
         $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
         if ($orchestraId) {
             $userOrchestraModel = new \App\Models\UserOrchestra();
@@ -373,7 +353,6 @@ class UserController extends Controller
             }
         }
         
-        // If no changes were made
         if (empty($updateData) && !$relationChangesMade) {
             $this->addAlert('Info', 'Keine Änderungen vorgenommen.', 'info');
             $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
@@ -387,9 +366,9 @@ class UserController extends Controller
         }
         
         if ($result === true) {
-            if ($usernameChanged) {
-                // If username changed, need to log out and back in
-                $this->setFlash('success', 'Profil aktualisiert. Bitte melden Sie sich erneut an.');
+        if ($usernameChanged) {
+            // Re-login required after username change
+            $this->setFlash('success', 'Profil aktualisiert. Bitte melden Sie sich erneut an.');
                 $this->logout();
             } else {
                 // Session updates for relation handled above when applying relation changes
@@ -460,7 +439,6 @@ class UserController extends Controller
             return;
         }
         
-        // Get user data
         $username = $_SESSION['username'];
         $user = $this->userModel->findByUsername($username);
         
@@ -582,7 +560,6 @@ class UserController extends Controller
      */
     public function getUserDetails($params = [])
     {
-        // Validate orchestra context and set session variables
         $this->validateOrchestraContext($params);
         
         // Check if user is authorized (either conductor or group leader)
@@ -628,7 +605,6 @@ class UserController extends Controller
      */
     public function resetPassword($params = [])
     {
-        // Validate orchestra context and set session variables
         $this->validateOrchestraContext($params);
         
         // Check if user is authorized (either conductor or group leader)
@@ -713,7 +689,6 @@ class UserController extends Controller
      */
     public function deleteUser($params = [])
     {
-        // Validate orchestra context and set session variables
         $this->validateOrchestraContext($params);
         
         // Check if user is authorized (either conductor or group leader)

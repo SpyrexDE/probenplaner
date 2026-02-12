@@ -1,12 +1,12 @@
 <?php 
-// Load table styles (table component used for styles only)
-$renderComponent = false; // Just load styles, don't render component
+// Component styles
+$renderComponent = false;
 include __DIR__ . '/../components/table.php'; 
 ?>
 
 <div class="max-w-7xl mx-auto px-4 mt-4">
     <div class="w-full">
-        <!-- Print Header (only visible during print) -->
+        <!-- Print Header -->
         <div class="print-header print-only">
             <div class="print-header-main">
                 <h1 class="print-title">Probenplan</h1>
@@ -123,8 +123,7 @@ include __DIR__ . '/../components/table.php';
     </div>
 
     <?php 
-    // FAB for print functionality
-    // Ensure component renders even if a previous include set $renderComponent = false
+    // Print Button
     $renderComponent = true;
     $icon = 'print';
     $onclick = 'window.print()';
@@ -230,7 +229,7 @@ include __DIR__ . '/../components/table.php';
     }
 }
 
-/* Print-only elements (hidden on screen) */
+/* Print-only elements */
 .print-only {
     display: none;
 }
@@ -358,7 +357,7 @@ include __DIR__ . '/../components/table.php';
         margin: 0 !important;
     }
 
-    /* Table styling to match UI exactly */
+    /* Table styling */
     .table-responsive {
         overflow: visible !important;
         border-radius: var(--radius-base) !important;
@@ -413,7 +412,7 @@ include __DIR__ . '/../components/table.php';
         border-top-right-radius: var(--radius-base) !important;
     }
 
-    /* Preserve rehearsal color borders exactly as in UI */
+    /* Color borders */
     table.table-themed td[style*="border-left"] {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
@@ -459,14 +458,14 @@ include __DIR__ . '/../components/table.php';
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Get toggle elements
+    // Elements
     const personalizedToggle = document.getElementById('personalizedToggle');
     const showOldToggle = document.getElementById('showOldToggle');
     
-    // Initialize toggle states visually
+    // Initialize
     initializeToggleStates();
     
-    // Add event listeners for immediate toggling
+    // Listeners
     if (personalizedToggle) {
         personalizedToggle.addEventListener('change', handlePersonalizedToggle);
     }
@@ -516,7 +515,7 @@ document.addEventListener('DOMContentLoaded', function() {
             dot.style.transform = 'translateX(0px)';
         }
         
-        // Preserve showOld parameter if it exists
+        // Preserve parameter
         if (<?= json_encode($showOld ?? false) ?>) {
             url.searchParams.set('showOld', '1');
         }
@@ -539,7 +538,7 @@ document.addEventListener('DOMContentLoaded', function() {
             dot.style.transform = 'translateX(0px)';
         }
         
-        // Preserve personalized parameter if it exists
+        // Preserve parameter
         if (<?= json_encode($personalized ?? false) ?>) {
             url.searchParams.set('personalized', '1');
         }

@@ -1,8 +1,8 @@
 <?php $this->layout('layouts/default', ['title' => 'Orchester bearbeiten', 'currentPage' => $currentPage]) ?>
 
 <?php
-// Load form, card, and modern checkbox styles (components used for styles only)
-$renderComponent = false; // Just load styles, don't render component
+// Component styles
+$renderComponent = false;
 include __DIR__ . '/../components/form-input.php';
 include __DIR__ . '/../components/modern-checkbox.php';
 ?>
@@ -174,13 +174,13 @@ include __DIR__ . '/../components/modern-checkbox.php';
 
 <script>
 $(document).ready(function(){
-    // Enhanced form validation
+    // Form validation
     $('form').on('submit', function(e) {
         const orchestraName = $('#name').val().trim();
         const token = $('#token').val().trim();
         const leaderPassword = $('#leader_password').val().trim();
         
-        // Validate required fields
+        // Required fields check
         if (!orchestraName) {
             e.preventDefault();
             window.notifyError('Bitte gib einen Orchesternamen ein.');
@@ -202,7 +202,7 @@ $(document).ready(function(){
             return false;
         }
         
-        // Validate token format (alphanumeric, no spaces)
+        // Token format check
         if (!/^[a-zA-Z0-9_-]+$/.test(token)) {
             e.preventDefault();
             window.notifyError('Der Token darf nur Buchstaben, Zahlen, Bindestriche und Unterstriche enthalten.');
@@ -210,7 +210,7 @@ $(document).ready(function(){
             return false;
         }
         
-        // Validate password strength
+        // Password strength check
         if (leaderPassword.length < 4) {
             e.preventDefault();
             window.notifyError('Das Stimmführer-Passwort muss mindestens 4 Zeichen lang sein.');
@@ -218,13 +218,13 @@ $(document).ready(function(){
             return false;
         }
         
-        // Show loading state
+        // Loading state
         const submitBtn = $(this).find('button[type="submit"]');
         const originalText = submitBtn.html();
         submitBtn.html('<div class="inline-flex items-center"><div class="loading-spinner mr-2"></div>Speichere...</div>');
         submitBtn.prop('disabled', true);
         
-        // Re-enable button after a delay (in case of validation errors)
+
         setTimeout(() => {
             submitBtn.html(originalText);
             submitBtn.prop('disabled', false);
@@ -233,7 +233,7 @@ $(document).ready(function(){
         return true;
     });
     
-    // Enhanced input interactions
+    // Input interactions
     $('.form-input-modern').on('focus', function() {
         $(this).closest('.form-group-modern').addClass('focused');
     }).on('blur', function() {
@@ -245,14 +245,14 @@ $(document).ready(function(){
         }
     });
     
-    // Initial state for filled inputs
+    // Filled state initialization
     $('.form-input-modern').each(function() {
         if ($(this).val()) {
             $(this).closest('.form-group-modern').addClass('filled');
         }
     });
     
-    // Token validation feedback
+    // Token validation
     $('#token').on('input', function() {
         const token = $(this).val();
         const isValid = /^[a-zA-Z0-9_-]*$/.test(token);
@@ -266,13 +266,13 @@ $(document).ready(function(){
         }
     });
     
-    // Success message for saved settings
+    // Success feedback
     if (window.location.search.includes('saved=1')) {
         window.notifySuccess('Orchester-Einstellungen wurden erfolgreich gespeichert!');
     }
 });
 
-// Password visibility toggle
+// Toggle password visibility
 function togglePasswordVisibility() {
     const passwordField = $('#leader_password');
     const toggleBtn = $('#togglePasswordBtn');
@@ -289,7 +289,7 @@ function togglePasswordVisibility() {
     }
 }
 
-// Token visibility toggle
+// Toggle token visibility
 function toggleTokenVisibility() {
     const tokenField = $('#token');
     const toggleBtn = $('#toggleTokenBtn');
@@ -306,11 +306,11 @@ function toggleTokenVisibility() {
     }
 }
 
-// Enhanced delete confirmation
+// Delete confirmation logic
 function confirmDelete(event) {
     event.preventDefault();
     
-    // First confirmation
+    // Initial confirmation
     Swal.fire({
         title: 'Orchester wirklich löschen?',
         html: `
@@ -347,7 +347,7 @@ function confirmDelete(event) {
         }
     }).then((result) => {
         if (result.isConfirmed) {
-            // Second confirmation with typing requirement
+            // Secondary confirmation (Name input)
             Swal.fire({
                 title: 'Letzte Bestätigung',
                 html: `
@@ -388,7 +388,7 @@ function confirmDelete(event) {
                 }
             }).then((finalResult) => {
                 if (finalResult.isConfirmed) {
-                    // Show deletion in progress
+
                     Swal.fire({
                         title: 'Orchester wird gelöscht...',
                         html: 'Alle Daten werden entfernt. Dies kann einen Moment dauern...',
@@ -399,7 +399,7 @@ function confirmDelete(event) {
                         }
                     });
                     
-                    // Redirect to deletion endpoint
+                    // Execute deletion
                     setTimeout(() => {
                         window.location.href = '/<?= $_SESSION['current_orchestra_id'] ?>/orchestras/delete-confirm';
                     }, 1000);

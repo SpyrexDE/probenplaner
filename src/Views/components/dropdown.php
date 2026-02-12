@@ -60,7 +60,7 @@
 </style>
 
 <?php
-// Set defaults
+// Component defaults
 $triggerText = $triggerText ?? 'Optionen';
 $triggerIcon = $triggerIcon ?? 'fas fa-chevron-down';
 $triggerClass = $triggerClass ?? '';
@@ -77,14 +77,13 @@ $sizeClasses = [
     'xl' => 'min-w-64'
 ];
 
-// Position classes
 $positionClasses = [
     'left' => 'left-0',
     'right' => 'right-0', 
     'center' => 'left-1/2 transform -translate-x-1/2'
 ];
 
-// Trigger button classes - using existing button component styles
+// Trigger classes
 $triggerClasses = "inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md border transition-colors duration-200";
 $triggerClasses .= " " . $triggerClass;
 
