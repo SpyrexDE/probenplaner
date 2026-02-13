@@ -1,33 +1,21 @@
 <?php $this->layout('layouts/default', ['title' => 'Neues Orchester erstellen', 'currentPage' => $currentPage]) ?>
 
-<?php 
-// Component styles
+<?php
 $renderComponent = false;
-include __DIR__ . '/../components/form-input.php'; 
+include __DIR__ . '/../components/form-input.php';
+
+ob_start();
 ?>
 
-<div class="login-container">
-    <?php if (isset($admin_verified) && $admin_verified): ?>
-    <div class="admin-verify-back">
-        <a href="/" class="back-link">
-            <i class="fas fa-arrow-left"></i>
-            Zurück
-        </a>
-    </div>
-    
+<?php if (isset($admin_verified) && $admin_verified): ?>
     <form action="/orchestras/store" method="post" class="login-form" style="max-width: 480px;">
-        <?php if (isset($csrf_token)): ?>
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8') ?>">
-        <?php endif; ?>
+        <?php include __DIR__ . '/../components/csrf-input.php'; ?>
         
-        <div class="login-logo">
-            <img src="/assets/img/Logo.png" alt="Logo"/>
-        </div>
+        <?php include __DIR__ . '/../components/logo.php'; ?>
 
         <h2 class="verify-title">Neues Orchester erstellen</h2>
         <p class="verify-subtitle">Orchester-Konfiguration</p>
         
-        <!-- Orchestra Settings Section -->
         <div style="margin: var(--space-6) 0; padding: var(--space-4); background: var(--color-bg-secondary); border-radius: var(--radius-lg); border-left: 4px solid var(--color-primary);">
             <h3 style="margin: 0 0 var(--space-3) 0; font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); color: var(--color-text-primary); display: flex; align-items: center; gap: var(--space-2);">
                 <i class="fas fa-music" style="color: var(--color-primary);"></i>
@@ -71,15 +59,11 @@ include __DIR__ . '/../components/form-input.php';
             Das Orchester wird erstellt und Sie können sich dann als Dirigent registrieren
         </div>
     </form>
-    <?php else: ?>
+<?php else: ?>
     <form method="post" action="/orchestras/create" class="login-form">
-        <?php if (isset($csrf_token)): ?>
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8') ?>">
-        <?php endif; ?>
+        <?php include __DIR__ . '/../components/csrf-input.php'; ?>
         
-        <div class="login-logo">
-            <img src="/assets/img/Logo.png" alt="Logo"/>
-        </div>
+        <?php include __DIR__ . '/../components/logo.php'; ?>
 
         <h2 class="verify-title">Admin Verifizierung</h2>
         <p class="verify-subtitle">Um ein neues Orchester anlegen zu können, benötigen Sie das Admin-Passwort</p>
@@ -94,5 +78,11 @@ include __DIR__ . '/../components/form-input.php';
             Verifizieren
         </button>
     </form>
-    <?php endif; ?>
-</div> 
+<?php endif; ?>
+
+<?php
+$content = ob_get_clean();
+$backLink = ['url' => '/', 'text' => 'Zurück', 'icon' => 'fa-arrow-left'];
+$maxWidth = isset($admin_verified) && $admin_verified ? '480px' : '400px';
+include __DIR__ . '/../components/centered-card.php';
+?>

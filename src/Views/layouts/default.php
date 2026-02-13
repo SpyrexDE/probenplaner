@@ -11,6 +11,12 @@ if (isset($_SESSION['user_id'])) {
 if ($currentUserTheme === null || !\App\Core\ThemeManager::themeExists($currentUserTheme)) {
     $currentUserTheme = \App\Core\ThemeManager::getDefaultTheme();
 }
+
+$authPages = ['login', 'register', 'create_orchestra', 'orchestra_select', 'join_orchestra', 'select_section', 'admin_verify'];
+$isAuthPage = isset($currentPage) && in_array($currentPage, $authPages);
+$currentPageHidesSidebar = $isAuthPage;
+$showSidebar = isset($_SESSION['username']) && isset($_SESSION['current_orchestra_id']) && !$currentPageHidesSidebar;
+$hideNavbar = $isAuthPage;
 ?>
 <html lang="de" class="w-full h-full" data-current-theme="<?= htmlspecialchars($currentUserTheme) ?>">
 <head>
@@ -145,18 +151,14 @@ if ($currentUserTheme === null || !\App\Core\ThemeManager::themeExists($currentU
     <script src="https://unpkg.com/tippy.js@6"></script>
     <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/animations/scale.css"/>
 </head>
-<body class="bg-gray-50 text-gray-900 font-sans overflow-x-hidden">
+<body class="bg-gray-50 text-gray-900 font-sans overflow-x-hidden<?= $showSidebar ? '' : ' layout-guest' ?>">
 
 
 
 
-<?php 
+<?php
 use App\Core\Utilities;
 use App\Core\Version;
-// Only show sidebar/topbar if logged in AND has selected an orchestra AND not on orchestra selection page
-$hideOnPages = ['login', 'register', 'create_orchestra', 'orchestra_select', 'join_orchestra', 'select_section'];
-$currentPageHidesSidebar = isset($currentPage) && in_array($currentPage, $hideOnPages);
-$showSidebar = isset($_SESSION['username']) && isset($_SESSION['current_orchestra_id']) && !$currentPageHidesSidebar;
 if ($showSidebar): ?>
     <div id="wrapper" class="flex min-h-screen transition-all duration-slow">
         <!-- Top Navigation -->
@@ -218,14 +220,6 @@ if ($showSidebar): ?>
         </div>
     </div>
 <?php else: ?>
-<?php 
-// Conditional Navbar visibility
-$hideNavbar = false;
-if (isset($currentPage) && in_array($currentPage, ['login', 'register', 'create_orchestra', 'orchestra_select', 'join_orchestra', 'select_section'])) {
-    $hideNavbar = true;
-}
-?>
-
 <?php if (!$hideNavbar): ?>
 <?php 
 $title = 'Probenplaner';
@@ -243,8 +237,66 @@ include __DIR__ . '/../components/top-navigation.php';
 ?>
 <?php endif; ?>
 
-<div class="page-content-inner">
-    <?= $content ?? '' ?>
+<style>
+/* Guest layout – colocated with layout */
+body.layout-guest {
+  min-height: 100vh;
+  height: 100vh;
+}
+.guest-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.guest-layout .page-content-inner.flex-1 {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.legal-footer {
+  flex-shrink: 0;
+  padding: var(--space-3) var(--space-4);
+  text-align: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+  position: relative;
+  z-index: 2;
+}
+.guest-layout.guest-auth .legal-footer {
+  background: transparent;
+}
+.legal-footer a {
+  color: var(--color-gray-500);
+  text-decoration: none;
+  transition: color var(--transition-base);
+}
+.legal-footer a:hover {
+  color: var(--color-gray-700);
+}
+.legal-footer-sep {
+  margin: 0 var(--space-2);
+  user-select: none;
+}
+</style>
+
+<div class="guest-layout<?= $hideNavbar ? ' guest-auth' : '' ?>">
+    <div class="page-content-inner flex-1">
+        <?php if ($hideNavbar): 
+            $authScreenContent = $content ?? ''; 
+            include __DIR__ . '/../components/auth-screen.php'; 
+        else: ?>
+        <?= $content ?? '' ?>
+        <?php endif; ?>
+    </div>
+    <?php if (!$hideNavbar): ?>
+    <footer class="legal-footer">
+        <a href="https://www.jmd.info/globals/datenschutz" target="_blank" rel="noopener">Datenschutz</a>
+        <span class="legal-footer-sep">·</span>
+        <a href="https://www.jmd.info/globals/impressum" target="_blank" rel="noopener">Impressum</a>
+    </footer>
+    <?php endif; ?>
 </div>
 <?php endif; ?>
 

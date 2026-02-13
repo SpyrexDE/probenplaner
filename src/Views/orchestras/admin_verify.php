@@ -1,39 +1,33 @@
 <?php $this->layout('layouts/default', ['title' => 'Admin Verifizierung', 'currentPage' => $currentPage]) ?>
 
-<?php 
-// Load form and card styles (form-input component used for styles only)
-$renderComponent = false; // Just load styles, don't render component
-include __DIR__ . '/../components/form-input.php'; 
+<?php
+$renderComponent = false;
+include __DIR__ . '/../components/form-input.php';
+
+ob_start();
 ?>
 
-<div class="login-container">
-    <div class="admin-verify-back">
-        <a href="/" class="back-link">
-            <i class="fas fa-arrow-left"></i>
-            Zurück
-        </a>
-    </div>
+<form method="post" action="/orchestras/create" class="login-form">
+    <?php include __DIR__ . '/../components/csrf-input.php'; ?>
     
-    <form method="post" action="/orchestras/create" class="login-form">
-        <?php if (isset($csrf_token)): ?>
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8') ?>">
-        <?php endif; ?>
-        
-        <div class="login-logo">
-            <img src="/assets/img/Logo.png" alt="Logo"/>
-        </div>
+    <?php include __DIR__ . '/../components/logo.php'; ?>
 
-        <h2 class="verify-title">Admin Verifizierung</h2>
-        <p class="verify-subtitle">Um ein neues Orchester anlegen zu können, benötigen Sie das Admin-Passwort</p>
+    <h2 class="verify-title">Admin Verifizierung</h2>
+    <p class="verify-subtitle">Um ein neues Orchester anlegen zu können, benötigen Sie das Admin-Passwort</p>
 
-        <input class="login-input" 
-               type="password" 
-               name="admin_password" 
-               placeholder="Admin-Passwort" 
-               required>
+    <input class="login-input"
+           type="password"
+           name="admin_password"
+           placeholder="Admin-Passwort"
+           required>
 
-        <button class="login-button" type="submit">
-            Verifizieren
-        </button>
-    </form>
-</div> 
+    <button class="login-button" type="submit">
+        Verifizieren
+    </button>
+</form>
+
+<?php
+$content = ob_get_clean();
+$backLink = ['url' => '/', 'text' => 'Zurück', 'icon' => 'fa-arrow-left'];
+include __DIR__ . '/../components/centered-card.php';
+?>

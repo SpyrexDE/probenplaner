@@ -1,48 +1,47 @@
 <?php $this->layout('layouts/default', ['title' => 'Orchester beitreten', 'currentPage' => 'join_orchestra']) ?>
 
-<?php 
-// Component styles
+<?php
 $renderComponent = false;
-include __DIR__ . '/../components/form-input.php'; 
+include __DIR__ . '/../components/form-input.php';
+
+ob_start();
 ?>
 
-<div class="login-container">
-    <form method="POST" action="/orchestras/join" class="login-form">
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-        
-        <div class="login-logo">
-            <img src="/assets/img/Logo.png" alt="Logo"/>
-        </div>
+<form method="POST" action="/orchestras/join" class="login-form">
+    <?php include __DIR__ . '/../components/csrf-input.php'; ?>
+    
+    <?php include __DIR__ . '/../components/logo.php'; ?>
 
-        <h2 style="text-align: center; margin-bottom: 2rem; color: var(--color-text-primary);">
-            Orchester beitreten
-        </h2>
+    <h2 style="text-align: center; margin-bottom: 2rem; color: var(--color-text-primary);">
+        Orchester beitreten
+    </h2>
 
-        <input 
-            class="login-input" 
-            type="text" 
-            id="token" 
-            name="token" 
-            required 
-            placeholder="Token (z.B. ORCHESTER2024)" 
-            value="<?= isset($_SESSION['form_data']['token']) ? htmlspecialchars($_SESSION['form_data']['token']) : '' ?>"
-        >
+    <input 
+        class="login-input" 
+        type="text" 
+        id="token" 
+        name="token" 
+        required 
+        placeholder="Token (z.B. ORCHESTER2024)" 
+        value="<?= isset($_SESSION['form_data']['token']) ? htmlspecialchars($_SESSION['form_data']['token']) : '' ?>"
+    >
 
-        <button class="login-button" type="submit">
-            Weiter
-        </button>
+    <button class="login-button" type="submit">
+        Weiter
+    </button>
 
-        <div class="auth-links">
-            <a href="/orchestras/select" class="auth-link">
-                <i class="fas fa-chevron-left" style="margin-right: 0.25rem;"></i>
-                Zurück
-            </a>
-        </div>
-    </form>
-</div>
+    <?php
+    $links = [
+        ['url' => '/orchestras/select', 'icon' => 'fa-chevron-left', 'text' => 'Zurück']
+    ];
+    include __DIR__ . '/../components/auth-footer.php';
+    ?>
+</form>
 
 <?php
-// Clear session data
+$content = ob_get_clean();
+include __DIR__ . '/../components/centered-card.php';
+
 if (isset($_SESSION['form_data'])) {
     unset($_SESSION['form_data']);
 }

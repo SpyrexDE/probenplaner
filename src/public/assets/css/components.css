@@ -1,6 +1,6 @@
 /*
  * Component Library for Probenplaner
- * Reusable styled components using the theming system
+ * Global App styles ONLY!
  */
 
 /* === CONTAINER APP FADE-IN ANIMATION === */
@@ -15,28 +15,8 @@
   transform: translateY(0);
 }
 
-/* NOTE: User badge styles moved to /Views/components/user-badge.php */
 
-/* NOTE: Rehearsal card styles moved to /Views/components/rehearsal-card.php */
-
-
-
-/* NOTE: Action button styles moved to /Views/components/rehearsal-card.php */
-
-/* NOTE: Sidebar component styles moved to /Views/components/sidebar.php */
-
-/* NOTE: Top navigation component styles moved to /Views/components/top-navigation.php */
-
-/* NOTE: Login form styles moved to /Views/components/login-form.php */
-
-/* === ADMIN VERIFY PAGE === */
-.admin-verify-back {
-  position: absolute;
-  top: var(--space-4);
-  left: var(--space-4);
-  z-index: 10;
-}
-
+/* === AUTH COMPONENTS === */
 .back-link {
   display: inline-flex;
   align-items: center;
@@ -80,37 +60,6 @@
   line-height: 1.5;
 }
 
-.auth-link {
-  display: inline-block;
-  font-size: var(--font-size-sm);
-  color: var(--color-gray-600);
-  text-decoration: none;
-  margin: var(--space-1) 0;
-  transition: color var(--transition-fast);
-}
-
-.auth-link:hover {
-  color: var(--color-primary);
-  text-decoration: none;
-}
-
-.auth-link-primary {
-  color: var(--color-primary);
-  font-weight: var(--font-weight-medium);
-}
-
-.auth-link-secondary {
-  display: block;
-  font-size: var(--font-size-xs);
-  color: var(--color-gray-500);
-}
-
-.auth-link-secondary:hover {
-  color: var(--color-gray-700);
-}
-
-/* NOTE: Save indicator styles moved to /Views/components/save-indicator.php */
-
 /* === RESPONSIVE DESIGN === */
 /* Mobile styles removed for consistent design */
 
@@ -142,35 +91,6 @@
   }
 }
 
-/* NOTE: Checkbox component styles moved to /Views/components/checkbox.php */
-
-
-/* NOTE: Form checkbox group styles moved to /Views/components/form-input.php */
-
-/* NOTE: Promise button component styles moved to /Views/components/promise-button.php */
-
-
-
-
-
-
-
-
-
-/* NOTE: Page header component styles moved to /Views/components/page-header.php */
-
-/* NOTE: Form component styles moved to /Views/components/form-input.php */
-
-
-/* NOTE: Tree checkbox component styles moved to /Views/components/tree-checkbox.php */
-
-/* NOTE: Compact color picker styles moved to /Views/components/color-picker.php */
-
-
-
-/* NOTE: Dropdown color picker styles moved to /Views/components/color-picker.php */
-
-/* NOTE: Form actions styles moved to /Views/components/form-input.php */
 
 /* === BUTTON COMPONENTS === */
 .btn-primary {
@@ -318,9 +238,6 @@
   box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45);
   transform: translateY(-1px);
 }
-
-/* NOTE: Confirmation card styles moved to /Views/components/confirmation-card.php */
-
 /* === REHEARSAL GRID === */
 .rehearsal-grid {
   display: flex;
@@ -344,18 +261,11 @@
   font-style: italic;
 }
 
-/* NOTE: Tree view component styles moved to /Views/components/tree-view.php */
-
-
-/* NOTE: FAB (Floating Action Button) styles moved to /Views/components/fab.php */
-
 /* === SHADOW PRESERVATION === */
 /* Ensure cards never lose their shadows, even when child elements are focused */
 .form {
   box-shadow: var(--shadow-lg) !important;
 }
-
-/* NOTE: rehearsal-card shadow handled in component */
 
 
 .confirmation-card {
@@ -367,17 +277,10 @@
   box-shadow: var(--shadow-lg) !important;
 }
 
-/* NOTE: rehearsal-card focus-within shadow handled in component */
-
 
 .confirmation-card:focus-within {
   box-shadow: var(--shadow-lg) !important;
 }
-
-/* Ensure login/register forms never lose their shadows */
-/* NOTE: Login form shadow preservation handled in component */
-
-/* NOTE: Modern form components and form section styles moved to /Views/components/form-input.php */
 
 .btn-modern {
   display: inline-flex;
@@ -582,11 +485,6 @@
 .space-y-6 > * + * {
   margin-top: var(--space-6);
 }
-
-/* NOTE: Modern checkbox component styles moved to /Views/components/modern-checkbox.php */
-
-/* NOTE: PWA install card styles moved to /Views/components/pwa-install-card.php */
-/* NOTE: Theme selection component styles moved to /Views/components/theme-selector.php */
 
 /* === ANALYTICS CARD STYLING === */
 .analytics-card {

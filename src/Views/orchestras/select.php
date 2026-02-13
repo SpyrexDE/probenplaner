@@ -1,14 +1,14 @@
 <?php $this->layout('layouts/default', ['title' => 'Orchester auswählen', 'currentPage' => 'orchestra_select']) ?>
 
 <?php 
-// Component styles
 $renderComponent = false;
 include __DIR__ . '/../components/form-input.php'; 
 include __DIR__ . '/../components/user-badge.php'; 
+
+ob_start();
 ?>
 
 <style>
-/* Additional styles for orchestra selection */
 .orchestra-card {
     display: block;
     width: 100%;
@@ -50,23 +50,6 @@ include __DIR__ . '/../components/user-badge.php';
     align-items: center;
 }
 
-.orchestra-date {
-    font-size: var(--font-size-xs);
-    color: var(--color-gray-500);
-}
-
-.empty-state {
-    text-align: center;
-    padding: 2rem;
-    color: var(--color-gray-500);
-}
-
-.empty-state i {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    display: block;
-}
-
 .join-button {
     display: inline-flex;
     align-items: center;
@@ -98,19 +81,11 @@ include __DIR__ . '/../components/user-badge.php';
     color: white;
 }
 
-.divider {
-    border-top: 1px solid var(--color-gray-200);
-    margin: 1rem 0;
-    padding-top: 1rem;
-}
-
-/* Badge integration */
 .orchestra-card .user-badge {
     margin-left: 0.5rem;
     vertical-align: middle;
 }
 
-/* Empty state card - no hover effects */
 .orchestra-card[style*="cursor: default"]:hover {
     border-color: var(--color-gray-300);
     background-color: white;
@@ -119,94 +94,77 @@ include __DIR__ . '/../components/user-badge.php';
 }
 </style>
 
-<div class="login-container">
-    <div class="admin-verify-back">
-        <a href="/logout" class="back-link">
-            <i class="fas fa-sign-out-alt"></i>
-            Abmelden
-        </a>
-    </div>
+<div class="login-form">
+    <?php include __DIR__ . '/../components/logo.php'; ?>
     
-    <div class="login-form">
-        <div class="login-logo">
-            <img src="/assets/img/Logo.png" alt="Logo"/>
-        </div>
-
-
-        <?php if (!empty($orchestras)): ?>
-            <div style="margin-bottom: 1.5rem;">
-                <?php foreach ($orchestras as $orchestra): ?>
-                    <form method="POST" action="/orchestras/set-current" style="margin-bottom: 0.75rem;">
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-                        <input type="hidden" name="orchestra_id" value="<?= htmlspecialchars($orchestra['orchestra_id']) ?>">
-                        
-                        <button type="submit" class="orchestra-card">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <h3>
-                                        <?= htmlspecialchars($orchestra['orchestra_name']) ?>
-                                    </h3>
-                                    <div class="orchestra-meta">
-                                        <?php 
-                                        // Display info
-                                        $displayInfo = \App\Core\Utilities::getUserDisplayInfo($orchestra['type'], $orchestra['role']);
-                                        ?>
-                                        <?php if ($displayInfo['type']): ?>
-                                        <span>
-                                            <?= htmlspecialchars($displayInfo['type']) ?>
-                                        </span>
-                                        <?php endif; ?>
-                                        <span>
-                                            <?= htmlspecialchars($displayInfo['role']) ?>
-                                        </span>
-                                        <?php 
-                                        // Role badges
-                                        $userData = [
-                                            'role' => $orchestra['role'],
-                                            'is_small_group' => false // This will be handled in new system
-                                        ];
-                                        $badges = \App\Core\Utilities::generateUserBadges($userData);
-                                        echo $badges;
-                                        ?>
-                                    </div>
-                                </div>
-                                <div style="color: var(--color-primary);">
-                                    <i class="fas fa-chevron-right"></i>
+    <?php if (!empty($orchestras)): ?>
+        <div style="margin-bottom: 1.5rem;">
+            <?php foreach ($orchestras as $orchestra): ?>
+                <form method="POST" action="/orchestras/set-current" style="margin-bottom: 0.75rem;">
+                    <?php include __DIR__ . '/../components/csrf-input.php'; ?>
+                    <input type="hidden" name="orchestra_id" value="<?= htmlspecialchars($orchestra['orchestra_id']) ?>">
+                    
+                    <button type="submit" class="orchestra-card">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h3><?= htmlspecialchars($orchestra['orchestra_name']) ?></h3>
+                                <div class="orchestra-meta">
+                                    <?php 
+                                    $displayInfo = \App\Core\Utilities::getUserDisplayInfo($orchestra['type'], $orchestra['role']);
+                                    ?>
+                                    <?php if ($displayInfo['type']): ?>
+                                    <span><?= htmlspecialchars($displayInfo['type']) ?></span>
+                                    <?php endif; ?>
+                                    <span><?= htmlspecialchars($displayInfo['role']) ?></span>
+                                    <?php 
+                                    $userData = ['role' => $orchestra['role'], 'is_small_group' => false];
+                                    echo \App\Core\Utilities::generateUserBadges($userData);
+                                    ?>
                                 </div>
                             </div>
-                        </button>
-                    </form>
-                <?php endforeach; ?>
-            </div>
-            
-            <a href="/orchestras/join" class="join-button join-button-outline">
-                <i class="fas fa-plus" style="margin-right: 0.5rem;"></i>
-                Beitreten
-            </a>
-        <?php else: ?>
-            <div style="margin-bottom: 1.5rem;">
-                <div class="orchestra-card" style="cursor: default; border-style: dashed; border-color: var(--color-gray-300);">
-                    <div style="text-align: center; color: var(--color-text-secondary);">
-                        <div style="font-weight: 500; margin-bottom: 0.25rem;">
-                            Keinem Orchester beigetreten
+                            <div style="color: var(--color-primary);">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
                         </div>
-                        <div style="font-size: var(--font-size-sm); color: var(--color-gray-500);">
-                            Treten Sie einem Orchester bei, um zu beginnen
-                        </div>
+                    </button>
+                </form>
+            <?php endforeach; ?>
+        </div>
+        
+        <a href="/orchestras/join" class="join-button join-button-outline">
+            <i class="fas fa-plus" style="margin-right: 0.5rem;"></i>
+            Beitreten
+        </a>
+    <?php else: ?>
+        <div style="margin-bottom: 1.5rem;">
+            <div class="orchestra-card" style="cursor: default; border-style: dashed; border-color: var(--color-gray-300);">
+                <div style="text-align: center; color: var(--color-text-secondary);">
+                    <div style="font-weight: 500; margin-bottom: 0.25rem;">
+                        Keinem Orchester beigetreten
+                    </div>
+                    <div style="font-size: var(--font-size-sm); color: var(--color-gray-500);">
+                        Treten Sie einem Orchester bei, um zu beginnen
                     </div>
                 </div>
             </div>
-            
-            <a href="/orchestras/join" class="join-button join-button-outline">
-                <i class="fas fa-plus" style="margin-right: 0.5rem;"></i>
-                Beitreten
-            </a>
-        <?php endif; ?>
-        
-        <div class="auth-links">
-            <a href="/orchestras/create" class="auth-link auth-link-secondary">
-                Neues Orchester erstellen
-            </a>
         </div>
-    </div>
+        
+        <a href="/orchestras/join" class="join-button join-button-outline">
+            <i class="fas fa-plus" style="margin-right: 0.5rem;"></i>
+            Beitreten
+        </a>
+    <?php endif; ?>
+    
+    <?php
+    $links = [
+        ['url' => '/orchestras/create', 'text' => 'Neues Orchester erstellen', 'secondary' => true]
+    ];
+    include __DIR__ . '/../components/auth-footer.php';
+    ?>
 </div>
+
+<?php
+$content = ob_get_clean();
+$backLink = ['url' => '/logout', 'text' => 'Abmelden', 'icon' => 'fa-sign-out-alt'];
+include __DIR__ . '/../components/centered-card.php';
+?>

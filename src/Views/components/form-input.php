@@ -287,18 +287,7 @@
     border-bottom-color: var(--color-error-200);
 }
 
-/* === SOPHISTICATED LOGIN STYLES === */
-.login-container {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    padding: var(--space-4);
-    position: relative;
-}
-
-/* Logo styling */
+/* === AUTH FORM STYLES (card, inputs, logo – full-viewport background is auth-screen component) === */
 .login-logo {
     text-align: center;
     margin-bottom: var(--space-8);
@@ -322,18 +311,6 @@
     margin-top: var(--space-1);
     margin-bottom: var(--space-4);
     text-align: center;
-}
-
-.login-container::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(circle at 20% 20%, rgba(71, 140, 244, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(244, 71, 107, 0.1) 0%, transparent 50%);
-    pointer-events: none;
 }
 
 .login-form {

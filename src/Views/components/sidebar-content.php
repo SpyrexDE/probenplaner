@@ -151,11 +151,67 @@ include __DIR__ . '/pwa-install-card.php';
 
 <!-- Version Footer -->
 <div class="sidebar-footer">
-    <div class="sidebar-version">
-        Probenplaner · <?php 
-        echo \App\Core\Version::getTag();
-        ?>
+    <div class="sidebar-footer-inner">
+        <div class="sidebar-version">
+            Probenplaner · <?php echo \App\Core\Version::getTag(); ?>
+        </div>
+        <div class="sidebar-legal-dropdown" id="sidebar-legal-dropdown">
+            <button type="button" class="sidebar-legal-btn" id="sidebar-legal-btn" aria-haspopup="true" aria-expanded="false" title="Rechtliches">§</button>
+            <div class="dropdown-menu sidebar-legal-menu" role="menu" aria-labelledby="sidebar-legal-btn">
+                <a href="https://www.jmd.info/globals/datenschutz" target="_blank" rel="noopener" class="dropdown-item" role="menuitem">Datenschutz</a>
+                <a href="https://www.jmd.info/globals/impressum" target="_blank" rel="noopener" class="dropdown-item" role="menuitem">Impressum</a>
+            </div>
+        </div>
     </div>
-    </div>
+</div>
+
+<script>
+(function() {
+    function init() {
+        var wrap = document.getElementById('sidebar-legal-dropdown');
+        var btn = document.getElementById('sidebar-legal-btn');
+        var menu = wrap ? wrap.querySelector('.dropdown-menu') : null;
+        if (!btn || !menu) return;
+        if (typeof tippy !== 'undefined') {
+            tippy(btn, { content: 'Rechtliches', placement: 'right' });
+        }
+        function closeMenu() {
+            menu.classList.remove('show');
+            if (menu.parentNode === document.body) {
+                wrap.appendChild(menu);
+            }
+        }
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var open = menu.classList.contains('show');
+            document.querySelectorAll('.sidebar-legal-menu.show').forEach(function(m) {
+                m.classList.remove('show');
+                var w = document.getElementById('sidebar-legal-dropdown');
+                if (m.parentNode === document.body && w) w.appendChild(m);
+            });
+            if (!open) {
+                if (menu.parentNode !== document.body) {
+                    document.body.appendChild(menu);
+                }
+                menu.classList.add('show');
+                var rect = btn.getBoundingClientRect();
+                menu.style.top = (rect.top - menu.offsetHeight - 4) + 'px';
+                menu.style.left = rect.left + 'px';
+            }
+        });
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.sidebar-legal-dropdown') && !e.target.closest('.sidebar-legal-menu')) {
+                closeMenu();
+            }
+        });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+</script>
 
 
