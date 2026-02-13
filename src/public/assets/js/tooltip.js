@@ -1,10 +1,4 @@
-/*
- * CONSISTENT PATTERNS FOR AI:
- * - Use window.notifySuccess/Error/Info() for all notifications
- * - Use existing .btn-base classes for buttons
- * - Use existing form validation patterns
- * - Never change CSS class names that JavaScript depends on
- */
+
 
 /**
  * Vanilla JavaScript Tooltip Component
@@ -23,31 +17,31 @@ class Tooltip {
             container: false,
             ...options
         };
-        
+
         this.isShown = false;
         this.tooltip = null;
         this.timeout = null;
-        
+
         this.init();
     }
-    
+
     init() {
         // Get title from data attribute or element title
         if (!this.options.title) {
-            this.options.title = this.element.getAttribute('data-original-title') || 
-                                this.element.getAttribute('title') || 
-                                this.element.textContent.trim();
+            this.options.title = this.element.getAttribute('data-original-title') ||
+                this.element.getAttribute('title') ||
+                this.element.textContent.trim();
         }
-        
+
         // Remove original title to prevent browser tooltip
         if (this.element.getAttribute('title')) {
             this.element.setAttribute('data-original-title', this.element.getAttribute('title'));
             this.element.removeAttribute('title');
         }
-        
+
         // Parse trigger options
         this.triggers = this.options.trigger.split(' ');
-        
+
         // Add event listeners
         this.triggers.forEach(trigger => {
             switch (trigger) {
@@ -71,48 +65,48 @@ class Tooltip {
             }
         });
     }
-    
+
     createTooltip() {
         // Create tooltip element
         this.tooltip = document.createElement('div');
         this.tooltip.className = 'tooltip';
         this.tooltip.setAttribute('role', 'tooltip');
         this.tooltip.setAttribute('aria-hidden', 'true');
-        
+
         // Create arrow
         const arrow = document.createElement('div');
         arrow.className = 'tooltip-arrow';
-        
+
         // Create inner content
         const inner = document.createElement('div');
         inner.className = 'tooltip-inner';
-        
+
         if (this.options.html) {
             inner.innerHTML = this.options.title;
         } else {
             inner.textContent = this.options.title;
         }
-        
+
         // Assemble tooltip
         this.tooltip.appendChild(arrow);
         this.tooltip.appendChild(inner);
-        
+
         // Add to DOM
         const container = this.options.container || document.body;
         container.appendChild(this.tooltip);
-        
+
         // Position tooltip
         this.position();
     }
-    
+
     position() {
         if (!this.tooltip) return;
-        
+
         const elementRect = this.element.getBoundingClientRect();
         const tooltipRect = this.tooltip.getBoundingClientRect();
-        
+
         let top, left;
-        
+
         switch (this.options.placement) {
             case 'top':
                 top = elementRect.top - tooltipRect.height - 8;
@@ -131,7 +125,7 @@ class Tooltip {
                 left = elementRect.right + 8;
                 break;
         }
-        
+
         // Ensure tooltip stays within viewport
         if (top < 0) {
             top = elementRect.bottom + 8;
@@ -143,59 +137,59 @@ class Tooltip {
         if (left + tooltipRect.width > window.innerWidth) {
             left = window.innerWidth - tooltipRect.width - 10;
         }
-        
+
         // Apply position
         this.tooltip.style.top = (top + window.scrollY) + 'px';
         this.tooltip.style.left = (left + window.scrollX) + 'px';
-        
+
         // Update arrow position
         const arrow = this.tooltip.querySelector('.tooltip-arrow');
         if (arrow) {
             arrow.className = `tooltip-arrow tooltip-arrow-${this.options.placement}`;
         }
     }
-    
+
     show() {
         if (this.isShown) return;
-        
+
         // Clear any existing timeout
         if (this.timeout) {
             clearTimeout(this.timeout);
         }
-        
+
         // Create tooltip if it doesn't exist
         if (!this.tooltip) {
             this.createTooltip();
         }
-        
+
         // Show tooltip
         this.tooltip.style.display = 'block';
         this.tooltip.setAttribute('aria-hidden', 'false');
         this.isShown = true;
-        
+
         // Trigger shown event
         this.triggerEvent('shown.bs.tooltip');
     }
-    
+
     hide() {
         if (!this.isShown) return;
-        
+
         // Clear any existing timeout
         if (this.timeout) {
             clearTimeout(this.timeout);
         }
-        
+
         if (this.tooltip) {
             this.tooltip.style.display = 'none';
             this.tooltip.setAttribute('aria-hidden', 'true');
         }
-        
+
         this.isShown = false;
-        
+
         // Trigger hidden event
         this.triggerEvent('hidden.bs.tooltip');
     }
-    
+
     toggle() {
         if (this.isShown) {
             this.hide();
@@ -203,13 +197,13 @@ class Tooltip {
             this.show();
         }
     }
-    
+
     destroy() {
         if (this.tooltip) {
             this.tooltip.remove();
             this.tooltip = null;
         }
-        
+
         // Remove event listeners
         this.triggers.forEach(trigger => {
             switch (trigger) {
@@ -229,10 +223,10 @@ class Tooltip {
                     break;
             }
         });
-        
+
         this.isShown = false;
     }
-    
+
     triggerEvent(eventName) {
         const event = new CustomEvent(eventName, {
             bubbles: true,
@@ -243,7 +237,7 @@ class Tooltip {
 }
 
 // Initialize all tooltips on DOM load
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const tooltipElements = document.querySelectorAll('[data-toggle="tooltip"]');
     tooltipElements.forEach(element => {
         element.tooltipInstance = new Tooltip(element);
@@ -255,13 +249,13 @@ window.Tooltip = Tooltip;
 
 // jQuery-like API for compatibility
 if (typeof $ !== 'undefined') {
-    $.fn.tooltip = function(action) {
-        return this.each(function() {
+    $.fn.tooltip = function (action) {
+        return this.each(function () {
             const element = this;
             if (!element.tooltipInstance) {
                 element.tooltipInstance = new Tooltip(element);
             }
-            
+
             switch (action) {
                 case 'show':
                     element.tooltipInstance.show();

@@ -189,7 +189,7 @@ abstract class Model
                 return false;
             }
             
-                         // Simplified parameter binding - treat everything as strings for reliability
+            
              $types = str_repeat('s', count($values));
              
              // Debug output only in development
@@ -197,7 +197,7 @@ abstract class Model
                  @error_log("DEBUG SQL: Value count: " . count($values) . ", Types: " . $types);
              }
              
-             // Bind parameters using modern approach
+
              if (count($values) > 0) {
                  try {
                      $stmt->bind_param($types, ...$values);

@@ -1,7 +1,6 @@
 <?php
 /**
- * Tree Checkbox Component - Component-colocated styling
- * Hierarchical checkbox component with visual tree lines and indentation
+ * Tree Checkbox Component
  * Used for orchestra/group selection with nested levels
  * 
  * Usage:
@@ -22,7 +21,7 @@
 ?>
 
 <style>
-/* TREE CHECKBOX COMPONENT - All styles colocated */
+/* TREE CHECKBOX COMPONENT */
 .checkbox-group {
     margin: 0; /* Remove margins to prevent gaps in tree lines */
     position: relative;

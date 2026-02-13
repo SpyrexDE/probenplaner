@@ -26,7 +26,7 @@ ini_set('session.cookie_httponly', 1);           // Prevent XSS attacks
 ini_set('session.use_only_cookies', 1);          // Only use cookies, not URL parameters
 ini_set('session.cookie_samesite', 'Lax');       // Lax allows OAuth/SSO redirects while still protecting against CSRF
 ini_set('session.use_strict_mode', 1);           // Prevent uninitialized session IDs
-// Removed deprecated session.sid_length and session.sid_bits_per_character settings
+
 
 if (APP_ENV !== 'development' && APP_ENV !== 'test') {
     ini_set('session.cookie_secure', 1);         // Only over HTTPS in production

@@ -1,7 +1,6 @@
 <?php
 /**
- * Page Header Component - Component-colocated styling
- * Simple page header with title and subtitle
+ * Page Header Component
  * 
  * Usage:
  * <?php 
@@ -19,7 +18,7 @@
 ?>
 
 <style>
-/* PAGE HEADER COMPONENT - All styles colocated */
+/* PAGE HEADER COMPONENT */
 .page-header {
   text-align: center;
   margin-bottom: var(--space-8);

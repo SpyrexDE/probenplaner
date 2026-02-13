@@ -1,13 +1,13 @@
 <?php
 /**
- * SOPHISTICATED REHEARSAL CARD - UPDATED WITH TAILWIND + MINIMAL CSS
+ * REHEARSAL CARD
  * 
  * Features:
  * - Context-aware: 'promises', 'rehearsals', custom
  * - Smart group display via SmartGroupDisplay service
  * - Rehearsal type badges via RehearsalTypeManager
  * - Conditional UI based on user role and context
- * - Advanced date/time formatting
+ * - Date/time formatting
  * - Uses Tailwind utility classes + minimal custom CSS
  * 
  * Usage for AI:
@@ -27,7 +27,7 @@
 // Component Styles - Only sophisticated effects that Tailwind can't handle
 ?>
 <style>
-/* Rehearsal Card - Sophisticated gradients and animations */
+/* Rehearsal Card */
 .rehearsal-card {
     background-color: var(--color-bg-primary);
     border-color: var(--color-border);
@@ -44,7 +44,7 @@
     box-shadow: var(--shadow-sm);
 }
 
-/* Weekday styling - EXACT match to original components.css */
+/* Weekday styling */
 .rehearsal-weekday {
     font-size: 24px;
     font-weight: 900;
@@ -77,7 +77,7 @@
     opacity: 0.6;
 }
 
-/* Action Button - Sophisticated hover and state effects */
+/* Action Button */
 .action-btn {
     background-color: var(--color-bg-primary);
     border-color: var(--color-border);
@@ -291,7 +291,7 @@ $showLocation = !empty($rehearsal['location']) &&
 $cardClasses = 'rehearsal-card';
 ?>
 
-<!-- REHEARSAL CARD: Tailwind utility classes + sophisticated custom effects -->
+<!-- REHEARSAL CARD -->
 <div class="<?= $cardClasses ?> border border-l-4 my-2" 
      style="border-radius: var(--radius-lg); padding: var(--space-3) var(--space-4); <?= !empty($rehearsal['color']) ? 'border-left-color: ' . $rehearsal['color'] . ';' : '' ?>">
     
@@ -326,7 +326,7 @@ $cardClasses = 'rehearsal-card';
                             $timeDisplay = $startDt->format('H:i') . ' - ' . $endDt->format('H:i');
                         }
                         ?>
-                        <!-- Weekday with sophisticated underline effect -->
+                        <!-- Weekday underline effect -->
                         <div class="rehearsal-weekday"><?= strtoupper($weekdayShort) ?></div>
                         
                         <!-- Date/Time Block -->

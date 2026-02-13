@@ -3,8 +3,6 @@
  * Dynamic Group Selector Component
  * 
  * Generates a hierarchical group selection form based on the GroupManager configuration
- * This replaces the hardcoded group checkboxes in rehearsal create/edit forms
- * 
  * @param array $formData - Form data for checked state
  * @param bool $isEdit - Whether this is edit mode (affects checkbox IDs and values)
  */
@@ -55,7 +53,6 @@ function generateGroupCheckboxes($groups, $level = 0, $formData = [], $parentCla
         // Render checkbox
         $html .= '  <input type="checkbox" id="' . htmlspecialchars($groupId) . '" name="groups[]" value="' . htmlspecialchars($groupId) . '" ' . ($isChecked ? 'checked' : '') . '>' . "\n";
         
-        // Legacy exclusion logic removed
         
         $html .= '  <label for="' . htmlspecialchars($groupId) . '">' . htmlspecialchars($displayName) . '</label>' . "\n";
         $html .= '</div>' . "\n";

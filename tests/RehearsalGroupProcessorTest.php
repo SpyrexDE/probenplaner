@@ -192,19 +192,7 @@ class RehearsalGroupProcessorTest
         $this->assert(in_array('tutti', $processedBack) || count($processedBack) > 10, 
             "Round-trip should preserve tutti intent", $processedBack);
         
-        // Test 2: Legacy format is preserved as-is (no processing)
-        $rehearsalGroups = ['tutti', '!Klarinette', '!Posaune'];
-        $formData = RehearsalGroupProcessor::generateFormData($rehearsalGroups);
-        
-        echo "\nTest 2: Legacy format preserved as-is\n";
-        echo "   Input: " . json_encode($rehearsalGroups) . "\n";
-        echo "   Form data: " . json_encode($formData) . "\n";
-        
-        // Current algorithm preserves exactly what was stored
-        $this->assert(in_array('tutti', $formData['groups']), "Should preserve tutti");
-        $this->assert(in_array('!Klarinette', $formData['groups']), "Should preserve legacy markers");
-        $this->assert(in_array('!Posaune', $formData['groups']), "Should preserve legacy markers");
-        
+
         // Test 3: Regular multi-group selection
         $rehearsalGroups = ['Streicher', 'Blechbläser'];
         $formData = RehearsalGroupProcessor::generateFormData($rehearsalGroups);

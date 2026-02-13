@@ -1,6 +1,6 @@
 <?php
 /**
- * Tree View Component - Component-colocated styling  
+ * Tree View Component
  * Hierarchical tree interface for displaying nested data structures
  * Used for rehearsal attendance views, organization structures, etc.
  * 
@@ -19,7 +19,7 @@
 ?>
 
 <style>
-/* TREE VIEW COMPONENT - All styles colocated */
+/* TREE VIEW */
 
 /* Tree Container */
 .tree-view {

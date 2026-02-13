@@ -242,7 +242,7 @@ class UserController extends Controller
         $newPassword = $_POST['new_password'] ?? '';
         $confirmPassword = $_POST['confirm_password'] ?? '';
         $groupType = Validator::sanitizeUtf8($_POST['group_type'] ?? '');
-        $smallGroup = isset($_POST['small_group']) ? true : false; // TODO: implement in relation if supported
+        $smallGroup = isset($_POST['small_group']) ? true : false;
         $groupLeader = isset($_POST['group_leader']) ? true : false;
         $groupLeaderPassword = Validator::sanitizeUtf8($_POST['group_leader_password'] ?? '');
         

@@ -1,12 +1,4 @@
-/*
- * CONSISTENT PATTERNS FOR AI:
- * - Use window.notifySuccess/Error/Info() for all notifications
- * - Use existing .btn-base classes for buttons
- * - Use existing form validation patterns
- * - Never change CSS class names that JavaScript depends on
- */
-
-/* Shared JavaScript functionality for promise views (admin and leader) */
+/* Shared JavaScript functionality for promise views */
 
 // Initialize promise view functionality
 document.addEventListener('DOMContentLoaded', function () {

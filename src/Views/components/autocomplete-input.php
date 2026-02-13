@@ -1,7 +1,7 @@
 <?php
 /**
- * Autocomplete Input Component - Searchable dropdown with custom input support
- * Uses Tailwind utility classes + minimal custom styles
+ * Autocomplete Input Component
+ * Searchable dropdown with custom input support
  * 
  * Usage:
  * <?php 

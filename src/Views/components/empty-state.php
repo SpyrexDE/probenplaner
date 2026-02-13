@@ -8,7 +8,7 @@
 ?>
 
 <style>
-/* EMPTY STATE COMPONENT - All styles colocated */
+/* EMPTY STATE */
 .empty-state {
     background-color: var(--color-info-100);
     color: var(--color-info-dark);
@@ -18,7 +18,6 @@
     text-align: center;
     margin: var(--space-8) 0;
     position: relative;
-    /* overflow: hidden; → card-overflow utility */
 }
 
 .empty-state::before {

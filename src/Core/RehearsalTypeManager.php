@@ -4,8 +4,7 @@ namespace App\Core;
 /**
  * Rehearsal Type Manager
  * 
- * Modern, scalable system for handling rehearsal types and small group logic.
- * Replaces legacy hardcoded strings and magic numbers with maintainable constants.
+ * System for handling rehearsal types and small group logic.
  */
 class RehearsalTypeManager
 {

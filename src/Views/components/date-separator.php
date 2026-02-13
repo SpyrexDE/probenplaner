@@ -8,7 +8,7 @@ $showOld = isset($_GET['showOld']) && ($_GET['showOld'] === '1' || $_GET['showOl
 ?>
 
 <div class="date-separator-wrapper" id="dateSeparator">
-    <!-- Past rehearsals load trigger -->
+
     <?php if (!$showOld): ?>
     <div class="load-past-button-wrapper">
         <button class="load-past-button" id="loadPastButton">
@@ -130,7 +130,7 @@ $showOld = isset($_GET['showOld']) && ($_GET['showOld'] === '1' || $_GET['showOl
  * @param {HTMLElement} newElement - The element to add
  */
 function prependWithScrollPreservation(scrollContainer, newElement) {
-    const scrollTop = window.scrollY; // Use window scroll instead of container scroll
+    const scrollTop = window.scrollY;
     const isAtTop = scrollTop === 0;
     
     if (isAtTop) {
@@ -142,16 +142,16 @@ function prependWithScrollPreservation(scrollContainer, newElement) {
         document.documentElement.style.scrollBehavior = 'auto';
         document.documentElement.style.transition = 'none';
         
-        // Insert element and immediately adjust scroll in same frame
+
         scrollContainer.insertBefore(newElement, scrollContainer.firstChild);
         
-        // Force layout calculation and get full height including margins
+
         const elementRect = newElement.getBoundingClientRect();
         
-        // Set scroll position immediately using full rendered height including margins
+
         window.scrollTo(0, elementRect.height);
         
-        // Restore styles after paint
+
         requestAnimationFrame(() => {
             document.documentElement.style.scrollBehavior = originalScrollBehavior;
             document.documentElement.style.transition = originalTransition;
@@ -162,7 +162,7 @@ function prependWithScrollPreservation(scrollContainer, newElement) {
         
         scrollContainer.insertBefore(newElement, scrollContainer.firstChild);
         
-        // Adjust scroll position to maintain view
+
         const newScrollHeight = document.documentElement.scrollHeight;
         const heightDifference = newScrollHeight - scrollHeight;
         window.scrollTo(0, scrollTop + heightDifference);
@@ -175,7 +175,7 @@ function prependWithScrollPreservation(scrollContainer, newElement) {
  * @param {HTMLElement} newElement - The element to add
  */
 function appendWithScrollPreservation(scrollContainer, newElement) {
-    // Adding to bottom naturally preserves scroll position
+
     scrollContainer.appendChild(newElement);
 }
 
@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
             
-            // Dispatch event to signal scroll positioning is complete
+
             document.dispatchEvent(new CustomEvent('scrollPositioningComplete'));
         }, 100);
     }
@@ -237,7 +237,7 @@ function loadPastRehearsals(offset = 0) {
     const sectionButton = document.getElementById('loadPastButtonInSection');
     let pastSection = document.getElementById('pastRehearsalsSection');
     
-    // Loading state
+
     const activeButton = sectionButton || loadButton;
     if (activeButton) {
         activeButton.classList.add('loading');
@@ -248,7 +248,7 @@ function loadPastRehearsals(offset = 0) {
     const scrollContainer = document.documentElement;
     const containerApp = document.querySelector('.container-app');
     
-    // AJAX request setup
+
     const currentPath = window.location.pathname;
     const urlParams = new URLSearchParams(window.location.search);
     urlParams.set('ajax', '1');
@@ -274,7 +274,6 @@ function loadPastRehearsals(offset = 0) {
         .then(data => {
             if (data.success) {
                 if (offset === 0) {
-                    // Initial past rehearsals load
                     if (!pastSection) {
                         const separator = document.getElementById('dateSeparator');
                         pastSection = document.createElement('div');
@@ -285,12 +284,10 @@ function loadPastRehearsals(offset = 0) {
                     
                     pastSection.innerHTML = '';
                     
-                    // Sticky button wrapper
                     const newButtonWrapper = document.createElement('div');
                     newButtonWrapper.className = 'load-past-button-wrapper';
                     newButtonWrapper.innerHTML = '<button class="load-past-button" id="loadPastButtonInSection"><i class="fas fa-history"></i><span>Vergangene Proben laden</span></button>';
                     
-                    // Rehearsals container
                     const rehearsalsContainer = document.createElement('div');
                     rehearsalsContainer.className = 'past-rehearsals-content';
                     rehearsalsContainer.innerHTML = data.html;
@@ -305,7 +302,6 @@ function loadPastRehearsals(offset = 0) {
                     pastSection.appendChild(newButtonWrapper);
                     pastSection.appendChild(rehearsalsContainer);
                     
-                    // Adjust scroll for content insertion
                     if (containerApp) {
                         const scrollTop = scrollContainer.scrollTop;
                         // Force layout and get full height including margins
@@ -336,7 +332,6 @@ function loadPastRehearsals(offset = 0) {
                 
                 currentOffset = offset + rehearsalsPerPage;
                 
-                // Update button state
                 const sectionButton = document.getElementById('loadPastButtonInSection');
                 const originalButton = document.getElementById('loadPastButton');
                 
@@ -363,13 +358,13 @@ function loadPastRehearsals(offset = 0) {
                     }
                 }
                 
-                // Clean up any remaining buttons
+
                 if (originalButton && sectionButton && originalButton !== sectionButton) {
                     originalButton.classList.remove('loading');
                     originalButton.disabled = false;
                 }
                 
-                // Scroll position is already maintained by the preservation functions
+
                 
             } else {
                 console.error('Failed to load past rehearsals:', data.message);

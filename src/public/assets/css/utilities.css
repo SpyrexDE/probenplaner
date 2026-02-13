@@ -1,12 +1,10 @@
 /*
- * Consolidated Utilities - Base classes to eliminate CSS redundancy
- * All commonly repeated patterns consolidated into reusable utility classes
- * This file consolidates patterns found duplicated across 11+ files
+ * Consolidated Utilities
  */
 
 /* === BASE COMPONENT CLASSES === */
 
-/* Base Card System - Consolidates 11+ similar card implementations */
+/* Base Card System */
 .card-base {
   background: var(--color-white);
   border: 1px solid var(--color-border);
@@ -65,7 +63,7 @@
 }
 
 /* === FORM UTILITIES === */
-/* Consolidates common form patterns found across 5+ components */
+/* Consolidates common form patterns */
 
 .form-transition {
   transition: all var(--transition-base);
@@ -87,7 +85,7 @@
 
 /* === INTERACTIVE EFFECTS === */
 
-/* Consolidates 11 similar transform hover effects */
+/* Hover Effect Transitions */
 .hover-lift-sm:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
@@ -103,7 +101,7 @@
   box-shadow: var(--shadow-xl);
 }
 
-/* Focus Within Shadow Preservation - Consolidates 5+ similar rules */
+/* Focus Within Shadow Preservation */
 .focus-shadow-preserve:focus-within {
   box-shadow: var(--shadow-lg) !important;
 }
@@ -123,7 +121,7 @@
 
 /* === BUTTON SYSTEM CONSOLIDATION === */
 
-/* Base Button - Consolidates 3 different button systems */
+/* Base Button */
 .btn-base {
   display: inline-flex;
   align-items: center;
@@ -167,7 +165,7 @@
   min-height: 52px;
 }
 
-/* Button Variants - Sophisticated gradients */
+/* Button Variants */
 .btn-primary {
   color: var(--color-white);
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
@@ -241,7 +239,7 @@
 
 /* === FORM SYSTEM CONSOLIDATION === */
 
-/* Base Form Input - Consolidates multiple form input styles */
+/* Base Form Input */
 .form-input-base {
   width: 100%;
   padding: var(--space-3) var(--space-4);
@@ -287,7 +285,7 @@
 
 /* === LAYOUT UTILITIES === */
 
-/* Flex Patterns - Consolidates 46 similar flex declarations */
+/* Flex Patterns */
 .flex-center {
   display: flex;
   align-items: center;
@@ -375,7 +373,7 @@
 .status-dot-warning { background: var(--color-warning); }
 .status-dot-info { background: var(--color-info); }
 
-/* === TYPOGRAPHY UTILITIES === */
+/* Typography Utilities */
 
 /* Text Variants */
 .text-heading {
@@ -402,7 +400,7 @@
 
 /* === SPACING UTILITIES === */
 
-/* Margin Utilities - Consolidates 41 similar padding patterns */
+/* Margin Utilities */
 .m-auto { margin: auto; }
 .mt-auto { margin-top: auto; }
 .mb-auto { margin-bottom: auto; }
@@ -499,7 +497,7 @@
 
 /* === ANIMATION UTILITIES === */
 
-/* Common transitions - Consolidates 28 similar transition declarations */
+/* Common transitions */
 .transition-fast { transition: all var(--transition-fast); }
 .transition { transition: all var(--transition-base); }
 .transition-slow { transition: all var(--transition-slow); }

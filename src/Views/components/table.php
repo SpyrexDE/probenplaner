@@ -1,7 +1,6 @@
 <?php
 /**
- * Table Component - Component-colocated styling
- * Sophisticated table styling with hover effects and responsive design
+ * Table Component
  * 
  * Usage:
  * <?php 
@@ -22,7 +21,7 @@
 ?>
 
 <style>
-/* TABLE COMPONENT - All styles colocated */
+/* TABLE COMPONENT */
 .table-responsive {
     overflow: hidden;
     border-radius: var(--radius-base);
@@ -53,8 +52,6 @@
 /* Round header corners to align with wrapper radius */
 .table-themed thead th:first-child { border-top-left-radius: var(--radius-base); }
 .table-themed thead th:last-child { border-top-right-radius: var(--radius-base); }
-
-/* Hover animation removed per user request */
 
 /* Striped table styling for better row distinction */
 /* More specific selectors to override any conflicting styles */

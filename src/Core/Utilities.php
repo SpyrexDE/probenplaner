@@ -11,7 +11,7 @@ class Utilities
      * Generate user badges for role and small group indicators
      * 
      * @param array $user User data array containing role and is_small_group
-     * @return string HTML string with modern badge-style badges
+     * @return string HTML string with badges
      */
     public static function generateUserBadges($user)
     {
@@ -26,7 +26,7 @@ class Utilities
             $badges[] = '<span class="user-badge" title="Stimmführung"><i class="fas fa-crown"></i></span>';
         }
         
-        // Add small group badge for small group members using modern system
+        // Add small group badge for small group members
         if (\App\Core\RehearsalTypeManager::isUserInSmallGroup($user)) {
             $badges[] = '<span class="user-badge" title="' . \App\Core\RehearsalTypeManager::LABEL_SMALL_GROUP . '"><i class="fas fa-user-friends"></i></span>';
         }

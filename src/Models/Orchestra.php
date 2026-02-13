@@ -66,62 +66,37 @@ class Orchestra extends Model
         error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
         
         $logPrefix = "[Orchestra] [createOrchestra] ";
-        $debug = true; // Enable debug mode
         
-        // Create a debugging log file in a writeable location
-        $debugLogFile = sys_get_temp_dir() . '/probenplaner-debug-' . date('Ymd-His') . '.log';
-        $debugLog = function($message) use ($debugLogFile) {
-            @file_put_contents($debugLogFile, date('Y-m-d H:i:s') . " - " . $message . PHP_EOL, FILE_APPEND);
-        };
-        
-        $debugLog("Starting orchestra creation process");
-        $debugLog("Data: " . json_encode($data));
-        
-        if ($debug && defined('APP_ENV') && APP_ENV === 'development') {
-            @error_log($logPrefix . "DEBUG: Starting orchestra creation with data: " . json_encode($data));
+        if (defined('APP_ENV') && APP_ENV === 'development') {
+            error_log($logPrefix . "DEBUG: Starting orchestra creation with data: " . json_encode($data));
         }
-        
-        // Check database connection
-        if (!$this->db || !$this->db->getConnection()) {
-            $debugLog("Database connection failed: " . ($this->db ? $this->db->getLastError() : "No DB instance"));
-            @error_log($logPrefix . "Database connection failed: " . $this->db->getLastError());
-            return ErrorHandler::error('Datenbankverbindung fehlgeschlagen');
-        }
-        $debugLog("Database connection verified");
-        
-        // Validate required data
-        if (empty($data['name']) || empty($data['token']) || empty($data['leader_pw'])) {
-            $debugLog("Missing required orchestra data fields");
-            @error_log($logPrefix . "Missing required orchestra data fields");
-            return ErrorHandler::error('Erforderliche Orchesterdaten fehlen');
-        }
-        $debugLog("Orchestra data validated");
-        
-        // Start transaction
-        $debugLog("Attempting to start transaction");
-        if (!$this->db->getConnection()->begin_transaction()) {
-            $debugLog("Failed to start transaction: " . $this->db->getLastError());
-            @error_log($logPrefix . "Failed to start transaction: " . $this->db->getLastError());
-            return ErrorHandler::error('Transaktion konnte nicht gestartet werden');
-        }
-        $debugLog("Transaction started successfully");
         
         try {
+            // Check database connection
+            if (!$this->db || !$this->db->getConnection()) {
+                throw new \Exception('Datenbankverbindung fehlgeschlagen: ' . $this->db->getLastError());
+            }
+            
+            // Validate required data
+            if (empty($data['name']) || empty($data['token']) || empty($data['leader_pw'])) {
+                throw new \Exception('Erforderliche Orchesterdaten fehlen');
+            }
+            
+            // Start transaction
+            if (!$this->db->getConnection()->begin_transaction()) {
+                throw new \Exception('Transaktion konnte nicht gestartet werden: ' . $this->db->getLastError());
+            }
+            
             // Check for duplicate token
-            $debugLog("Checking for duplicate token: " . $data['token']);
             $existingOrchestra = $this->findByToken($data['token']);
             if ($existingOrchestra) {
-                $debugLog("Orchestra token already exists");
-                @error_log($logPrefix . "Orchestra token '{$data['token']}' already exists");
+                // We're in a transaction, but haven't written anything yet, so straightforward throw
                 throw new \Exception("Token already exists");
             }
-            $debugLog("Token is unique");
             
             // Insert orchestra
-            $debugLog("Preparing to insert orchestra");
-            @error_log($logPrefix . "Attempting to insert orchestra with name: {$data['name']}, token: {$data['token']}");
+            error_log($logPrefix . "Attempting to insert orchestra with name: {$data['name']}, token: {$data['token']}");
             
-            $debugLog("Orchestra data to insert: " . json_encode($data));
             $orchestraId = $this->insert([
                 'name' => $data['name'],
                 'token' => $data['token'],
@@ -130,39 +105,27 @@ class Orchestra extends Model
             
             if (!$orchestraId) {
                 $error = $this->db->getLastError();
-                $debugLog("Failed to create orchestra record: " . $error);
-                @error_log($logPrefix . "Failed to create orchestra record: {$error}");
                 throw new \Exception("Failed to create orchestra: {$error}");
             }
-            $debugLog("Orchestra inserted successfully with ID: " . $orchestraId);
             
             // Commit transaction
-            $debugLog("Attempting to commit transaction");
             if (!$this->db->getConnection()->commit()) {
-                $error = $this->db->getLastError();
-                $debugLog("Failed to commit transaction: " . $error);
-                @error_log($logPrefix . "Failed to commit transaction: " . $this->db->getLastError());
-                throw new \Exception("Failed to commit transaction");
+                throw new \Exception("Failed to commit transaction: " . $this->db->getLastError());
             }
-            $debugLog("Transaction committed successfully");
             
-            @error_log($logPrefix . "Successfully created orchestra with ID: {$orchestraId}");
-            $debugLog("Orchestra creation completed successfully");
+            error_log($logPrefix . "Successfully created orchestra with ID: {$orchestraId}");
             
             return $orchestraId;
-        } catch (\Exception $e) {
-            // Rollback on error
-            $debugLog("Exception occurred: " . $e->getMessage());
-            $debugLog("Attempting to rollback transaction");
-            $this->db->getConnection()->rollback();
-            $debugLog("Transaction rolled back");
-            @error_log($logPrefix . "Orchestra creation failed: " . $e->getMessage());
             
-            // Save debug log path to session for admin to see
-            if (isset($_SESSION)) {
-                $_SESSION['debug_log_file'] = $debugLogFile;
+        } catch (\Exception $e) {
+            // Rollback only if transaction was active (checking logic is complex, but safe to try rollback if connection exists)
+            if ($this->db && $this->db->getConnection()) {
+                $this->db->getConnection()->rollback();
             }
             
+            error_log($logPrefix . "Orchestra creation failed: " . $e->getMessage());
+            
+            // Return false so controller can handle it (controller throws generic error)
             return false;
         }
     }

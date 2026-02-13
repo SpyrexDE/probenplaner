@@ -1,6 +1,6 @@
 <?php
 /**
- * Card Component - Tailwind utility classes + minimal custom styles
+ * Card Component
  * 
  * Usage examples:
  * <?php 
@@ -16,9 +16,6 @@
 ?>
 
 <!-- 
-  🎨 CONSOLIDATED CARD SYSTEM
-  All card styles now use utilities.css for maximum maintainability
-  
   Available classes:
   - Base: card-base, card-base-xl, card-base-sm
   - Content: card-content-xs, card-content-sm, card-content-md, card-content-lg, card-content-xl
@@ -40,13 +37,13 @@ $variant = $variant ?? 'default';
 $interactive = $interactive ?? false;
 $nested = $nested ?? false;
 
-// 🎨 CONSOLIDATED SYSTEM: Use utilities.css classes
+// Use utilities.css classes
 $baseClasses = "card-base";
 
-// Add focus shadow preservation from utilities.css
+
 $baseClasses .= " focus-shadow-preserve";
 
-// Add hover effects from utilities.css
+
 if ($hover) {
     if ($nested) {
         $baseClasses .= " hover-lift-sm"; // Subtle lift for nested cards
@@ -55,12 +52,12 @@ if ($hover) {
     }
 }
 
-// Add interactive state from utilities.css
+
 if ($interactive) {
     $baseClasses .= " interactive";
 }
 
-// Content padding using consolidated utilities
+
 $contentPaddingClass = $padding ? "card-content-{$size}" : '';
 
 // Build additional attributes

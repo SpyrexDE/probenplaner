@@ -51,7 +51,7 @@ class ApiController extends Controller
             ];
 
             foreach ($rehearsals as $rehearsal) {
-                // Check if user is relevant for this rehearsal using modern system
+                // Check if user is relevant for this rehearsal
                 $groups = $this->rehearsalModel->getGroupsAsAssoc($rehearsal['id']);
                 
                 // Get small group status from user_orchestras table
@@ -71,7 +71,7 @@ class ApiController extends Controller
                     // Check user's promise for this rehearsal
                     $promise = $this->userPromiseModel->findByUserAndRehearsal($userId, $rehearsal['id']);
                     
-                    // Debug: Log what we found
+                    // Log retrieval result
                     error_log("Rehearsal {$rehearsal['id']}: Promise found: " . ($promise ? 'yes' : 'no'));
                     if ($promise) {
                         error_log("Promise data: " . json_encode($promise));

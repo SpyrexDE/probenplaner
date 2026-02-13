@@ -1,13 +1,6 @@
 <?php
-require_once __DIR__ . '/../src/Core/Config.php';
-require_once __DIR__ . '/../src/Core/Database.php';
-require_once __DIR__ . '/../src/Core/Model.php';
-require_once __DIR__ . '/../src/Core/ErrorHandler.php';
-require_once __DIR__ . '/../src/Core/Helpers.php';
-require_once __DIR__ . '/../src/Core/Utilities.php';
-require_once __DIR__ . '/../src/Core/RehearsalTypeManager.php';
-require_once __DIR__ . '/../src/Core/GroupManager.php';
-require_once __DIR__ . '/../src/Models/Rehearsal.php';
+// Initialize application
+require_once __DIR__ . '/../src/bootstrap.php';
 
 use App\Models\Rehearsal;
 use App\Core\Database;

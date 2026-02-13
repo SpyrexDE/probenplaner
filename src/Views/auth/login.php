@@ -11,9 +11,6 @@ include __DIR__ . '/../components/login-form.php';
 <!-- Scripts -->
 <script src="/assets/js/script.min.js"></script>
 
-<script>
-// Legacy function removed
-</script>
 
 <?php if (isset($_SESSION['alerts']) && !empty($_SESSION['alerts'])): ?>
 <script>

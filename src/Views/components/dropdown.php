@@ -1,7 +1,7 @@
 <?php
 /**
- * Dropdown Component - Tailwind utility classes + minimal custom styles
- * CRITICAL: Preserves .dropdown-menu and .dropdown-item class names for JavaScript (dropdown.js)
+ * Dropdown Component
+ * Classes required for dropdown.js: .dropdown-menu, .dropdown-item
  * 
  * Usage examples:
  * <?php 
@@ -18,18 +18,15 @@
 ?>
 
 <style>
-/* CRITICAL: Preserve these class names - dropdown.js depends on them */
+/* Required for dropdown.js */
 .dropdown-menu {
-    /* Sophisticated shadow and positioning effects that Tailwind can't handle */
     box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
-    /* background-color: var(--color-bg-primary); → card-bg utility */
     border-color: var(--color-border);
 }
 
 .dropdown-item:hover,
 .dropdown-item:focus {
     background-color: var(--color-primary-50);
-    /* transform: translateX(2px); → form-hover-shift utility would provide this */
     transform: translateX(2px);
 }
 
@@ -106,7 +103,7 @@ $triggerStyle = "color: var(--color-text-primary); background-color: var(--color
         <?php endif; ?>
     </button>
 
-    <!-- CRITICAL: Must use .dropdown-menu class name for JavaScript -->
+    <!-- Used by JavaScript -->
     <div class="dropdown-menu absolute top-full <?= $positionClasses[$position] ?> <?= $sizeClasses[$size] ?> py-2 mt-1 text-sm border rounded-md hidden z-50 card-bg"
          style="color: var(--color-text-primary);"
          id="<?= $id ?>-menu"
@@ -125,7 +122,7 @@ $triggerStyle = "color: var(--color-text-primary); background-color: var(--color
                 $itemClass = $item['class'] ?? '';
                 $itemDisabled = $item['disabled'] ?? false;
                 
-                // CRITICAL: Must use .dropdown-item class name for JavaScript
+                // Used by JavaScript
                 $itemClasses = "dropdown-item block w-full px-4 py-2 text-left border-0 cursor-pointer transition-all duration-200 rounded-sm mx-1";
                 $itemClasses .= " " . $itemClass;
                 if ($itemDisabled) $itemClasses .= " disabled";

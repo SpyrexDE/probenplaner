@@ -1,7 +1,7 @@
 <?php
 /**
  * Collapse Component - Tailwind utility classes + minimal custom styles  
- * CRITICAL: Preserves .collapse class name for JavaScript (collapse.js)
+ * Classes required for collapse.js: .collapse
  * 
  * Usage examples:
  * <?php 
@@ -21,7 +21,7 @@
 ?>
 
 <style>
-/* CRITICAL: Preserve these class names - collapse.js depends on them */
+/* Required for collapse.js */
 .collapse {
     display: none;
 }
@@ -46,10 +46,9 @@
     transform: rotate(180deg);
 }
 
-/* Sophisticated border and styling */
+/* Border and styling */
 .collapse-container {
     border-color: var(--color-border);
-    /* background-color: var(--color-bg-primary); → card-bg utility */
 }
 
 .collapse-trigger:hover {
@@ -57,7 +56,6 @@
 }
 
 .collapse-content {
-    /* background-color: var(--color-bg-primary); → card-bg utility */
     border-color: var(--color-border);
 }
 </style>
@@ -121,7 +119,7 @@ if ($variant === 'card') {
         <?php endif; ?>
     </button>
 
-    <!-- CRITICAL: Must use .collapse class name for JavaScript -->
+    <!-- Used by JavaScript -->
     <div class="collapse <?= $defaultOpen ? 'show' : '' ?> <?= $contentClasses ?>" 
          id="<?= $id ?>"
          style="color: var(--color-text-primary);">

@@ -62,7 +62,6 @@ $hideNavbar = $isAuthPage;
     <link rel="stylesheet" href="/assets/css/focus-removal.css">
     
     <!-- Vanilla CSS Components -->
-    <!-- Bootstrap CSS removed - using custom components instead -->
     
     <!-- Tailwind CSS for utility classes -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -238,7 +237,7 @@ include __DIR__ . '/../components/top-navigation.php';
 <?php endif; ?>
 
 <style>
-/* Guest layout – colocated with layout */
+/* Guest layout */
 body.layout-guest {
   min-height: 100vh;
   height: 100vh;
@@ -303,7 +302,6 @@ body.layout-guest {
 <!-- Add scripts at the end of the body -->
 <script src="/assets/js/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<!-- Bootstrap JS removed - using custom components instead -->
 <script src="/assets/js/collapse.js"></script>
 <script src="/assets/js/dropdown.js"></script>
 <script src="/assets/js/tooltip.js"></script>

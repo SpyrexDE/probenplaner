@@ -387,7 +387,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                     $deviationAnalysis = $deviationDetector->analyzeRehearsal($rehearsal['id']);
                     
                     // Rehearsal groups
-                    $rehearsalModel = new \App\Models\Rehearsal(\App\Core\Database::getInstance());
+                    $rehearsalModel = new \App\Models\Rehearsal();
                     $rehearsalGroups = $rehearsalModel->getGroupsAsAssoc($rehearsalId);
                     
                     // Critical section identification
@@ -1084,10 +1084,7 @@ function mergeParticipationMessages($messages) {
  */
 function getDeviationIcon($type) {
     $iconMap = [
-        // Legacy types (now deprecated, but kept for backwards compatibility)
-        'statistical_anomaly' => 'chart-line',
-        'trend_change' => 'chart-line',
-        
+
         // Negative deviation types
         'negative_statistical_anomaly' => 'chart-line',
         'negative_response_rate_anomaly' => 'reply',

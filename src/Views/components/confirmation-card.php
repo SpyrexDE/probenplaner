@@ -1,7 +1,6 @@
 <?php
 /**
- * Confirmation Card Component - Component-colocated styling
- * Modal-style confirmation dialogs for destructive actions
+ * Confirmation Card Component
  * 
  * Usage:
  * <?php 
@@ -21,7 +20,7 @@
 ?>
 
 <style>
-/* CONFIRMATION CARD COMPONENT - All styles colocated */
+/* CONFIRMATION CARD COMPONENT */
 .confirmation-card {
     background-color: var(--color-bg-primary);
     border-radius: var(--radius-xl);

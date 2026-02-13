@@ -1,6 +1,6 @@
 <?php
 /**
- * Logo Component - uses login-logo class for consistency
+ * Logo Component
  */
 ?>
 

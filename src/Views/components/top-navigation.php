@@ -1,10 +1,6 @@
 <?php
 /**
- * Top Navigation Component - CONSOLIDATED VERSION
- * Now uses utilities.css for common patterns + component-specific navigation styling
- * 
- * Base classes: Uses flex-between transition
- * Custom: Unique backdrop blur, responsive behavior, z-index management
+ * Top Navigation Component
  * 
  * Usage:
  * <?php 
@@ -23,15 +19,15 @@
 ?>
 
 <style>
-/* TOP NAVIGATION COMPONENT - All styles colocated */
+/* TOP NAVIGATION COMPONENT */
 .top-nav {
-  /* ✨ ESSENTIAL LAYOUT - Must preserve exact original layout */
+  /* Layout */
   display: flex;
   align-items: center;
   justify-content: space-between;
   transition: all var(--transition-slow);
   
-  /* ✨ UNIQUE TOP-NAV-SPECIFIC: Position, backdrop blur, complex shadows */
+  /* Positioning and visual styles */
   position: fixed;
   top: 0;
   left: 0;

@@ -1,7 +1,7 @@
 <?php
 /**
  * Form Input Component - Tailwind utility classes + minimal custom styles
- * CRITICAL: Preserves .form-input-modern and .form-group-modern class names for JavaScript
+ * Classes required for JavaScript: .form-input-modern, .form-group-modern
  * 
  * Usage examples:
  * <?php 
@@ -17,7 +17,7 @@
 ?>
 
 <style>
-/* FORM INPUT COMPONENT - All form-related styles colocated */
+/* FORM INPUT COMPONENT */
 
 /* === FORM CONTAINERS === */
 .form-container {
@@ -132,7 +132,7 @@
     border-top: 1px solid var(--color-border);
 }
 
-/* === MODERN FORM COMPONENTS (for advanced forms) === */
+/* === MODERN FORM COMPONENTS === */
 .form-group-modern {
     margin-bottom: var(--space-3);
     position: relative;
@@ -233,7 +233,7 @@
     color: var(--color-primary);
 }
 
-/* === SOPHISTICATED MODERN CARDS === */
+/* === MODERN CARDS === */
 .modern-card {
     background: var(--color-bg-primary);
     border: 1px solid var(--color-border);

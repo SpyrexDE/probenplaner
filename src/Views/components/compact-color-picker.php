@@ -3,7 +3,7 @@ use App\Core\Constants;
 ?>
 
 <style>
-/* COMPACT COLOR PICKER COMPONENT - All styles colocated */
+/* COMPACT COLOR PICKER COMPONENT */
 .compact-color-picker {
   display: flex;
   flex-direction: column;

@@ -246,7 +246,7 @@ class OrchestraSelectionController extends Controller
         $this->render('orchestras/select-section', [
             'currentPage' => 'select_section',
             'orchestra' => $orchestra,
-            'typeStructure' => $this->getTypeStructure(), // TODO: Make this orchestra-specific
+            'typeStructure' => $this->getTypeStructure(),
             'csrf_token' => $this->getCSRFToken()
         ]);
     }

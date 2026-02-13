@@ -1,7 +1,6 @@
 <?php
 /**
- * Modern Checkbox Component - Component-colocated styling
- * Sophisticated checkbox groups with descriptions and enhanced styling
+ * Modern Checkbox Component
  * Used for settings and configuration options
  * 
  * Usage:
@@ -22,7 +21,7 @@
 ?>
 
 <style>
-/* MODERN CHECKBOX COMPONENT - All styles colocated */
+/* MODERN CHECKBOX COMPONENT */
 .modern-checkbox-group {
     background: var(--color-gray-50);
     border: 1px solid var(--color-border);

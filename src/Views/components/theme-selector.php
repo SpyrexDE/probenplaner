@@ -1,7 +1,6 @@
 <?php
 /**
- * Theme Selector Component - Component-colocated styling
- * Comprehensive theme selection interface with full and compact variants
+ * Theme Selector Component
  * 
  * Usage:
  * <?php 
@@ -23,7 +22,12 @@
 ?>
 
 <style>
-/* THEME SELECTOR COMPONENT - All styles colocated */
+/* THEME SELECTOR COMPONENT */
+.theme-selector {
+    /* Base styles for the overall theme selector container */
+    font-family: var(--font-family-sans);
+    color: var(--color-text-primary);
+}
 
 /* === FULL THEME SELECTION COMPONENTS === */
 
@@ -51,13 +55,9 @@
 .theme-card {
     display: block;
     position: relative;
-    /* border: 2px solid var(--color-border); → form-border-2 utility */
     border-radius: var(--radius-lg);
-    /* background: var(--color-bg-primary); → card-bg utility */
     padding: var(--space-5);
     cursor: pointer;
-    /* transition: all var(--transition-base); → form-transition utility */
-    /* overflow: hidden; → card-overflow utility */
     box-shadow: var(--shadow-sm);
     animation: theme-card-enter 0.3s ease-out;
 }

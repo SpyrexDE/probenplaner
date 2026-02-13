@@ -1,6 +1,6 @@
 <?php
 /**
- * PWA Install Card Component - Component-colocated styling
+ * PWA Install Card Component
  * Sidebar card to promote Progressive Web App installation
  * 
  * Usage:
@@ -20,8 +20,8 @@
 ?>
 
 <style>
-/* PWA INSTALL CARD COMPONENT - All styles colocated */
-.sidebar-install-card {
+/* PWA INSTALL CARD */
+.pwa-install-card {
     margin: var(--space-2) var(--space-3) var(--space-3) var(--space-3);
     background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-primary-100) 100%);
     border: 1px solid var(--color-primary-200);

@@ -60,9 +60,6 @@ $sectionElementId = $sectionId . $rehearsalId;
             // Get section structure to organize instruments
             $sectionTree = $groupManager->getTreeForComponent($sectionId);
             
-            // Debug: check what we got for this section
-            // error_log("Section $sectionId tree: " . print_r($sectionTree, true));
-            
             if (isset($sectionTree['children']) && is_array($sectionTree['children']) && !empty($sectionTree['children'])) {
                 // This section has sub-sections (hierarchical structure)
                 foreach ($sectionTree['children'] as $subSectionKey => $subSection):

@@ -188,7 +188,7 @@ class Rehearsal extends Model
         
         $groups = [];
         while ($row = $result->fetch_assoc()) {
-            $groups[$row['name']] = 0; // Using 0 as dummy value as in previous groups_data
+            $groups[$row['name']] = 0;
         }
         
         return $groups;
@@ -205,7 +205,7 @@ class Rehearsal extends Model
      */
     public function isUserInRehearsalGroup(string $userType, bool $isSmallGroup, $groups, bool $rehearsalIsSmallGroup = false): bool
     {
-        // Use modern RehearsalTypeManager for small group logic
+        // Initialize user/rehearsal arrays for visibility check
         $user = ['is_small_group' => $isSmallGroup ? \App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED : \App\Core\RehearsalTypeManager::SMALL_GROUP_DISABLED];
         $rehearsal = ['is_small_group' => $rehearsalIsSmallGroup ? \App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED : \App\Core\RehearsalTypeManager::SMALL_GROUP_DISABLED];
         
@@ -414,7 +414,7 @@ class Rehearsal extends Model
      * @param bool $isSmallGroup Whether the user is in a small group
      * @return array
      */
-    public function getRelevantForUser($orchestraId, $userType, $userGroups = [], $includeOld = false, $isSmallGroup = false)
+    public function getRelevantForUser($orchestraId, $userType, $includeOld = false, $isSmallGroup = false)
     {
         $orchestraId = (int)$orchestraId;
         

@@ -46,7 +46,6 @@ class ProbenplanController extends Controller
         if ($personalized) {
             // Get only rehearsals relevant to the user
             $userType = $_SESSION['current_type'] ?? '';
-            $userGroups = $_SESSION['groups'] ?? []; // TODO: Handle groups in new multi-orchestra system
             
             // Get small group status from user_orchestras table
             $isSmallGroup = false;
@@ -60,7 +59,6 @@ class ProbenplanController extends Controller
             $rehearsals = $this->rehearsalModel->getRelevantForUser(
                 $_SESSION['current_orchestra_id'],
                 $userType,
-                $userGroups,
                 $showOld,
                 $isSmallGroup
             );

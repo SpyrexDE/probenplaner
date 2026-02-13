@@ -1,10 +1,6 @@
 <?php
 /**
- * Sidebar Component - CONSOLIDATED VERSION  
- * Now uses utilities.css for common patterns + component-specific navigation styling
- * 
- * Base classes: Uses bg-white flex-col shadow-xl transition
- * Custom: Unique sidebar positioning, navigation styling, responsive behavior
+ * Sidebar Component
  * 
  * Usage:
  * <?php include __DIR__ . '/sidebar.php'; ?>
@@ -20,7 +16,6 @@
 <style>
 /* SIDEBAR COMPONENT */
 .sidebar {
-  /* Layout preservation */
   width: var(--sidebar-width);
   background-color: var(--color-white);
   position: fixed;

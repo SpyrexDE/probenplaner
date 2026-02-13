@@ -1,7 +1,5 @@
 /* 
  * Probenplaner Theme: Default
- * ONLY CSS variables and global styles - NO component styles
- * Component styles are now colocated with components using Tailwind + minimal custom CSS
  */
 
 :root {
@@ -210,15 +208,7 @@ body {
   border: 0;
 }
 
-/* NOTE: Table component styles moved to /Views/components/table.php */
 
-/* NOTE: Rehearsal grid and status styles moved to /Views/components/rehearsal-card.php */
-
-/* NOTE: Layout component styles moved to /Views/components/form-input.php */
-
-/* NOTE: Empty state component styles moved to /Views/components/empty-state.php */
-
-/* NOTE: Floating action button styles moved to /Views/components/fab.php */
 
 /* === DARK MODE STYLES === */
 html.dark-mode,
@@ -272,5 +262,3 @@ html[data-theme-mode="dark"] body {
 
 /* === IMPORT CONSOLIDATED UTILITIES === */
 @import url('../utilities.css');
-
-/* END OF FILE - ALL COMPONENT STYLES MOVED TO COMPONENTS */

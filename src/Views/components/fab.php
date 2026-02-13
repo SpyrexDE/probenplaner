@@ -1,7 +1,6 @@
 <?php
 /**
  * Floating Action Button (FAB) Component
- * Extracted from probenplan/index.php where it was hardcoded
  * 
  * Usage:
  * <?php 

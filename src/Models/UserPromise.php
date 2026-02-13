@@ -152,18 +152,5 @@ class UserPromise extends Model
         return $stats;
     }
     
-    /**
-     * Check if user type is in the specified groups
-     * 
-     * @param string $userType User type/instrument
-     * @param bool $isSmallGroup Whether the user is in small group
-     * @param array $groups Groups to check
-     * @param bool $rehearsalIsSmallGroup Whether the rehearsal is a small group
-     * @return bool
-     */
-    private function isUserInRehearsalGroup(string $userType, bool $isSmallGroup, $groups, bool $rehearsalIsSmallGroup = false): bool
-    {
-        $rehearsalModel = new Rehearsal();
-        return $rehearsalModel->isUserInRehearsalGroup($userType, $isSmallGroup, $groups, $rehearsalIsSmallGroup);
-    }
+
 } 

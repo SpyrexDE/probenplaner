@@ -6,10 +6,8 @@
 ?>
 
 <!-- Shared CSS for promise views -->
-<!-- Note: CSS is now handled by Tailwind in the main layout -->
 
 <!-- Shared Tailwind utility classes for promise views -->
-<!-- All styling is now handled through Tailwind CSS utility classes -->
 
 <?php
 /**

@@ -1,7 +1,6 @@
 <?php
 /**
- * Color Picker Component - Component-colocated styling
- * Compact grid-based color picker with predefined color options
+ * Color Picker Component
  * 
  * Usage:
  * <?php 
@@ -21,7 +20,7 @@
 ?>
 
 <style>
-/* COLOR PICKER COMPONENT - All styles colocated */
+/* COLOR PICKER COMPONENT */
 .compact-color-picker {
     display: flex;
     flex-direction: column;

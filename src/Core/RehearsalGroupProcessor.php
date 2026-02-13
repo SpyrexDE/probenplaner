@@ -11,8 +11,8 @@ namespace App\Core;
 class RehearsalGroupProcessor
 {
     /**
-     * Process groups from form submission - SIMPLE VERSION
-     * Store exactly what the user selected, no "optimization"
+     * Process groups from form submission
+     * Stores the specific groups selected by the user.
      * 
      * @param array $postData POST data from form
      * @return array Cleaned array of group IDs
@@ -72,7 +72,7 @@ class RehearsalGroupProcessor
             }
         }
         
-        // If root group is selected, just return [rootGroupId] (ignore all the child selections)
+        // If root group is selected, just return [rootGroupId]
         if ($rootGroup && in_array($rootGroup['id'], $cleanedGroups)) {
             return [$rootGroup['id']];
         }
@@ -97,9 +97,7 @@ class RehearsalGroupProcessor
         return null;
     }
     
-    // Removed legacy exclusion-root optimization; we only return positive selections now
-    
-    // Removed optimization - we store exactly what user selects
+
     
     /**
      * Validate that groups are not empty
@@ -119,8 +117,7 @@ class RehearsalGroupProcessor
     }
     
     /**
-     * Generate form data for edit forms - SIMPLE VERSION
-     * Return exactly what was stored, no expansion
+     * Generate form data for edit forms
      * 
      * @param array $rehearsalGroups Groups from database
      * @return array Form data array
@@ -131,7 +128,7 @@ class RehearsalGroupProcessor
             return ['groups' => []];
         }
         
-        // Return exactly what was stored - tutti is just another group
+        // Return exactly what was stored
         return [
             'groups' => $rehearsalGroups
         ];
@@ -139,7 +136,7 @@ class RehearsalGroupProcessor
     
     /**
      * Get all individual checkboxes that should be checked for a root
-     * Returns sections and instruments, but prioritizes individual instruments for precise control
+     * Returns sections and instruments, primarily dealing with individual instruments
      */
     private static function getAllGroupsForRoot(string $rootId, GroupManager $groupManager): array
     {

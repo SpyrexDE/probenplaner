@@ -1,7 +1,6 @@
 <?php
 /**
- * Checkbox Component - Component-colocated styling
- * Custom styled checkbox with sophisticated hover and focus effects
+ * Checkbox Component
  * 
  * Usage:
  * <?php 
@@ -20,7 +19,7 @@
 ?>
 
 <style>
-/* CHECKBOX COMPONENT - All styles colocated */
+/* CHECKBOX COMPONENT */
 .custom-checkbox {
     display: flex;
     align-items: center;

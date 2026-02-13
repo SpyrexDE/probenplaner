@@ -213,7 +213,7 @@ class PromiseController extends Controller
             
             // Only process members if we found any
             if (!empty($members)) {
-                // Determine which users apply to this rehearsal using modern system
+                // Determine which users apply to this rehearsal
                 $groups = $this->rehearsalModel->getGroupsAsAssoc($rehearsal['id']);
                 $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal);
                 
@@ -537,7 +537,7 @@ class PromiseController extends Controller
                 $membersBySection[$rehearsalId][$sectionId] = [];
             }
             
-            // Determine which users apply to this rehearsal using modern system
+            // Determine which users apply to this rehearsal
             $groups = $this->rehearsalModel->getGroupsAsAssoc($rehearsal['id']);
             $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal);
             

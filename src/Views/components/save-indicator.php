@@ -1,6 +1,6 @@
 <?php
 /**
- * Save Indicator Component - Component-colocated styling
+ * Save Indicator Component
  * Fixed position indicator to show save status to users
  * 
  * Usage:
@@ -19,7 +19,7 @@
 ?>
 
 <style>
-/* SAVE INDICATOR COMPONENT - All styles colocated */
+/* SAVE INDICATOR COMPONENT */
 .save-indicator {
     position: fixed;
     bottom: var(--space-5);
@@ -44,7 +44,6 @@
 .save-indicator.show {
     opacity: 1;
     visibility: visible;
-    /* animation: bounce-in 0.5s ease-out; → Removed wobbly zoom, simple fade is enough */
 }
 
 @keyframes bounce-in {

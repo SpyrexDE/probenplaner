@@ -2,18 +2,17 @@
 namespace App\Core;
 
 /**
- * ComponentHelper - Consistent Component Rendering
+ * ComponentHelper - Component Rendering
  * 
  * Provides standardized methods for rendering components with
  * proper parameter validation and consistent patterns.
  * 
- * This class ensures that all component rendering follows
- * established patterns and reduces code duplication.
+ * This class provides helper methods for rendering components.
  */
 class ComponentHelper {
     
     /**
-     * Render the sophisticated rehearsal-card component
+     * Render the rehearsal-card component
      * 
      * @param array $rehearsal - The rehearsal data
      * @param string $context - Context: 'promises' or 'rehearsals' 
@@ -43,7 +42,7 @@ class ComponentHelper {
     }
     
     /**
-     * Render a form using existing form classes and patterns
+     * Render a form
      * 
      * @param array $fields - Array of field definitions
      * @param string $action - Form action URL
@@ -81,7 +80,7 @@ class ComponentHelper {
     }
     
     /**
-     * Render a single form field using existing form classes
+     * Render a single form field
      * 
      * @param array $field - Field definition
      * @return string - Rendered HTML
@@ -136,7 +135,7 @@ class ComponentHelper {
     }
     
     /**
-     * Render buttons using existing button classes
+     * Render buttons
      * 
      * @param string $text - Button text
      * @param string $variant - Button variant (primary, secondary, success, danger)
@@ -234,7 +233,7 @@ class ComponentHelper {
     }
     
     /**
-     * Render notification using the existing notification system
+     * Render notification
      * 
      * @param string $message - Notification message
      * @param string $type - Notification type (success, error, info)

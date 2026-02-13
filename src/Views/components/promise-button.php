@@ -1,6 +1,6 @@
 <?php
 /**
- * Promise Button Component - Component-colocated styling
+ * Promise Button Component
  * Attendance buttons for rehearsal promises (check/cross buttons)
  * 
 
@@ -30,15 +30,11 @@
     min-width: 44px;
     height: 44px;
     padding: var(--space-2) var(--space-3);
-    /* form-border-2 */
     border-radius: var(--radius-base);
     font-size: var(--font-size-lg);
     font-weight: var(--font-weight-medium);
     cursor: pointer;
-    /* form-transition */
     position: relative;
-    /* card-overflow */
-    /* card-bg */
 }
 
 .promise-btn::before {

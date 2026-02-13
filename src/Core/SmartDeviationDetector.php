@@ -339,18 +339,17 @@ class SmartDeviationDetector {
             }
         }
         
-        // Detect if attendance is below historical minimum
         if ($currentData['attendance_rate'] < $stats['min']) {
             $percentageDiff = $stats['min'] - $currentData['attendance_rate'];
-                            $deviations[] = [
-                    'type' => 'below_historical_minimum',
-                    'severity' => 'warning',
-                    'current_rate' => $currentData['attendance_rate'],
-                    'historical_min' => $stats['min'],
-                    'section' => $sectionId,
-                    'comparison_kind' => 'all_time',
-                    'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($percentageDiff, 0) . "% weniger Teilnahme als je zuvor"
-                ];
+            $deviations[] = [
+                'type' => 'below_historical_minimum',
+                'severity' => 'warning',
+                'current_rate' => $currentData['attendance_rate'],
+                'historical_min' => $stats['min'],
+                'section' => $sectionId,
+                'comparison_kind' => 'all_time',
+                'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($percentageDiff, 0) . "% weniger Teilnahme als je zuvor"
+            ];
         }
         
         // Detect if attendance is above historical maximum
@@ -490,7 +489,7 @@ class SmartDeviationDetector {
      */
     private function getRehearsalSections($rehearsalId) {
         // First, get the groups that are supposed to participate in this rehearsal
-        $rehearsalModel = new \App\Models\Rehearsal($this->db);
+        $rehearsalModel = new \App\Models\Rehearsal();
         $rehearsalGroups = $rehearsalModel->getGroupsAsAssoc($rehearsalId);
         $groupManager = new \App\Core\GroupManager();
         

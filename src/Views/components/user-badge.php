@@ -1,7 +1,7 @@
 <?php
 /**
- * User Badge Component - Component-colocated styling
- * Small badges to display user role indicators with sophisticated gradients
+ * User Badge Component
+ * Small badges to display user role indicators
  * 
  * Usage:
  * <?php 
@@ -19,7 +19,7 @@
 ?>
 
 <style>
-/* USER BADGE COMPONENT - All styles colocated */
+/* USER BADGE */
 .user-badge {
     display: inline-flex;
     align-items: center;
