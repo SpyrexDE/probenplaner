@@ -229,7 +229,7 @@ class SmartGroupDisplay
             return $displayName;
         }
         
-        // NEW: Find the most concise representation using tree compression
+        // Find the most concise representation using tree compression
         $compressedDescription = $this->compressTreeRepresentation($selectedGroups);
         if ($compressedDescription) {
             return $compressedDescription;
@@ -621,7 +621,7 @@ class SmartGroupDisplay
      */
     private function compressTreeRepresentation(array $selectedGroups): ?string
     {
-        // PRIORITY 1: Check for simple root-level exclusions first
+        // Check for simple root-level exclusions first
         // For cases like "Tutti ohne Klarinette und Fagott", prefer this over complex nested patterns
         $rootGroup = $this->getRootGroup();
         if ($rootGroup) {
@@ -716,7 +716,7 @@ class SmartGroupDisplay
                 }
             }
             
-            // Strategy preference - fixed prioritization  
+            // Strategy preference
             $strategyOrder = [
                 'single_root' => 10,  // Much higher priority for single root exclusions
                 'compressed_sections_with_exclusions' => 4,  // Higher priority for exclusions from compressed sections
@@ -994,7 +994,7 @@ class SmartGroupDisplay
             $remainingGroups = $this->findRemainingGroupsForMultipleExclusions($selectedGroups, $deduplicatedPatterns);
             
             if (!empty($remainingGroups)) {
-                // Create one unified list instead of joining two separate lists
+
                 $allItems = [];
                 
                 // Add remaining groups as display names

@@ -11,7 +11,7 @@ class Utilities
      * Generate user badges for role and small group indicators
      * 
      * @param array $user User data array containing role and is_small_group
-     * @return string HTML string with badges
+     * @return string HTML string with modern badge-style badges
      */
     public static function generateUserBadges($user)
     {

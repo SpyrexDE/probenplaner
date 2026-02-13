@@ -2,8 +2,7 @@
 /**
  * Modern Section Component - Enterprise Dashboard Style
  * 
- * Modern card-based section component with improved UX for orchestra attendance management.
- * Replaces the tree-view with a more scannable, information-dense card layout.
+ * Card-based section component for orchestra attendance management.
  * 
  * @param array $players - Array of players with status for this section
  * @param int $rehearsalId - Rehearsal ID for unique element IDs

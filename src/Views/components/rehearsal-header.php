@@ -17,7 +17,7 @@ $start_time = substr($rehearsal['start_time'], 0, 5);
 $end_time = substr($rehearsal['end_time'], 0, 5);
 $time_display = $start_time . ' - ' . $end_time;
 
-// Get rehearsal type using modern system
+// Get rehearsal type
 $rehearsalType = RehearsalTypeManager::getRehearsalType($rehearsal);
 
 // Generate groups display with integrated Kleingruppe handling
