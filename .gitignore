@@ -40,8 +40,4 @@ phpunit.xml
 
 # CLI & Backups
 /backups/
-probenplaner.exe
-probenplaner-linux
-probenplaner-mac
 .env.mode
-cli/probenplaner-cli.exe

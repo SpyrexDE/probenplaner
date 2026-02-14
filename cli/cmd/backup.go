@@ -6,7 +6,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,34 +21,56 @@ import (
 var backupCmd = &cobra.Command{
 	Use:   "backup",
 	Short: "Manage database backups",
+	Run: func(cmd *cobra.Command, args []string) {
+		// Show interactive menu
+		var choice string
+		form := huh.NewForm(
+			huh.NewGroup(
+				huh.NewSelect[string]().
+					Title("Backup Management").
+					Options(
+						huh.NewOption("💾 Create Backup", "create"),
+						huh.NewOption("📋 List Backups", "list"),
+						huh.NewOption("🔄 Restore Backup", "restore"),
+						huh.NewOption("⏰ Schedule Automatic Backups", "schedule"),
+						huh.NewOption("🚫 Unschedule Automatic Backups", "unschedule"),
+						huh.NewOption("❌ Back", ""),
+					).
+					Value(&choice),
+			),
+		)
+
+		if err := form.Run(); err != nil || choice == "" {
+			return
+		}
+
+		// Execute chosen command
+		switch choice {
+		case "create":
+			backupCreateCmd.Run(cmd, args)
+		case "list":
+			backupListCmd.Run(cmd, args)
+		case "restore":
+			backupRestoreCmd.Run(cmd, args)
+		case "schedule":
+			backupScheduleCmd.Run(cmd, args)
+		case "unschedule":
+			backupUnscheduleCmd.Run(cmd, args)
+		}
+	},
 }
 
 var backupCreateCmd = &cobra.Command{
 	Use:   "create",
-	Short: "Create a new database backup",
+	Short: "Create a database backup",
 	Run: func(cmd *cobra.Command, args []string) {
 		CheckDocker()
 
-		// 1. Get DB Container and Credentials
-		// We need to read .env or just use docker exec to run printenv
-		// Or simpler: exec mysqldump inside the db container (it usually has env vars set)
-
-		// We need to find the DB container name.
-		// Usually 'probenplaner-db-1' or similar.
-		// Start by finding web container to identify project prefix?
-		// Or just look for container with label?
-
+		// 1. Get DB Container
 		env := GetEnv()
 		composeFiles := GetComposeFile(env)
-
-		// Get db service container
-		log.Info("Identifying database container...")
-		// docker compose ps db --format '{{.Name}}'
 		psArgs := append(append([]string{"compose"}, composeFiles...), "ps", "db", "--format", "{{.Name}}")
-		dbContainer, err := RunCommandCapture("docker", psArgs...)
-		if err != nil {
-			log.Fatal("Failed to find db container:", err)
-		}
+		dbContainer, _ := RunCommandCapture("docker", psArgs...)
 		dbContainer = strings.TrimSpace(dbContainer)
 		if dbContainer == "" {
 			log.Fatal("DB container not running")
@@ -84,62 +108,136 @@ var backupCreateCmd = &cobra.Command{
 
 		// Prepare Docker Compose Command
 		composeArgs := append(append([]string{"compose"}, composeFiles...), "exec", "-T", "db", "sh", "-c",
-			"mysqldump -u \"$MYSQL_USER\" -p\"$MYSQL_PASSWORD\" \"$MYSQL_DATABASE\"")
+			"mysqldump -u \\\"$MYSQL_USER\\\" -p\\\"$MYSQL_PASSWORD\\\" \\\"$MYSQL_DATABASE\\\"")
 		dumpCmd := exec.Command("docker", composeArgs...)
 
 		// Pipe stdout to gzip writer
 		dumpCmd.Stdout = gw
 		dumpCmd.Stderr = os.Stderr
 
-		err = RunSpinner("Streaming database dump to file...", func() error {
-			if err := dumpCmd.Run(); err != nil {
-				return err
-			}
-			return gw.Close() // Close gzip inside to ensure it flushes
-		})
-
-		if err != nil {
+		if err := dumpCmd.Run(); err != nil {
 			log.Fatal("Backup failed:", err)
 		}
 
-		info, _ := os.Stat(filepath)
+		gw.Close()
+		outFile.Close()
 
-		// Gum-style success message
+		// Get file size
+		fileInfo, _ := os.Stat(filepath)
+		size := fmt.Sprintf("%.2f MB", float64(fileInfo.Size())/1024/1024)
+
+		// Success message with gum style
 		colorPink := lipgloss.Color("212")
 		colorWhite := lipgloss.Color("255")
 		colorGreen := lipgloss.Color("46")
-
-		titleStyle := lipgloss.NewStyle().
-			Foreground(colorWhite).
-			Background(colorGreen).
-			Padding(0, 1).
-			Bold(true)
 
 		boxStyle := lipgloss.NewStyle().
 			Border(lipgloss.DoubleBorder()).
 			BorderForeground(colorPink).
 			Padding(1, 2)
 
-		labelStyle := lipgloss.NewStyle().Foreground(colorPink).Bold(true)
-		valueStyle := lipgloss.NewStyle().Foreground(colorWhite)
-
-		sizeStr := fmt.Sprintf("%.2f MB", float64(info.Size())/1024/1024)
-
-		details := fmt.Sprintf(
-			"%s %s\n%s %s\n%s %s",
-			labelStyle.Render("Filename:"),
-			valueStyle.Render(filename),
-			labelStyle.Render("Size:"),
-			valueStyle.Render(sizeStr),
-			labelStyle.Render("Location:"),
-			valueStyle.Render(filepath),
+		content := fmt.Sprintf(
+			"%s\n\n%s\n%s\n%s\n%s",
+			lipgloss.NewStyle().Foreground(colorGreen).Bold(true).Render("✓ Backup Created Successfully"),
+			lipgloss.NewStyle().Foreground(colorWhite).Render("File:    "+filename),
+			lipgloss.NewStyle().Foreground(colorWhite).Render("Size:    "+size),
+			lipgloss.NewStyle().Foreground(colorPink).Render("Version: "+gitVer),
+			lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("Time:    "+time.Now().Format("2006-01-02 15:04:05")),
 		)
 
 		fmt.Println()
-		fmt.Println(titleStyle.Render(" ✓ BACKUP CREATED SUCCESSFULLY "))
-		fmt.Println(boxStyle.Render(details))
+		fmt.Println(boxStyle.Render(content))
 		fmt.Println()
+
+		// Run cleanup if flag is set
+		cleanup, _ := cmd.Flags().GetBool("cleanup")
+		if cleanup {
+			cleanupOldBackups()
+		}
 	},
+}
+
+func cleanupOldBackups() {
+	log.Info("Running backup cleanup...")
+
+	backupDir := "backups"
+	files, err := os.ReadDir(backupDir)
+	if err != nil {
+		return
+	}
+
+	// Get all backup files with their info
+	type backupFile struct {
+		name    string
+		modTime time.Time
+		path    string
+	}
+
+	var backups []backupFile
+	for _, f := range files {
+		if !f.IsDir() && strings.HasSuffix(f.Name(), ".sql.gz") {
+			info, _ := f.Info()
+			backups = append(backups, backupFile{
+				name:    f.Name(),
+				modTime: info.ModTime(),
+				path:    filepath.Join(backupDir, f.Name()),
+			})
+		}
+	}
+
+	if len(backups) == 0 {
+		return
+	}
+
+	// Sort by modification time (newest first)
+	sort.Slice(backups, func(i, j int) bool {
+		return backups[i].modTime.After(backups[j].modTime)
+	})
+
+	// Rule 1: Delete backups older than 30 days
+	thirtyDaysAgo := time.Now().AddDate(0, 0, -30)
+	deletedCount := 0
+
+	for _, backup := range backups {
+		if backup.modTime.Before(thirtyDaysAgo) {
+			os.Remove(backup.path)
+			log.Info("Deleted old backup", "file", backup.name)
+			deletedCount++
+		}
+	}
+
+	// Rule 2: Keep only 3 most recent backups
+	// Re-read after deletion
+	backups = nil
+	files, _ = os.ReadDir(backupDir)
+	for _, f := range files {
+		if !f.IsDir() && strings.HasSuffix(f.Name(), ".sql.gz") {
+			info, _ := f.Info()
+			backups = append(backups, backupFile{
+				name:    f.Name(),
+				modTime: info.ModTime(),
+				path:    filepath.Join(backupDir, f.Name()),
+			})
+		}
+	}
+
+	// Sort again
+	sort.Slice(backups, func(i, j int) bool {
+		return backups[i].modTime.After(backups[j].modTime)
+	})
+
+	// Delete all except 3 newest
+	if len(backups) > 3 {
+		for i := 3; i < len(backups); i++ {
+			os.Remove(backups[i].path)
+			log.Info("Deleted excess backup", "file", backups[i].name)
+			deletedCount++
+		}
+	}
+
+	if deletedCount > 0 {
+		log.Info("Cleanup complete", "deleted", deletedCount)
+	}
 }
 
 var backupListCmd = &cobra.Command{
@@ -495,9 +593,144 @@ var backupRestoreCmd = &cobra.Command{
 	},
 }
 
+var backupScheduleCmd = &cobra.Command{
+	Use:   "schedule",
+	Short: "Setup automatic daily backups (Mac/Linux only)",
+	Run: func(cmd *cobra.Command, args []string) {
+		// Check OS
+		if runtime.GOOS == "windows" {
+			log.Error("Automatic scheduling is not supported on Windows")
+			log.Info("Please use Windows Task Scheduler to schedule this command:")
+			log.Info("  probenplaner backup create --cleanup")
+			return
+		}
+
+		// Ask for time of day
+		var hourStr string
+		var hour int
+		form := huh.NewForm(
+			huh.NewGroup(
+				huh.NewInput().
+					Title("At what hour should backups run daily? (0-23)").
+					Description("Enter hour in 24-hour format (e.g., 3 for 3 AM, 15 for 3 PM)").
+					Value(&hourStr).
+					Validate(func(s string) error {
+						h, err := strconv.Atoi(s)
+						if err != nil || h < 0 || h > 23 {
+							return fmt.Errorf("please enter a number between 0 and 23")
+						}
+						return nil
+					}),
+			),
+		)
+
+		if err := form.Run(); err != nil {
+			log.Info("Cancelled")
+			return
+		}
+
+		hour, _ = strconv.Atoi(hourStr)
+
+		// Get absolute paths
+		workDir, _ := os.Getwd()
+		exePath, _ := os.Executable()
+		exePath, _ = filepath.Abs(exePath)
+
+		// Create cron entry
+		cronEntry := fmt.Sprintf("0 %d * * * cd %s && %s backup create --cleanup >> %s/backup.log 2>&1",
+			hour, workDir, exePath, workDir)
+
+		// Read current crontab
+		readCmd := exec.Command("crontab", "-l")
+		currentCrontab, _ := readCmd.Output()
+		currentCrontabStr := string(currentCrontab)
+
+		// Check if already exists
+		if strings.Contains(currentCrontabStr, "probenplaner backup create") {
+			log.Warn("A backup schedule already exists in crontab")
+			log.Info("Run 'probenplaner backup unschedule' first to remove it")
+			return
+		}
+
+		// Add marker comment and entry
+		newCrontab := currentCrontabStr
+		if !strings.HasSuffix(newCrontab, "\n") && newCrontab != "" {
+			newCrontab += "\n"
+		}
+		newCrontab += "# Probenplaner Auto Backup\n"
+		newCrontab += cronEntry + "\n"
+
+		// Write back to crontab
+		writeCmd := exec.Command("crontab", "-")
+		writeCmd.Stdin = strings.NewReader(newCrontab)
+		if err := writeCmd.Run(); err != nil {
+			log.Fatal("Failed to update crontab:", err)
+		}
+
+		log.Info("✓ Daily backup scheduled successfully!")
+		log.Info("Time:", "time", fmt.Sprintf("%02d:00 (every day)", hour))
+		log.Info("Command:", "cmd", "probenplaner backup create --cleanup")
+		log.Info("Logs:", "path", filepath.Join(workDir, "backup.log"))
+	},
+}
+
+var backupUnscheduleCmd = &cobra.Command{
+	Use:   "unschedule",
+	Short: "Remove automatic daily backups",
+	Run: func(cmd *cobra.Command, args []string) {
+		// Check OS
+		if runtime.GOOS == "windows" {
+			log.Info("Remove the scheduled task from Windows Task Scheduler")
+			return
+		}
+
+		// Read current crontab
+		readCmd := exec.Command("crontab", "-l")
+		currentCrontab, _ := readCmd.Output()
+		currentCrontabStr := string(currentCrontab)
+
+		// Check if exists
+		if !strings.Contains(currentCrontabStr, "probenplaner backup create") {
+			log.Info("No backup schedule found")
+			return
+		}
+
+		// Remove the entry and marker
+		lines := strings.Split(currentCrontabStr, "\n")
+		var newLines []string
+		skipNext := false
+
+		for _, line := range lines {
+			if strings.Contains(line, "# Probenplaner Auto Backup") {
+				skipNext = true
+				continue
+			}
+			if skipNext && strings.Contains(line, "probenplaner backup create") {
+				skipNext = false
+				continue
+			}
+			newLines = append(newLines, line)
+		}
+
+		newCrontab := strings.Join(newLines, "\n")
+
+		// Write back
+		writeCmd := exec.Command("crontab", "-")
+		writeCmd.Stdin = strings.NewReader(newCrontab)
+		if err := writeCmd.Run(); err != nil {
+			log.Fatal("Failed to update crontab:", err)
+		}
+
+		log.Info("✓ Backup schedule removed successfully")
+	},
+}
+
 func init() {
+	backupCreateCmd.Flags().BoolP("cleanup", "c", false, "Run cleanup after creating backup")
 	backupCmd.AddCommand(backupCreateCmd)
 	backupCmd.AddCommand(backupListCmd)
 	backupCmd.AddCommand(backupRestoreCmd)
+	backupCmd.AddCommand(backupScheduleCmd)
+	backupCmd.AddCommand(backupUnscheduleCmd)
 	RootCmd.AddCommand(backupCmd)
 }
