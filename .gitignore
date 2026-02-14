@@ -37,3 +37,11 @@ phpunit.xml
 /docker/volumes/
 
 /OLD-ASSETS/**
+
+# CLI & Backups
+/backups/
+probenplaner.exe
+probenplaner-linux
+probenplaner-mac
+.env.mode
+cli/probenplaner-cli.exe
