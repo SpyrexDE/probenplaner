@@ -19,11 +19,12 @@ $showSidebar = isset($_SESSION['username']) && isset($_SESSION['current_orchestr
 $hideNavbar = $isAuthPage;
 ?>
 <html lang="de" class="w-full h-full" data-current-theme="<?= htmlspecialchars($currentUserTheme) ?>">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
     <title>Probenplaner</title>
-    
+
     <!-- PWA Meta Tags -->
     <meta name="application-name" content="Probenplaner">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -33,36 +34,36 @@ $hideNavbar = $isAuthPage;
     <meta name="format-detection" content="telephone=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#ffffff">
-    
+
     <!-- Apple Touch Icons -->
     <link rel="apple-touch-icon" href="/assets/img/Logo.png">
     <link rel="apple-touch-icon" sizes="152x152" href="/assets/img/Logo.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/img/Logo.png">
     <link rel="apple-touch-icon" sizes="167x167" href="/assets/img/Logo.png">
-    
+
     <!-- Microsoft Tiles -->
     <meta name="msapplication-TileColor" content="#478cf4">
     <meta name="msapplication-TileImage" content="/assets/img/Logo.png">
     <meta name="msapplication-config" content="/browserconfig.xml">
-    
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Aldrich&family=Goldman:wght@400;700&family=Kantumruy+Pro:ital,wght@0,100..700;1,100..700&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Sansation:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap" rel="stylesheet">
-    
+
     <!-- Theme and Component Styles -->
     <?php
     // Update session with current theme for performance
     $_SESSION['theme'] = $currentUserTheme;
-    
+
     // Generate theme CSS link
     echo \App\Core\ThemeManager::generateThemeCssLink($currentUserTheme);
     ?>
     <link rel="stylesheet" href="/assets/css/components.css?v=<?= time() ?>">
     <link rel="stylesheet" href="/assets/css/focus-removal.css">
-    
+
     <!-- Vanilla CSS Components -->
-    
+
     <!-- Tailwind CSS for utility classes -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -74,7 +75,7 @@ $hideNavbar = $isAuthPage;
                             DEFAULT: '#478cf4',
                             50: '#f0f7ff',
                             100: '#dbeafe',
-                            200: '#bfdbfe', 
+                            200: '#bfdbfe',
                             300: '#93c5fd',
                             400: '#60a5fa',
                             500: '#478cf4',
@@ -131,186 +132,211 @@ $hideNavbar = $isAuthPage;
             }
         }
     </script>
-    
+
     <!-- Google Fonts -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,600,700">
-    
+
     <!-- Icon Fonts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css">
     <link rel="shortcut icon" href="/assets/img/Logo.png" type="image/x-icon">
     <link rel="manifest" href="/manifest.json">
-    
+
     <!-- JavaScript Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="/assets/js/jquery.min.js"></script>
     <script src="/assets/js/notifications.js?v=<?= time() + 2 ?>"></script>
-    
+
     <!-- Tippy.js for tooltips -->
     <script src="https://unpkg.com/@popperjs/core@2"></script>
     <script src="https://unpkg.com/tippy.js@6"></script>
-    <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/animations/scale.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/animations/scale.css" />
 </head>
+
 <body class="bg-gray-50 text-gray-900 font-sans overflow-x-hidden<?= $showSidebar ? '' : ' layout-guest' ?>">
 
 
 
 
-<?php
-use App\Core\Utilities;
-use App\Core\Version;
-if ($showSidebar): ?>
-    <div id="wrapper" class="flex min-h-screen transition-all duration-slow">
-        <!-- Top Navigation -->
-        <?php
-        // Function to get page title based on current page
-        function getPageTitle($currentPage) {
-            $pageTitles = [
-                'admin' => 'Rückmeldungen',
-                'rehearsals' => 'Termine',
-                'probenplan' => 'Probenplan',
-                'conductor_profile' => 'Profil bearbeiten',
-                'orchestra_settings' => 'Orchester bearbeiten',
-                'promises' => 'Meine Meldungen',
-                'leader' => 'Rückmeldungen',
-                'profile' => 'Profil bearbeiten',
-            ];
-            
-            return isset($pageTitles[$currentPage]) ? $pageTitles[$currentPage] : 'Probenplaner';
-        }
-        $displayTitle = isset($currentPage) ? getPageTitle($currentPage) : 'Probenplaner';
-        $title = $displayTitle;
-        $showMenuToggle = true;
-        // Actions array
-        $currentUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-        $showHelpButton = in_array($currentUri, ['/promises', '/promises/leader', '/promises/admin', 
-                                                '/rehearsals', '/probenplan', '/profile', '/conductor/profile']) 
-                         || (strpos($currentUri, '/promises/') === 0)
-                         || (strpos($currentUri, '/rehearsals/') === 0);
-        $actions = [];
-        if ($showHelpButton) {
-            $actions[] = ['icon' => 'fas fa-question-circle', 'onclick' => 'showHelp()'];
-        }
-        include __DIR__ . '/../components/top-navigation.php';
-        ?>
-        
-        <!-- Sidebar Overlay for Mobile -->
-        <div class="sidebar-overlay" onclick="document.getElementById('wrapper').classList.remove('toggled');"></div>
-        
-        <!-- Modern Sidebar -->
-        <div id="sidebar-wrapper" class="sidebar">
-            <?php 
-            // Component styles (load styles only, don't render components)
-            $renderComponent = false;
-            include __DIR__ . '/../components/pwa-install-card.php';
-            include __DIR__ . '/../components/sidebar.php';
-            include __DIR__ . '/../components/user-badge.php'; // For generateUserBadges() styling
+    <?php
+
+    use App\Core\Utilities;
+    use App\Core\Version;
+
+    if ($showSidebar): ?>
+        <div id="wrapper" class="flex min-h-screen transition-all duration-slow">
+            <!-- Top Navigation -->
+            <?php
+            // Function to get page title based on current page
+            function getPageTitle($currentPage)
+            {
+                $pageTitles = [
+                    'admin' => 'Rückmeldungen',
+                    'rehearsals' => 'Termine',
+                    'probenplan' => 'Probenplan',
+                    'conductor_profile' => 'Profil bearbeiten',
+                    'orchestra_settings' => 'Orchester bearbeiten',
+                    'promises' => 'Meine Meldungen',
+                    'leader' => 'Rückmeldungen',
+                    'profile' => 'Profil bearbeiten',
+                ];
+
+                return isset($pageTitles[$currentPage]) ? $pageTitles[$currentPage] : 'Probenplaner';
+            }
+            $displayTitle = isset($currentPage) ? getPageTitle($currentPage) : 'Probenplaner';
+            $title = $displayTitle;
+            $showMenuToggle = true;
+            // Actions array
+            $currentUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+            $showHelpButton = in_array($currentUri, [
+                '/promises',
+                '/promises/leader',
+                '/promises/admin',
+                '/rehearsals',
+                '/probenplan',
+                '/profile',
+                '/conductor/profile'
+            ])
+                || (strpos($currentUri, '/promises/') === 0)
+                || (strpos($currentUri, '/rehearsals/') === 0);
+            $actions = [];
+            if ($showHelpButton) {
+                $actions[] = ['icon' => 'fas fa-question-circle', 'onclick' => 'showHelp()'];
+            }
             include __DIR__ . '/../components/top-navigation.php';
-            include __DIR__ . '/../components/tree-view.php';
-            include __DIR__ . '/../components/page-header.php';
-            $renderComponent = true; // Reset for sidebar-content
             ?>
-            <?php include __DIR__ . '/../components/sidebar-content.php'; ?>
-        </div>
-        <!-- Main Content -->
-        <div id="page-content-wrapper" class="page-content main-content-with-sidebar">
-            <div id="contentPage" class="page-content-inner">
-                <?= $content ?? '' ?>
+
+            <!-- Sidebar Overlay for Mobile -->
+            <div class="sidebar-overlay" onclick="document.getElementById('wrapper').classList.remove('toggled');"></div>
+
+            <!-- Modern Sidebar -->
+            <div id="sidebar-wrapper" class="sidebar">
+                <?php
+                // Component styles (load styles only, don't render components)
+                $renderComponent = false;
+                include __DIR__ . '/../components/pwa-install-card.php';
+                include __DIR__ . '/../components/sidebar.php';
+                include __DIR__ . '/../components/user-badge.php'; // For generateUserBadges() styling
+                include __DIR__ . '/../components/top-navigation.php';
+                include __DIR__ . '/../components/tree-view.php';
+                include __DIR__ . '/../components/page-header.php';
+                $renderComponent = true; // Reset for sidebar-content
+                ?>
+                <?php include __DIR__ . '/../components/sidebar-content.php'; ?>
+            </div>
+            <!-- Main Content -->
+            <div id="page-content-wrapper" class="page-content main-content-with-sidebar">
+                <div id="contentPage" class="page-content-inner">
+                    <?= $content ?? '' ?>
+                </div>
             </div>
         </div>
-    </div>
-<?php else: ?>
-<?php if (!$hideNavbar): ?>
-<?php 
-$title = 'Probenplaner';
-$showMenuToggle = false;
-$currentUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$showHelpButton = in_array($currentUri, ['/promises', '/promises/leader', '/promises/admin', 
-                                        '/rehearsals', '/probenplan', '/profile', '/conductor/profile']) 
-                 || (strpos($currentUri, '/promises/') === 0)
-                 || (strpos($currentUri, '/rehearsals/') === 0);
-$actions = [];
-if ($showHelpButton) {
-    $actions[] = ['icon' => 'fas fa-question-circle', 'onclick' => 'showHelp()'];
-}
-include __DIR__ . '/../components/top-navigation.php';
-?>
-<?php endif; ?>
-
-<style>
-/* Guest layout */
-body.layout-guest {
-  min-height: 100vh;
-  height: 100vh;
-}
-.guest-layout {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-.guest-layout .page-content-inner.flex-1 {
-  flex: 1;
-  min-height: 0;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-}
-.legal-footer {
-  flex-shrink: 0;
-  padding: var(--space-3) var(--space-4);
-  text-align: center;
-  font-size: var(--font-size-xs);
-  color: var(--color-gray-500);
-  position: relative;
-  z-index: 2;
-}
-.guest-layout.guest-auth .legal-footer {
-  background: transparent;
-}
-.legal-footer a {
-  color: var(--color-gray-500);
-  text-decoration: none;
-  transition: color var(--transition-base);
-}
-.legal-footer a:hover {
-  color: var(--color-gray-700);
-}
-.legal-footer-sep {
-  margin: 0 var(--space-2);
-  user-select: none;
-}
-</style>
-
-<div class="guest-layout<?= $hideNavbar ? ' guest-auth' : '' ?>">
-    <div class="page-content-inner flex-1">
-        <?php if ($hideNavbar): 
-            $authScreenContent = $content ?? ''; 
-            include __DIR__ . '/../components/auth-screen.php'; 
-        else: ?>
-        <?= $content ?? '' ?>
+    <?php else: ?>
+        <?php if (!$hideNavbar): ?>
+            <?php
+            $title = 'Probenplaner';
+            $showMenuToggle = false;
+            $currentUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+            $showHelpButton = in_array($currentUri, [
+                '/promises',
+                '/promises/leader',
+                '/promises/admin',
+                '/rehearsals',
+                '/probenplan',
+                '/profile',
+                '/conductor/profile'
+            ])
+                || (strpos($currentUri, '/promises/') === 0)
+                || (strpos($currentUri, '/rehearsals/') === 0);
+            $actions = [];
+            if ($showHelpButton) {
+                $actions[] = ['icon' => 'fas fa-question-circle', 'onclick' => 'showHelp()'];
+            }
+            include __DIR__ . '/../components/top-navigation.php';
+            ?>
         <?php endif; ?>
-    </div>
-    <?php if (!$hideNavbar): ?>
-    <footer class="legal-footer">
-        <a href="https://www.jmd.info/globals/datenschutz" target="_blank" rel="noopener">Datenschutz</a>
-        <span class="legal-footer-sep">·</span>
-        <a href="https://www.jmd.info/globals/impressum" target="_blank" rel="noopener">Impressum</a>
-    </footer>
+
+        <style>
+            /* Guest layout */
+            body.layout-guest {
+                min-height: 100vh;
+            }
+
+            .guest-layout {
+                display: flex;
+                flex-direction: column;
+                min-height: 100vh;
+            }
+
+            .guest-layout .page-content-inner.flex-1 {
+                flex: 1;
+                min-height: 0;
+                position: relative;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .legal-footer {
+                flex-shrink: 0;
+                padding: var(--space-3) var(--space-4);
+                text-align: center;
+                font-size: var(--font-size-xs);
+                color: var(--color-gray-500);
+                position: relative;
+                z-index: 2;
+            }
+
+            .guest-layout.guest-auth .legal-footer {
+                background: transparent;
+            }
+
+            .legal-footer a {
+                color: var(--color-gray-500);
+                text-decoration: none;
+                transition: color var(--transition-base);
+            }
+
+            .legal-footer a:hover {
+                color: var(--color-gray-700);
+            }
+
+            .legal-footer-sep {
+                margin: 0 var(--space-2);
+                user-select: none;
+            }
+        </style>
+
+        <div class="guest-layout<?= $hideNavbar ? ' guest-auth' : '' ?>">
+            <div class="page-content-inner flex-1">
+                <?php if ($hideNavbar):
+                    $authScreenContent = $content ?? '';
+                    include __DIR__ . '/../components/auth-screen.php';
+                else: ?>
+                    <?= $content ?? '' ?>
+                <?php endif; ?>
+            </div>
+            <?php if (!$hideNavbar): ?>
+                <footer class="legal-footer">
+                    <a href="https://www.jmd.info/globals/datenschutz" target="_blank" rel="noopener">Datenschutz</a>
+                    <span class="legal-footer-sep">·</span>
+                    <a href="https://www.jmd.info/globals/impressum" target="_blank" rel="noopener">Impressum</a>
+                </footer>
+            <?php endif; ?>
+        </div>
     <?php endif; ?>
-</div>
-<?php endif; ?>
 
-<!-- Add scripts at the end of the body -->
-<script src="/assets/js/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="/assets/js/collapse.js"></script>
-<script src="/assets/js/dropdown.js"></script>
-<script src="/assets/js/tooltip.js"></script>
-<script src="/assets/js/script.min.js"></script>
-<script src="/assets/js/tree-view-clickable.js"></script>
-<?php include __DIR__ . '/../components/help-modal.php'; ?>
-<?php include __DIR__ . '/../components/notification-system.php'; ?>
+    <!-- Add scripts at the end of the body -->
+    <script src="/assets/js/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/assets/js/collapse.js"></script>
+    <script src="/assets/js/dropdown.js"></script>
+    <script src="/assets/js/tooltip.js"></script>
+    <script src="/assets/js/script.min.js"></script>
+    <script src="/assets/js/tree-view-clickable.js"></script>
+    <?php include __DIR__ . '/../components/help-modal.php'; ?>
+    <?php include __DIR__ . '/../components/notification-system.php'; ?>
 
-<?php include __DIR__ . '/../components/sidebar-stats.js.php'; ?>
-<?php include __DIR__ . '/../components/service-worker.php'; ?>
+    <?php include __DIR__ . '/../components/sidebar-stats.js.php'; ?>
+    <?php include __DIR__ . '/../components/service-worker.php'; ?>
 </body>
-</html> 
+
+</html>
