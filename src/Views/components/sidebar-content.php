@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Sidebar Content Component
  * Renders the authenticated sidebar contents (header, stats, menu, PWA card, version).
@@ -14,7 +15,7 @@
         <div class="sidebar-info">
             <div class="sidebar-name">
                 <?= $_SESSION['username'] ?? 'Benutzer' ?>
-                <?php 
+                <?php
                 // Get small group status from user_orchestras table
                 $isSmallGroup = false;
                 $userId = $_SESSION['user_id'] ?? null;
@@ -23,7 +24,7 @@
                     $userOrchestraModel = new \App\Models\UserOrchestra();
                     $isSmallGroup = $userOrchestraModel->isUserInSmallGroup((int)$userId, (int)$orchestraId);
                 }
-                
+
                 $userData = [
                     'role' => $_SESSION['current_role'] ?? 'member',
                     'is_small_group' => $isSmallGroup
@@ -32,20 +33,20 @@
                 ?>
             </div>
             <div class="sidebar-details">
-                <?php 
+                <?php
                 $parts = [];
                 $orchestra = isset($_SESSION['current_orchestra_name']) ? $_SESSION['current_orchestra_name'] : APP_NAME;
                 if (strlen($orchestra) > 22) {
                     $orchestra = substr($orchestra, 0, 19) . '...';
                 }
                 $parts[] = '<span class="orchestra">' . $orchestra . '</span>';
-                
+
                 // Get display info using centralized utility
                 $displayInfo = \App\Core\Utilities::getUserDisplayInfo(
-                    $_SESSION['current_type'] ?? '', 
+                    $_SESSION['current_type'] ?? '',
                     $_SESSION['current_role'] ?? ''
                 );
-                
+
                 if ($displayInfo['type']) {
                     $parts[] = $displayInfo['type'];
                 }
@@ -57,90 +58,90 @@
             </div>
         </div>
     </div>
-    </div>
+</div>
 
 <!-- Statistics Section -->
 <?php if (isset($_SESSION['user_id'])): ?>
-<div class="sidebar-stats">
-    <?php if (isset($_SESSION['current_role']) && $_SESSION['current_role'] === 'conductor'): ?>
-    <div class="sidebar-stats-header">
-        <div class="sidebar-stats-title">Probe</div>
-        <div class="sidebar-stats-date" id="next-rehearsal-date"></div>
-    </div>
-    <?php else: ?>
-    <div class="sidebar-stats-title">Meine Proben</div>
-    <?php endif; ?>
-    <div class="sidebar-stats-bar" id="sidebar-stats-bar">
-        <div class="sidebar-stats-segment attending"></div>
-        <div class="sidebar-stats-segment not-attending"></div>
-        <div class="sidebar-stats-segment no-response"></div>
-    </div>
-    <div class="sidebar-stats-legend">
-        <div class="sidebar-stats-item">
-            <div class="sidebar-stats-dot attending"></div>
-            <span id="stats-attending">0</span>
+    <div class="sidebar-stats">
+        <?php if (isset($_SESSION['current_role']) && $_SESSION['current_role'] === 'conductor'): ?>
+            <div class="sidebar-stats-header">
+                <div class="sidebar-stats-title">Probe</div>
+                <div class="sidebar-stats-date" id="next-rehearsal-date"></div>
+            </div>
+        <?php else: ?>
+            <div class="sidebar-stats-title">Meine Proben</div>
+        <?php endif; ?>
+        <div class="sidebar-stats-bar" id="sidebar-stats-bar">
+            <div class="sidebar-stats-segment attending"></div>
+            <div class="sidebar-stats-segment not-attending"></div>
+            <div class="sidebar-stats-segment no-response"></div>
         </div>
-        <div class="sidebar-stats-item">
-            <div class="sidebar-stats-dot not-attending"></div>
-            <span id="stats-not-attending">0</span>
-        </div>
-        <div class="sidebar-stats-item">
-            <div class="sidebar-stats-dot no-response"></div>
-            <span id="stats-no-response">0</span>
+        <div class="sidebar-stats-legend">
+            <div class="sidebar-stats-item">
+                <div class="sidebar-stats-dot attending"></div>
+                <span id="stats-attending">0</span>
+            </div>
+            <div class="sidebar-stats-item">
+                <div class="sidebar-stats-dot not-attending"></div>
+                <span id="stats-not-attending">0</span>
+            </div>
+            <div class="sidebar-stats-item">
+                <div class="sidebar-stats-dot no-response"></div>
+                <span id="stats-no-response">0</span>
+            </div>
         </div>
     </div>
-</div>
 <?php endif; ?>
 
 <!-- Navigation Menu -->
 <nav class="sidebar-nav">
     <ul class="sidebar-nav-list">
-    <?php
-    $menu = [];
-    if (isset($_SESSION['current_role']) && $_SESSION['current_role'] === 'conductor') {
-        $orchestraId = $_SESSION['current_orchestra_id'];
-        $menu = [
-            ['label' => 'Rückmeldungen', 'href' => "/{$orchestraId}/promises/admin", 'page' => 'admin', 'icon' => 'fas fa-chart-bar'],
-            ['label' => 'Termine', 'href' => "/{$orchestraId}/rehearsals", 'page' => 'rehearsals', 'icon' => 'fas fa-calendar-alt'],
-            ['label' => 'Probenplan', 'href' => "/{$orchestraId}/probenplan", 'page' => 'probenplan', 'icon' => 'fas fa-list'],
-            ['label' => 'Profil bearbeiten', 'href' => "/{$orchestraId}/conductor/profile", 'page' => 'conductor_profile', 'icon' => 'fas fa-user-cog'],
-            ['label' => 'Orchester bearbeiten', 'href' => "/{$orchestraId}/orchestras/settings", 'page' => 'orchestra_settings', 'icon' => 'fas fa-cog'],
-            ['label' => 'Orchester wechseln', 'href' => '/orchestras/select', 'page' => null, 'icon' => 'fas fa-exchange-alt'],
-            ['label' => 'Logout', 'href' => '/logout', 'page' => null, 'icon' => 'fas fa-sign-out-alt'],
-        ];
-    } elseif (isset($_SESSION['current_role']) && $_SESSION['current_role'] === 'leader') {
-        $orchestraId = $_SESSION['current_orchestra_id'];
-        $menu = [
-            ['label' => 'Meine Meldungen', 'href' => "/{$orchestraId}/promises", 'page' => 'promises', 'icon' => 'fas fa-clipboard-check'],
-            ['label' => 'Rückmeldungen', 'href' => "/{$orchestraId}/promises/leader", 'page' => 'leader', 'icon' => 'fas fa-chart-bar'],
-            ['label' => 'Probenplan', 'href' => "/{$orchestraId}/probenplan", 'page' => 'probenplan', 'icon' => 'fas fa-list'],
-            ['label' => 'Profil bearbeiten', 'href' => "/{$orchestraId}/profile", 'page' => 'profile', 'icon' => 'fas fa-user-cog'],
-            ['label' => 'Orchester wechseln', 'href' => '/orchestras/select', 'page' => null, 'icon' => 'fas fa-exchange-alt'],
-            ['label' => 'Logout', 'href' => '/logout', 'page' => null, 'icon' => 'fas fa-sign-out-alt'],
-        ];
-    } else {
-        $orchestraId = $_SESSION['current_orchestra_id'];
-        $menu = [
-            ['label' => 'Meine Meldungen', 'href' => "/{$orchestraId}/promises", 'page' => 'promises', 'icon' => 'fas fa-clipboard-check'],
-            ['label' => 'Probenplan', 'href' => "/{$orchestraId}/probenplan", 'page' => 'probenplan', 'icon' => 'fas fa-list'],
-            ['label' => 'Profil bearbeiten', 'href' => "/{$orchestraId}/profile", 'page' => 'profile', 'icon' => 'fas fa-user-cog'],
-            ['label' => 'Orchester wechseln', 'href' => '/orchestras/select', 'page' => null, 'icon' => 'fas fa-exchange-alt'],
-            ['label' => 'Logout', 'href' => '/logout', 'page' => null, 'icon' => 'fas fa-sign-out-alt'],
-        ];
-    }
-    foreach ($menu as $item) {
-        $active = isset($item['page']) && isset($currentPage) && $currentPage === $item['page'] ? 'active' : '';
-        echo '<li class="sidebar-nav-item"><a class="sidebar-nav-link ' . $active . '" href="' . $item['href'] . '">';
-        echo '<i class="sidebar-nav-icon ' . $item['icon'] . '"></i>';
-        echo $item['label'] . '</a></li>';
-    }
-    ?>
+        <?php
+        $menu = [];
+        if (isset($_SESSION['current_role']) && $_SESSION['current_role'] === 'conductor') {
+            $orchestraId = $_SESSION['current_orchestra_id'];
+            $menu = [
+                ['label' => 'Rückmeldungen', 'href' => "/{$orchestraId}/promises/admin", 'page' => 'admin', 'icon' => 'fas fa-chart-bar'],
+                ['label' => 'Termine', 'href' => "/{$orchestraId}/rehearsals", 'page' => 'rehearsals', 'icon' => 'fas fa-calendar-alt'],
+                ['label' => 'Probenplan', 'href' => "/{$orchestraId}/probenplan", 'page' => 'probenplan', 'icon' => 'fas fa-list'],
+                ['label' => 'Profil bearbeiten', 'href' => "/{$orchestraId}/conductor/profile", 'page' => 'conductor_profile', 'icon' => 'fas fa-user-cog'],
+                ['label' => 'Orchester bearbeiten', 'href' => "/{$orchestraId}/orchestras/settings", 'page' => 'orchestra_settings', 'icon' => 'fas fa-cog'],
+                ['label' => 'Orchester wechseln', 'href' => '/orchestras/select', 'page' => null, 'icon' => 'fas fa-exchange-alt'],
+                ['label' => 'Logout', 'href' => '/logout', 'page' => null, 'icon' => 'fas fa-sign-out-alt'],
+            ];
+        } elseif (isset($_SESSION['current_role']) && $_SESSION['current_role'] === 'leader') {
+            $orchestraId = $_SESSION['current_orchestra_id'];
+            $menu = [
+                ['label' => 'Meine Meldungen', 'href' => "/{$orchestraId}/promises", 'page' => 'promises', 'icon' => 'fas fa-clipboard-check'],
+                ['label' => 'Rückmeldungen', 'href' => "/{$orchestraId}/promises/leader", 'page' => 'leader', 'icon' => 'fas fa-chart-bar'],
+                ['label' => 'Probenplan', 'href' => "/{$orchestraId}/probenplan", 'page' => 'probenplan', 'icon' => 'fas fa-list'],
+                ['label' => 'Profil bearbeiten', 'href' => "/{$orchestraId}/profile", 'page' => 'profile', 'icon' => 'fas fa-user-cog'],
+                ['label' => 'Orchester wechseln', 'href' => '/orchestras/select', 'page' => null, 'icon' => 'fas fa-exchange-alt'],
+                ['label' => 'Logout', 'href' => '/logout', 'page' => null, 'icon' => 'fas fa-sign-out-alt'],
+            ];
+        } else {
+            $orchestraId = $_SESSION['current_orchestra_id'];
+            $menu = [
+                ['label' => 'Meine Meldungen', 'href' => "/{$orchestraId}/promises", 'page' => 'promises', 'icon' => 'fas fa-clipboard-check'],
+                ['label' => 'Probenplan', 'href' => "/{$orchestraId}/probenplan", 'page' => 'probenplan', 'icon' => 'fas fa-list'],
+                ['label' => 'Profil bearbeiten', 'href' => "/{$orchestraId}/profile", 'page' => 'profile', 'icon' => 'fas fa-user-cog'],
+                ['label' => 'Orchester wechseln', 'href' => '/orchestras/select', 'page' => null, 'icon' => 'fas fa-exchange-alt'],
+                ['label' => 'Logout', 'href' => '/logout', 'page' => null, 'icon' => 'fas fa-sign-out-alt'],
+            ];
+        }
+        foreach ($menu as $item) {
+            $active = isset($item['page']) && isset($currentPage) && $currentPage === $item['page'] ? 'active' : '';
+            echo '<li class="sidebar-nav-item"><a class="sidebar-nav-link ' . $active . '" href="' . $item['href'] . '">';
+            echo '<i class="sidebar-nav-icon ' . $item['icon'] . '"></i>';
+            echo $item['label'] . '</a></li>';
+        }
+        ?>
     </ul>
 </nav>
 
 <!-- PWA Install Card -->
-<?php 
-$renderComponent = true; 
+<?php
+$renderComponent = true;
 $title = 'App installieren';
 $subtitle = 'Für bessere Performance';
 $icon = 'download';
@@ -166,52 +167,54 @@ include __DIR__ . '/pwa-install-card.php';
 </div>
 
 <script>
-(function() {
-    function init() {
-        var wrap = document.getElementById('sidebar-legal-dropdown');
-        var btn = document.getElementById('sidebar-legal-btn');
-        var menu = wrap ? wrap.querySelector('.dropdown-menu') : null;
-        if (!btn || !menu) return;
-        if (typeof tippy !== 'undefined') {
-            tippy(btn, { content: 'Rechtliches', placement: 'right' });
-        }
-        function closeMenu() {
-            menu.classList.remove('show');
-            if (menu.parentNode === document.body) {
-                wrap.appendChild(menu);
+    (function() {
+        function init() {
+            var wrap = document.getElementById('sidebar-legal-dropdown');
+            var btn = document.getElementById('sidebar-legal-btn');
+            var menu = wrap ? wrap.querySelector('.dropdown-menu') : null;
+            if (!btn || !menu) return;
+            if (typeof tippy !== 'undefined') {
+                tippy(btn, {
+                    content: 'Rechtliches',
+                    placement: 'right'
+                });
             }
-        }
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            var open = menu.classList.contains('show');
-            document.querySelectorAll('.sidebar-legal-menu.show').forEach(function(m) {
-                m.classList.remove('show');
-                var w = document.getElementById('sidebar-legal-dropdown');
-                if (m.parentNode === document.body && w) w.appendChild(m);
-            });
-            if (!open) {
-                if (menu.parentNode !== document.body) {
-                    document.body.appendChild(menu);
+
+            function closeMenu() {
+                menu.classList.remove('show');
+                if (menu.parentNode === document.body) {
+                    wrap.appendChild(menu);
                 }
-                menu.classList.add('show');
-                var rect = btn.getBoundingClientRect();
-                menu.style.top = (rect.top - menu.offsetHeight - 4) + 'px';
-                menu.style.left = rect.left + 'px';
             }
-        });
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.sidebar-legal-dropdown') && !e.target.closest('.sidebar-legal-menu')) {
-                closeMenu();
-            }
-        });
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
-})();
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var open = menu.classList.contains('show');
+                document.querySelectorAll('.sidebar-legal-menu.show').forEach(function(m) {
+                    m.classList.remove('show');
+                    var w = document.getElementById('sidebar-legal-dropdown');
+                    if (m.parentNode === document.body && w) w.appendChild(m);
+                });
+                if (!open) {
+                    if (menu.parentNode !== document.body) {
+                        document.body.appendChild(menu);
+                    }
+                    menu.classList.add('show');
+                    var rect = btn.getBoundingClientRect();
+                    menu.style.top = (rect.top - menu.offsetHeight - 4) + 'px';
+                    menu.style.left = rect.left + 'px';
+                }
+            });
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.sidebar-legal-dropdown') && !e.target.closest('.sidebar-legal-menu')) {
+                    closeMenu();
+                }
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    })();
 </script>
-
-
