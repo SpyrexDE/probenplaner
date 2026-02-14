@@ -36,14 +36,14 @@ $hideNavbar = $isAuthPage;
     <meta name="theme-color" content="#ffffff">
 
     <!-- Apple Touch Icons -->
-    <link rel="apple-touch-icon" href="/assets/img/Logo.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="/assets/img/Logo.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/assets/img/Logo.png">
-    <link rel="apple-touch-icon" sizes="167x167" href="/assets/img/Logo.png">
+    <link rel="apple-touch-icon" href="/assets/icons/apple/Probenplaner-iOS-Default-1024x1024@1x.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/assets/icons/apple/Probenplaner-iOS-Default-1024x1024@1x.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/apple/Probenplaner-iOS-Default-1024x1024@1x.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="/assets/icons/apple/Probenplaner-iOS-Default-1024x1024@1x.png">
 
     <!-- Microsoft Tiles -->
     <meta name="msapplication-TileColor" content="#478cf4">
-    <meta name="msapplication-TileImage" content="/assets/img/Logo.png">
+    <meta name="msapplication-TileImage" content="/assets/icons/apple/Probenplaner-iOS-Default-1024x1024@1x.png">
     <meta name="msapplication-config" content="/browserconfig.xml">
 
     <!-- Google Fonts -->
@@ -138,7 +138,7 @@ $hideNavbar = $isAuthPage;
 
     <!-- Icon Fonts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css">
-    <link rel="shortcut icon" href="/assets/img/Logo.png" type="image/x-icon">
+    <link rel="shortcut icon" href="/assets/icons/branding/Probenplaner Icon.svg" type="image/x-icon">
     <link rel="manifest" href="/manifest.json">
 
     <!-- JavaScript Libraries -->

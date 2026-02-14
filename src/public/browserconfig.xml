@@ -2,10 +2,10 @@
 <browserconfig>
     <msapplication>
         <tile>
-            <square70x70logo src="/assets/img/Logo.png"/>
-            <square150x150logo src="/assets/img/Logo.png"/>
-            <wide310x150logo src="/assets/img/Logo.png"/>
-            <square310x310logo src="/assets/img/Logo.png"/>
+            <square70x70logo src="/assets/icons/apple/Probenplaner-iOS-Default-1024x1024@1x.png"/>
+            <square150x150logo src="/assets/icons/apple/Probenplaner-iOS-Default-1024x1024@1x.png"/>
+            <wide310x150logo src="/assets/icons/apple/Probenplaner-iOS-Default-1024x1024@1x.png"/>
+            <square310x310logo src="/assets/icons/apple/Probenplaner-iOS-Default-1024x1024@1x.png"/>
             <TileColor>#478cf4</TileColor>
         </tile>
     </msapplication>

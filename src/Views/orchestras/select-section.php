@@ -10,13 +10,13 @@ ob_start();
 <form method="POST" action="/orchestras/complete-join" class="login-form">
     <?php include __DIR__ . '/../components/csrf-input.php'; ?>
     <input type="hidden" name="orchestra_id" value="<?= htmlspecialchars($orchestra['id']) ?>">
-    
+
     <?php include __DIR__ . '/../components/logo.php'; ?>
 
     <h2 style="text-align: center; margin-bottom: 1rem; color: var(--color-text-primary);">
         <?= htmlspecialchars($orchestra['name']) ?>
     </h2>
-    
+
     <div class="form-text" style="margin-bottom: 2rem;">Wählen Sie Ihr Instrument</div>
 
     <select class="login-input" id="type" name="type" required>
@@ -24,10 +24,9 @@ ob_start();
         <?php foreach ($typeStructure as $sectionName => $instruments): ?>
             <optgroup label="<?= htmlspecialchars($sectionName) ?>">
                 <?php foreach ($instruments as $instrument): ?>
-                    <option 
+                    <option
                         value="<?= htmlspecialchars($instrument) ?>"
-                        <?= (isset($_SESSION['form_data']['type']) && $_SESSION['form_data']['type'] === $instrument) ? 'selected' : '' ?>
-                    >
+                        <?= (isset($_SESSION['form_data']['type']) && $_SESSION['form_data']['type'] === $instrument) ? 'selected' : '' ?>>
                         <?= htmlspecialchars(str_replace('_', ' ', $instrument)) ?>
                     </option>
                 <?php endforeach; ?>
