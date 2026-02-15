@@ -164,7 +164,7 @@ function deleteAccount(username) {
                     console.error('Error deleting account:', error);
                     window.notifyErrorWithDetails(
                         "Die Anfrage konnte nicht verarbeitet werden.",
-                        error.message
+                        error.message || error.toString()
                     );
                 });
         }

@@ -135,15 +135,25 @@
                         } else {
                             // Cache clearing failed, show error and reload anyway
                             console.error('Cache clearing failed:', event.data.error);
-                            Swal.fire({
-                                title: 'Update-Fehler',
-                                text: 'Cache konnte nicht vollständig gelöscht werden, aber das Update wird trotzdem fortgesetzt.',
-                                icon: 'warning',
-                                confirmButtonText: 'OK',
-                                confirmButtonColor: '#478cf4'
-                            }).then(() => {
-                                window.location.reload(true);
-                            });
+
+                            if (window.notifyErrorWithDetails) {
+                                window.notifyErrorWithDetails(
+                                    'Update-Fehler',
+                                    'Cache konnte nicht vollständig gelöscht werden.\n' + (event.data.error || '')
+                                ).then(() => {
+                                    window.location.reload(true);
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Update-Fehler',
+                                    text: 'Cache konnte nicht vollständig gelöscht werden, aber das Update wird trotzdem fortgesetzt.',
+                                    icon: 'warning', // Keeping warning icon if fallback
+                                    confirmButtonText: 'OK',
+                                    confirmButtonColor: '#478cf4'
+                                }).then(() => {
+                                    window.location.reload(true);
+                                });
+                            }
                         }
                     }
                 });

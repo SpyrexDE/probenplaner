@@ -450,7 +450,8 @@ class PromiseController extends Controller
             echo json_encode([
                 'success' => false,
                 'message' => 'Fehler beim Speichern',
-                'details' => 'Es ist ein unerwarteter Fehler aufgetreten. Bitte versuchen Sie es später erneut.'
+                'details' => 'Es ist ein unerwarteter Fehler aufgetreten.',
+                'debug_message' => 'Promise update returned false or unexpected result'
             ]);
         }
     }
@@ -512,7 +513,8 @@ class PromiseController extends Controller
             echo json_encode([
                 'success' => false,
                 'message' => 'Fehler beim Speichern der Anmerkung',
-                'details' => 'Es ist ein unerwarteter Fehler aufgetreten. Bitte versuchen Sie es später erneut.'
+                'details' => 'Es ist ein unerwarteter Fehler aufgetreten.',
+                'debug_message' => 'Promise note update returned false or unexpected result'
             ]);
         }
     }
@@ -650,95 +652,85 @@ class PromiseController extends Controller
      */
     private function handlePastRehearsalsAjax()
     {
-        $offset = (int)($_GET['offset'] ?? 0);
-        $limit = (int)($_GET['limit'] ?? 10);
+        try {
+            $offset = (int)($_GET['offset'] ?? 0);
+            $limit = (int)($_GET['limit'] ?? 10);
 
-        // Get user info
-        $userType = $_SESSION['current_type'];
+            $allPastRehearsals = $this->rehearsalModel->getUpcoming($_SESSION['current_orchestra_id'], true);
 
-        // Get small group status from user_orchestras table
-        $isSmallGroup = false;
-        $userId = $_SESSION['user_id'] ?? null;
-        $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
-        if ($userId && $orchestraId) {
-            $userOrchestraModel = new \App\Models\UserOrchestra();
-            $isSmallGroup = $userOrchestraModel->isUserInSmallGroup((int)$userId, (int)$orchestraId);
-        }
-        $user = ['is_small_group' => $isSmallGroup];
+            $today = date('Y-m-d');
+            $pastRehearsals = array_filter($allPastRehearsals, function ($rehearsal) use ($today) {
+                return $rehearsal['date'] < $today;
+            });
 
-        // Get past rehearsals with limit and offset
-        $allPastRehearsals = $this->rehearsalModel->getForUser($userType, $_SESSION['current_orchestra_id'], true, $isSmallGroup);
+            usort($pastRehearsals, function ($a, $b) {
+                return strtotime($b['date']) - strtotime($a['date']);
+            });
 
-        // Filter only past rehearsals and apply pagination
-        $today = date('Y-m-d');
-        $pastRehearsals = array_filter($allPastRehearsals, function ($rehearsal) use ($today) {
-            return $rehearsal['date'] < $today;
-        });
+            $totalPastRehearsals = count($pastRehearsals);
+            $paginatedRehearsals = array_slice($pastRehearsals, $offset, $limit);
+            $hasMore = ($offset + $limit) < $totalPastRehearsals;
 
-        // Sort by date descending (newest first)
-        usort($pastRehearsals, function ($a, $b) {
-            return strtotime($b['date']) - strtotime($a['date']);
-        });
+            // Get promises for these rehearsals
+            $rehearsalIds = array_column($paginatedRehearsals, 'id');
+            $promises = [];
+            if (!empty($rehearsalIds)) {
+                $promises = $this->promiseModel->findPromisesForRehearsalsAndUser($rehearsalIds, $_SESSION['user_id']);
+            }
 
-        $totalPastRehearsals = count($pastRehearsals);
-        $paginatedRehearsals = array_slice($pastRehearsals, $offset, $limit);
-        $hasMore = ($offset + $limit) < $totalPastRehearsals;
+            $html = '';
+            foreach ($paginatedRehearsals as $rehearsal) {
+                $status = 'pending';
+                $note = '';
 
-        $html = '';
-        $promises = [];
+                if (isset($promises[$rehearsal['id']])) {
+                    $status = $promises[$rehearsal['id']]['attending'] ? 'attending' : 'not_attending';
+                    $note = $promises[$rehearsal['id']]['note'];
+                }
 
-        if ($userId) {
-            $userPromises = $this->userModel->getPromises($userId);
-            foreach ($userPromises as $promise) {
-                $promises[$promise['rehearsal_id']] = [
-                    'attending' => ($promise['status'] === 'yes'),
-                    'note' => $promise['note']
+                // Get group information
+                $groupArray = $rehearsal['groups'] ?? [];
+
+                // Generate smart display text with integrated Kleingruppe handling
+                $smartDisplay = new \App\Core\SmartGroupDisplay();
+                $groupsText = $smartDisplay->generateDescription(
+                    $groupArray,
+                    $rehearsal,
+                    false // Not admin view
+                );
+
+                $context = 'promises';
+                $options = [
+                    'status' => $status,
+                    'note' => $note,
+                    'showButtons' => true
                 ];
-            }
-        }
 
-        foreach ($paginatedRehearsals as $rehearsal) {
-            $status = 'pending';
-            $note = '';
-
-            if (isset($promises[$rehearsal['id']])) {
-                $status = $promises[$rehearsal['id']]['attending'] ? 'attending' : 'not_attending';
-                $note = $promises[$rehearsal['id']]['note'];
+                // Capture output
+                ob_start();
+                include __DIR__ . '/../Views/components/rehearsal-card.php';
+                $html .= ob_get_clean();
             }
 
-            // Get group information
-            $groupArray = $rehearsal['groups'] ?? [];
-
-            // Generate smart display text with integrated Kleingruppe handling
-            $smartDisplay = new \App\Core\SmartGroupDisplay();
-            $groupsText = $smartDisplay->generateDescription(
-                $groupArray,
-                $rehearsal,
-                false // Not admin view
-            );
-
-            $context = 'promises';
-            $options = [
-                'status' => $status,
-                'note' => $note,
-                'showButtons' => true
-            ];
-
-            // Capture output
-            ob_start();
-            include __DIR__ . '/../Views/components/rehearsal-card.php';
-            $html .= ob_get_clean();
+            // Return JSON response
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'html' => $html,
+                'hasMore' => $hasMore,
+                'total' => $totalPastRehearsals,
+                'loaded' => $offset + count($paginatedRehearsals)
+            ]);
+            exit;
+        } catch (\Exception $e) {
+            header('Content-Type: application/json');
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Fehler beim Laden der Termine',
+                'debug_message' => $e->getMessage()
+            ]);
+            exit;
         }
-
-        // Return JSON response
-        header('Content-Type: application/json');
-        echo json_encode([
-            'success' => true,
-            'html' => $html,
-            'hasMore' => $hasMore,
-            'total' => $totalPastRehearsals,
-            'loaded' => $offset + count($paginatedRehearsals)
-        ]);
-        exit;
     }
 }

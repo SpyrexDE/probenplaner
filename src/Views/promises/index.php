@@ -49,6 +49,12 @@ function sortGroups($groups)
         <?php
         $title = 'Keine Proben gefunden';
         $message = 'Aktuell sind keine Proben für dich eingetragen.';
+
+        if (!$showOld) {
+            $actionHref = '?showOld=1';
+            $actionLabel = 'Vergangene Proben anzeigen';
+        }
+
         include __DIR__ . '/../components/empty-state.php';
         ?>
     <?php else: ?>
@@ -522,7 +528,12 @@ include __DIR__ . '/../components/save-indicator.php';
                         }
                     } else {
                         console.error('Server returned error:', response.message);
-                        notifyError('Fehler beim Speichern: ' + (response.message || 'Unbekannter Fehler'));
+                        if (window.notifyErrorWithDetails) {
+                            const technicalDetails = response.debug_message || response.error || JSON.stringify(response, null, 2);
+                            window.notifyErrorWithDetails('Fehler beim Speichern', technicalDetails);
+                        } else {
+                            notifyError('Fehler beim Speichern: ' + (response.message || 'Unbekannter Fehler'));
+                        }
                     }
 
                     // Re-enable buttons
@@ -539,7 +550,12 @@ include __DIR__ . '/../components/save-indicator.php';
                 },
                 error: function(xhr, status, error) {
                     console.error('AJAX Error:', error);
-                    notifyError('Verbindungsfehler beim Speichern der Zusage');
+                    if (window.notifyErrorWithDetails) {
+                        const technicalDetails = 'Status: ' + status + '\nError: ' + error + '\nResponse: ' + xhr.responseText;
+                        window.notifyErrorWithDetails('Verbindungsfehler beim Speichern der Zusage', technicalDetails);
+                    } else {
+                        notifyError('Verbindungsfehler beim Speichern der Zusage');
+                    }
 
                     // Re-enable buttons
                     enableRehearsalButtons(id);

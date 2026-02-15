@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controllers;
 
 use App\Core\Controller;
@@ -17,7 +18,7 @@ class RehearsalController extends Controller
      * @var Rehearsal
      */
     private $rehearsalModel;
-    
+
     /**
      * Constructor
      */
@@ -26,7 +27,7 @@ class RehearsalController extends Controller
         parent::__construct();
         $this->rehearsalModel = new Rehearsal();
     }
-    
+
     /**
      * Display rehearsal list
      * 
@@ -35,25 +36,25 @@ class RehearsalController extends Controller
     public function index($params = [])
     {
         $this->validateOrchestraContext($params);
-        
+
         $this->requireRole('conductor');
-        
+
         if (isset($_GET['ajax']) && $_GET['pastOnly']) {
             $this->handlePastRehearsalsAjax();
             return;
         }
-        
+
         $showOld = isset($_GET['showOld']);
-        
+
         $rehearsals = $this->rehearsalModel->getUpcoming($_SESSION['current_orchestra_id'], $showOld);
-        
+
         $this->render('rehearsals/index', [
             'currentPage' => 'rehearsals',
             'rehearsals' => $rehearsals,
             'showOld' => $showOld
         ]);
     }
-    
+
     /**
      * Display rehearsal creation form
      * 
@@ -63,47 +64,47 @@ class RehearsalController extends Controller
     public function create($params = [])
     {
         $this->validateOrchestraContext($params);
-        
+
         $this->requireRole('conductor');
-        
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Sanitize form data
             $start = \App\Core\Validator::sanitizeUtf8($_POST['start'] ?? '');
             $end = \App\Core\Validator::sanitizeUtf8($_POST['end'] ?? '');
             $location = \App\Core\Validator::sanitizeUtf8($_POST['location'] ?? '');
             $color = \App\Core\Validator::sanitizeUtf8($_POST['color'] ?? '');
-            
-        // Handle group assignments
-        $rehearsalType = \App\Core\Validator::sanitizeUtf8($_POST['rehearsal_type'] ?? '');
+
+            // Handle group assignments
+            $rehearsalType = \App\Core\Validator::sanitizeUtf8($_POST['rehearsal_type'] ?? '');
             $finalGroups = \App\Core\RehearsalGroupProcessor::processGroups($_POST);
             $groupValidationErrors = \App\Core\RehearsalGroupProcessor::validateGroups($finalGroups);
-            
+
             $isSmallGroup = isset($_POST['is_small_group']) && $_POST['is_small_group'] === (string)\App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED;
-            
-        $requiredValidation = \App\Core\Validator::validateRequired([
+
+            $requiredValidation = \App\Core\Validator::validateRequired([
                 'start' => $start,
                 'end' => $end
             ], ['start', 'end']);
-            
+
             $startValidation = \App\Core\Validator::validateDateTime($start);
             $endValidation = \App\Core\Validator::validateDateTime($end);
-            
+
             // Check if end time is after start time
             $timeOrderErrors = [];
             if (!empty($start) && !empty($end) && strtotime($end) <= strtotime($start)) {
                 $timeOrderErrors[] = 'Die Endzeit muss nach der Startzeit liegen';
             }
-            
-        $validation = \App\Core\Validator::mergeResults([
+
+            $validation = \App\Core\Validator::mergeResults([
                 $requiredValidation,
                 $startValidation,
                 $endValidation,
                 ['valid' => empty($timeOrderErrors), 'errors' => $timeOrderErrors],
                 ['valid' => empty($groupValidationErrors), 'errors' => $groupValidationErrors]
             ]);
-            
+
             $errors = $validation['errors'];
-            
+
             if (empty($errors)) {
                 // Save rehearsal
                 $rehearsalData = [
@@ -114,23 +115,23 @@ class RehearsalController extends Controller
                     'orchestra_id' => (int)$_SESSION['current_orchestra_id'],
                     'is_small_group' => $isSmallGroup ? 1 : 0
                 ];
-                
+
                 // Only add color if it was submitted and if the field exists in the database
                 if (!empty($color)) {
                     $rehearsalData['color'] = $color;
                 }
-                
+
                 $result = $this->rehearsalModel->create($rehearsalData, $finalGroups);
-                
+
                 if ($result && !is_array($result)) {
                     $this->setFlash('success', 'Probe wurde erfolgreich erstellt.');
                     $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
                     return;
                 } else {
-                    $errorMessage = is_array($result) && isset($result['message']) 
+                    $errorMessage = is_array($result) && isset($result['message'])
                         ? 'Probe konnte nicht erstellt werden: ' . $result['message']
                         : 'Probe konnte nicht erstellt werden';
-                    
+
                     $errorDetails = is_array($result) ? ($result['details'] ?? $result['data'] ?? null) : null;
                     if (is_array($errorDetails)) {
                         $errorDetails = json_encode($errorDetails, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
@@ -139,11 +140,11 @@ class RehearsalController extends Controller
                         $errorDetails = $errorMessage;
                     }
                     $this->addAlert('Fehler!', $errorMessage, 'error', $errorDetails);
-                    
+
                     // Don't add to errors array to avoid duplicate notification (addAlert handles it with details)
                 }
             }
-            
+
             // If we get here, there were errors
             $this->render('rehearsals/create', [
                 'currentPage' => 'rehearsals',
@@ -159,7 +160,7 @@ class RehearsalController extends Controller
                 ]
             ]);
         } else {
-        $this->render('rehearsals/create', [
+            $this->render('rehearsals/create', [
                 'currentPage' => 'rehearsals',
                 'errors' => [],
                 'formData' => [
@@ -174,7 +175,7 @@ class RehearsalController extends Controller
             ]);
         }
     }
-    
+
     /**
      * Display rehearsal edit form
      * 
@@ -184,63 +185,63 @@ class RehearsalController extends Controller
     public function edit($params)
     {
         $this->validateOrchestraContext($params);
-        
+
         $this->requireRole('conductor');
-        
+
         // Get rehearsal ID from route parameters
         $rehearsalId = isset($params['id']) ? intval($params['id']) : 0;
-        
+
         if ($rehearsalId <= 0) {
             $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
             return;
         }
-        
+
         $rehearsal = $this->rehearsalModel->findById($rehearsalId);
-        
+
         if (!$rehearsal) {
             $this->setFlash('error', 'Probe nicht gefunden');
             $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
             return;
         }
-        
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Sanitize form data
             $start = \App\Core\Validator::sanitizeUtf8($_POST['start'] ?? '');
             $end = \App\Core\Validator::sanitizeUtf8($_POST['end'] ?? '');
             $location = \App\Core\Validator::sanitizeUtf8($_POST['location'] ?? '');
             $color = \App\Core\Validator::sanitizeUtf8($_POST['color'] ?? '');
-            
-        // Handle group assignments
-        $rehearsalType = \App\Core\Validator::sanitizeUtf8($_POST['rehearsal_type'] ?? '');
+
+            // Handle group assignments
+            $rehearsalType = \App\Core\Validator::sanitizeUtf8($_POST['rehearsal_type'] ?? '');
             $finalGroups = \App\Core\RehearsalGroupProcessor::processGroups($_POST);
             $groupValidationErrors = \App\Core\RehearsalGroupProcessor::validateGroups($finalGroups);
-            
+
             $isSmallGroup = isset($_POST['is_small_group']) && $_POST['is_small_group'] === (string)\App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED;
-            
-        $requiredValidation = \App\Core\Validator::validateRequired([
+
+            $requiredValidation = \App\Core\Validator::validateRequired([
                 'start' => $start,
                 'end' => $end
             ], ['start', 'end']);
-            
+
             $startValidation = \App\Core\Validator::validateDateTime($start);
             $endValidation = \App\Core\Validator::validateDateTime($end);
-            
+
             // Check if end time is after start time
             $timeOrderErrors = [];
             if (!empty($start) && !empty($end) && strtotime($end) <= strtotime($start)) {
                 $timeOrderErrors[] = 'Die Endzeit muss nach der Startzeit liegen';
             }
-            
-        $validation = \App\Core\Validator::mergeResults([
+
+            $validation = \App\Core\Validator::mergeResults([
                 $requiredValidation,
                 $startValidation,
                 $endValidation,
                 ['valid' => empty($timeOrderErrors), 'errors' => $timeOrderErrors],
                 ['valid' => empty($groupValidationErrors), 'errors' => $groupValidationErrors]
             ]);
-            
+
             $errors = $validation['errors'];
-            
+
             if (empty($errors)) {
                 // Update rehearsal
                 $updateData = [
@@ -250,22 +251,22 @@ class RehearsalController extends Controller
                     'location' => $location,
                     'is_small_group' => $isSmallGroup ? 1 : 0
                 ];
-                
+
                 if (!empty($color)) {
                     $updateData['color'] = $color;
                 }
-                
+
                 $result = $this->rehearsalModel->updateRehearsal($rehearsalId, $updateData, $finalGroups);
-                
+
                 if ($result === true) {
                     $this->setFlash('success', 'Probe wurde erfolgreich aktualisiert.');
                     $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
                     return;
                 } else {
-                    $errorMessage = is_array($result) && isset($result['message']) 
+                    $errorMessage = is_array($result) && isset($result['message'])
                         ? 'Probe konnte nicht aktualisiert werden: ' . $result['message']
                         : 'Probe konnte nicht aktualisiert werden';
-                    
+
                     $errorDetails = is_array($result) ? ($result['details'] ?? $result['data'] ?? null) : null;
                     if (is_array($errorDetails)) {
                         $errorDetails = json_encode($errorDetails, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
@@ -296,10 +297,10 @@ class RehearsalController extends Controller
             // Get rehearsal type from the new type field
             $rehearsalType = $rehearsal['type'] ?? '';
             $groups = $rehearsal['groups'] ?? [];
-            
+
             // Use the proper form data generation to handle tutti-with-exclusions
             $formData = \App\Core\RehearsalGroupProcessor::generateFormData($groups);
-            
+
             // Display the form
             $this->render('rehearsals/edit', [
                 'currentPage' => 'rehearsals',
@@ -317,7 +318,7 @@ class RehearsalController extends Controller
             ]);
         }
     }
-    
+
     /**
      * Delete rehearsal
      * 
@@ -339,7 +340,7 @@ class RehearsalController extends Controller
             $this->redirect('/login');
             return;
         }
-        
+
         // Get rehearsal ID from route parameters or POST data
         $rehearsalId = 0;
         if (isset($params['id'])) {
@@ -347,7 +348,7 @@ class RehearsalController extends Controller
         } else if (isset($_POST['id'])) {
             $rehearsalId = intval($_POST['id']);
         }
-        
+
         if ($rehearsalId <= 0) {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo json_encode(['success' => false, 'message' => 'Ungültige Proben-ID']);
@@ -356,27 +357,46 @@ class RehearsalController extends Controller
             $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
             return;
         }
-        
+
         // Delete rehearsal immediately, no confirmation needed
-        $result = $this->rehearsalModel->delete($rehearsalId);
-        
-        if ($result) {
+        try {
+            $result = $this->rehearsalModel->delete($rehearsalId);
+
+            if ($result) {
+                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                    header('Content-Type: application/json');
+                    echo json_encode(['success' => true]);
+                    exit;
+                }
+                $this->setFlash('success', 'Probe wurde erfolgreich gelöscht.');
+            } else {
+                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                    header('Content-Type: application/json');
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Probe konnte nicht gelöscht werden',
+                        'debug_message' => 'Database delete operation returned false'
+                    ]);
+                    exit;
+                }
+                $this->setFlash('error', 'Probe konnte nicht gelöscht werden');
+            }
+        } catch (\Exception $e) {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                echo json_encode(['success' => true]);
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Fehler beim Löschen der Probe',
+                    'debug_message' => $e->getMessage() . "\n" . $e->getTraceAsString()
+                ]);
                 exit;
             }
-            $this->setFlash('success', 'Probe wurde erfolgreich gelöscht.');
-        } else {
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                echo json_encode(['success' => false, 'message' => 'Probe konnte nicht gelöscht werden']);
-                exit;
-            }
-            $this->setFlash('error', 'Probe konnte nicht gelöscht werden');
+            $this->setFlash('error', 'Fehler beim Löschen: ' . $e->getMessage());
         }
-        
+
         $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
     }
-    
+
     /**
      * Handle AJAX request for past rehearsals with pagination
      * 
@@ -384,46 +404,59 @@ class RehearsalController extends Controller
      */
     private function handlePastRehearsalsAjax()
     {
-        $offset = (int)($_GET['offset'] ?? 0);
-        $limit = (int)($_GET['limit'] ?? 10);
-        
-        $allPastRehearsals = $this->rehearsalModel->getUpcoming($_SESSION['current_orchestra_id'], true);
-        
-        $today = date('Y-m-d');
-        $pastRehearsals = array_filter($allPastRehearsals, function($rehearsal) use ($today) {
-            return $rehearsal['date'] < $today;
-        });
-        
-        usort($pastRehearsals, function($a, $b) {
-            return strtotime($b['date']) - strtotime($a['date']);
-        });
-        
-        $totalPastRehearsals = count($pastRehearsals);
-        $paginatedRehearsals = array_slice($pastRehearsals, $offset, $limit);
-        $hasMore = ($offset + $limit) < $totalPastRehearsals;
-        
-        $html = '';
-        foreach ($paginatedRehearsals as $rehearsal) {
-            // Set options for the rehearsal card component
-            $context = 'rehearsals';
-            $options = [
-                'showButtons' => true
-            ];
-            
-            // Capture output
-            ob_start();
-            include __DIR__ . '/../Views/components/rehearsal-card.php';
-            $html .= ob_get_clean();
+        try {
+            $offset = (int)($_GET['offset'] ?? 0);
+            $limit = (int)($_GET['limit'] ?? 10);
+
+            $allPastRehearsals = $this->rehearsalModel->getUpcoming($_SESSION['current_orchestra_id'], true);
+
+            $today = date('Y-m-d');
+            $pastRehearsals = array_filter($allPastRehearsals, function ($rehearsal) use ($today) {
+                return $rehearsal['date'] < $today;
+            });
+
+            usort($pastRehearsals, function ($a, $b) {
+                return strtotime($b['date']) - strtotime($a['date']);
+            });
+
+            $totalPastRehearsals = count($pastRehearsals);
+            $paginatedRehearsals = array_slice($pastRehearsals, $offset, $limit);
+            $hasMore = ($offset + $limit) < $totalPastRehearsals;
+
+            $html = '';
+            foreach ($paginatedRehearsals as $rehearsal) {
+                // Set options for the rehearsal card component
+                $context = 'rehearsals';
+                $options = [
+                    'showButtons' => true,
+                    // Pass other necessary options
+                ];
+
+                // Capture output
+                ob_start();
+                include __DIR__ . '/../Views/components/rehearsal-card.php';
+                $html .= ob_get_clean();
+            }
+
+            // Return JSON response
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'html' => $html,
+                'hasMore' => $hasMore,
+                'total' => $totalPastRehearsals,
+                'loaded' => $offset + count($paginatedRehearsals)
+            ]);
+            exit;
+        } catch (\Exception $e) {
+            header('Content-Type: application/json');
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Fehler beim Laden der Termine',
+                'debug_message' => $e->getMessage()
+            ]);
+            exit;
         }
-        
-        @header('Content-Type: application/json');
-        echo json_encode([
-            'success' => true,
-            'html' => $html,
-            'hasMore' => $hasMore,
-            'total' => $totalPastRehearsals,
-            'loaded' => $offset + count($paginatedRehearsals)
-        ]);
-        exit;
     }
-} 
+}
