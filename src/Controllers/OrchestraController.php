@@ -340,7 +340,8 @@ class OrchestraController extends Controller
             'token' => $token,
             'leader_pw' => $leaderPassword,
             'leaders_can_view_all_sections' => $leadersCanViewAll,
-            'show_rehearsal_insights' => $showRehearsalInsights
+            'show_rehearsal_insights' => $showRehearsalInsights,
+            'force_decline_reason' => isset($_POST['force_decline_reason']) ? 1 : 0
         ]);
         
         if ($result) {

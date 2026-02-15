@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controllers;
 
 use App\Core\Controller;
@@ -18,12 +19,18 @@ class PromiseController extends Controller
      * @var User
      */
     private $userModel;
-    
+
+
     /**
      * @var Rehearsal
      */
     private $rehearsalModel;
-    
+
+    /**
+     * @var \App\Models\Orchestra
+     */
+    private $orchestraModel;
+
     /**
      * Constructor
      */
@@ -32,8 +39,9 @@ class PromiseController extends Controller
         parent::__construct();
         $this->userModel = new User();
         $this->rehearsalModel = new Rehearsal();
+        $this->orchestraModel = new \App\Models\Orchestra();
     }
-    
+
     /**
      * Display user promises (attendance)
      * 
@@ -43,34 +51,38 @@ class PromiseController extends Controller
     public function index($params = [])
     {
         $this->validateOrchestraContext($params);
-        
+
         if ($_SESSION['current_role'] === 'conductor') {
             $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/promises/admin');
             return;
         }
-        
+
         if (isset($_GET['ajax']) && $_GET['pastOnly']) {
             $this->handlePastRehearsalsAjax();
             return;
         }
-        
+
         $showOld = isset($_GET['showOld']);
-        
+
         $userType = $_SESSION['current_type'];
-        
+
         $isSmallGroup = false;
         $userId = $_SESSION['user_id'] ?? null;
         $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
+
+        $orchestra = $this->orchestraModel->findById($_SESSION['current_orchestra_id']);
+        $forceDeclineReason = !empty($orchestra['force_decline_reason']);
+
         if ($userId && $orchestraId) {
             $userOrchestraModel = new \App\Models\UserOrchestra();
             $isSmallGroup = $userOrchestraModel->isUserInSmallGroup((int)$userId, (int)$orchestraId);
         }
         $user = ['is_small_group' => $isSmallGroup];
         $rehearsals = $this->rehearsalModel->getForUser($userType, $_SESSION['current_orchestra_id'], $showOld, $isSmallGroup);
-        
+
         $promises = [];
         $user = $this->userModel->findByUsername($_SESSION['username']);
-        
+
         if ($user) {
             $userPromises = $this->userModel->getPromises($user['id']);
             foreach ($userPromises as $promise) {
@@ -80,20 +92,21 @@ class PromiseController extends Controller
                 ];
             }
         }
-        
+
         $currentPage = 'promises';
         if (strpos($_SERVER['REQUEST_URI'], '/rehearsals') === 0) {
             $currentPage = 'rehearsals';
         }
-        
+
         $this->render('promises/index', [
             'currentPage' => $currentPage,
             'rehearsals' => $rehearsals,
             'promises' => $promises,
-            'showOld' => $showOld
+            'showOld' => $showOld,
+            'forceDeclineReason' => $forceDeclineReason
         ]);
     }
-    
+
     /**
      * Display section leader view of member promises
      * 
@@ -103,16 +116,16 @@ class PromiseController extends Controller
     public function leader($params = [])
     {
         $this->validateOrchestraContext($params);
-        
+
         $this->requireRole('leader');
-        
+
         $showOld = isset($_GET['showOld']);
-        
+
         $userType = $_SESSION['current_type'];
 
         // Clean up section name for database queries
         $sectionName = str_replace(' ', '_', $userType);
-        
+
         // Get small group status from user_orchestras table
         $isSmallGroup = false;
         $userId = $_SESSION['user_id'] ?? null;
@@ -123,72 +136,74 @@ class PromiseController extends Controller
         }
         $user = ['is_small_group' => $isSmallGroup];
         $rehearsals = $this->rehearsalModel->getForUser($sectionName, $_SESSION['current_orchestra_id'], $showOld, $isSmallGroup);
-        
+
         $orchestraModel = new \App\Models\Orchestra();
         $orchestra = $orchestraModel->findById($_SESSION['current_orchestra_id']);
         $leadersCanViewAllEnabled = !empty($orchestra['leaders_can_view_all_sections']);
         // Default to own section view when the feature is enabled
         $viewAllSections = isset($_GET['viewAll']) && $_GET['viewAll'] === '1';
         $leadersCanViewAll = $leadersCanViewAllEnabled && $viewAllSections;
-        
+
 
         $userOrchestraModel = new \App\Models\UserOrchestra();
         if ($leadersCanViewAll) {
             $members = $userOrchestraModel->getOrchestraUsers($_SESSION['current_orchestra_id']);
         } else {
             $members = $userOrchestraModel->getUsersByType($sectionName, $_SESSION['current_orchestra_id']);
-            
+
             if (empty($members)) {
                 $members = $userOrchestraModel->getUsersByType($userType, $_SESSION['current_orchestra_id']);
             }
-            
+
             if (empty($members)) {
                 $groupManager = new \App\Core\GroupManager();
                 $resolvedType = $groupManager->resolveAlias($userType);
                 $allMembers = $userOrchestraModel->getOrchestraUsers($_SESSION['current_orchestra_id']);
-                
+
                 // Filter members that belong to the leader's section/group
-                $members = array_filter($allMembers, function($member) use ($groupManager, $resolvedType, $userType) {
+                $members = array_filter($allMembers, function ($member) use ($groupManager, $resolvedType, $userType) {
                     $memberType = $groupManager->resolveAlias($member['type']);
                     $leaderSectionInfo = $groupManager->getSectionForInstrument($resolvedType);
                     $memberSectionInfo = $groupManager->getSectionForInstrument($memberType);
-                    
+
                     if ($leaderSectionInfo && $memberSectionInfo) {
                         return $leaderSectionInfo === $memberSectionInfo;
                     }
-                    
+
                     // Fallback: check if the member type matches the leader type
                     return $memberType === $resolvedType || $member['type'] === $userType;
                 });
-                
+
                 if (!empty($members)) {
-                    $memberTypes = array_map(function($m) { return $m['type']; }, $members);
+                    $memberTypes = array_map(function ($m) {
+                        return $m['type'];
+                    }, $members);
                 }
             }
         }
-        
+
         if (!is_array($members)) {
             $members = [];
         }
-        
+
         // Exclude conductors from leader view
-        $members = array_values(array_filter($members, function($m) {
+        $members = array_values(array_filter($members, function ($m) {
             $role = isset($m['role']) ? $m['role'] : '';
             return $role !== 'conductor';
         }));
-        
+
         // Initialize GroupManager for dynamic section handling
         $groupManager = new \App\Core\GroupManager();
         $allSections = $groupManager->getAllSections();
-        
+
         $stats = [];
         $membersBySection = [];
-        
+
         // Get leader's section information for data processing
         $leaderResolvedType = $groupManager->resolveAlias($userType);
         $leaderSectionInfo = $groupManager->getSectionForInstrument($leaderResolvedType);
         $leaderSectionId = $leaderSectionInfo ?? $leaderResolvedType;
-        
+
         // For leaders viewing only their section, structure data differently
         foreach ($rehearsals as $rehearsal) {
             $rehearsalId = $rehearsal['id'];
@@ -197,7 +212,7 @@ class PromiseController extends Controller
                 'not_attending' => 0,
                 'no_response' => 0
             ];
-            
+
             // For leaders viewing only their section, structure data differently
             if (!$leadersCanViewAll) {
                 // Only include the leader's section in the data structure
@@ -210,24 +225,24 @@ class PromiseController extends Controller
                     $membersBySection[$rehearsalId][$sectionId] = [];
                 }
             }
-            
+
             // Only process members if we found any
             if (!empty($members)) {
                 // Determine which users apply to this rehearsal
                 $groups = $this->rehearsalModel->getGroupsAsAssoc($rehearsal['id']);
                 $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal);
-                
+
                 foreach ($members as $member) {
                     // Get small-group membership from user_orchestras relation
                     $isSmallGroup = isset($member['is_small_group']) && (int)$member['is_small_group'] === 1;
-                    
+
                     if ($this->rehearsalModel->isUserInRehearsalGroup($member['type'], $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
                         // Use user_id from the user_orchestras relation
                         $userPromises = $this->userModel->getPromises((int)$member['user_id']);
                         $found = false;
                         $status = 'no_response';
                         $note = '';
-                        
+
                         foreach ($userPromises as $promise) {
                             if ($promise['rehearsal_id'] == $rehearsalId) {
                                 $status = ($promise['status'] === 'yes') ? 'attending' : 'not_attending';
@@ -236,29 +251,29 @@ class PromiseController extends Controller
                                 break;
                             }
                         }
-                        
+
                         // For leader view (not viewing all), only count members from leader's section
                         if (!$leadersCanViewAll) {
                             // Verify this member belongs to leader's section
                             $memberResolvedType = $groupManager->resolveAlias($member['type']);
                             $memberSectionInfo = $groupManager->getSectionForInstrument($memberResolvedType);
                             $leaderSectionInfo = $groupManager->getSectionForInstrument($leaderResolvedType);
-                            
+
                             $belongsToLeaderSection = false;
                             if ($leaderSectionInfo && $memberSectionInfo) {
                                 $belongsToLeaderSection = $leaderSectionInfo === $memberSectionInfo;
                             } else {
                                 $belongsToLeaderSection = $memberResolvedType === $leaderResolvedType || $member['type'] === $userType;
                             }
-                            
+
                             if (!$belongsToLeaderSection) {
                                 continue; // Skip members not in leader's section
                             }
                         }
-                        
+
                         // Update statistics (now only counts relevant members)
                         $stats[$rehearsalId][$status]++;
-                        
+
                         // Add user to the appropriate section
                         $memberInfo = [
                             'username' => $member['username'],
@@ -269,9 +284,9 @@ class PromiseController extends Controller
                             'is_small_group' => $isSmallGroup ? \App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED : \App\Core\RehearsalTypeManager::SMALL_GROUP_DISABLED,
                             'id' => $member['user_id'] // Use 'id' not 'user_id' for badge lookup
                         ];
-                        
+
                         $membersBySection[$rehearsalId]['all'][] = $memberInfo;
-                        
+
                         // Add to sections based on view mode
                         if (!$leadersCanViewAll) {
                             // For leader view, add to their specific section
@@ -289,10 +304,10 @@ class PromiseController extends Controller
                 }
             }
         }
-        
+
         // Group promises by rehearsal
         $memberPromises = [];
-        
+
         foreach ($rehearsals as $rehearsal) {
             $rehearsalId = $rehearsal['id'];
             $memberPromises[$rehearsalId] = [
@@ -300,13 +315,13 @@ class PromiseController extends Controller
                 'not_attending' => [],
                 'no_response' => []
             ];
-            
+
             // Only process if we have members
             if (!empty($members)) {
                 foreach ($members as $member) {
                     $promises = $this->userModel->getPromises($member['id']);
                     $found = false;
-                    
+
                     foreach ($promises as $promise) {
                         if ($promise['rehearsal_id'] == $rehearsalId) {
                             $category = ($promise['status'] === 'yes') ? 'attending' : 'not_attending';
@@ -319,7 +334,7 @@ class PromiseController extends Controller
                             break;
                         }
                     }
-                    
+
                     if (!$found) {
                         $memberPromises[$rehearsalId]['no_response'][] = [
                             'username' => $member['username'],
@@ -329,7 +344,7 @@ class PromiseController extends Controller
                 }
             }
         }
-        
+
         // Get all possible section names for better matching (already defined above)
         $leaderSectionNames = [];
         if ($leaderSectionId) {
@@ -340,12 +355,12 @@ class PromiseController extends Controller
             $leaderSectionNames[] = $leaderResolvedType;
             $leaderSectionNames[] = $groupManager->getDisplayName($leaderResolvedType);
         }
-        
+
         if (!empty($rehearsals)) {
             $firstRehearsal = $rehearsals[0];
             $firstRehearsalId = $firstRehearsal['id'];
         }
-        
+
         $this->render('promises/leader', [
             'currentPage' => 'leader',
             'rehearsals' => $rehearsals,
@@ -362,7 +377,7 @@ class PromiseController extends Controller
             'leaderResolvedType' => $leaderResolvedType // Pass resolved type for frontend use
         ]);
     }
-    
+
     /**
      * Update promise
      * 
@@ -375,41 +390,53 @@ class PromiseController extends Controller
             echo json_encode(['success' => false, 'message' => 'Nicht eingeloggt', 'details' => 'Bitte melden Sie sich erneut an.']);
             return;
         }
-        
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'Ungültige Anfrage', 'details' => 'Diese Aktion ist nur über AJAX erlaubt.']);
             return;
         }
-        
+
         $rehearsalId = isset($_POST['id']) ? intval($_POST['id']) : 0;
-        
+
         $statusParam = $_POST['status'] ?? null;
         if ($statusParam === 'reset') {
             $status = 'reset';
         } else {
             $status = (bool)$statusParam;
         }
-        
+
         $note = isset($_POST['note']) ? trim($_POST['note']) : '';
-        
+
         if ($rehearsalId <= 0) {
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'Ungültige Proben-ID', 'details' => 'Die angegebene Proben-ID ist ungültig.']);
             return;
         }
-        
+
         $username = $_SESSION['username'];
         $user = $this->userModel->findByUsername($username);
-        
+
         if (!$user) {
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'Benutzer nicht gefunden', 'details' => 'Ihr Benutzerkonto wurde nicht gefunden. Bitte melden Sie sich erneut an.']);
             return;
         }
-        
+
+        // Check for force decline reason setting
+        if ($status === false && empty($note)) {
+            $orchestraModel = new \App\Models\Orchestra();
+            $orchestra = $orchestraModel->findById($_SESSION['current_orchestra_id']);
+
+            if (!empty($orchestra['force_decline_reason'])) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'Begründung erforderlich', 'details' => 'Bitte geben Sie einen Grund für Ihre Absage an.']);
+                return;
+            }
+        }
+
         $result = $this->userModel->updatePromise($user['id'], $rehearsalId, $status, $note);
-        
+
         header('Content-Type: application/json');
         if ($result === true) {
             echo json_encode(['success' => true]);
@@ -427,7 +454,7 @@ class PromiseController extends Controller
             ]);
         }
     }
-    
+
     /**
      * Add or update note
      * 
@@ -440,38 +467,38 @@ class PromiseController extends Controller
             echo json_encode(['success' => false, 'message' => 'Nicht eingeloggt', 'details' => 'Bitte melden Sie sich erneut an.']);
             return;
         }
-        
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'Ungültige Anfrage', 'details' => 'Diese Aktion ist nur über AJAX erlaubt.']);
             return;
         }
-        
+
         $rehearsalId = isset($_POST['id']) ? intval($_POST['id']) : 0;
         $note = Validator::sanitizeUtf8($_POST['note'] ?? '');
-        
+
         if ($rehearsalId <= 0) {
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'Ungültige Proben-ID', 'details' => 'Die angegebene Proben-ID ist ungültig.']);
             return;
         }
-        
+
         $username = $_SESSION['username'];
         $user = $this->userModel->findByUsername($username);
-        
+
         if (!$user) {
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'Benutzer nicht gefunden', 'details' => 'Ihr Benutzerkonto wurde nicht gefunden. Bitte melden Sie sich erneut an.']);
             return;
         }
-        
+
         $promiseModel = new UserPromise();
         $existingPromise = $promiseModel->findByUserAndRehearsal($user['id'], $rehearsalId);
         $status = $existingPromise && isset($existingPromise['status']) ? ($existingPromise['status'] === 'yes') : false;
-        
+
         // Update promise with note
         $result = $this->userModel->updatePromise($user['id'], $rehearsalId, $status, $note);
-        
+
         header('Content-Type: application/json');
         if ($result === true) {
             echo json_encode(['success' => true]);
@@ -489,7 +516,7 @@ class PromiseController extends Controller
             ]);
         }
     }
-    
+
     /**
      * Display admin view for directors
      * 
@@ -498,31 +525,31 @@ class PromiseController extends Controller
     public function admin($params = [])
     {
         $this->validateOrchestraContext($params);
-        
+
         // Check if user is a conductor
         $this->requireRole('conductor');
-        
+
         $showOld = isset($_GET['showOld']);
-        
+
         // Get all rehearsals
         $rehearsals = $this->rehearsalModel->getUpcoming($_SESSION['current_orchestra_id'], $showOld);
-        
+
         // Get all users in the current orchestra
         $userOrchestraModel = new \App\Models\UserOrchestra();
         $users = $userOrchestraModel->getOrchestraUsers($_SESSION['current_orchestra_id']);
-        
+
         // Get orchestra settings
         $orchestraModel = new \App\Models\Orchestra();
         $orchestra = $orchestraModel->findById($_SESSION['current_orchestra_id']);
         $showRehearsalInsights = !empty($orchestra['show_rehearsal_insights']);
-        
+
         // Initialize GroupManager for dynamic section handling
         $groupManager = new \App\Core\GroupManager();
         $allSections = $groupManager->getAllSections();
-        
+
         $stats = [];
         $membersBySection = [];
-        
+
         foreach ($rehearsals as $rehearsal) {
             $rehearsalId = $rehearsal['id'];
             $stats[$rehearsalId] = [
@@ -530,32 +557,32 @@ class PromiseController extends Controller
                 'not_attending' => 0,
                 'no_response' => 0
             ];
-            
+
             // Initialize sections dynamically from configuration
             $membersBySection[$rehearsalId] = ['all' => []];
             foreach ($allSections as $sectionId => $sectionData) {
                 $membersBySection[$rehearsalId][$sectionId] = [];
             }
-            
+
             // Determine which users apply to this rehearsal
             $groups = $this->rehearsalModel->getGroupsAsAssoc($rehearsal['id']);
             $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal);
-            
+
             foreach ($users as $user) {
                 // Skip conductors - they shouldn't be displayed in the attendance list
                 if ($user['role'] === 'conductor') {
                     continue;
                 }
-                
+
                 $isSmallGroup = isset($user['is_small_group']) && (int)$user['is_small_group'] === 1;
-                
+
                 if ($this->rehearsalModel->isUserInRehearsalGroup($user['type'], $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
                     // Use users.id (available as user_id in relation row)
                     $userPromises = $this->userModel->getPromises((int)$user['user_id']);
                     $found = false;
                     $status = 'no_response';
                     $note = '';
-                    
+
                     foreach ($userPromises as $promise) {
                         if ($promise['rehearsal_id'] == $rehearsalId) {
                             $status = ($promise['status'] === 'yes') ? 'attending' : 'not_attending';
@@ -564,10 +591,10 @@ class PromiseController extends Controller
                             break;
                         }
                     }
-                    
+
                     // Update statistics
                     $stats[$rehearsalId][$status]++;
-                    
+
                     // Add user to the appropriate section
                     $memberInfo = [
                         'username' => $user['username'],
@@ -578,12 +605,12 @@ class PromiseController extends Controller
                         'is_small_group' => $isSmallGroup ? \App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED : \App\Core\RehearsalTypeManager::SMALL_GROUP_DISABLED,
                         'id' => $user['user_id'] // Use 'id' not 'user_id' for badge lookup
                     ];
-                    
+
                     $membersBySection[$rehearsalId]['all'][] = $memberInfo;
-                    
+
                     // Dynamically determine which sections this user belongs to
                     $userType = $groupManager->resolveAlias($user['type']);
-                    
+
                     foreach ($allSections as $sectionId => $sectionData) {
                         if ($groupManager->isUserInGroup($userType, $sectionId)) {
                             $membersBySection[$rehearsalId][$sectionId][] = $memberInfo;
@@ -592,7 +619,7 @@ class PromiseController extends Controller
                 }
             }
         }
-        
+
         $this->render('promises/admin', [
             'currentPage' => 'admin',
             'rehearsals' => $rehearsals,
@@ -615,7 +642,7 @@ class PromiseController extends Controller
             ) : null
         ]);
     }
-    
+
     /**
      * Handle AJAX request for past rehearsals with pagination
      * 
@@ -625,10 +652,10 @@ class PromiseController extends Controller
     {
         $offset = (int)($_GET['offset'] ?? 0);
         $limit = (int)($_GET['limit'] ?? 10);
-        
+
         // Get user info
         $userType = $_SESSION['current_type'];
-        
+
         // Get small group status from user_orchestras table
         $isSmallGroup = false;
         $userId = $_SESSION['user_id'] ?? null;
@@ -638,27 +665,30 @@ class PromiseController extends Controller
             $isSmallGroup = $userOrchestraModel->isUserInSmallGroup((int)$userId, (int)$orchestraId);
         }
         $user = ['is_small_group' => $isSmallGroup];
-        
+
         // Get past rehearsals with limit and offset
         $allPastRehearsals = $this->rehearsalModel->getForUser($userType, $_SESSION['current_orchestra_id'], true, $isSmallGroup);
-        
+
         // Filter only past rehearsals and apply pagination
         $today = date('Y-m-d');
-        $pastRehearsals = array_filter($allPastRehearsals, function($rehearsal) use ($today) {
+        $pastRehearsals = array_filter($allPastRehearsals, function ($rehearsal) use ($today) {
             return $rehearsal['date'] < $today;
         });
-        
+
         // Sort by date descending (newest first)
-        usort($pastRehearsals, function($a, $b) {
+        usort($pastRehearsals, function ($a, $b) {
             return strtotime($b['date']) - strtotime($a['date']);
         });
-        
+
         $totalPastRehearsals = count($pastRehearsals);
         $paginatedRehearsals = array_slice($pastRehearsals, $offset, $limit);
         $hasMore = ($offset + $limit) < $totalPastRehearsals;
-        
-        if ($user) {
-            $userPromises = $this->userModel->getPromises($user['id']);
+
+        $html = '';
+        $promises = [];
+
+        if ($userId) {
+            $userPromises = $this->userModel->getPromises($userId);
             foreach ($userPromises as $promise) {
                 $promises[$promise['rehearsal_id']] = [
                     'attending' => ($promise['status'] === 'yes'),
@@ -666,40 +696,40 @@ class PromiseController extends Controller
                 ];
             }
         }
-        
+
         foreach ($paginatedRehearsals as $rehearsal) {
             $status = 'pending';
             $note = '';
-            
+
             if (isset($promises[$rehearsal['id']])) {
                 $status = $promises[$rehearsal['id']]['attending'] ? 'attending' : 'not_attending';
                 $note = $promises[$rehearsal['id']]['note'];
             }
-            
+
             // Get group information
             $groupArray = $rehearsal['groups'] ?? [];
-            
+
             // Generate smart display text with integrated Kleingruppe handling
             $smartDisplay = new \App\Core\SmartGroupDisplay();
             $groupsText = $smartDisplay->generateDescription(
-                $groupArray, 
-                $rehearsal, 
+                $groupArray,
+                $rehearsal,
                 false // Not admin view
             );
-            
+
             $context = 'promises';
             $options = [
                 'status' => $status,
                 'note' => $note,
                 'showButtons' => true
             ];
-            
+
             // Capture output
             ob_start();
             include __DIR__ . '/../Views/components/rehearsal-card.php';
             $html .= ob_get_clean();
         }
-        
+
         // Return JSON response
         header('Content-Type: application/json');
         echo json_encode([
@@ -711,4 +741,4 @@ class PromiseController extends Controller
         ]);
         exit;
     }
-} 
+}
