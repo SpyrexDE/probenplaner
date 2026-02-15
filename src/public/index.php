@@ -1,4 +1,5 @@
 <?php
+
 /**
  * JSO-Planer
  * Main entry point
@@ -8,7 +9,7 @@
 if (php_sapi_name() === 'cli-server') {
     $requestUri = $_SERVER['REQUEST_URI'];
     $filePath = parse_url($requestUri, PHP_URL_PATH);
-    
+
     // Check if it's a request for a static file
     if (preg_match('/\.(css|js|html|htm|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/i', $filePath)) {
         $staticFile = __DIR__ . $filePath;
@@ -31,7 +32,7 @@ if (php_sapi_name() === 'cli-server') {
                 'ttf' => 'font/ttf',
                 'eot' => 'application/vnd.ms-fontobject'
             ];
-            
+
             $mimeType = $mimeTypes[strtolower($extension)] ?? 'application/octet-stream';
             header('Content-Type: ' . $mimeType);
             readfile($staticFile);
@@ -46,31 +47,41 @@ try {
 } catch (\Exception $e) {
     // Handle critical bootstrap errors
     error_log("Critical bootstrap error: " . $e->getMessage());
-    
+
     // Show user-friendly error page
     http_response_code(500);
-    ?>
+?>
     <!DOCTYPE html>
     <html>
+
     <head>
         <title>Service Temporarily Unavailable</title>
         <style>
-            body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-            .error { color: #d32f2f; }
+            body {
+                font-family: Arial, sans-serif;
+                text-align: center;
+                margin-top: 50px;
+            }
+
+            .error {
+                color: #d32f2f;
+            }
         </style>
     </head>
+
     <body>
         <h1>Service Temporarily Unavailable</h1>
         <p class="error">The application is currently experiencing technical difficulties.</p>
         <p>Please try again later or contact your system administrator.</p>
         <?php if (defined('APP_ENV') && APP_ENV === 'development'): ?>
-        <hr>
-        <h3>Debug Information (Development Mode)</h3>
-        <p><?= htmlspecialchars($e->getMessage()) ?></p>
+            <hr>
+            <h3>Debug Information (Development Mode)</h3>
+            <p><?= htmlspecialchars($e->getMessage()) ?></p>
         <?php endif; ?>
     </body>
+
     </html>
-    <?php
+<?php
     exit;
 }
 
@@ -142,6 +153,7 @@ $router->addRoute('/{orchestra_id}/user/deleteUser', 'UserController', 'deleteUs
 $router->addRoute('/{orchestra_id}/api/test', 'ApiController', 'test');
 $router->addRoute('/{orchestra_id}/api/minimal-stats', 'ApiController', 'minimalStats');
 $router->addRoute('/{orchestra_id}/api/user-stats', 'ApiController', 'getUserStats');
+$router->addRoute('/{orchestra_id}/api/settings/{entity}/{entity_id}', 'SettingsApiController', 'update', 'POST');
 
 // Global orchestra creation routes (admin only)
 $router->addRoute('/orchestras/create', 'OrchestraController', 'create');
@@ -153,30 +165,40 @@ try {
 } catch (\Exception $e) {
     // Handle routing/controller errors
     error_log("Application error: " . $e->getMessage());
-    
+
     // Show user-friendly error page
     http_response_code(500);
-    ?>
+?>
     <!DOCTYPE html>
     <html>
+
     <head>
         <title>Application Error</title>
         <style>
-            body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-            .error { color: #d32f2f; }
+            body {
+                font-family: Arial, sans-serif;
+                text-align: center;
+                margin-top: 50px;
+            }
+
+            .error {
+                color: #d32f2f;
+            }
         </style>
     </head>
+
     <body>
         <h1>Application Error</h1>
         <p class="error">An error occurred while processing your request.</p>
         <p><a href="/">Return to Home</a></p>
         <?php if (defined('APP_ENV') && APP_ENV === 'development'): ?>
-        <hr>
-        <h3>Debug Information (Development Mode)</h3>
-        <p><?= htmlspecialchars($e->getMessage()) ?></p>
-        <pre><?= htmlspecialchars($e->getTraceAsString()) ?></pre>
+            <hr>
+            <h3>Debug Information (Development Mode)</h3>
+            <p><?= htmlspecialchars($e->getMessage()) ?></p>
+            <pre><?= htmlspecialchars($e->getTraceAsString()) ?></pre>
         <?php endif; ?>
     </body>
+
     </html>
-    <?php
-} 
+<?php
+}

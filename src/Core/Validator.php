@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Core;
 
 /**
@@ -18,24 +19,24 @@ class Validator
     {
         $errors = [];
         $missingFields = [];
-        
+
         foreach ($requiredFields as $field) {
             if (empty($data[$field])) {
                 $missingFields[] = self::getFieldDisplayName($field);
             }
         }
-        
+
         if (!empty($missingFields)) {
             $errors[] = 'Bitte füllen Sie alle erforderlichen Felder aus: ' . implode(', ', $missingFields);
         }
-        
+
         return [
             'valid' => empty($errors),
             'errors' => $errors,
             'missing_fields' => $missingFields
         ];
     }
-    
+
     /**
      * Validate password requirements
      * 
@@ -46,12 +47,12 @@ class Validator
     public static function validatePassword(string $password, ?string $confirmPassword = null): array
     {
         $errors = [];
-        
+
         if (empty($password)) {
             $errors[] = "Passwort fehlt";
             return ['valid' => false, 'errors' => $errors];
         }
-        
+
         // Password requirements
         $requirements = [];
         if (strlen($password) < PASSWORD_MIN_LENGTH) {
@@ -69,22 +70,22 @@ class Validator
         if (PASSWORD_REQUIRE_SPECIAL && !preg_match('/[^A-Za-z0-9]/', $password)) {
             $requirements[] = 'mindestens ein Sonderzeichen';
         }
-        
+
         if (!empty($requirements)) {
             $errors[] = "Das Passwort muss " . implode(', ', $requirements) . " enthalten";
         }
-        
+
         // Check if passwords match (if confirmation is provided)
         if ($confirmPassword !== null && $password !== $confirmPassword) {
             $errors[] = "Die Passwörter stimmen nicht überein";
         }
-        
+
         return [
             'valid' => empty($errors),
             'errors' => $errors
         ];
     }
-    
+
     /**
      * Validate username requirements
      * 
@@ -94,19 +95,19 @@ class Validator
     public static function validateUsername(string $username): array
     {
         $errors = [];
-        
+
         if (empty($username)) {
             $errors[] = "Benutzername fehlt";
         } elseif (strlen($username) < USERNAME_MIN_LENGTH || strlen($username) > USERNAME_MAX_LENGTH) {
             $errors[] = "Der Benutzername muss zwischen " . USERNAME_MIN_LENGTH . " und " . USERNAME_MAX_LENGTH . " Zeichen haben";
         }
-        
+
         return [
             'valid' => empty($errors),
             'errors' => $errors
         ];
     }
-    
+
     /**
      * Validate token requirements
      * 
@@ -116,19 +117,19 @@ class Validator
     public static function validateToken(string $token): array
     {
         $errors = [];
-        
+
         if (empty($token)) {
             $errors[] = "Token fehlt";
         } elseif (strlen($token) < TOKEN_MIN_LENGTH) {
             $errors[] = "Token muss mindestens " . TOKEN_MIN_LENGTH . " Zeichen lang sein";
         }
-        
+
         return [
             'valid' => empty($errors),
             'errors' => $errors
         ];
     }
-    
+
     /**
      * Sanitize UTF-8 string
      * 
@@ -140,17 +141,17 @@ class Validator
         if (!is_string($input)) {
             return '';
         }
-        
+
         // Remove null bytes and control characters
         $input = str_replace(chr(0), '', $input);
         $input = preg_replace('/[\x00-\x1F\x7F]/', '', $input);
-        
+
         // Ensure valid UTF-8
         $input = mb_convert_encoding($input, 'UTF-8', 'UTF-8');
-        
+
         return trim($input);
     }
-    
+
     /**
      * Validate date format (Y-m-d)
      * 
@@ -160,7 +161,7 @@ class Validator
     public static function validateDate(string $date): array
     {
         $errors = [];
-        
+
         if (empty($date)) {
             $errors[] = "Datum fehlt";
         } elseif (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
@@ -171,13 +172,13 @@ class Validator
                 $errors[] = "Ungültiges Datum";
             }
         }
-        
+
         return [
             'valid' => empty($errors),
             'errors' => $errors
         ];
     }
-    
+
     /**
      * Validate time format (H:i)
      * 
@@ -188,7 +189,7 @@ class Validator
     public static function validateTime(string $time, string $fieldName = 'Zeit'): array
     {
         $errors = [];
-        
+
         if (empty($time)) {
             $errors[] = "{$fieldName} fehlt";
         } elseif (!preg_match('/^\d{2}:\d{2}$/', $time)) {
@@ -199,13 +200,13 @@ class Validator
                 $errors[] = "Ungültige {$fieldName}";
             }
         }
-        
+
         return [
             'valid' => empty($errors),
             'errors' => $errors
         ];
     }
-    
+
     /**
      * Get display name for field
      * 
@@ -229,10 +230,60 @@ class Validator
             'end' => 'Ende',
             'location' => 'Ort'
         ];
-        
+
         return $displayNames[$fieldName] ?? $fieldName;
     }
-    
+
+    /**
+     * Validate a single field value against its FieldRegistry rules.
+     *
+     * @param string $entity Entity key (orchestra, user, rehearsal)
+     * @param string $fieldName Field name from registry
+     * @param mixed $value Value to validate
+     * @return array{valid: bool, errors: string[]}
+     */
+    public static function validateField(string $entity, string $fieldName, $value): array
+    {
+        $fieldDef = FieldRegistry::getField($entity, $fieldName);
+        if (!$fieldDef) {
+            return ['valid' => false, 'errors' => ["Unbekanntes Feld: {$fieldName}"]];
+        }
+
+        $rules = $fieldDef['validation'] ?? [];
+        $errors = [];
+        $label = $fieldDef['label'] ?? $fieldName;
+
+        foreach ($rules as $rule) {
+            if ($rule === 'required' && (is_null($value) || $value === '')) {
+                $errors[] = "{$label} ist erforderlich";
+                break; // skip further rules if empty
+            }
+
+            if (str_starts_with($rule, 'min:')) {
+                $min = (int) substr($rule, 4);
+                if (is_string($value) && mb_strlen($value) < $min) {
+                    $errors[] = "{$label} muss mindestens {$min} Zeichen lang sein";
+                }
+            }
+
+            if (str_starts_with($rule, 'max:')) {
+                $max = (int) substr($rule, 4);
+                if (is_string($value) && mb_strlen($value) > $max) {
+                    $errors[] = "{$label} darf maximal {$max} Zeichen lang sein";
+                }
+            }
+
+            if (str_starts_with($rule, 'pattern:')) {
+                $pattern = substr($rule, 8);
+                if (is_string($value) && $value !== '' && !preg_match($pattern, $value)) {
+                    $errors[] = "{$label} hat ein ungültiges Format";
+                }
+            }
+        }
+
+        return ['valid' => empty($errors), 'errors' => $errors];
+    }
+
     /**
      * Merge validation results
      * 
@@ -243,14 +294,14 @@ class Validator
     {
         $allValid = true;
         $allErrors = [];
-        
+
         foreach ($results as $result) {
             if (!$result['valid']) {
                 $allValid = false;
             }
             $allErrors = array_merge($allErrors, $result['errors']);
         }
-        
+
         return [
             'valid' => $allValid,
             'errors' => $allErrors
@@ -266,7 +317,7 @@ class Validator
     public static function validateDateTime(string $datetime): array
     {
         $errors = [];
-        
+
         if (empty($datetime)) {
             $errors[] = "Datum und Zeit fehlen";
         } elseif (!preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $datetime) && !preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $datetime)) {
@@ -279,13 +330,13 @@ class Validator
                 // strict check is logically tricky with different separators, so rely on DateTime throwing or checking last errors
                 $lastErrors = \DateTime::getLastErrors();
                 if ($lastErrors['warning_count'] > 0 || $lastErrors['error_count'] > 0) {
-                     $errors[] = "Ungültiges Datum oder Zeit";
+                    $errors[] = "Ungültiges Datum oder Zeit";
                 }
             } catch (\Exception $e) {
                 $errors[] = "Ungültiges Datum oder Zeit";
             }
         }
-        
+
         return [
             'valid' => empty($errors),
             'errors' => $errors

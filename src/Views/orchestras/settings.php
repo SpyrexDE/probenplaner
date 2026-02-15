@@ -1,10 +1,10 @@
 <?php $this->layout('layouts/default', ['title' => 'Orchester bearbeiten', 'currentPage' => $currentPage]) ?>
 
 <?php
-// Component styles
 $renderComponent = false;
 include __DIR__ . '/../components/form-input.php';
 include __DIR__ . '/../components/modern-checkbox.php';
+$renderComponent = true;
 ?>
 
 <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
@@ -17,145 +17,13 @@ include __DIR__ . '/../components/modern-checkbox.php';
             <h1 class="text-3xl font-bold text-gray-900">Orchester-Einstellungen</h1>
         </div>
 
-        <!-- Orchestra Settings Card -->
-        <div class="modern-card mb-6">
-            <div class="modern-card-header">
-                <div class="flex items-center">
-                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                        <?= icon('cog', 'text-blue-600 text-sm') ?>
-                    </div>
-                    <div>
-                        <h2 class="text-xl font-semibold text-gray-900">Orchester bearbeiten</h2>
-                    </div>
-                </div>
-            </div>
-
-            <div class="modern-card-body">
-                <form action="/<?= $_SESSION['current_orchestra_id'] ?>/orchestras/update" method="post" class="space-y-6">
-                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-                    <!-- Basic Information -->
-                    <div class="form-section">
-                        <div class="form-group-modern">
-                            <label for="name" class="form-label-modern">
-                                <?= icon('music', 'form-label-icon') ?>
-                                Orchestername
-                            </label>
-                            <input type="text" class="form-input-modern" id="name" name="name"
-                                placeholder="Name deines Orchesters"
-                                value="<?php echo htmlspecialchars($orchestra['name']); ?>" required>
-                        </div>
-                    </div>
-
-                    <!-- Access & Security -->
-                    <div class="form-section">
-                        <div class="form-section-header">
-                            <h3 class="form-section-title">Zugang & Sicherheit</h3>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="form-group-modern">
-                                <label for="token" class="form-label-modern" style="display: flex; align-items: center;">
-                                    <?= icon('key', 'form-label-icon') ?>
-                                    Orchester-Token
-                                    <i id="toggleTokenBtn" class="fas fa-eye" onclick="toggleTokenVisibility()"
-                                        title="Token anzeigen/verbergen"
-                                        style="margin-left: 8px; font-size: 14px; color: var(--color-text-secondary); cursor: pointer; transition: color var(--transition-base); padding: 2px; border-radius: var(--radius-base);"></i>
-                                </label>
-                                <input type="password" class="form-input-modern" id="token" name="token"
-                                    placeholder="Eindeutiger Token"
-                                    value="<?php echo htmlspecialchars($orchestra['token']); ?>" required>
-                                <div class="form-help-text">Für Mitglieder-Registrierung</div>
-                            </div>
-
-                            <div class="form-group-modern">
-                                <label for="leader_password" class="form-label-modern" style="display: flex; align-items: center;">
-                                    <?= icon('shield', 'form-label-icon') ?>
-                                    Stimmführer-Passwort
-                                    <i id="togglePasswordBtn" class="fas fa-eye" onclick="togglePasswordVisibility()"
-                                        title="Passwort anzeigen/verbergen"
-                                        style="margin-left: 8px; font-size: 14px; color: var(--color-text-secondary); cursor: pointer; transition: color var(--transition-base); padding: 2px; border-radius: var(--radius-base);"></i>
-                                </label>
-                                <input type="password" class="form-input-modern" id="leader_password" name="leader_password"
-                                    placeholder="Passwort für Stimmführer"
-                                    value="<?php echo htmlspecialchars($orchestra['leader_pw']); ?>" required>
-                                <div class="form-help-text">Für Stimmführer-Berechtigungen</div>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <!-- Permissions -->
-                    <div class="form-section">
-                        <div class="form-section-header">
-                            <h3 class="form-section-title">Berechtigungen</h3>
-                        </div>
-
-                        <div class="modern-checkbox-container">
-                            <div class="flex items-start">
-                                <input type="checkbox" id="leaders_can_view_all_sections" name="leaders_can_view_all_sections"
-                                    class="modern-checkbox"
-                                    <?php echo !empty($orchestra['leaders_can_view_all_sections']) ? 'checked' : ''; ?>>
-                                <div class="ml-3 flex-1">
-                                    <label for="leaders_can_view_all_sections" class="modern-checkbox-label">
-                                        Stimmführer dürfen alle Register sehen
-                                    </label>
-                                    <p class="modern-checkbox-description">
-                                        Stimmführer können alle Register in der Rückmeldungsübersicht einsehen. Das Proben-Insights-Feature ist davon ausgenommen.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="modern-checkbox-container">
-                            <div class="flex items-start">
-                                <input type="checkbox" id="force_decline_reason" name="force_decline_reason"
-                                    class="modern-checkbox"
-                                    <?php echo !empty($orchestra['force_decline_reason']) ? 'checked' : ''; ?>>
-                                <div class="ml-3 flex-1">
-                                    <label for="force_decline_reason" class="modern-checkbox-label">
-                                        Begründung bei Absage erzwingen
-                                    </label>
-                                    <p class="modern-checkbox-description">
-                                        Wenn aktiviert, müssen Mitglieder einen Grund angeben, wenn sie eine Probe absagen.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Features -->
-                    <div class="form-section">
-                        <div class="form-section-header">
-                            <h3 class="form-section-title">Features</h3>
-                        </div>
-
-                        <div class="modern-checkbox-container">
-                            <div class="flex items-start">
-                                <input type="checkbox" id="show_rehearsal_insights" name="show_rehearsal_insights"
-                                    class="modern-checkbox"
-                                    <?php echo !empty($orchestra['show_rehearsal_insights']) ? 'checked' : ''; ?>>
-                                <div class="ml-3 flex-1">
-                                    <label for="show_rehearsal_insights" class="modern-checkbox-label">
-                                        Proben-Insights anzeigen (Beta)
-                                    </label>
-                                    <p class="modern-checkbox-description">
-                                        Aktiviert erweiterte Analyse-Features für Proben-Rückmeldungen. Hilfreich für effektivere Proben-Planung.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Actions -->
-                    <div class="form-actions">
-                        <button type="submit" class="btn-modern btn-primary">
-                            <?= icon('save', 'btn-icon') ?>
-                            Änderungen speichern
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+        <?php
+        // Re-render settings
+        $settingsEntity   = 'orchestra';
+        $settingsEntityId = $orchestra['id'];
+        $settingsData     = $orchestra;
+        include __DIR__ . '/../components/settings-renderer.php';
+        ?>
 
         <!-- Danger Zone -->
         <div class="modern-card modern-card-danger">
@@ -189,144 +57,9 @@ include __DIR__ . '/../components/modern-checkbox.php';
 </div>
 
 <script>
-    $(document).ready(function() {
-        // Form validation
-        $('form').on('submit', function(e) {
-            const orchestraName = $('#name').val().trim();
-            const token = $('#token').val().trim();
-            const leaderPassword = $('#leader_password').val().trim();
-
-            // Required fields check
-            if (!orchestraName) {
-                e.preventDefault();
-                window.notifyError('Bitte gib einen Orchesternamen ein.');
-                $('#name').focus();
-                return false;
-            }
-
-            if (!token) {
-                e.preventDefault();
-                window.notifyError('Bitte gib einen Orchester-Token ein.');
-                $('#token').focus();
-                return false;
-            }
-
-            if (!leaderPassword) {
-                e.preventDefault();
-                window.notifyError('Bitte gib ein Stimmführer-Passwort ein.');
-                $('#leader_password').focus();
-                return false;
-            }
-
-            // Token format check
-            if (!/^[a-zA-Z0-9_-]+$/.test(token)) {
-                e.preventDefault();
-                window.notifyError('Der Token darf nur Buchstaben, Zahlen, Bindestriche und Unterstriche enthalten.');
-                $('#token').focus();
-                return false;
-            }
-
-            // Password strength check
-            if (leaderPassword.length < 4) {
-                e.preventDefault();
-                window.notifyError('Das Stimmführer-Passwort muss mindestens 4 Zeichen lang sein.');
-                $('#leader_password').focus();
-                return false;
-            }
-
-            // Loading state
-            const submitBtn = $(this).find('button[type="submit"]');
-            const originalText = submitBtn.html();
-            submitBtn.html('<div class="inline-flex items-center"><div class="loading-spinner mr-2"></div>Speichere...</div>');
-            submitBtn.prop('disabled', true);
-
-
-            setTimeout(() => {
-                submitBtn.html(originalText);
-                submitBtn.prop('disabled', false);
-            }, 5000);
-
-            return true;
-        });
-
-        // Input interactions
-        $('.form-input-modern').on('focus', function() {
-            $(this).closest('.form-group-modern').addClass('focused');
-        }).on('blur', function() {
-            $(this).closest('.form-group-modern').removeClass('focused');
-            if ($(this).val()) {
-                $(this).closest('.form-group-modern').addClass('filled');
-            } else {
-                $(this).closest('.form-group-modern').removeClass('filled');
-            }
-        });
-
-        // Filled state initialization
-        $('.form-input-modern').each(function() {
-            if ($(this).val()) {
-                $(this).closest('.form-group-modern').addClass('filled');
-            }
-        });
-
-        // Token validation
-        $('#token').on('input', function() {
-            const token = $(this).val();
-            const isValid = /^[a-zA-Z0-9_-]*$/.test(token);
-
-            if (token && !isValid) {
-                $(this).addClass('error');
-                $(this).siblings('.form-help-text').text('Der Token darf nur Buchstaben, Zahlen, Bindestriche und Unterstriche enthalten');
-            } else {
-                $(this).removeClass('error');
-                $(this).siblings('.form-help-text').text('Wird bei der Registrierung neuer Mitglieder benötigt');
-            }
-        });
-
-        // Success feedback
-        if (window.location.search.includes('saved=1')) {
-            window.notifySuccess('Orchester-Einstellungen wurden erfolgreich gespeichert!');
-        }
-    });
-
-    // Toggle password visibility
-    function togglePasswordVisibility() {
-        const passwordField = $('#leader_password');
-        const toggleBtn = $('#togglePasswordBtn');
-        const isPassword = passwordField.attr('type') === 'password';
-
-        if (isPassword) {
-            passwordField.attr('type', 'text');
-            toggleBtn.removeClass('fa-eye').addClass('fa-eye-slash');
-            toggleBtn.attr('title', 'Passwort verbergen');
-        } else {
-            passwordField.attr('type', 'password');
-            toggleBtn.removeClass('fa-eye-slash').addClass('fa-eye');
-            toggleBtn.attr('title', 'Passwort anzeigen');
-        }
-    }
-
-    // Toggle token visibility
-    function toggleTokenVisibility() {
-        const tokenField = $('#token');
-        const toggleBtn = $('#toggleTokenBtn');
-        const isPassword = tokenField.attr('type') === 'password';
-
-        if (isPassword) {
-            tokenField.attr('type', 'text');
-            toggleBtn.removeClass('fa-eye').addClass('fa-eye-slash');
-            toggleBtn.attr('title', 'Token verbergen');
-        } else {
-            tokenField.attr('type', 'password');
-            toggleBtn.removeClass('fa-eye-slash').addClass('fa-eye');
-            toggleBtn.attr('title', 'Token anzeigen');
-        }
-    }
-
-    // Delete confirmation logic
     function confirmDelete(event) {
         event.preventDefault();
 
-        // Initial confirmation
         Swal.fire({
             title: 'Orchester wirklich löschen?',
             html: `
@@ -356,14 +89,8 @@ include __DIR__ . '/../components/modern-checkbox.php';
             cancelButtonColor: '#6b7280',
             focusCancel: true,
             reverseButtons: true,
-            customClass: {
-                popup: 'swal-custom-popup',
-                confirmButton: 'swal-confirm-delete',
-                cancelButton: 'swal-cancel'
-            }
         }).then((result) => {
             if (result.isConfirmed) {
-                // Secondary confirmation (Name input)
                 Swal.fire({
                     title: 'Letzte Bestätigung',
                     html: `
@@ -397,25 +124,15 @@ include __DIR__ . '/../components/modern-checkbox.php';
                         }
                         return inputValue;
                     },
-                    customClass: {
-                        popup: 'swal-custom-popup',
-                        confirmButton: 'swal-confirm-delete',
-                        cancelButton: 'swal-cancel'
-                    }
                 }).then((finalResult) => {
                     if (finalResult.isConfirmed) {
-
                         Swal.fire({
                             title: 'Orchester wird gelöscht...',
                             html: 'Alle Daten werden entfernt. Dies kann einen Moment dauern...',
                             allowOutsideClick: false,
                             showConfirmButton: false,
-                            willOpen: () => {
-                                Swal.showLoading();
-                            }
+                            willOpen: () => Swal.showLoading()
                         });
-
-                        // Execute deletion
                         setTimeout(() => {
                             window.location.href = '/<?= $_SESSION['current_orchestra_id'] ?>/orchestras/delete-confirm';
                         }, 1000);

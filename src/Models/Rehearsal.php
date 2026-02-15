@@ -102,7 +102,7 @@ class Rehearsal extends Model
      * @param array $groups Group names
      * @return bool Success or failure
      */
-    public function updateGroups(int $rehearsalId, ?string $groups)
+    public function updateGroups(int $rehearsalId, ?array $groups)
     {
         // Start transaction
         $this->db->getConnection()->begin_transaction();
