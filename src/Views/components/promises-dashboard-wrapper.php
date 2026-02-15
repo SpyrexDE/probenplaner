@@ -262,6 +262,22 @@ foreach ($rehearsals ?? [] as $rehearsal) {
         </div>
     <?php endif; ?>
 
+    <!-- Toggle for Old Rehearsals (Admin only) -->
+    <?php if (($isAdmin ?? false)): ?>
+        <div style="margin-bottom: 20px; text-align: right;">
+            <div style="display: inline-flex; align-items: center; gap: 12px; padding: 12px 16px; background: white; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <span style="font-size: 14px; font-weight: 500; color: #666;">Vergangene Proben anzeigen</span>
+                <label style="position: relative; display: inline-block; width: 50px; height: 24px;">
+                    <input type="checkbox" id="showOldToggle"
+                        <?php echo $showOld ? 'checked' : ''; ?>
+                        style="opacity: 0; width: 0; height: 0; position: absolute;" />
+                    <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; border-radius: 24px; transition: .3s;"></span>
+                    <span class="toggle-dot" style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: .3s;"></span>
+                </label>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <!-- Rehearsals Container -->
     <div class="rehearsals-container">
         <?php if (empty($rehearsals)): ?>
@@ -269,7 +285,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
             $title = 'Keine Termine gefunden';
             $message = 'Es gibt aktuell keine geplanten Proben.';
 
-            if (!$showOld) {
+            if (!$showOld && ($hasPastRehearsals ?? false)) {
                 $actionHref = '?showOld=1';
                 $actionLabel = 'Vergangene Termine anzeigen';
             }
@@ -1023,6 +1039,33 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                     });
                 }
             }
+        });
+    }
+
+    // Toggle for old rehearsals (Admin only)
+    const showOldToggle = document.getElementById('showOldToggle');
+    if (showOldToggle) {
+        const slider = showOldToggle.nextElementSibling;
+        const dot = slider.nextElementSibling;
+
+        // Set initial state
+        if (showOldToggle.checked) {
+            slider.style.backgroundColor = '#007bff';
+            dot.style.transform = 'translateX(26px)';
+        } else {
+            slider.style.backgroundColor = '#ccc';
+            dot.style.transform = 'translateX(0px)';
+        }
+
+        // Handle toggle change
+        showOldToggle.addEventListener('change', function() {
+            const currentUrl = new URL(window.location.href);
+            if (this.checked) {
+                currentUrl.searchParams.set('showOld', '1');
+            } else {
+                currentUrl.searchParams.delete('showOld');
+            }
+            window.location.href = currentUrl.toString();
         });
     }
 </script>

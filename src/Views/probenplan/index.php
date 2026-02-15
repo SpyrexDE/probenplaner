@@ -70,7 +70,7 @@ include __DIR__ . '/../components/table.php';
             $title = 'Keine Proben gefunden';
             $message = 'Aktuell sind keine öffentlichen Proben eingetragen.';
 
-            if (!$showOld) {
+            if (!$showOld && ($hasPastRehearsals ?? false)) {
                 $buttonParams = $personalized ? '&personalized=1' : '';
                 $actionHref = '?showOld=1' . $buttonParams;
                 $actionLabel = 'Vergangene Proben anzeigen';

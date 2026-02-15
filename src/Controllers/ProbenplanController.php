@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controllers;
 
 use App\Core\Controller;
@@ -15,7 +16,7 @@ class ProbenplanController extends Controller
      * @var Rehearsal
      */
     private $rehearsalModel;
-    
+
     /**
      * Constructor
      */
@@ -24,7 +25,7 @@ class ProbenplanController extends Controller
         parent::__construct();
         $this->rehearsalModel = new Rehearsal();
     }
-    
+
     /**
      * Display rehearsal plan
      * 
@@ -35,18 +36,18 @@ class ProbenplanController extends Controller
     {
         // Validate orchestra context and set session variables
         $this->validateOrchestraContext($params);
-        
+
         // Get personalized view parameter
         $personalized = isset($_GET['personalized']) && $_GET['personalized'] === '1';
-        
+
         // Get show old parameter
         $showOld = isset($_GET['showOld']) && $_GET['showOld'] === '1';
-        
+
         // Get rehearsals
         if ($personalized) {
             // Get only rehearsals relevant to the user
             $userType = $_SESSION['current_type'] ?? '';
-            
+
             // Get small group status from user_orchestras table
             $isSmallGroup = false;
             $userId = $_SESSION['user_id'] ?? null;
@@ -55,7 +56,7 @@ class ProbenplanController extends Controller
                 $userOrchestraModel = new \App\Models\UserOrchestra();
                 $isSmallGroup = $userOrchestraModel->isUserInSmallGroup((int)$userId, (int)$orchestraId);
             }
-            
+
             $rehearsals = $this->rehearsalModel->getRelevantForUser(
                 $_SESSION['current_orchestra_id'],
                 $userType,
@@ -66,7 +67,7 @@ class ProbenplanController extends Controller
             // Get all rehearsals
             $rehearsals = $this->rehearsalModel->getUpcoming($_SESSION['current_orchestra_id'], $showOld);
         }
-        
+
         // Get day abbreviations for each rehearsal
         $days = [];
         foreach ($rehearsals as $rehearsal) {
@@ -74,10 +75,12 @@ class ProbenplanController extends Controller
             $date = new \DateTime($rehearsal['date']);
             $days[] = Utilities::getGermanDayAbbreviation($date);
         }
-        
+
         // Get user role
         $userRole = $_SESSION['current_role'] ?? '';
-        
+
+        $hasPastRehearsals = $this->rehearsalModel->hasPastRehearsals($_SESSION['current_orchestra_id']);
+
         // Render view
         $this->render('probenplan/index', [
             'currentPage' => 'probenplan',
@@ -85,7 +88,8 @@ class ProbenplanController extends Controller
             'days' => $days,
             'personalized' => $personalized,
             'showOld' => $showOld,
-            'userRole' => $userRole
+            'userRole' => $userRole,
+            'hasPastRehearsals' => $hasPastRehearsals
         ]);
     }
-} 
+}

@@ -98,12 +98,17 @@ class PromiseController extends Controller
             $currentPage = 'rehearsals';
         }
 
+        $hasPastRehearsals = $this->rehearsalModel->hasPastRehearsals($_SESSION['current_orchestra_id']);
+
         $this->render('promises/index', [
             'currentPage' => $currentPage,
+            'user' => $user,
             'rehearsals' => $rehearsals,
             'promises' => $promises,
             'showOld' => $showOld,
-            'forceDeclineReason' => $forceDeclineReason
+            'orchestra' => $orchestra,
+            'forceDeclineReason' => $forceDeclineReason,
+            'hasPastRehearsals' => $hasPastRehearsals
         ]);
     }
 
@@ -360,6 +365,8 @@ class PromiseController extends Controller
             $firstRehearsal = $rehearsals[0];
             $firstRehearsalId = $firstRehearsal['id'];
         }
+
+        $hasPastRehearsals = $this->rehearsalModel->hasPastRehearsals($_SESSION['current_orchestra_id']);
 
         $this->render('promises/leader', [
             'currentPage' => 'leader',
@@ -622,6 +629,8 @@ class PromiseController extends Controller
             }
         }
 
+        $hasPastRehearsals = $this->rehearsalModel->hasPastRehearsals($_SESSION['current_orchestra_id']);
+
         $this->render('promises/admin', [
             'currentPage' => 'admin',
             'rehearsals' => $rehearsals,
@@ -629,6 +638,7 @@ class PromiseController extends Controller
             'membersBySection' => $membersBySection,
             'showOld' => $showOld,
             'showRehearsalInsights' => $showRehearsalInsights,
+            'hasPastRehearsals' => $hasPastRehearsals,
             'sidebarStats' => !empty($rehearsals) ? array_merge(
                 $stats[$rehearsals[0]['id']] ?? ['attending' => 0, 'not_attending' => 0, 'no_response' => 0],
                 [

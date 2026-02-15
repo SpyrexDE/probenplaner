@@ -47,11 +47,13 @@ class RehearsalController extends Controller
         $showOld = isset($_GET['showOld']);
 
         $rehearsals = $this->rehearsalModel->getUpcoming($_SESSION['current_orchestra_id'], $showOld);
+        $hasPastRehearsals = $this->rehearsalModel->hasPastRehearsals($_SESSION['current_orchestra_id']);
 
         $this->render('rehearsals/index', [
             'currentPage' => 'rehearsals',
             'rehearsals' => $rehearsals,
-            'showOld' => $showOld
+            'showOld' => $showOld,
+            'hasPastRehearsals' => $hasPastRehearsals
         ]);
     }
 

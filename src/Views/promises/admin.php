@@ -3,8 +3,8 @@
 
 <?php include __DIR__ . '/../components/promises-resources.php'; ?>
 
-<?php 
+<?php
 // Dashboard context
 $isAdmin = true;
-include __DIR__ . '/../components/promises-dashboard-wrapper.php'; 
+include __DIR__ . '/../components/promises-dashboard-wrapper.php';
 ?>

@@ -4,7 +4,7 @@
 
     <?php if (empty($rehearsals)): ?>
         <?php
-        if (!$showOld) {
+        if (!$showOld && ($hasPastRehearsals ?? false)) {
             $title = 'Keine aktuellen Termine';
             $message = 'Es stehen keine kommenden Proben an.';
             $actionHref = '?showOld=1';

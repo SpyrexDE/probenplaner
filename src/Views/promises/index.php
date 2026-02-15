@@ -50,7 +50,7 @@ function sortGroups($groups)
         $title = 'Keine Proben gefunden';
         $message = 'Aktuell sind keine Proben für dich eingetragen.';
 
-        if (!$showOld) {
+        if (!$showOld && ($hasPastRehearsals ?? false)) {
             $actionHref = '?showOld=1';
             $actionLabel = 'Vergangene Proben anzeigen';
         }
