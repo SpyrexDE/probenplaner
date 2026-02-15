@@ -272,7 +272,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                         <?php echo $showOld ? 'checked' : ''; ?>
                         style="opacity: 0; width: 0; height: 0; position: absolute;" />
                     <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; border-radius: 24px; transition: .3s;"></span>
-                    <span class="toggle-dot" style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: .3s;"></span>
+                    <span class="toggle-dot" style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: .3s; cursor: pointer;"></span>
                 </label>
             </div>
         </div>

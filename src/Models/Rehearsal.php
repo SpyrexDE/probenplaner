@@ -31,7 +31,7 @@ class Rehearsal extends Model
         $sql = "SELECT * FROM {$this->table} WHERE orchestra_id = {$orchestraId}";
 
         if (!$includeOld) {
-            $sql .= " AND start >= NOW()";
+            $sql .= " AND end >= NOW()";
         }
 
         $sql .= " ORDER BY start ASC";
@@ -157,7 +157,7 @@ class Rehearsal extends Model
         $sql = "SELECT * FROM {$this->table} WHERE orchestra_id = {$orchestraId} ";
 
         if (!$includeOld) {
-            $sql .= "AND start >= NOW() ";
+            $sql .= "AND end >= NOW() ";
         }
 
         $sql .= "ORDER BY start ASC";
@@ -436,7 +436,7 @@ class Rehearsal extends Model
         $sql = "SELECT * FROM {$this->table} WHERE orchestra_id = {$orchestraId} ";
 
         if (!$includeOld) {
-            $sql .= "AND start >= NOW() ";
+            $sql .= "AND end >= NOW() ";
         }
 
         $sql .= "ORDER BY start ASC";
