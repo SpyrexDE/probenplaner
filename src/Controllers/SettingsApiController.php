@@ -63,13 +63,14 @@ class SettingsApiController extends Controller
         $userRelationFields = ['group_type', 'small_group', 'group_leader'];
         foreach ($fieldsToUpdate as $fieldName => $value) {
             // Fields stored in separate tables — handled specially
-            if ($entity === 'rehearsal' && in_array($fieldName, ['groups', 'schedule_items'])) {
+            if ($entity === 'rehearsal' && in_array($fieldName, ['groups', 'schedule_items', 'infos'])) {
                 if (!$this->hasPermission('conductor', $context)) {
                     $this->json(['success' => false, 'error' => 'Keine Berechtigung'], 403);
                     return;
                 }
                 continue;
             }
+
             if ($entity === 'user' && in_array($fieldName, $userRelationFields)) {
                 continue;
             }
@@ -96,7 +97,8 @@ class SettingsApiController extends Controller
         // Validate all fields
         $allErrors = [];
         foreach ($fieldsToUpdate as $fieldName => $value) {
-            if ($entity === 'rehearsal' && in_array($fieldName, ['groups', 'schedule_items'])) continue;
+            if ($entity === 'rehearsal' && in_array($fieldName, ['groups', 'schedule_items', 'infos'])) continue;
+
             if ($entity === 'user' && in_array($fieldName, $userRelationFields)) continue;
             $result = Validator::validateField($entity, $fieldName, $value);
             if (!$result['valid']) {
@@ -258,6 +260,14 @@ class SettingsApiController extends Controller
                     unset($data['schedule_items']);
                     $model->saveScheduleItems($entityId, $items);
                 }
+
+                // Handle infos (stored in rehearsal_infos table)
+                if (isset($data['infos'])) {
+                    $items = json_decode($data['infos'], true) ?: [];
+                    unset($data['infos']);
+                    $model->saveInfos($entityId, $items);
+                }
+
 
                 if (empty($data)) return true;
                 $data['updated_at'] = date('Y-m-d H:i:s');

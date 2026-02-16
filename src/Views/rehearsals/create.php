@@ -76,10 +76,16 @@ include __DIR__ . '/../components/checkbox.php';
             </div>
 
             <?php
+            // Re-use autoSave and apiUrl variables for consistency, though create doesn't autosave
             $autoSave = false;
             $apiUrl = '';
+            include __DIR__ . '/../components/infobox-editor.php';
+            ?>
+
+            <?php
             include __DIR__ . '/../components/schedule-editor.php';
             ?>
+
 
             <div class="form-actions">
                 <button type="submit" class="btn-primary">Termin erstellen</button>

@@ -339,6 +339,15 @@ if (!empty($status)) {
                         <div class="rehearsal-section-badge" style="font-size: 10px; font-weight: var(--font-weight-semibold); text-transform: uppercase; letter-spacing: 0.3px; padding: 2px 6px; border-radius: var(--radius-sm); display: inline-block; width: fit-content; margin-right: var(--space-1);">
                             <?= $groupsText ?>
                         </div>
+                        <?php if (!empty($rehearsal['infos'])): ?>
+                            <?php foreach ($rehearsal['infos'] as $info): ?>
+                                <span style="font-size: 11px; padding: 2px 6px; border-radius: var(--radius-sm); display: inline-flex; align-items: center; justify-content: center; width: fit-content; margin-right: var(--space-1); background-color: transparent; border: 1px solid var(--color-border); color: var(--color-text-primary);">
+                                    <?= htmlspecialchars($info['emoji']) ?>
+                                </span>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+
+
                         <?php if ($showLocation): ?>
                             <span style="font-size: 10px; font-weight: var(--font-weight-semibold); text-transform: uppercase; letter-spacing: 0.3px; padding: 2px 6px; border-radius: var(--radius-sm); display: inline-block; width: fit-content; margin-right: var(--space-1); color: var(--color-text-secondary);">
                                 <?= htmlspecialchars($rehearsal['location']) ?>

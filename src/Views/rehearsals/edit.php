@@ -83,10 +83,13 @@ $backUrl = '/' . $orchestraId . '/rehearsals';
             </div>
 
             <?php
+            // API URL is same for both as they hit the same settings endpoint structure
             $autoSave = true;
             $apiUrl = '/' . $orchestraId . '/api/settings/rehearsal/' . $rehearsal['id'];
+            include __DIR__ . '/../components/infobox-editor.php';
             include __DIR__ . '/../components/schedule-editor.php';
             ?>
+
 
             <a href="<?= $backUrl ?>" class="back-link">
                 <i class="fas fa-arrow-left"></i>

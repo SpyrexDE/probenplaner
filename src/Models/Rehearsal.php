@@ -53,6 +53,7 @@ class Rehearsal extends Model
             $row['end_formatted'] = $row['end_time'];
             $row['groups'] = $this->getGroups($row['id']);
             $row['schedule_items'] = $this->getScheduleItems($row['id']);
+            $row['infos'] = $this->getInfos($row['id']);
             $rehearsals[] = $row;
         }
 
@@ -180,6 +181,7 @@ class Rehearsal extends Model
                     $row['end_formatted'] = $row['end_time'];
                     $row['groups'] = $this->getGroups($row['id']);
                     $row['schedule_items'] = $this->getScheduleItems($row['id']);
+                    $row['infos'] = $this->getInfos($row['id']);
                     $rehearsals[] = $row;
                 }
             }
@@ -411,7 +413,9 @@ class Rehearsal extends Model
         if ($rehearsal) {
             $rehearsal['groups'] = $this->getGroups($id);
             $rehearsal['schedule_items'] = $this->getScheduleItems($id);
+            $rehearsal['infos'] = $this->getInfos($id);
             $rehearsal['date'] = date('Y-m-d', strtotime($rehearsal['start']));
+
             $rehearsal['start_time'] = date('H:i', strtotime($rehearsal['start']));
             $rehearsal['end_time'] = date('H:i', strtotime($rehearsal['end']));
             $rehearsal['date_formatted'] = \App\Core\Utilities::formatDate($rehearsal['date']);
@@ -461,6 +465,7 @@ class Rehearsal extends Model
                     $row['end_formatted'] = $row['end_time'];
                     $row['groups'] = $this->getGroups($row['id']);
                     $row['schedule_items'] = $this->getScheduleItems($row['id']);
+                    $row['infos'] = $this->getInfos($row['id']);
                     $rehearsals[] = $row;
                 }
             }
@@ -524,6 +529,62 @@ class Rehearsal extends Model
         } catch (\Exception $e) {
             $this->db->getConnection()->rollback();
             ErrorHandler::handleDatabaseError($e, 'Schedule items save');
+            return false;
+        }
+    }
+    /**
+     * @param int $rehearsalId
+     * @return array Info items ordered by sort_order
+     */
+    public function getInfos(int $rehearsalId): array
+    {
+        $sql = "SELECT id, emoji, text, sort_order FROM rehearsal_infos WHERE rehearsal_id = ? ORDER BY sort_order ASC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param('i', $rehearsalId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $items = [];
+        while ($row = $result->fetch_assoc()) {
+            $items[] = $row;
+        }
+        return $items;
+    }
+
+    /**
+     * Replace all info items for a rehearsal (delete + reinsert).
+     *
+     * @param int $rehearsalId
+     * @param array $items Array of ['emoji' => '...', 'text' => '...']
+     * @return bool
+     */
+    public function saveInfos(int $rehearsalId, array $items): bool
+    {
+        $this->db->getConnection()->begin_transaction();
+
+        try {
+            $stmt = $this->db->prepare("DELETE FROM rehearsal_infos WHERE rehearsal_id = ?");
+            $stmt->bind_param('i', $rehearsalId);
+            $stmt->execute();
+
+            $sql = "INSERT INTO rehearsal_infos (rehearsal_id, emoji, text, sort_order) VALUES (?, ?, ?, ?)";
+            $stmt = $this->db->prepare($sql);
+
+            foreach ($items as $i => $item) {
+                $emoji = $item['emoji'] ?? '❗';
+                $text = $item['text'] ?? '';
+                if (empty($text)) continue;
+
+                $order = $i;
+                $stmt->bind_param('issi', $rehearsalId, $emoji, $text, $order);
+                $stmt->execute();
+            }
+
+            $this->db->getConnection()->commit();
+            return true;
+        } catch (\Exception $e) {
+            $this->db->getConnection()->rollback();
+            ErrorHandler::handleDatabaseError($e, 'Infos save');
             return false;
         }
     }

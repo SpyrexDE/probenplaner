@@ -276,6 +276,15 @@ class FieldRegistry
                 'save'       => 'auto',
                 'permission' => 'conductor',
             ],
+            [
+                'name'       => 'infos',
+                'type'       => 'json',
+                'label'      => 'Infos',
+                'group'      => 'details',
+                'save'       => 'manual',
+                'permission' => 'conductor',
+            ],
+
         ];
     }
 }

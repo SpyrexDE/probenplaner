@@ -133,6 +133,14 @@ class RehearsalController extends Controller
                         $this->rehearsalModel->saveScheduleItems($result, $scheduleItems);
                     }
 
+                    // Save infos if provided
+                    $infosJson = $_POST['infos'] ?? '';
+                    if (!empty($infosJson)) {
+                        $infosItems = json_decode($infosJson, true) ?: [];
+                        $this->rehearsalModel->saveInfos($result, $infosItems);
+                    }
+
+
                     $this->setFlash('success', 'Probe wurde erfolgreich erstellt.');
                     $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
                     return;
@@ -323,7 +331,8 @@ class RehearsalController extends Controller
                     'rehearsal_type' => $rehearsalType,
                     'groups' => $formData['groups'],
                     'is_small_group' => $rehearsal['is_small_group'] ?? false,
-                    'schedule_items' => $rehearsal['schedule_items'] ?? []
+                    'schedule_items' => $rehearsal['schedule_items'] ?? [],
+                    'infos' => $rehearsal['infos'] ?? []
                 ]
             ]);
         }

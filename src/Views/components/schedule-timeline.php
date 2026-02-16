@@ -203,6 +203,13 @@ $isPast = ($rehearsalDate < $today);
 <!-- Timeline -->
 <div class="schedule-timeline" id="<?= $timelineId ?>" data-date="<?= $rehearsalDate ?>">
     <div class="schedule-timeline-inner">
+        <!-- Info Box -->
+        <?php
+        $infos = $rehearsal['infos'] ?? [];
+        include __DIR__ . '/rehearsal-infobox.php';
+        ?>
+
+
         <?php foreach ($scheduleItems as $index => $item):
             $itemTime = substr($item['time'], 0, 5);
             $isLast = ($index === count($scheduleItems) - 1);
