@@ -63,7 +63,7 @@ class SettingsApiController extends Controller
         $userRelationFields = ['group_type', 'small_group', 'group_leader'];
         foreach ($fieldsToUpdate as $fieldName => $value) {
             // Fields stored in separate tables — handled specially
-            if ($entity === 'rehearsal' && $fieldName === 'groups') {
+            if ($entity === 'rehearsal' && in_array($fieldName, ['groups', 'schedule_items'])) {
                 if (!$this->hasPermission('conductor', $context)) {
                     $this->json(['success' => false, 'error' => 'Keine Berechtigung'], 403);
                     return;
@@ -96,7 +96,7 @@ class SettingsApiController extends Controller
         // Validate all fields
         $allErrors = [];
         foreach ($fieldsToUpdate as $fieldName => $value) {
-            if ($entity === 'rehearsal' && $fieldName === 'groups') continue;
+            if ($entity === 'rehearsal' && in_array($fieldName, ['groups', 'schedule_items'])) continue;
             if ($entity === 'user' && in_array($fieldName, $userRelationFields)) continue;
             $result = Validator::validateField($entity, $fieldName, $value);
             if (!$result['valid']) {
@@ -250,6 +250,13 @@ class SettingsApiController extends Controller
                     $groups = json_decode($data['groups'], true) ?: [];
                     unset($data['groups']);
                     $model->updateGroups($entityId, $groups);
+                }
+
+                // Handle schedule items (stored in rehearsal_schedule_items table)
+                if (isset($data['schedule_items'])) {
+                    $items = json_decode($data['schedule_items'], true) ?: [];
+                    unset($data['schedule_items']);
+                    $model->saveScheduleItems($entityId, $items);
                 }
 
                 if (empty($data)) return true;

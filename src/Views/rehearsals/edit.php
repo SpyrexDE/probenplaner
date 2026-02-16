@@ -82,6 +82,12 @@ $backUrl = '/' . $orchestraId . '/rehearsals';
                 ?>
             </div>
 
+            <?php
+            $autoSave = true;
+            $apiUrl = '/' . $orchestraId . '/api/settings/rehearsal/' . $rehearsal['id'];
+            include __DIR__ . '/../components/schedule-editor.php';
+            ?>
+
             <a href="<?= $backUrl ?>" class="back-link">
                 <i class="fas fa-arrow-left"></i>
                 Zurück

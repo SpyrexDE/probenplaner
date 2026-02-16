@@ -34,6 +34,7 @@
         border-color: var(--color-border);
         border-left-color: var(--color-gray-300);
         box-shadow: var(--shadow-sm);
+        position: relative;
     }
 
 
@@ -272,7 +273,13 @@ if (!empty($status)) {
 ?>
 
 <!-- REHEARSAL CARD -->
-<div class="<?= $cardClasses ?> border border-l-4 my-2"
+<div class="<?= $cardClasses ?> border border-l-4 my-2 cursor-pointer transition-all duration-200"
+    onclick="(function(e){
+        if(e.target.closest('button') || e.target.closest('a')) return;
+        const tl = document.getElementById('schedule-timeline-<?= $rehearsalId ?>');
+        const tg = document.getElementById('schedule-toggle-<?= $rehearsalId ?>');
+        if(tl && tg) { tl.classList.toggle('open'); tg.classList.toggle('expanded'); }
+    })(event)"
     style="border-radius: var(--radius-lg); padding: var(--space-3) var(--space-4); <?= !empty($rehearsal['color']) ? 'border-left-color: ' . $rehearsal['color'] . ';' : '' ?>">
 
     <!-- Card Content: Flexbox layout with Tailwind -->
@@ -402,5 +409,8 @@ if (!empty($status)) {
     <?php if ($context === 'promises'): ?>
         <input type="hidden" id="note<?= $rehearsalId ?>" value="<?= htmlspecialchars($note) ?>">
     <?php endif; ?>
+
+    <!-- Schedule Timeline (expandable) -->
+    <?php include __DIR__ . '/schedule-timeline.php'; ?>
 
 </div>

@@ -52,6 +52,7 @@ class Rehearsal extends Model
             $row['start_formatted'] = $row['start_time'];
             $row['end_formatted'] = $row['end_time'];
             $row['groups'] = $this->getGroups($row['id']);
+            $row['schedule_items'] = $this->getScheduleItems($row['id']);
             $rehearsals[] = $row;
         }
 
@@ -178,6 +179,7 @@ class Rehearsal extends Model
                     $row['start_formatted'] = $row['start_time'];
                     $row['end_formatted'] = $row['end_time'];
                     $row['groups'] = $this->getGroups($row['id']);
+                    $row['schedule_items'] = $this->getScheduleItems($row['id']);
                     $rehearsals[] = $row;
                 }
             }
@@ -408,6 +410,7 @@ class Rehearsal extends Model
 
         if ($rehearsal) {
             $rehearsal['groups'] = $this->getGroups($id);
+            $rehearsal['schedule_items'] = $this->getScheduleItems($id);
             $rehearsal['date'] = date('Y-m-d', strtotime($rehearsal['start']));
             $rehearsal['start_time'] = date('H:i', strtotime($rehearsal['start']));
             $rehearsal['end_time'] = date('H:i', strtotime($rehearsal['end']));
@@ -457,11 +460,71 @@ class Rehearsal extends Model
                     $row['start_formatted'] = $row['start_time'];
                     $row['end_formatted'] = $row['end_time'];
                     $row['groups'] = $this->getGroups($row['id']);
+                    $row['schedule_items'] = $this->getScheduleItems($row['id']);
                     $rehearsals[] = $row;
                 }
             }
         }
 
         return $rehearsals;
+    }
+
+    /**
+     * @param int $rehearsalId
+     * @return array Schedule items ordered by sort_order
+     */
+    public function getScheduleItems(int $rehearsalId): array
+    {
+        $sql = "SELECT id, time, label, sort_order FROM rehearsal_schedule_items WHERE rehearsal_id = ? ORDER BY sort_order ASC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param('i', $rehearsalId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $items = [];
+        while ($row = $result->fetch_assoc()) {
+            $row['time_formatted'] = substr($row['time'], 0, 5);
+            $items[] = $row;
+        }
+        return $items;
+    }
+
+    /**
+     * Replace all schedule items for a rehearsal (delete + reinsert).
+     *
+     * @param int $rehearsalId
+     * @param array $items Array of ['time' => 'HH:MM', 'label' => '...']
+     * @return bool
+     */
+    public function saveScheduleItems(int $rehearsalId, array $items): bool
+    {
+        $this->db->getConnection()->begin_transaction();
+
+        try {
+            $stmt = $this->db->prepare("DELETE FROM rehearsal_schedule_items WHERE rehearsal_id = ?");
+            $stmt->bind_param('i', $rehearsalId);
+            $stmt->execute();
+
+            $sql = "INSERT INTO rehearsal_schedule_items (rehearsal_id, time, label, sort_order) VALUES (?, ?, ?, ?)";
+            $stmt = $this->db->prepare($sql);
+
+            foreach ($items as $i => $item) {
+                $time = $item['time'] ?? '00:00';
+                $label = $item['label'] ?? '';
+                if (empty($label)) continue;
+                // Normalise "HH:MM" to "HH:MM:00"
+                if (strlen($time) === 5) $time .= ':00';
+                $order = $i;
+                $stmt->bind_param('issi', $rehearsalId, $time, $label, $order);
+                $stmt->execute();
+            }
+
+            $this->db->getConnection()->commit();
+            return true;
+        } catch (\Exception $e) {
+            $this->db->getConnection()->rollback();
+            ErrorHandler::handleDatabaseError($e, 'Schedule items save');
+            return false;
+        }
     }
 }
