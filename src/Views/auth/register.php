@@ -1,4 +1,4 @@
-<?php $this->layout('layouts/default', ['title' => 'Registrierung', 'currentPage' => $currentPage]) ?>
+<?php $this->layout('layouts/default', ['title' => 'Registrierung', 'currentPage' => $currentPage, 'isFluid' => true]) ?>
 
 <?php
 $renderComponent = false;

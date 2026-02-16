@@ -225,7 +225,11 @@ $hideNavbar = $isAuthPage;
             </div>
             <!-- Main Content -->
             <div id="page-content-wrapper" class="page-content main-content-with-sidebar">
-                <div id="contentPage" class="page-content-inner">
+                <?php
+                $isFluid = $isFluid ?? false;
+                $contentClasses = $isFluid ? 'w-full h-full p-0' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6';
+                ?>
+                <div id="contentPage" class="page-content-inner <?= $contentClasses ?>">
                     <?= $content ?? '' ?>
                 </div>
             </div>

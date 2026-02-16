@@ -1,3 +1,4 @@
+<?php $this->layout('layouts/default', ['title' => 'Mein Profil', 'currentPage' => $currentPage, 'isFluid' => true]) ?>
 <?php
 $renderComponent = false;
 include __DIR__ . '/../components/form-input.php';
@@ -43,6 +44,7 @@ include __DIR__ . '/../components/theme-selector.php';
                             <label for="theme_compact_<?= $themeKey ?>" class="theme-selector-compact">
                                 <div class="theme-preview-compact">
                                     <div class="theme-colors-compact">
+
                                         <?php foreach ($theme['preview_colors'] as $colorName => $colorValue): ?>
                                             <div class="theme-dot" style="background-color: <?= htmlspecialchars($colorValue) ?>" title="<?= ucfirst($colorName) ?>"></div>
                                         <?php endforeach; ?>

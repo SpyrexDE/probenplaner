@@ -4,7 +4,7 @@ $renderComponent = false;
 include __DIR__ . '/../components/table.php';
 ?>
 
-<div class="max-w-7xl mx-auto px-4 mt-4">
+<div class="">
     <div class="w-full">
         <!-- Print Header -->
         <div class="print-header print-only">

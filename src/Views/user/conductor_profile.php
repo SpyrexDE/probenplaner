@@ -1,3 +1,4 @@
+<?php $this->layout('layouts/default', ['title' => 'Profil (Dirigent*in)', 'currentPage' => $currentPage, 'isFluid' => true]) ?>
 <?php
 $renderComponent = false;
 include __DIR__ . '/../components/form-input.php';
@@ -12,6 +13,7 @@ include __DIR__ . '/../components/theme-selector.php';
             <div class="inline-flex items-center justify-center w-16 h-16 bg-primary-500 rounded-full mb-4 shadow-lg">
                 <?= icon('user-tie', 'text-white text-2xl') ?>
             </div>
+
             <h1 class="text-3xl font-bold text-gray-900">Profil (Dirigent*in)</h1>
         </div>
 

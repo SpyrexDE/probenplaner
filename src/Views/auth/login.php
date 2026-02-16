@@ -1,4 +1,4 @@
-<?php $this->layout('layouts/default', ['title' => 'Anmelden', 'currentPage' => $currentPage]) ?>
+<?php $this->layout('layouts/default', ['title' => 'Anmelden', 'currentPage' => $currentPage, 'isFluid' => true]) ?>
 
 <?php
 // Login configuration
