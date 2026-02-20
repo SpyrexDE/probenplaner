@@ -134,7 +134,7 @@ $renderComponent = true;
                             willOpen: () => Swal.showLoading()
                         });
                         setTimeout(() => {
-                            window.location.href = '/<?= $_SESSION['current_orchestra_id'] ?>/orchestras/delete-confirm';
+                            window.location.href = '/<?= ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '') ?>/orchestras/delete-confirm';
                         }, 1000);
                     }
                 });

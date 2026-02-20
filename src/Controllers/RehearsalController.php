@@ -37,7 +37,7 @@ class RehearsalController extends Controller
     {
         $this->validateOrchestraContext($params);
 
-        $this->requireRole('conductor');
+        $this->requirePermission('can_manage_rehearsals');
 
         if (isset($_GET['ajax']) && $_GET['pastOnly']) {
             $this->handlePastRehearsalsAjax();
@@ -67,7 +67,7 @@ class RehearsalController extends Controller
     {
         $this->validateOrchestraContext($params);
 
-        $this->requireRole('conductor');
+        $this->requirePermission('can_manage_rehearsals');
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Sanitize form data
@@ -142,7 +142,7 @@ class RehearsalController extends Controller
 
 
                     $this->setFlash('success', 'Probe wurde erfolgreich erstellt.');
-                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
+                    $this->redirect($this->orchestraUrl('/rehearsals'));
                     return;
                 } else {
                     $errorMessage = is_array($result) && isset($result['message'])
@@ -203,13 +203,13 @@ class RehearsalController extends Controller
     {
         $this->validateOrchestraContext($params);
 
-        $this->requireRole('conductor');
+        $this->requirePermission('can_manage_rehearsals');
 
         // Get rehearsal ID from route parameters
         $rehearsalId = isset($params['id']) ? intval($params['id']) : 0;
 
         if ($rehearsalId <= 0) {
-            $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
+            $this->redirect($this->orchestraUrl('/rehearsals'));
             return;
         }
 
@@ -217,7 +217,7 @@ class RehearsalController extends Controller
 
         if (!$rehearsal) {
             $this->setFlash('error', 'Probe nicht gefunden');
-            $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
+            $this->redirect($this->orchestraUrl('/rehearsals'));
             return;
         }
 
@@ -277,7 +277,7 @@ class RehearsalController extends Controller
 
                 if ($result === true) {
                     $this->setFlash('success', 'Probe wurde erfolgreich aktualisiert.');
-                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
+                    $this->redirect($this->orchestraUrl('/rehearsals'));
                     return;
                 } else {
                     $errorMessage = is_array($result) && isset($result['message'])
@@ -350,7 +350,7 @@ class RehearsalController extends Controller
         try {
             $this->validateOrchestraContext($params);
             // Check if user is a conductor
-            $this->requireRole('conductor');
+            $this->requirePermission('can_manage_rehearsals');
         } catch (\Exception $e) {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo json_encode(['success' => false, 'message' => 'Nicht berechtigt']);
@@ -373,7 +373,7 @@ class RehearsalController extends Controller
                 echo json_encode(['success' => false, 'message' => 'Ungültige Proben-ID']);
                 exit;
             }
-            $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
+            $this->redirect($this->orchestraUrl('/rehearsals'));
             return;
         }
 
@@ -398,7 +398,7 @@ class RehearsalController extends Controller
                     ]);
                     exit;
                 }
-                $this->setFlash('error', 'Probe konnte nicht gelöscht werden');
+                $this->setFlash('error', 'Probe konnte nicht gelöscht werden', 'Database delete returned false');
             }
         } catch (\Exception $e) {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -410,10 +410,10 @@ class RehearsalController extends Controller
                 ]);
                 exit;
             }
-            $this->setFlash('error', 'Fehler beim Löschen: ' . $e->getMessage());
+            $this->setFlash('error', 'Fehler beim Löschen: ' . $e->getMessage(), $e->getMessage() . "\n" . $e->getTraceAsString());
         }
 
-        $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/rehearsals');
+        $this->redirect($this->orchestraUrl('/rehearsals'));
     }
 
     /**

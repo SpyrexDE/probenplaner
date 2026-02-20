@@ -21,7 +21,7 @@ include __DIR__ . '/../components/checkbox.php';
 
 
     <div class="form-container">
-        <form method="post" action="/<?= $_SESSION['current_orchestra_id'] ?>/rehearsals/create" class="form">
+        <form method="post" action="/<?= ($_SESSION['current_org_slug'] ?? '') . '/' . $_SESSION['current_orchestra_slug'] ?>/rehearsals/create" class="form">
             <div class="form-group">
                 <?php
                 $start_value = $formData['start'] ?? '';
@@ -89,7 +89,7 @@ include __DIR__ . '/../components/checkbox.php';
 
             <div class="form-actions">
                 <button type="submit" class="btn-primary">Termin erstellen</button>
-                <a href="/<?= $_SESSION['current_orchestra_id'] ?>/rehearsals" class="btn-outline">Abbrechen</a>
+                <a href="/<?= ($_SESSION['current_org_slug'] ?? '') . '/' . $_SESSION['current_orchestra_slug'] ?>/rehearsals" class="btn-outline">Abbrechen</a>
             </div>
         </form>
     </div>

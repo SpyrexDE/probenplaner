@@ -12,7 +12,7 @@
         } else {
             $title = 'Keine Termine gefunden';
             $message = 'Lege einen neuen Termin an, um hier Proben zu sehen.';
-            $actionHref = '/' . $_SESSION['current_orchestra_id'] . '/rehearsals/create';
+            $actionHref = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . $_SESSION['current_orchestra_slug'] . '/rehearsals/create';
             $actionLabel = 'Termin hinzufügen';
         }
 
@@ -72,7 +72,7 @@
     <?php
     // Add Button
     $icon = 'plus';
-    $href = '/' . $_SESSION['current_orchestra_id'] . '/rehearsals/create';
+    $href = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . $_SESSION['current_orchestra_slug'] . '/rehearsals/create';
     $title = 'Neue Probe hinzufügen';
     include __DIR__ . '/../components/fab.php';
     ?>
@@ -94,8 +94,8 @@
                 confirmButtonText: 'Löschen'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    <?php $orchestraId = $_SESSION['current_orchestra_id'] ?? 1; ?>
-                    fetch('/<?= $orchestraId ?>/rehearsals/delete/' + id, {
+                    <?php $orchestraBase = ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? ''); ?>
+                    fetch('/<?= $orchestraBase ?>/rehearsals/delete/' + id, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -180,7 +180,7 @@
         if (event.target.closest('.edit-btn')) {
             const editBtn = event.target.closest('.edit-btn');
             const buttonId = editBtn.id;
-            window.location.href = '/<?= $_SESSION['current_orchestra_id'] ?>/rehearsals/edit/' + buttonId;
+            window.location.href = '/<?= ($_SESSION['current_org_slug'] ?? '') . '/' . $_SESSION['current_orchestra_slug'] ?>/rehearsals/edit/' + buttonId;
         }
     });
 </script>

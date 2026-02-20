@@ -12,17 +12,35 @@ if ($currentUserTheme === null || !\App\Core\ThemeManager::themeExists($currentU
     $currentUserTheme = \App\Core\ThemeManager::getDefaultTheme();
 }
 
-$authPages = ['login', 'register', 'create_orchestra', 'orchestra_select', 'join_orchestra', 'select_section', 'admin_verify'];
+$authPages = [
+    'login',
+    'register',
+    'onboarding',
+    'orchestra_select',
+    'invite_landing',
+    'invite_section_picker',
+    'invite_redeem',
+    'invite_invalid',
+    'join_orchestra',
+    'select_section',
+    'create_orchestra',
+];
+$standalonePanels = ['admin_panel', 'orga_panel'];
+$noSidebarPages = ['admin_verify'];
 $isAuthPage = isset($currentPage) && in_array($currentPage, $authPages);
-$currentPageHidesSidebar = $isAuthPage;
+$isStandalone = isset($currentPage) && in_array($currentPage, $standalonePanels);
+$currentPageHidesSidebar = $isAuthPage || $isStandalone || in_array($currentPage ?? '', $noSidebarPages);
 $showSidebar = isset($_SESSION['username']) && isset($_SESSION['current_orchestra_id']) && !$currentPageHidesSidebar;
-$hideNavbar = $isAuthPage;
+$hideNavbar = $isAuthPage || $isStandalone;
 ?>
 <html lang="de" class="w-full h-full" data-current-theme="<?= htmlspecialchars($currentUserTheme) ?>">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <?php if (isset($_SESSION['username'])): ?>
+        <meta name="csrf-token" content="<?= htmlspecialchars(\App\Core\CSRF::getToken()) ?>">
+    <?php endif; ?>
     <title>Probenplaner</title>
 
     <!-- PWA Meta Tags -->
@@ -60,6 +78,7 @@ $hideNavbar = $isAuthPage;
     echo \App\Core\ThemeManager::generateThemeCssLink($currentUserTheme);
     ?>
     <link rel="stylesheet" href="/assets/css/components.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="/assets/css/utilities.css?v=<?= time() ?>">
     <link rel="stylesheet" href="/assets/css/focus-removal.css">
 
     <!-- Vanilla CSS Components -->
@@ -311,7 +330,9 @@ $hideNavbar = $isAuthPage;
 
         <div class="guest-layout<?= $hideNavbar ? ' guest-auth' : '' ?>">
             <div class="page-content-inner flex-1">
-                <?php if ($hideNavbar):
+                <?php if ($isStandalone): ?>
+                    <?= $content ?? '' ?>
+                <?php elseif ($isAuthPage):
                     $authScreenContent = $content ?? '';
                     include __DIR__ . '/../components/auth-screen.php';
                 else: ?>

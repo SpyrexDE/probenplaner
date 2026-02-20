@@ -4,8 +4,7 @@
 $renderComponent = false;
 include __DIR__ . '/../components/form-input.php';
 include __DIR__ . '/../components/user-badge.php';
-
-ob_start();
+$renderComponent = true;
 ?>
 
 <style>
@@ -70,15 +69,15 @@ ob_start();
         color: white;
     }
 
-    .join-button-outline {
-        background: transparent;
-        color: var(--color-primary);
-        border: 1px solid var(--color-primary);
+    .join-button-secondary {
+        background: var(--color-bg-tertiary, #f5f5f5);
+        color: var(--color-text-primary);
+        font-weight: 500;
     }
 
-    .join-button-outline:hover {
-        background: var(--color-primary);
-        color: white;
+    .join-button-secondary:hover {
+        background: var(--color-gray-200, #e5e5e5);
+        color: var(--color-text-primary);
     }
 
     .orchestra-card .user-badge {
@@ -94,6 +93,8 @@ ob_start();
     }
 </style>
 
+<?php ob_start(); ?>
+
 <div class="login-form">
     <?php if (!empty($orchestras)): ?>
         <div style="margin-bottom: 1.5rem;">
@@ -108,14 +109,18 @@ ob_start();
                                 <h3><?= htmlspecialchars($orchestra['orchestra_name']) ?></h3>
                                 <div class="orchestra-meta">
                                     <?php
-                                    $displayInfo = \App\Core\Utilities::getUserDisplayInfo($orchestra['type'], $orchestra['role']);
+                                    $orchPerms = [
+                                        'can_manage_ensemble' => !empty($orchestra['can_manage_ensemble']),
+                                        'can_view_own_section_stats' => !empty($orchestra['can_view_own_section_stats']),
+                                    ];
+                                    $displayInfo = \App\Core\Utilities::getUserDisplayInfo($orchestra['type'], $orchPerms);
                                     ?>
                                     <?php if ($displayInfo['type']): ?>
                                         <span><?= htmlspecialchars($displayInfo['type']) ?></span>
                                     <?php endif; ?>
                                     <span><?= htmlspecialchars($displayInfo['role']) ?></span>
                                     <?php
-                                    $userData = ['role' => $orchestra['role'], 'is_small_group' => false];
+                                    $userData = ['permissions' => $orchPerms, 'is_small_group' => false];
                                     echo \App\Core\Utilities::generateUserBadges($userData);
                                     ?>
                                 </div>
@@ -129,42 +134,34 @@ ob_start();
             <?php endforeach; ?>
         </div>
 
-        <a href="/orchestras/join" class="join-button join-button-outline">
-            <i class="fas fa-plus" style="margin-right: 0.5rem;"></i>
-            Beitreten
+        <a href="/orchestras/redeem" class="join-button join-button-secondary">
+            <i class="fas fa-link" style="margin-right: 0.5rem;"></i>
+            Einladungslink einlösen
         </a>
     <?php else: ?>
         <div style="margin-bottom: 1.5rem;">
             <div class="orchestra-card" style="cursor: default; border-style: dashed; border-color: var(--color-gray-300);">
                 <div style="text-align: center; color: var(--color-text-secondary);">
                     <div style="font-weight: 500; margin-bottom: 0.25rem;">
-                        Keinem Orchester beigetreten
+                        Keinem Ensemble beigetreten
                     </div>
                     <div style="font-size: var(--font-size-sm); color: var(--color-gray-500);">
-                        Treten Sie einem Orchester bei, um zu beginnen
+                        Löse einen Einladungslink ein, um beizutreten
                     </div>
                 </div>
             </div>
         </div>
 
-        <a href="/orchestras/join" class="join-button join-button-outline">
-            <i class="fas fa-plus" style="margin-right: 0.5rem;"></i>
-            Beitreten
+        <a href="/orchestras/redeem" class="join-button join-button-secondary">
+            <i class="fas fa-link" style="margin-right: 0.5rem;"></i>
+            Einladungslink einlösen
         </a>
     <?php endif; ?>
-
-    <?php
-    $links = [
-        ['url' => '/orchestras/create', 'text' => 'Neues Orchester erstellen', 'secondary' => true]
-    ];
-    include __DIR__ . '/../components/auth-footer.php';
-    ?>
 </div>
 
 <?php
 $content = ob_get_clean();
 
-// Render logo separately to pass as headerContent
 ob_start();
 include __DIR__ . '/../components/logo.php';
 $headerContent = ob_get_clean();

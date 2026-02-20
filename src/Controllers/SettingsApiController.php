@@ -60,11 +60,11 @@ class SettingsApiController extends Controller
         }
 
         // Permission check per field
-        $userRelationFields = ['group_type', 'small_group', 'group_leader'];
+        $userRelationFields = ['group_type', 'small_group'];
         foreach ($fieldsToUpdate as $fieldName => $value) {
             // Fields stored in separate tables — handled specially
             if ($entity === 'rehearsal' && in_array($fieldName, ['groups', 'schedule_items', 'infos'])) {
-                if (!$this->hasPermission('conductor', $context)) {
+                if (empty($_SESSION['current_permissions']['can_manage_rehearsals'])) {
                     $this->json(['success' => false, 'error' => 'Keine Berechtigung'], 403);
                     return;
                 }
@@ -82,7 +82,13 @@ class SettingsApiController extends Controller
             }
 
             $required = $fieldDef['permission'] ?? 'member';
-            if (!$this->hasPermission($required, $context)) {
+            $permMap = [
+                'conductor' => 'can_manage_rehearsals',
+                'leader' => 'can_view_own_section_stats',
+                'member' => null,
+            ];
+            $perm = $permMap[$required] ?? null;
+            if ($perm && empty($_SESSION['current_permissions'][$perm])) {
                 $this->json(['success' => false, 'error' => 'Keine Berechtigung'], 403);
                 return;
             }
@@ -180,12 +186,6 @@ class SettingsApiController extends Controller
         return array_intersect_key($input, $allowed);
     }
 
-    private function hasPermission(string $required, array $context): bool
-    {
-        $role = $_SESSION['current_role'] ?? 'member';
-        $hierarchy = ['member' => 0, 'leader' => 1, 'conductor' => 2];
-        return ($hierarchy[$role] ?? 0) >= ($hierarchy[$required] ?? 0);
-    }
 
     /** Verify entity belongs to current orchestra / user. */
     private function canAccessEntity(string $entity, int $entityId, array $context): bool
@@ -231,13 +231,6 @@ class SettingsApiController extends Controller
                     $val = filter_var($data['small_group'], FILTER_VALIDATE_BOOLEAN);
                     $userOrchestraModel->updateUserSmallGroupStatus($entityId, $orchestraId, $val);
                     unset($data['small_group']);
-                }
-                if (array_key_exists('group_leader', $data)) {
-                    $val = filter_var($data['group_leader'], FILTER_VALIDATE_BOOLEAN);
-                    $newRole = $val ? 'leader' : 'member';
-                    $userOrchestraModel->updateUserRole($entityId, $orchestraId, $newRole);
-                    $_SESSION['current_role'] = $newRole;
-                    unset($data['group_leader']);
                 }
 
                 if (empty($data)) return true;

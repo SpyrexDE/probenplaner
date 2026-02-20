@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use App\Core\Model;
@@ -17,7 +18,7 @@ class User extends Model
      * @var string
      */
     protected $table = 'users';
-    
+
     /**
      * Find user by username (orchestra-independent)
      * 
@@ -29,19 +30,19 @@ class User extends Model
         $sql = "SELECT * FROM {$this->table} WHERE username = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param('s', $username);
-        
+
         $stmt->execute();
         $result = $stmt->get_result();
-        
+
         $user = null;
         if ($result && $result instanceof \mysqli_result) {
             $user = $result->fetch_assoc();
         }
-        
+
         $stmt->close();
         return $user;
     }
-    
+
     /**
      * Get user orchestras (delegated to UserOrchestra model)
      * 
@@ -53,7 +54,7 @@ class User extends Model
         $userOrchestraModel = new UserOrchestra();
         return $userOrchestraModel->getUserOrchestras($userId);
     }
-    
+
     /**
      * Authenticate user (orchestra-independent)
      * 
@@ -64,14 +65,14 @@ class User extends Model
     public function authenticate(string $username, string $password): ?array
     {
         $user = $this->findByUsername($username);
-        
+
         if ($user && password_verify($password, $user['password'])) {
             return $user;
         }
-        
+
         return null;
     }
-    
+
     /**
      * Register a new user (orchestra-independent)
      * 
@@ -87,18 +88,18 @@ class User extends Model
             error_log("Registration failed: " . implode(', ', $validation['errors']));
             return ['error' => true, 'message' => implode(', ', $validation['errors'])];
         }
-        
+
         // Hash password
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        
+
         // Insert new user
         $userData = [
             'username' => $username,
             'password' => $hashedPassword
         ];
-        
+
         error_log("Registering user: " . json_encode($userData));
-        
+
         // Insert and return the result
         try {
             // Get table schema first
@@ -125,7 +126,7 @@ class User extends Model
 
             // Check for old schema columns
             $oldColumns = [];
-            foreach (['orchestra_id', 'type', 'role'] as $oldCol) {
+            foreach (['orchestra_id', 'type'] as $oldCol) {
                 if (isset($tableSchema[$oldCol])) {
                     $oldColumns[] = $oldCol;
                 }
@@ -134,7 +135,7 @@ class User extends Model
             if (!empty($missingColumns)) {
                 return [
                     'error' => true,
-                    'message' => 'Datenbank-Schema-Fehler', 
+                    'message' => 'Datenbank-Schema-Fehler',
                     'details' => 'Fehlende Spalten: ' . implode(', ', $missingColumns)
                 ];
             }
@@ -142,35 +143,35 @@ class User extends Model
             if (!empty($oldColumns)) {
                 return [
                     'error' => true,
-                    'message' => 'Altes Datenbankschema erkannt', 
+                    'message' => 'Altes Datenbankschema erkannt',
                     'details' => 'Die Migration wurde nicht vollständig angewendet. Alte Spalten gefunden: ' . implode(', ', $oldColumns)
                 ];
             }
 
             $result = $this->insert($userData);
-            
+
             if ($result === false) {
                 $mysqli = $this->db->getConnection();
                 $errorCode = $mysqli ? $mysqli->errno : 0;
                 $errorMsg = $mysqli ? $mysqli->error : 'Unbekannter Datenbankfehler';
-                
+
                 return [
                     'error' => true,
-                    'message' => 'Datenbankfehler #' . $errorCode, 
+                    'message' => 'Datenbankfehler #' . $errorCode,
                     'details' => $errorMsg
                 ];
             }
-            
+
             return $result;
         } catch (\Exception $e) {
             return [
                 'error' => true,
-                'message' => 'Bei der Registrierung ist ein Fehler aufgetreten.', 
+                'message' => 'Bei der Registrierung ist ein Fehler aufgetreten.',
                 'details' => $e->getMessage()
             ];
         }
     }
-    
+
     /**
      * Update user profile
      * 
@@ -183,20 +184,20 @@ class User extends Model
         try {
             // Validate data before updating
             $validationErrors = [];
-            
-                // Validate username if it's being updated
+
+            // Validate username if it's being updated
             if (isset($data['username'])) {
                 $user = $this->findById($id);
                 if (!$user) {
                     return ['error' => true, 'message' => 'Benutzer nicht gefunden.'];
                 }
-                
+
                 $validation = $this->validateUserInput($data['username'], null, $id);
                 if (!$validation['valid']) {
                     $validationErrors = array_merge($validationErrors, $validation['errors']);
                 }
             }
-            
+
             // Validate password if it's being updated
             if (isset($data['password'])) {
                 // Use consistent validation through Validator class
@@ -204,27 +205,27 @@ class User extends Model
                 if (!$passwordValidation['valid']) {
                     $validationErrors = array_merge($validationErrors, $passwordValidation['errors']);
                 }
-                
+
                 // Hash the password before updating
                 $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
             }
-            
+
             // Return errors if validation failed
             if (!empty($validationErrors)) {
                 error_log("User profile update failed - Validation errors: " . implode(', ', $validationErrors));
                 return ['error' => true, 'message' => implode(', ', $validationErrors)];
             }
-            
+
             // Debug log
             error_log("Updating user profile. ID: $id, Data: " . json_encode($data));
-            
+
             $result = $this->update($id, $data);
-            
+
             if ($result === false) {
                 $error = $this->db->getLastError();
                 $error = is_string($error) ? $error : '';
                 error_log("User profile update failed - Database error: " . $error);
-                
+
                 // Check for specific error types
                 if (strpos($error, '1062') !== false) { // Duplicate entry
                     return ['error' => true, 'message' => 'Der Benutzername ist bereits vergeben.', 'details' => 'Ein Benutzer mit diesem Namen existiert bereits.'];
@@ -234,13 +235,13 @@ class User extends Model
                     return ['error' => true, 'message' => 'Bei der Aktualisierung ist ein Fehler aufgetreten.', 'details' => 'Technischer Fehler: ' . $error];
                 }
             }
-            
+
             return $result;
         } catch (\Exception $e) {
             return ErrorHandler::handleDatabaseError($e, 'User profile update');
         }
     }
-    
+
     /**
      * Update user promise
      * 
@@ -254,10 +255,10 @@ class User extends Model
     {
         try {
             $promiseModel = new UserPromise();
-            
+
             // Check if promise exists
             $existingPromise = $promiseModel->findByUserAndRehearsal($userId, $rehearsalId);
-            
+
             // Check if rehearsal exists
             $rehearsalModel = new \App\Models\Rehearsal();
             $rehearsal = $rehearsalModel->findById($rehearsalId);
@@ -265,10 +266,10 @@ class User extends Model
                 error_log("Failed to update promise: Rehearsal not found (ID: $rehearsalId)");
                 return ['error' => true, 'message' => 'Die Probe wurde nicht gefunden.', 'details' => 'Die angegebene Probe existiert nicht mehr.'];
             }
-            
+
             // Convert boolean attending to status enum or handle reset
             $status = ($attending === 'reset' || $attending === null) ? null : ($attending ? 'yes' : 'no');
-            
+
             if ($status === null) {
                 // Delete promise (reset)
                 if ($existingPromise) {
@@ -295,11 +296,11 @@ class User extends Model
                     'updated_at' => date('Y-m-d H:i:s')
                 ]);
             }
-            
+
             if ($result === false) {
                 $error = $this->db->getLastError();
                 error_log("Failed to update promise - Database error: " . $error);
-                
+
                 // Check for specific error types
                 if (strpos($error, '1062') !== false) { // Duplicate entry
                     return ['error' => true, 'message' => 'Doppelter Eintrag.', 'details' => 'Es existiert bereits eine Zusage für diese Probe.'];
@@ -309,13 +310,13 @@ class User extends Model
                     return ['error' => true, 'message' => 'Bei der Aktualisierung ist ein Fehler aufgetreten.', 'details' => 'Technischer Fehler: ' . $error];
                 }
             }
-            
+
             return true;
         } catch (\Exception $e) {
             return ErrorHandler::handleDatabaseError($e, 'User promise update');
         }
     }
-    
+
     /**
      * Get user promises
      * 
@@ -325,13 +326,13 @@ class User extends Model
     public function getPromises(int $userId): array
     {
         $userId = (int)$userId;
-        
+
         $sql = "SELECT up.*, DATE(r.start) AS date, TIME(r.start) AS start_time, TIME(r.end) AS end_time, r.location, r.color, r.is_small_group
                 FROM user_promises up
                 JOIN rehearsals r ON up.rehearsal_id = r.id
                 WHERE up.user_id = {$userId}
                 ORDER BY r.start";
-                
+
         $result = $this->db->query($sql);
         if ($result === false) {
             return [];
@@ -344,36 +345,75 @@ class User extends Model
 
         return $promises;
     }
-    
+
     /**
-     * Join orchestra (delegated to UserOrchestra model)
-     * 
-     * @param int $userId
-     * @param int $orchestraId
-     * @param string $type Instrument/section
-     * @param string $role User role
+     * @param array $permissions Permission column names to enable
      * @return int|array Relationship ID on success, error array on failure
      */
-    public function joinOrchestra(int $userId, int $orchestraId, string $type, string $role = 'member')
+    public function joinOrchestra(int $userId, int $orchestraId, string $type, array $permissions = [])
     {
         $userOrchestraModel = new UserOrchestra();
-        return $userOrchestraModel->joinOrchestra($userId, $orchestraId, $type, $role);
+        return $userOrchestraModel->joinOrchestra($userId, $orchestraId, $type, $permissions);
     }
-    
+
     /**
-     * Check if user has specific role in an orchestra
-     * 
-     * @param int $userId
-     * @param int $orchestraId
-     * @param string $role
-     * @return bool
+     * Check if user has a specific permission in an orchestra.
      */
-    public function hasRoleInOrchestra(int $userId, int $orchestraId, string $role): bool
+    public function hasPermissionInOrchestra(int $userId, int $orchestraId, string $permission): bool
     {
         $userOrchestraModel = new UserOrchestra();
-        return $userOrchestraModel->hasRole($userId, $orchestraId, $role);
+        return $userOrchestraModel->hasPermission($userId, $orchestraId, $permission);
     }
-    
+
+    /**
+     * Whether the user still needs to complete the display-name onboarding step.
+     */
+    public function needsOnboarding(?array $user = null, ?int $userId = null): bool
+    {
+        if (!$user && $userId) {
+            $user = $this->findById($userId);
+        }
+        return $user && empty($user['display_name']);
+    }
+
+    /**
+     * Create an org-admin account for an organization.
+     *
+     * @return array{user: array, password: string} Created user data and plaintext password
+     */
+    public function createOrgAccount(int $orgId, string $slug): array
+    {
+        $username = $slug . '-admin';
+        $password = $this->generateSecurePassword();
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
+        $userId = $this->insert([
+            'username' => $username,
+            'password' => $hashedPassword,
+            'is_org_admin' => 1,
+            'organization_id' => $orgId,
+        ]);
+
+        return [
+            'user' => $this->findById($userId),
+            'password' => $password,
+        ];
+    }
+
+    /**
+     * Generate a cryptographically secure random password.
+     */
+    private function generateSecurePassword(int $length = 10): string
+    {
+        $chars = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!#$%';
+        $password = '';
+        $max = strlen($chars) - 1;
+        for ($i = 0; $i < $length; $i++) {
+            $password .= $chars[random_int(0, $max)];
+        }
+        return $password;
+    }
+
     /**
      * Validate user input for registration or profile updates
      * 
@@ -386,7 +426,7 @@ class User extends Model
     public function validateUserInput(?string $username = null, ?string $password = null, ?int $excludeUserId = null, ?string $passwordConfirm = null): array
     {
         $errors = [];
-        
+
         // Validate username only when provided (null means skip username validation)
         if ($username !== null) {
             if ($username === '') {
@@ -401,7 +441,7 @@ class User extends Model
                 }
             }
         }
-        
+
         // Validate password if provided
         if ($password !== null) {
             // Use consistent validation through Validator class
@@ -410,13 +450,13 @@ class User extends Model
                 $errors = array_merge($errors, $passwordValidation['errors']);
             }
         }
-        
+
         return [
             'valid' => empty($errors),
             'errors' => $errors
         ];
     }
-    
+
     /**
      * Update user theme preference
      * 
@@ -432,19 +472,19 @@ class User extends Model
             error_log("Theme update failed - Validation errors: " . implode(', ', $validation['errors']));
             return ['error' => true, 'message' => implode(', ', $validation['errors'])];
         }
-        
+
         // Update the theme preference
         $result = $this->update($userId, ['theme' => $theme]);
-        
+
         if ($result === false) {
             $error = $this->db->getLastError();
             error_log("Theme update failed - Database error: " . $error);
             return ['error' => true, 'message' => 'Fehler beim Aktualisieren des Themes.', 'details' => $error];
         }
-        
+
         return $result;
     }
-    
+
     /**
      * Get user theme preference
      * 
@@ -454,18 +494,18 @@ class User extends Model
     public function getUserTheme(int $userId): string
     {
         $user = $this->findById($userId);
-        
+
         if ($user && isset($user['theme'])) {
             // Validate that the theme still exists
             if (\App\Core\ThemeManager::themeExists($user['theme'])) {
                 return $user['theme'];
             }
         }
-        
+
         // Return default theme if user not found or invalid theme
         return \App\Core\ThemeManager::getDefaultTheme();
     }
-    
+
     /**
      * Delete user account
      * 
@@ -525,17 +565,17 @@ class User extends Model
         $keycloakId = $keycloakUserInfo['sub'] ?? null;
         $email = $keycloakUserInfo['email'] ?? null;
         $username = $keycloakUserInfo['preferred_username'] ?? $email;
-        
+
         if (!$keycloakId) {
             return ['error' => true, 'message' => 'Keycloak ID fehlt'];
         }
-        
+
         // Check if user already exists by Keycloak ID
         $existingUser = $this->findByKeycloakId($keycloakId);
         if ($existingUser) {
             return $existingUser;
         }
-        
+
         // Check if user exists by email/username
         $existingUser = $this->findByEmail($email) ?: $this->findByUsername($username);
         if ($existingUser) {
@@ -547,7 +587,7 @@ class User extends Model
             ]);
             return $existingUser;
         }
-        
+
         // Create new user
         $userData = [
             'username' => $username,
@@ -556,13 +596,13 @@ class User extends Model
             'auth_provider' => 'keycloak',
             'password' => null // No password for Keycloak users
         ];
-        
+
         // Set jeunesse theme for new users registered via JMD token
         if ($isJmdToken) {
             $userData['theme'] = 'jeunesse';
         }
-        
+
         $userId = $this->insert($userData);
         return $userId ? $this->findById($userId) : ['error' => true, 'message' => 'Benutzer konnte nicht erstellt werden'];
     }
-} 
+}

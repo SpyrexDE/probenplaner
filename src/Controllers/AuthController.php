@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controllers;
 
 use App\Core\Controller;
@@ -17,12 +18,12 @@ class AuthController extends Controller
      * @var User
      */
     private $userModel;
-    
+
     /**
      * @var Orchestra
      */
     private $orchestraModel;
-    
+
     /**
      * Constructor
      */
@@ -32,7 +33,7 @@ class AuthController extends Controller
         $this->userModel = new User();
         $this->orchestraModel = new Orchestra();
     }
-    
+
     /**
      * Display login form
      * 
@@ -49,34 +50,43 @@ class AuthController extends Controller
 
         // If already logged in, redirect to orchestra selection or main app
         if ($this->isLoggedIn()) {
-            // Check if user has selected an orchestra
-            if (isset($_SESSION['current_orchestra_id'])) {
-                // Redirect based on role in current orchestra
-                if ($_SESSION['current_role'] === 'conductor') {
-                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/promises/admin');
+            // Admin → admin dashboard
+            if (($_SESSION['username'] ?? '') === 'admin') {
+                $this->redirect('/admin/dashboard');
+                return;
+            }
+
+            // Orga-admin → orga panel
+            if (!empty($_SESSION['is_org_admin'])) {
+                $this->redirect('/orga');
+                return;
+            }
+
+            if (isset($_SESSION['current_orchestra_slug'])) {
+                if (!empty($_SESSION['current_permissions']['can_manage_rehearsals'])) {
+                    $this->redirect($this->orchestraUrl('/promises/admin'));
                 } else {
-                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/promises');
+                    $this->redirect($this->orchestraUrl('/promises'));
                 }
             } else {
-                // No orchestra selected, go to orchestra selection
                 $this->redirect('/orchestras/select');
             }
             return;
         }
-        
+
         // If form submitted
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->processLogin();
             return;
         }
-        
+
         // Display login form
         $this->render('auth/login', [
             'currentPage' => 'login',
             'csrf_token' => $this->getCSRFToken()
         ]);
     }
-    
+
     /**
      * Process login form submission
      * 
@@ -95,34 +105,50 @@ class AuthController extends Controller
         // Validate input
         $username = Validator::sanitizeUtf8($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';
-        
+
         $validation = Validator::validateRequired(['username' => $username, 'password' => $password], ['username', 'password']);
-        
+
         if (!$validation['valid']) {
             $this->addAlert(
-                'Fehler!', 
-                implode(' ', $validation['errors']), 
+                'Fehler!',
+                implode(' ', $validation['errors']),
                 'error'
             );
             $this->redirect('/login');
             return;
         }
-        
+
+        // Super-admin: authenticate against ADMIN_PW
+        if ($username === 'admin') {
+            $adminPw = defined('ADMIN_PW') ? ADMIN_PW : ($_ENV['ADMIN_PW'] ?? '');
+            if ($adminPw !== '' && hash_equals($adminPw, $password)) {
+                $_SESSION['user_id'] = 0;
+                $_SESSION['username'] = 'admin';
+                session_regenerate_id(true);
+                $this->setFlash('success', 'Admin-Login erfolgreich.');
+                $this->redirect('/admin/dashboard');
+                return;
+            }
+            $this->addAlert('Fehler!', 'Das eingegebene Passwort ist falsch.', 'error');
+            $this->redirect('/login');
+            return;
+        }
+
         // Authenticate user (orchestra-independent)
         $user = $this->userModel->authenticate($username, $password);
-        
+
         if ($user) {
             // Login successful
             $this->processSuccessfulLogin($user);
             return;
         }
-        
+
         // Check if user exists to provide more specific error message
         $userExists = $this->userModel->findByUsername($username);
         if ($userExists) {
             $this->addAlert(
-                'Fehler!', 
-                'Das eingegebene Passwort ist falsch.', 
+                'Fehler!',
+                'Das eingegebene Passwort ist falsch.',
                 'error',
                 'Bitte überprüfen Sie Ihr Passwort. Falls Sie Ihr Passwort vergessen haben, kontaktieren Sie bitte Ihren Dirigenten.'
             );
@@ -130,8 +156,8 @@ class AuthController extends Controller
             error_log("Login failed - Wrong password attempt");
         } else {
             $this->addAlert(
-                'Fehler!', 
-                'Der Benutzername wurde nicht gefunden.', 
+                'Fehler!',
+                'Der Benutzername wurde nicht gefunden.',
                 'error',
                 'Bitte überprüfen Sie Ihren Benutzernamen oder registrieren Sie sich, falls Sie noch kein Konto haben.'
             );
@@ -139,7 +165,7 @@ class AuthController extends Controller
         }
         $this->redirect('/login');
     }
-    
+
     /**
      * Handle successful login
      * 
@@ -155,23 +181,23 @@ class AuthController extends Controller
             $this->redirect('/login');
             return;
         }
-        
+
         // Set basic session variables first (before regenerating session ID)
         // This ensures the data is in the session before we regenerate
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = $user['username'];
-        
+
         // Regenerate session ID to prevent session fixation attacks
         // This will copy the existing session data to the new session ID
         session_regenerate_id(true);
-        
+
         // Verify session data is set (should be copied by regenerate_id)
         if (!isset($_SESSION['user_id']) || !isset($_SESSION['username'])) {
             error_log("processSuccessfulLogin: Session data lost after regenerate_id. Re-setting...");
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
         }
-        
+
         // Set secure cookies
         $cookieOptions = [
             'expires' => time() + COOKIE_LIFETIME,
@@ -183,13 +209,27 @@ class AuthController extends Controller
         ];
         setcookie("username", $user['username'], $cookieOptions);
         // Do not store password in cookie for security reasons
-        
+
         $this->setFlash('success', 'Sie wurden erfolgreich eingeloggt.');
-        
-        // Redirect to orchestra selection
+
+        // Super-admin → admin panel
+        if ($user['username'] === 'admin') {
+            $this->redirect('/admin/dashboard');
+            return;
+        }
+
+        // Org-admin → orga panel
+        if (!empty($user['is_org_admin'])) {
+            $_SESSION['is_org_admin'] = true;
+            $_SESSION['organization_id'] = $user['organization_id'];
+            $this->redirect('/orga');
+            return;
+        }
+
+        // Regular user → orchestra selection
         $this->redirect('/orchestras/select');
     }
-    
+
     /**
      * Display registration form
      * 
@@ -199,13 +239,11 @@ class AuthController extends Controller
     {
         // If already logged in, redirect to orchestra selection or main app
         if ($this->isLoggedIn()) {
-            // Check if user has selected an orchestra
-            if (isset($_SESSION['current_orchestra_id'])) {
-                // Redirect based on role in current orchestra
-                if ($_SESSION['current_role'] === 'conductor') {
-                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/promises/admin');
+            if (isset($_SESSION['current_orchestra_slug'])) {
+                if (!empty($_SESSION['current_permissions']['can_manage_rehearsals'])) {
+                    $this->redirect($this->orchestraUrl('/promises/admin'));
                 } else {
-                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/promises');
+                    $this->redirect($this->orchestraUrl('/promises'));
                 }
             } else {
                 // No orchestra selected, go to orchestra selection
@@ -213,14 +251,14 @@ class AuthController extends Controller
             }
             return;
         }
-        
+
         // Display registration form
         $this->render('auth/register', [
             'currentPage' => 'register',
             'csrf_token' => $this->getCSRFToken()
         ]);
     }
-    
+
     /**
      * Process registration (orchestra-independent)
      * 
@@ -232,7 +270,7 @@ class AuthController extends Controller
             $this->redirect('/register');
             return;
         }
-        
+
         // CSRF protection
         try {
             $this->protectCSRF();
@@ -241,53 +279,53 @@ class AuthController extends Controller
             $this->redirect('/register');
             return;
         }
-        
+
         // Get and sanitize POST data
         $username = Validator::sanitizeUtf8($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';
         $passwordConfirm = $_POST['password_confirm'] ?? '';
-        
+
         // For debugging - log registration attempt
         error_log("Registration attempt - Username: $username");
-        
+
         // Validate required fields
         $requiredValidation = Validator::validateRequired([
             'username' => $username,
             'password' => $password,
             'password_confirm' => $passwordConfirm
         ], ['username', 'password', 'password_confirm']);
-        
+
         if (!$requiredValidation['valid']) {
             $this->addAlert(
-                'Fehler!', 
-                implode(' ', $requiredValidation['errors']), 
+                'Fehler!',
+                implode(' ', $requiredValidation['errors']),
                 'error'
             );
             error_log("Registration failed - Missing required fields");
             $this->redirect('/register');
             return;
         }
-        
+
         // Validate individual field formats
         $usernameValidation = Validator::validateUsername($username);
         $passwordValidation = Validator::validatePassword($password, $passwordConfirm);
-        
+
         $validation = Validator::mergeResults([$usernameValidation, $passwordValidation]);
-        
+
         if (!$validation['valid']) {
             $this->addAlert(
-                'Fehler!', 
-                implode(', ', $validation['errors']), 
+                'Fehler!',
+                implode(', ', $validation['errors']),
                 'error'
             );
             error_log("Registration failed - Validation errors: " . implode(', ', $validation['errors']));
             $this->redirect('/register');
             return;
         }
-        
+
         // Register the user
         $result = $this->userModel->register($username, $password);
-        
+
         if (is_array($result)) {
             // Handle different array response formats
             if (isset($result['messages'])) {
@@ -299,32 +337,32 @@ class AuthController extends Controller
                 $message = $result['message'] ?? 'Bei der Registrierung ist ein Fehler aufgetreten.';
                 $details = $result['details'] ?? '';
             }
-            
+
             $this->addAlert(
-                'Fehler!', 
-                $message, 
+                'Fehler!',
+                $message,
                 'error',
                 is_array($details) ? json_encode($details) : $details
             );
             $this->redirect('/register');
             return;
         }
-        
+
         if (is_int($result) && $result > 0) {
             $this->setFlash('success', 'Ihr Konto wurde erfolgreich erstellt. Sie können sich jetzt anmelden.');
             $this->redirect('/login');
         } else {
             // Handle unexpected non-array, non-integer results
             $this->addAlert(
-                'Fehler!', 
-                'Bei der Registrierung ist ein Fehler aufgetreten.', 
+                'Fehler!',
+                'Bei der Registrierung ist ein Fehler aufgetreten.',
                 'error',
                 'Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.'
             );
             $this->redirect('/register');
         }
     }
-    
+
     /**
      * Logout user
      * 
@@ -334,7 +372,7 @@ class AuthController extends Controller
     {
         // Destroy session
         $_SESSION = [];
-        
+
         if (ini_get("session.use_cookies")) {
             $params = session_get_cookie_params();
             setcookie(
@@ -347,9 +385,9 @@ class AuthController extends Controller
                 $params["httponly"]
             );
         }
-        
+
         session_destroy();
-        
+
         // Clear cookies securely
         $cookieOptions = [
             'expires' => time() - 3600,
@@ -361,7 +399,7 @@ class AuthController extends Controller
         ];
         setcookie("username", "", $cookieOptions);
         setcookie("password", "", $cookieOptions);
-        
+
         $this->redirect('/login');
     }
 
@@ -377,14 +415,14 @@ class AuthController extends Controller
             $this->redirect('/login');
             return;
         }
-        
+
         $keycloakAuth = new \App\Core\KeycloakAuth();
         $authUrl = $keycloakAuth->getAuthUrl();
-        
+
         // Debug logging
         error_log("Keycloak auth URL: " . $authUrl);
         error_log("Keycloak config - Client ID: " . KEYCLOAK_CLIENT_ID . ", Redirect URI: " . KEYCLOAK_REDIRECT_URI);
-        
+
         $this->redirect($authUrl);
     }
 
@@ -400,16 +438,16 @@ class AuthController extends Controller
             $this->redirect('/login');
             return;
         }
-        
+
         $code = $_GET['code'] ?? null;
         $state = $_GET['state'] ?? null;
-        
+
         // Debug logging
         error_log("Keycloak callback received. Code: " . ($code ? 'present' : 'missing') . ", State: " . ($state ? 'present' : 'missing'));
         error_log("GET parameters: " . json_encode($_GET));
         error_log("Session keycloak_state: " . (isset($_SESSION['keycloak_state']) ? $_SESSION['keycloak_state'] : 'NOT SET'));
         error_log("Session ID: " . session_id());
-        
+
         // Validate state parameter
         if (!$state || !isset($_SESSION['keycloak_state']) || $state !== $_SESSION['keycloak_state']) {
             error_log("Keycloak state validation failed. URL state: $state, Session state: " . ($_SESSION['keycloak_state'] ?? 'NOT SET'));
@@ -417,15 +455,15 @@ class AuthController extends Controller
             $this->redirect('/login');
             return;
         }
-        
+
         if (!$code) {
             $this->addAlert('Fehler!', 'Autorisierungscode fehlt.', 'error');
             $this->redirect('/login');
             return;
         }
-        
+
         $keycloakAuth = new \App\Core\KeycloakAuth();
-        
+
         // Exchange code for token
         $tokenData = $keycloakAuth->exchangeCodeForToken($code);
         if (!$tokenData || !isset($tokenData['access_token'])) {
@@ -434,7 +472,7 @@ class AuthController extends Controller
             $this->redirect('/login');
             return;
         }
-        
+
         // Get user info
         $userInfo = $keycloakAuth->getUserInfo($tokenData['access_token']);
         if (!$userInfo) {
@@ -442,7 +480,7 @@ class AuthController extends Controller
             $this->redirect('/login');
             return;
         }
-        
+
         // Create or link user
         $user = $this->userModel->createOrLinkKeycloakUser($userInfo);
         if (isset($user['error'])) {
@@ -451,7 +489,7 @@ class AuthController extends Controller
             $this->redirect('/login');
             return;
         }
-        
+
         // Additional validation: ensure user data is complete
         if (!$user || !isset($user['id']) || !isset($user['username'])) {
             error_log("keycloakCallback: Invalid user data after createOrLinkKeycloakUser: " . json_encode($user));
@@ -459,7 +497,7 @@ class AuthController extends Controller
             $this->redirect('/login');
             return;
         }
-        
+
         // Process successful login
         $this->processSuccessfulLogin($user);
     }
@@ -478,7 +516,7 @@ class AuthController extends Controller
         }
 
         $accessToken = $_POST['access_token'] ?? null;
-        
+
         if (!$accessToken) {
             $this->addAlert('Fehler!', 'Access Token fehlt.', 'error');
             $this->redirect('/login');
@@ -486,7 +524,7 @@ class AuthController extends Controller
         }
 
         $keycloakAuth = new \App\Core\KeycloakAuth();
-        
+
         // Process login with token
         $userInfo = $keycloakAuth->loginWithToken($accessToken);
         if (!$userInfo) {
@@ -494,7 +532,7 @@ class AuthController extends Controller
             $this->redirect('/login');
             return;
         }
-        
+
         // Create or link user
         $user = $this->userModel->createOrLinkKeycloakUser($userInfo);
         if (isset($user['error'])) {
@@ -502,7 +540,7 @@ class AuthController extends Controller
             $this->redirect('/login');
             return;
         }
-        
+
         // Process successful login
         $this->processSuccessfulLogin($user);
     }
@@ -516,9 +554,9 @@ class AuthController extends Controller
     private function processJmdTokenLogin(string $jmdToken)
     {
         error_log("JMD token login attempt with token: " . substr($jmdToken, 0, 20) . "...");
-        
+
         $keycloakAuth = new \App\Core\KeycloakAuth();
-        
+
         // Process login with token
         $userInfo = $keycloakAuth->loginWithToken($jmdToken);
         if (!$userInfo) {
@@ -526,7 +564,7 @@ class AuthController extends Controller
             $this->redirect('/login');
             return;
         }
-        
+
         // Create or link user
         $user = $this->userModel->createOrLinkKeycloakUser($userInfo, true);
         if (isset($user['error'])) {
@@ -534,9 +572,8 @@ class AuthController extends Controller
             $this->redirect('/login');
             return;
         }
-        
+
         // Process successful login
         $this->processSuccessfulLogin($user);
     }
-    
-} 
+}

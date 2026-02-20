@@ -76,19 +76,17 @@ class ProbenplanController extends Controller
             $days[] = Utilities::getGermanDayAbbreviation($date);
         }
 
-        // Get user role
-        $userRole = $_SESSION['current_role'] ?? '';
+        $canManageRehearsals = !empty($_SESSION['current_permissions']['can_manage_rehearsals']);
 
         $hasPastRehearsals = $this->rehearsalModel->hasPastRehearsals($_SESSION['current_orchestra_id']);
 
-        // Render view
         $this->render('probenplan/index', [
             'currentPage' => 'probenplan',
             'rehearsals' => $rehearsals,
             'days' => $days,
             'personalized' => $personalized,
             'showOld' => $showOld,
-            'userRole' => $userRole,
+            'canManageRehearsals' => $canManageRehearsals,
             'hasPastRehearsals' => $hasPastRehearsals
         ]);
     }

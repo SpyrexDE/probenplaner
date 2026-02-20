@@ -1,0 +1,200 @@
+# Probenplaner – UI/UX Design Guidelines
+
+Distilled from the existing settings, sidebar, login, and Meine Meldungen pages.
+
+---
+
+## 1. Design Token System (the Foundation)
+
+Everything stems from **CSS custom properties** defined in [theme-default.css](file:///g:/probenplaner/src/public/assets/css/themes/theme-default.css). Never use raw hex values in components — always reference tokens.
+
+| Category | Pattern | Example tokens |
+|---|---|---|
+| Brand colors | `--color-primary`, `--color-primary-dark`, `--color-primary-50`…`300` | `#478cf4` as base, alpha steps via `rgba()` |
+| Status colors | `--color-success`, `--color-error`, `--color-warning`, `--color-info` + `-light/-dark/-icon/-50/-100/-200` | Green / Red / Amber / Blue |
+| Text | `--color-text-primary`, `-secondary`, `-muted`, `-tertiary`, `-inverse` | Dark-to-light hierarchy |
+| Backgrounds | `--color-bg-primary`, `-secondary`, `-tertiary` | White → #f9fafb → #f3f4f6 |
+| Borders | `--color-border`, `-light`, `-dark` | #e5e7eb scale |
+| Spacing | `--space-1` to `--space-24` | 4 px → 96 px (¼ rem steps) |
+| Typography | `--font-size-xs`…`4xl`, `--font-weight-light`…`extrabold` | 12 px – 36 px |
+| Radii | `--radius-sm`…`full` | 4 px – 9999 px |
+| Shadows | `--shadow-sm`…`2xl` | Layered rgba shadows |
+| Transitions | `--transition-fast/base/slow` | 150 / 200 / 300 ms cubic-bezier |
+| Z-index | `--z-dropdown` to `--z-toast` | 1000 – 1080 |
+
+> [!IMPORTANT]
+> **Dark mode** is supported by overriding these tokens in `html.dark-mode` / `html[data-theme-mode="dark"]`. All component CSS that uses tokens automatically adapts.
+
+---
+
+## 2. Color Philosophy
+
+- **Primary accent**: `#478cf4` blue, used in gradients: `linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))`
+- **Secondary accent**: `#f4476b` pink, used sparingly for decorative radial gradients on auth screens
+- **Status triad**: Green `#10b981` (success/attending), Red `#ef4444` (error/not-attending), Gray `#d1d5db` (no-response/neutral)
+- **Icon variants**: Status icons get a lighter/more saturated version (`--color-success-icon: #22d394`) for better visual pop
+- **Layered opacity steps** (`-50`, `-100`, `-200`) allow ambient tinting without hard borders (e.g., button backgrounds `linear-gradient(135deg, var(--color-success-50), var(--color-success-100))`)
+
+---
+
+## 3. Layout Architecture
+
+### Authenticated Layout
+```
+┌──────────┬────────────────────────────────────────┐
+│ Sidebar  │ Top Navigation (title + actions)       │
+│ (fixed)  ├────────────────────────────────────────┤
+│ 280px    │ #contentPage                           │
+│          │   max-w-7xl mx-auto px-4 py-6          │
+│          │   OR w-full h-full p-0 (isFluid)       │
+└──────────┴────────────────────────────────────────┘
+```
+
+- Sidebar slides out left (`translateX(-100%)`) on mobile, always visible `>=900px`
+- Main content shifts right via `margin-left: var(--sidebar-width)`
+- `isFluid` flag strips padding for full-bleed pages (e.g., settings with own gradient)
+
+### Guest/Auth Layout
+```
+┌────────────────────────────────────────────────────┐
+│ .auth-screen (full viewport flex column)           │
+│ ├── gradient bg + radial color blobs               │
+│ ├── .centered-card-container (flex center)         │
+│ │     └── .centered-card-wrapper (max-width 400px) │
+│ │           └── form content                       │
+│ └── .auth-screen-footer (legal links)              │
+└────────────────────────────────────────────────────┘
+```
+
+- Base: `linear-gradient(135deg, #f8fafc, #f1f5f9)` — subtle warm-to-cool
+- Decorative overlay: two `radial-gradient` blobs (blue top-left, pink bottom-right) at 10% opacity → depth without heaviness
+- Content vertically centered with `margin: auto 0` — ghost element enforces symmetry
+
+---
+
+## 4. Sidebar Design
+
+What makes it premium:
+
+| Technique | Implementation |
+|---|---|
+| **Avatar gradient** | `linear-gradient(135deg, --color-primary, --color-primary-dark)` with subtle `box-shadow: 0 2px 6px rgba(59,130,246,0.15)` |
+| **Stats section gradient** | `linear-gradient(31deg, var(--color-bg-tertiary), var(--color-primary-100))` — faint brand tint |
+| **Segmented bar** | 4 px high bar with green/red/gray segments, `inset box-shadow` for recessed look |
+| **Nav hover** | Gradient background + `translateX(2px)` nudge + `box-shadow` |
+| **Active indicator** | `::before` pseudo-element: 3 px wide × 20 px high gradient pill on the left edge |
+| **Active background** | `linear-gradient(135deg, var(--color-primary-100), var(--color-primary-200))` + blue shadow |
+| **Thin scrollbar** | `scrollbar-width: thin` + custom `::-webkit-scrollbar` styling |
+| **Text overflow** | Names/details use `text-overflow: ellipsis` → never break layout |
+
+---
+
+## 5. Login Page Design
+
+![Login page](file:///C:/Users/malik/.gemini/antigravity/brain/c61c8478-758a-4daa-a212-2917ccb2149b/login_page_final_1771602338187.png)
+
+What makes it elegant:
+
+- **Minimal card** — no visible card border, content floats on the gradient background
+- **Logo component** — centered above inputs, acts as branding anchor
+- **Input styling** — `login-input` class: clean, generous padding, rounded corners
+- **Primary CTA** — full-width solid button (`login-button`)
+- **Divider pattern** — `"oder"` label flanked by `flex: 1` lines (`::before`/`::after` pseudo-elements with `var(--color-border)` background)
+- **Secondary SSO button** — `btn-modern btn-secondary` with left-aligned logo icon, full-width
+- **Auth footer** — register link in muted color below form
+- **Vertical centering** — ghost element technique ensures card stays truly centered even with footer
+
+---
+
+## 6. Settings Page Design
+
+What makes it clean:
+
+- **Modern card system** — `.modern-card` with `.modern-card-header` + `.modern-card-body`
+- **Grouped fields** — FieldRegistry groups, each card has a colored icon badge (8×8 → `bg-{color}-100`, `text-{color}-600`)
+- **Auto-save pattern** — `data-save-mode="auto"`, no submit button. Save indicator is a fixed pill (`bottom: 16px; right: 16px`) with `.saving` / `.success` / `.error` states
+- **Field types**: text inputs (`form-input-modern`), toggles (`modern-checkbox`), secrets (password + eye toggle inline)
+- **Danger zone** — separate `.modern-card-danger` with red icon badge and destructive `btn-danger` button
+- **Delete confirmation** — multi-step SweetAlert2 flow: warning → name-type confirmation → loading spinner overlay
+
+---
+
+## 7. Rehearsal Card Design (Meine Meldungen)
+
+The core interaction pattern of the app. What makes it work:
+
+| Element | Technique |
+|---|---|
+| **Card** | `border-left: 4px` color-coded by status (green/red/gray). Rounded with `--radius-lg`, `--shadow-sm` |
+| **Weekday** | Bold 24 px gradient-clipped text (`-webkit-background-clip: text`) with underline `::after` pseudo-element |
+| **Time display** | Monospace font `'Kantumruy Pro'` + dynamic `scaleX()` stretch to match date width |
+| **Badges** | 10 px uppercase, `letter-spacing: 0.3px`, pill-shaped: type badge (purple tint), section badge (gray tint), emoji badges |
+| **Action buttons** | 52 × 52 px, `border-radius: --radius-lg`, two states: **selected** (color gradient bg + colored shadow) and **deselected** (opacity 0.4, grayscale icon filter) |
+| **Deselected hover** | Gradual opacity restore (0.7), slight `translateY(-1px)` lift, filter desaturate halfway |
+| **Note tag** | Quote icon + italic text in muted colors, appended at bottom of card |
+| **Long-press reset** | 500 ms hold → resets to neutral state with toast feedback |
+| **Update queue** | Debounced AJAX with save indicator overlay. Prevents double-submit and page-leave during save |
+
+### Container Entrance Animation
+```css
+.container-app {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+}
+```
+Content fades in and slides up on mount → premium feel.
+
+---
+
+## 8. Universal Design Principles (Extracted)
+
+### Gradients as Depth, Not Decoration
+Every gradient serves hierarchy: cards lift off backgrounds, buttons signal interactivity, active states glow. Never use gradients purely for color — they always communicate z-depth or emphasis.
+
+### Micro-animations Everywhere
+- `transition: all var(--transition-base)` on interactive elements
+- `translateY(-1px)` on hover/active for tactile "lift"
+- `scaleX` stretch for typography alignment
+- `transform: scale(0.95)` on `:active` for press feedback
+- Fade-in entrance animations for page content
+
+### Color to Communicate State
+Three-color system is universal: green = positive/attending, red = negative/not-attending, gray = neutral/pending. This applies in sidebar stats bar, rehearsal cards, dashboard charts, and tree-view status icons.
+
+### Progressive Disclosure
+- Sidebar stats show high-level bar → details on hover/click
+- Rehearsal cards show summary → expand for schedule timeline
+- Dashboard tree-view: collapsible sections with chevron rotation
+- Danger zone: multi-step confirmation with escalating seriousness
+
+### Whitespace as Feature
+- Generous padding (`--space-3` to `--space-8`) in all containers
+- `gap` for flexbox spacing instead of margins → uniform rhythm
+- Cards have both header and body padding for clear visual separation
+
+### Component Encapsulation
+Each component carries its own `<style>` block with scoped CSS. Styles use CSS custom properties from the theme, making all components automatically theme-aware. Pattern:
+```php
+<?php $renderComponent = false; include 'component.php'; ?> <!-- styles only -->
+<?php $renderComponent = true; include 'component.php'; ?>  <!-- full render -->
+```
+
+### Semantic Class Names
+- `.modern-card`, `.modern-card-header`, `.modern-card-body`
+- `.sidebar-nav-link.active`, `.rehearsal-card.status-attending`
+- `.btn-modern.btn-primary`, `.btn-modern.btn-danger`
+- State classes: `.selected`, `.deselected`, `.disabled`, `.loading`
+
+---
+
+## 9. Quick Reference: Building a New Component
+
+1. **Create** `src/Views/components/my-component.php`
+2. **Embed styles** in a `<style>` block at the top, using only `var(--token)` values
+3. **Support** `$renderComponent` flag for styles-only inclusion
+4. **Use** existing patterns: `.modern-card` for card layout, `.btn-modern` for buttons, `.form-input-modern` for inputs
+5. **Apply** entrance animations via `.container-app` wrapper
+6. **Add** hover/active micro-animations: `translateY(-1px)`, opacity transitions, gradient shifts
+7. **Use** status coding: green/red/gray for tri-state data
+8. **Test** in dark mode — if you only used tokens, it should just work

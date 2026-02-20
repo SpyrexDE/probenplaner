@@ -138,7 +138,8 @@ function deleteAccount(username) {
     }).then((result) => {
         if (result.isConfirmed) {
             // Use the MVC controller endpoint
-            const orchestraId = window.location.pathname.split('/')[1];
+            const pathParts = window.location.pathname.split('/');
+            const orchestraId = pathParts[1] + '/' + pathParts[2];
             fetch('/' + orchestraId + '/user/deleteUser?username=' + encodeURIComponent(username), {
                 headers: {
                     'Accept': 'application/json'
@@ -183,7 +184,8 @@ function resetPassword(username) {
     }).then((result) => {
         if (result.isConfirmed) {
             // Use the MVC controller endpoint
-            const orchestraId = window.location.pathname.split('/')[1];
+            const pathParts = window.location.pathname.split('/');
+            const orchestraId = pathParts[1] + '/' + pathParts[2];
             fetch('/' + orchestraId + '/user/resetPassword?username=' + encodeURIComponent(username), {
                 headers: {
                     'Accept': 'application/json'

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Core;
 
 /**
@@ -18,22 +19,22 @@ class Utilities
         if (!is_array($user)) {
             return '';
         }
-        
+
         $badges = [];
-        
-        // Add crown badge for section leaders (Stimmführer)
-        if (isset($user['role']) && $user['role'] === 'leader') {
+
+        $permissions = $user['permissions'] ?? [];
+        if (!empty($permissions['can_view_own_section_stats']) && empty($permissions['can_manage_ensemble'])) {
             $badges[] = '<span class="user-badge" title="Stimmführung"><i class="fas fa-crown"></i></span>';
         }
-        
+
         // Add small group badge for small group members
         if (\App\Core\RehearsalTypeManager::isUserInSmallGroup($user)) {
             $badges[] = '<span class="user-badge" title="' . \App\Core\RehearsalTypeManager::LABEL_SMALL_GROUP . '"><i class="fas fa-user-friends"></i></span>';
         }
-        
+
         return implode('', $badges);
     }
-    
+
     /**
      * Display a username with role and small group badges
      * 
@@ -45,40 +46,36 @@ class Utilities
         if (!is_array($user)) {
             return '';
         }
-        
+
         $username = htmlspecialchars($user['username'] ?? '');
         $badges = self::generateUserBadges($user);
-        
+
         return $username . $badges;
     }
-    
+
     /**
-     * Get display text for user type/role combination
-     * Shows only "Conductor" for conductors, or section name for members
+     * Get display text for user type/permissions combination
      * 
      * @param string $type User type (instrument/section)
-     * @param string $role User role (conductor, leader, member)
+     * @param array $permissions User permissions array
      * @return array Array with 'type' and 'role' display strings
      */
-    public static function getUserDisplayInfo(string $type, string $role): array
+    public static function getUserDisplayInfo(string $type, array $permissions = []): array
     {
         $result = [
             'type' => null,
             'role' => null
         ];
-        
-        // For conductors, only show "Conductor" role
-        if ($role === 'conductor') {
-            $result['role'] = self::getRoleDisplayName($role);
-        }
-        // For section members, only show the section name (not "Mitglied")
-        elseif ($type !== 'conductor' && $type !== 'none') {
+
+        if (!empty($permissions['can_manage_ensemble'])) {
+            $result['role'] = self::getRoleDisplayName('conductor');
+        } elseif ($type !== 'conductor' && $type !== 'none') {
             $result['type'] = str_replace('_', ' ', $type);
         }
-        
+
         return $result;
     }
-    
+
     /**
      * Get German display name for a role
      * 
@@ -90,7 +87,7 @@ class Utilities
         $roleTranslations = \App\Core\Constants::getUserRoles();
         return $roleTranslations[$role] ?? $role;
     }
-    
+
     /**
      * Get German day abbreviation from a DateTime object
      * 
@@ -108,11 +105,11 @@ class Utilities
             'Sat' => 'Sa',
             'Sun' => 'So'
         ];
-        
+
         $englishDay = $date->format('D');
         return $germanDays[$englishDay] ?? $englishDay;
     }
-    
+
     /**
      * Generate FontAwesome icon HTML
      * 
@@ -124,10 +121,10 @@ class Utilities
     {
         $faClass = 'fas fa-' . $iconName;
         $allClasses = trim($faClass . ' ' . $classes);
-        
+
         return '<i class="' . $allClasses . '"></i>';
     }
-    
+
     /**
      * Format a date for display
      * 
@@ -139,7 +136,7 @@ class Utilities
         if (empty($date)) {
             return '';
         }
-        
+
         try {
             $dateObj = new \DateTime($date);
             return $dateObj->format('d.m.Y');
@@ -147,7 +144,7 @@ class Utilities
             return $date; // Return original if parsing fails
         }
     }
-    
+
     /**
      * Format a date for database storage
      * 
@@ -159,7 +156,7 @@ class Utilities
         if (empty($date)) {
             return '';
         }
-        
+
         try {
             $dateObj = new \DateTime($date);
             return $dateObj->format('Y-m-d');
@@ -167,5 +164,4 @@ class Utilities
             return $date; // Return original if parsing fails
         }
     }
-
-} 
+}

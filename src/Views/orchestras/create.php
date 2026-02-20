@@ -38,16 +38,7 @@ ob_start();
                 value="<?= isset($formData['token']) ? htmlspecialchars($formData['token']) : '' ?>"
                 style="margin-bottom: var(--space-1);"
                 required>
-            <div class="form-text" style="margin-bottom: var(--space-4);">Kurzer Code für neue Mitglieder (z.B. PHIL2024)</div>
-
-            <input type="text"
-                class="login-input"
-                name="leader_password"
-                placeholder="Stimmführer-Passwort"
-                value="<?= isset($formData['leader_password']) ? htmlspecialchars($formData['leader_password']) : '' ?>"
-                style="margin-bottom: var(--space-1);"
-                required>
-            <div class="form-text" style="margin-bottom: 0;">Für Stimmführer-Berechtigungen bei der Registrierung</div>
+            <div class="form-text" style="margin-bottom: 0;">Kurzer Code für neue Mitglieder (z.B. PHIL2024)</div>
         </div>
 
         <button type="submit" class="login-button">

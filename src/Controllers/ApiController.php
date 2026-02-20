@@ -34,7 +34,7 @@ class ApiController extends Controller
         $orchestraId = $_SESSION['current_orchestra_id'];
 
         // If user is a conductor, get upcoming rehearsal stats instead of personal stats
-        if (isset($_SESSION['current_role']) && $_SESSION['current_role'] === 'conductor') {
+        if (!empty($_SESSION['current_permissions']['can_manage_rehearsals'])) {
             $this->getConductorStats($orchestraId);
             return;
         }
@@ -42,7 +42,7 @@ class ApiController extends Controller
         try {
             // Get all future rehearsals for this orchestra
             $rehearsals = $this->rehearsalModel->getUpcoming($orchestraId, false);
-            
+
             $stats = [
                 'attending' => 0,
                 'not_attending' => 0,
@@ -53,7 +53,7 @@ class ApiController extends Controller
             foreach ($rehearsals as $rehearsal) {
                 // Check if user is relevant for this rehearsal
                 $groups = $this->rehearsalModel->getGroupsAsAssoc($rehearsal['id']);
-                
+
                 // Get small group status from user_orchestras table
                 $isSmallGroup = false;
                 $userId = $_SESSION['user_id'] ?? null;
@@ -64,20 +64,20 @@ class ApiController extends Controller
                 }
                 $user = ['is_small_group' => $isSmallGroup];
                 $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal);
-                
+
                 if ($this->rehearsalModel->isUserInRehearsalGroup($_SESSION['current_type'] ?? '', $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
                     $stats['total']++;
-                    
+
                     // Check user's promise for this rehearsal
                     $promise = $this->userPromiseModel->findByUserAndRehearsal($userId, $rehearsal['id']);
-                    
+
                     // Log retrieval result
                     error_log("Rehearsal {$rehearsal['id']}: Promise found: " . ($promise ? 'yes' : 'no'));
                     if ($promise) {
                         error_log("Promise data: " . json_encode($promise));
                         error_log("Promise status value: " . ($promise['status'] ?? 'undefined'));
                     }
-                    
+
                     if ($promise && isset($promise['status'])) {
                         if ($promise['status'] === 'yes') {
                             $stats['attending']++;
@@ -111,11 +111,11 @@ class ApiController extends Controller
         try {
             // Get the next upcoming rehearsal
             $rehearsals = $this->rehearsalModel->getUpcoming($orchestraId, false);
-            
+
             if (empty($rehearsals)) {
                 // No upcoming rehearsals
                 $this->jsonResponse([
-                    'success' => true, 
+                    'success' => true,
                     'stats' => [
                         'attending' => 0,
                         'not_attending' => 0,
@@ -128,11 +128,11 @@ class ApiController extends Controller
             }
 
             $nextRehearsal = $rehearsals[0]; // First rehearsal is the next one
-            
+
             // Get statistics for this rehearsal
             $stats = $this->userPromiseModel->getPromiseStats($nextRehearsal['id'], $orchestraId);
-            
-            
+
+
             // Add rehearsal info to the response
             $stats['next_rehearsal'] = [
                 'id' => $nextRehearsal['id'],

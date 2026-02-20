@@ -11,7 +11,7 @@
  *   include __DIR__ . '/password-change-modal.php';
  */
 
-$pwUrl = $passwordChangeUrl ?? ('/' . ($_SESSION['current_orchestra_id'] ?? '') . '/profile');
+$pwUrl = $passwordChangeUrl ?? ('/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '') . '/profile');
 ?>
 
 <style>

@@ -497,7 +497,7 @@ include __DIR__ . '/../components/save-indicator.php';
         }
 
         function updatePromise(id, attending, note) {
-            <?php $orchestraId = $_SESSION['current_orchestra_id'] ?? 1; ?>
+            <?php $orchestraBase = ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? ''); ?>
 
             // Prepare data
             var data = {
@@ -513,7 +513,7 @@ include __DIR__ . '/../components/save-indicator.php';
             }
 
             $.ajax({
-                url: '/<?= $orchestraId ?>/promises/update',
+                url: '/<?= $orchestraBase ?>/promises/update',
                 type: 'POST',
                 data: data,
                 success: function(response) {
@@ -528,12 +528,8 @@ include __DIR__ . '/../components/save-indicator.php';
                         }
                     } else {
                         console.error('Server returned error:', response.message);
-                        if (window.notifyErrorWithDetails) {
-                            const technicalDetails = response.debug_message || response.error || JSON.stringify(response, null, 2);
-                            window.notifyErrorWithDetails('Fehler beim Speichern', technicalDetails);
-                        } else {
-                            notifyError('Fehler beim Speichern: ' + (response.message || 'Unbekannter Fehler'));
-                        }
+                        const technicalDetails = response.debug_message || response.error || JSON.stringify(response, null, 2);
+                        window.notifyErrorWithDetails('Fehler beim Speichern', technicalDetails);
                     }
 
                     // Re-enable buttons
@@ -550,12 +546,8 @@ include __DIR__ . '/../components/save-indicator.php';
                 },
                 error: function(xhr, status, error) {
                     console.error('AJAX Error:', error);
-                    if (window.notifyErrorWithDetails) {
-                        const technicalDetails = 'Status: ' + status + '\nError: ' + error + '\nResponse: ' + xhr.responseText;
-                        window.notifyErrorWithDetails('Verbindungsfehler beim Speichern der Zusage', technicalDetails);
-                    } else {
-                        notifyError('Verbindungsfehler beim Speichern der Zusage');
-                    }
+                    const technicalDetails = 'Status: ' + status + '\nError: ' + error + '\nResponse: ' + xhr.responseText;
+                    window.notifyErrorWithDetails('Verbindungsfehler beim Speichern der Zusage', technicalDetails);
 
                     // Re-enable buttons
                     enableRehearsalButtons(id);

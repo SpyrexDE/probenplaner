@@ -10,13 +10,15 @@
 <div class="sidebar-header">
     <div class="sidebar-user">
         <div class="sidebar-avatar">
-            <?= strtoupper(substr($_SESSION['username'] ?? 'U', 0, 1)) ?>
+            <?php
+            $displayName = $_SESSION['display_name'] ?? $_SESSION['username'] ?? 'U';
+            echo strtoupper(substr($displayName, 0, 1));
+            ?>
         </div>
         <div class="sidebar-info">
             <div class="sidebar-name">
-                <?= $_SESSION['username'] ?? 'Benutzer' ?>
+                <?= htmlspecialchars($displayName) ?>
                 <?php
-                // Get small group status from user_orchestras table
                 $isSmallGroup = false;
                 $userId = $_SESSION['user_id'] ?? null;
                 $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
@@ -26,7 +28,7 @@
                 }
 
                 $userData = [
-                    'role' => $_SESSION['current_role'] ?? 'member',
+                    'permissions' => $_SESSION['current_permissions'] ?? [],
                     'is_small_group' => $isSmallGroup
                 ];
                 echo \App\Core\Utilities::generateUserBadges($userData);
@@ -41,16 +43,14 @@
                 }
                 $parts[] = '<span class="orchestra">' . $orchestra . '</span>';
 
-                // Get display info using centralized utility
                 $displayInfo = \App\Core\Utilities::getUserDisplayInfo(
                     $_SESSION['current_type'] ?? '',
-                    $_SESSION['current_role'] ?? ''
+                    $_SESSION['current_permissions'] ?? []
                 );
 
                 if ($displayInfo['type']) {
                     $parts[] = $displayInfo['type'];
-                }
-                if ($displayInfo['role']) {
+                } elseif ($displayInfo['role']) {
                     $parts[] = $displayInfo['role'];
                 }
                 echo implode(' · ', $parts);
@@ -63,7 +63,7 @@
 <!-- Statistics Section -->
 <?php if (isset($_SESSION['user_id'])): ?>
     <div class="sidebar-stats">
-        <?php if (isset($_SESSION['current_role']) && $_SESSION['current_role'] === 'conductor'): ?>
+        <?php if (!empty($_SESSION['current_permissions']['can_manage_rehearsals'])): ?>
             <div class="sidebar-stats-header">
                 <div class="sidebar-stats-title">Probe</div>
                 <div class="sidebar-stats-date" id="next-rehearsal-date"></div>
@@ -97,38 +97,51 @@
 <nav class="sidebar-nav">
     <ul class="sidebar-nav-list">
         <?php
+        $permissions = $_SESSION['current_permissions'] ?? [];
+        $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
+        $orchestraSlug = $_SESSION['current_orchestra_slug'] ?? $orchestraId;
+        $orgSlug = $_SESSION['current_org_slug'] ?? '';
+        $basePath = '/' . $orgSlug . '/' . $orchestraSlug;
+        $userOrchestras = $_SESSION['user_orchestras_count'] ?? 1;
+
         $menu = [];
-        if (isset($_SESSION['current_role']) && $_SESSION['current_role'] === 'conductor') {
-            $orchestraId = $_SESSION['current_orchestra_id'];
-            $menu = [
-                ['label' => 'Rückmeldungen', 'href' => "/{$orchestraId}/promises/admin", 'page' => 'admin', 'icon' => 'fas fa-chart-bar'],
-                ['label' => 'Termine', 'href' => "/{$orchestraId}/rehearsals", 'page' => 'rehearsals', 'icon' => 'fas fa-calendar-alt'],
-                ['label' => 'Probenplan', 'href' => "/{$orchestraId}/probenplan", 'page' => 'probenplan', 'icon' => 'fas fa-list'],
-                ['label' => 'Profil bearbeiten', 'href' => "/{$orchestraId}/conductor/profile", 'page' => 'conductor_profile', 'icon' => 'fas fa-user-cog'],
-                ['label' => 'Orchester bearbeiten', 'href' => "/{$orchestraId}/orchestras/settings", 'page' => 'orchestra_settings', 'icon' => 'fas fa-cog'],
-                ['label' => 'Orchester wechseln', 'href' => '/orchestras/select', 'page' => null, 'icon' => 'fas fa-exchange-alt'],
-                ['label' => 'Logout', 'href' => '/logout', 'page' => null, 'icon' => 'fas fa-sign-out-alt'],
-            ];
-        } elseif (isset($_SESSION['current_role']) && $_SESSION['current_role'] === 'leader') {
-            $orchestraId = $_SESSION['current_orchestra_id'];
-            $menu = [
-                ['label' => 'Meine Meldungen', 'href' => "/{$orchestraId}/promises", 'page' => 'promises', 'icon' => 'fas fa-clipboard-check'],
-                ['label' => 'Rückmeldungen', 'href' => "/{$orchestraId}/promises/leader", 'page' => 'leader', 'icon' => 'fas fa-chart-bar'],
-                ['label' => 'Probenplan', 'href' => "/{$orchestraId}/probenplan", 'page' => 'probenplan', 'icon' => 'fas fa-list'],
-                ['label' => 'Profil bearbeiten', 'href' => "/{$orchestraId}/profile", 'page' => 'profile', 'icon' => 'fas fa-user-cog'],
-                ['label' => 'Orchester wechseln', 'href' => '/orchestras/select', 'page' => null, 'icon' => 'fas fa-exchange-alt'],
-                ['label' => 'Logout', 'href' => '/logout', 'page' => null, 'icon' => 'fas fa-sign-out-alt'],
-            ];
-        } else {
-            $orchestraId = $_SESSION['current_orchestra_id'];
-            $menu = [
-                ['label' => 'Meine Meldungen', 'href' => "/{$orchestraId}/promises", 'page' => 'promises', 'icon' => 'fas fa-clipboard-check'],
-                ['label' => 'Probenplan', 'href' => "/{$orchestraId}/probenplan", 'page' => 'probenplan', 'icon' => 'fas fa-list'],
-                ['label' => 'Profil bearbeiten', 'href' => "/{$orchestraId}/profile", 'page' => 'profile', 'icon' => 'fas fa-user-cog'],
-                ['label' => 'Orchester wechseln', 'href' => '/orchestras/select', 'page' => null, 'icon' => 'fas fa-exchange-alt'],
-                ['label' => 'Logout', 'href' => '/logout', 'page' => null, 'icon' => 'fas fa-sign-out-alt'],
-            ];
+
+        // Core menu items — permission-gated per wireframe
+
+        // Show "Meine Meldungen" for anyone with the attendance permission
+        if (!empty($permissions['can_attend_rehearsals'])) {
+            $menu[] = ['label' => 'Meine Meldungen', 'href' => "{$basePath}/promises", 'page' => 'promises', 'icon' => 'fas fa-clipboard-check'];
         }
+
+        if (!empty($permissions['can_view_all_section_stats']) || !empty($permissions['can_view_own_section_stats'])) {
+            $route = !empty($permissions['can_manage_ensemble']) ? "{$basePath}/promises/admin" : "{$basePath}/promises/leader";
+            $menu[] = ['label' => 'Rückmeldungen', 'href' => $route, 'page' => !empty($permissions['can_manage_ensemble']) ? 'admin' : 'leader', 'icon' => 'fas fa-chart-bar'];
+        }
+
+        if (!empty($permissions['can_manage_rehearsals'])) {
+            $menu[] = ['label' => 'Termine', 'href' => "{$basePath}/rehearsals", 'page' => 'rehearsals', 'icon' => 'fas fa-calendar-alt'];
+        }
+
+        $menu[] = ['label' => 'Probenplan', 'href' => "{$basePath}/probenplan", 'page' => 'probenplan', 'icon' => 'fas fa-list'];
+
+        if (!empty($permissions['can_view_members']) || !empty($permissions['can_manage_members'])) {
+            $menu[] = ['label' => 'Mitglieder', 'href' => "{$basePath}/members", 'page' => 'members', 'icon' => 'fas fa-users'];
+        }
+
+        if (!empty($permissions['can_manage_ensemble'])) {
+            $menu[] = ['label' => 'Ensemble', 'href' => "{$basePath}/orchestras/settings", 'page' => 'orchestra_settings', 'icon' => 'fas fa-cog'];
+        }
+
+        if ($userOrchestras > 1) {
+            $menu[] = ['label' => 'Ensemble wechseln', 'href' => '/orchestras/select', 'icon' => 'fas fa-exchange-alt'];
+        }
+
+        $profileRoute = !empty($permissions['can_manage_ensemble']) ? "{$basePath}/conductor/profile" : "{$basePath}/profile";
+        $profilePage = !empty($permissions['can_manage_ensemble']) ? 'conductor_profile' : 'profile';
+        $menu[] = ['label' => 'Profil', 'href' => $profileRoute, 'page' => $profilePage, 'icon' => 'fas fa-user'];
+        $menu[] = ['label' => 'Logout', 'href' => '/logout', 'icon' => 'fas fa-sign-out-alt'];
+
+        // Render main menu
         foreach ($menu as $item) {
             $active = isset($item['page']) && isset($currentPage) && $currentPage === $item['page'] ? 'active' : '';
             echo '<li class="sidebar-nav-item"><a class="sidebar-nav-link ' . $active . '" href="' . $item['href'] . '">';

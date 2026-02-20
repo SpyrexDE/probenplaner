@@ -108,56 +108,95 @@ $router->addRoute('/auth/keycloak/token', 'AuthController', 'keycloakTokenLogin'
 // Orchestra selection routes (no orchestra context)
 $router->addRoute('/orchestras/select', 'OrchestraSelectionController', 'select');
 $router->addRoute('/orchestras/set-current', 'OrchestraSelectionController', 'setCurrentOrchestra', 'POST');
-$router->addRoute('/orchestras/join', 'OrchestraSelectionController', 'showJoinForm', 'GET');
-$router->addRoute('/orchestras/join', 'OrchestraSelectionController', 'join', 'POST');
-$router->addRoute('/orchestras/select-section', 'OrchestraSelectionController', 'showSectionSelection', 'GET');
-$router->addRoute('/orchestras/complete-join', 'OrchestraSelectionController', 'completeJoin', 'POST');
 $router->addRoute('/orchestras/switch/{orchestra_id}', 'OrchestraSelectionController', 'switchOrchestra');
+$router->addRoute('/orchestras/redeem', 'InviteController', 'redeemForm', 'GET');
+$router->addRoute('/orchestras/redeem', 'InviteController', 'processRedeem', 'POST');
 
-// Orchestra-specific routes (with orchestra_id context)
+// Super-Admin routes
+$router->addRoute('/admin', 'AdminController', 'dashboard');
+$router->addRoute('/admin/dashboard', 'AdminController', 'dashboard');
+$router->addRoute('/admin/orgs/create', 'AdminController', 'createOrg', 'GET');
+$router->addRoute('/admin/orgs/store', 'AdminController', 'storeOrg', 'POST');
+$router->addRoute('/admin/orgs/{org_slug}/edit', 'AdminController', 'editOrg');
+$router->addRoute('/admin/orgs/{org_slug}/update', 'AdminController', 'updateOrg', 'POST');
+$router->addRoute('/admin/orgs/{org_slug}/delete', 'AdminController', 'deleteOrg', 'POST');
+$router->addRoute('/admin/orgs/{org_slug}/regenerate-password', 'AdminController', 'regeneratePassword', 'POST');
+$router->addRoute('/admin/logout', 'AdminController', 'logout');
+
+// Orga-Panel routes
+$router->addRoute('/orga', 'OrgaPanelController', 'dashboard');
+$router->addRoute('/orga/dashboard', 'OrgaPanelController', 'dashboard');
+$router->addRoute('/orga/ensembles/create', 'OrgaPanelController', 'createEnsemble', 'GET');
+$router->addRoute('/orga/ensembles/store', 'OrgaPanelController', 'storeEnsemble', 'POST');
+$router->addRoute('/orga/ensembles/{ensemble_slug}/edit', 'OrgaPanelController', 'editEnsemble');
+$router->addRoute('/orga/ensembles/{ensemble_slug}/update', 'OrgaPanelController', 'updateEnsemble', 'POST');
+$router->addRoute('/orga/ensembles/{ensemble_slug}/delete', 'OrgaPanelController', 'deleteEnsemble', 'POST');
+$router->addRoute('/orga/ensembles/{ensemble_slug}/generate-link', 'OrgaPanelController', 'generateLink', 'POST');
+$router->addRoute('/orga/ensembles/{ensemble_slug}/regenerate-link', 'OrgaPanelController', 'regenerateLink', 'POST');
+$router->addRoute('/orga/ensembles/{ensemble_slug}/remove-conductor', 'OrgaPanelController', 'removeConductor', 'POST');
+
+// Invite routes
+$router->addRoute('/invite/{token}', 'InviteController', 'landing');
+$router->addRoute('/invite/join', 'InviteController', 'join', 'POST');
+
+// Onboarding route
+$router->addRoute('/onboarding', 'UserController', 'onboarding', 'GET');
+$router->addRoute('/onboarding/save', 'UserController', 'saveOnboarding', 'POST');
+
+// Orchestra-specific routes (with org_slug/orchestra_id context)
 // Promises routes
-$router->addRoute('/{orchestra_id}/promises', 'PromiseController', 'index');
-$router->addRoute('/{orchestra_id}/promises/leader', 'PromiseController', 'leader');
-$router->addRoute('/{orchestra_id}/promises/admin', 'PromiseController', 'admin');
-$router->addRoute('/{orchestra_id}/promises/update', 'PromiseController', 'update');
-$router->addRoute('/{orchestra_id}/promises/note', 'PromiseController', 'note');
+$router->addRoute('/{org_slug}/{orchestra_id}/promises', 'PromiseController', 'index');
+$router->addRoute('/{org_slug}/{orchestra_id}/promises/leader', 'PromiseController', 'leader');
+$router->addRoute('/{org_slug}/{orchestra_id}/promises/admin', 'PromiseController', 'admin');
+$router->addRoute('/{org_slug}/{orchestra_id}/promises/update', 'PromiseController', 'update');
+$router->addRoute('/{org_slug}/{orchestra_id}/promises/note', 'PromiseController', 'note');
 
 // Rehearsal routes
-$router->addRoute('/{orchestra_id}/rehearsals', 'RehearsalController', 'index');
-$router->addRoute('/{orchestra_id}/rehearsals/create', 'RehearsalController', 'create');
-$router->addRoute('/{orchestra_id}/rehearsals/edit/{id}', 'RehearsalController', 'edit');
-$router->addRoute('/{orchestra_id}/rehearsals/delete/{id}', 'RehearsalController', 'delete');
+$router->addRoute('/{org_slug}/{orchestra_id}/rehearsals', 'RehearsalController', 'index');
+$router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/create', 'RehearsalController', 'create');
+$router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/edit/{id}', 'RehearsalController', 'edit');
+$router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/delete/{id}', 'RehearsalController', 'delete');
 
 // Probenplan route
-$router->addRoute('/{orchestra_id}/probenplan', 'ProbenplanController', 'index');
+$router->addRoute('/{org_slug}/{orchestra_id}/probenplan', 'ProbenplanController', 'index');
 
 // User profile routes (orchestra-specific context)
-$router->addRoute('/{orchestra_id}/profile', 'UserController', 'profile');
-$router->addRoute('/{orchestra_id}/profile/check-leader-password', 'UserController', 'checkLeaderPassword');
-$router->addRoute('/{orchestra_id}/profile/switch-theme', 'UserController', 'switchTheme', 'POST');
-$router->addRoute('/{orchestra_id}/profile/delete', 'UserController', 'delete');
-$router->addRoute('/{orchestra_id}/conductor/profile', 'UserController', 'conductorProfile');
+$router->addRoute('/{org_slug}/{orchestra_id}/profile', 'UserController', 'profile');
+$router->addRoute('/{org_slug}/{orchestra_id}/profile/switch-theme', 'UserController', 'switchTheme', 'POST');
+$router->addRoute('/{org_slug}/{orchestra_id}/profile/delete', 'UserController', 'delete');
+$router->addRoute('/{org_slug}/{orchestra_id}/profile/leave', 'UserController', 'leaveOrchestra');
+$router->addRoute('/{org_slug}/{orchestra_id}/conductor/profile', 'UserController', 'conductorProfile');
+$router->addRoute('/{org_slug}/{orchestra_id}/conductor/profile/delete', 'UserController', 'delete');
+$router->addRoute('/{org_slug}/{orchestra_id}/conductor/profile/leave', 'UserController', 'leaveOrchestra');
+
+// Member routes
+$router->addRoute('/{org_slug}/{orchestra_id}/members', 'MemberController', 'index');
+$router->addRoute('/{org_slug}/{orchestra_id}/members/{member_id}/details', 'MemberController', 'getDetails');
+$router->addRoute('/{org_slug}/{orchestra_id}/members/{member_id}/update', 'MemberController', 'updateMember', 'POST');
+$router->addRoute('/{org_slug}/{orchestra_id}/members/{member_id}/remove', 'MemberController', 'removeMember', 'POST');
+
+// Invite management routes (within orchestra context)
+$router->addRoute('/{org_slug}/{orchestra_id}/invite/regenerate', 'InviteController', 'regenerate', 'POST');
+$router->addRoute('/{org_slug}/{orchestra_id}/invite/toggle-keycloak', 'InviteController', 'toggleKeycloak', 'POST');
 
 // Orchestra settings routes (conductor only)
-$router->addRoute('/{orchestra_id}/orchestras/settings', 'OrchestraController', 'settings');
-$router->addRoute('/{orchestra_id}/orchestras/update', 'OrchestraController', 'update');
-$router->addRoute('/{orchestra_id}/orchestras/delete-confirm', 'OrchestraController', 'confirmDelete');
-$router->addRoute('/{orchestra_id}/orchestras/delete', 'OrchestraController', 'delete');
+$router->addRoute('/{org_slug}/{orchestra_id}/orchestras/settings', 'OrchestraController', 'settings');
+$router->addRoute('/{org_slug}/{orchestra_id}/orchestras/update', 'OrchestraController', 'update');
+$router->addRoute('/{org_slug}/{orchestra_id}/orchestras/delete-confirm', 'OrchestraController', 'confirmDelete');
+$router->addRoute('/{org_slug}/{orchestra_id}/orchestras/delete', 'OrchestraController', 'delete');
 
 // User management API routes (orchestra-specific)
-$router->addRoute('/{orchestra_id}/user/getUserDetails', 'UserController', 'getUserDetails');
-$router->addRoute('/{orchestra_id}/user/resetPassword', 'UserController', 'resetPassword');
-$router->addRoute('/{orchestra_id}/user/deleteUser', 'UserController', 'deleteUser');
+$router->addRoute('/{org_slug}/{orchestra_id}/user/getUserDetails', 'UserController', 'getUserDetails');
+$router->addRoute('/{org_slug}/{orchestra_id}/user/resetPassword', 'UserController', 'resetPassword');
+$router->addRoute('/{org_slug}/{orchestra_id}/user/deleteUser', 'UserController', 'deleteUser');
 
 // API routes (orchestra-specific)
-$router->addRoute('/{orchestra_id}/api/test', 'ApiController', 'test');
-$router->addRoute('/{orchestra_id}/api/minimal-stats', 'ApiController', 'minimalStats');
-$router->addRoute('/{orchestra_id}/api/user-stats', 'ApiController', 'getUserStats');
-$router->addRoute('/{orchestra_id}/api/settings/{entity}/{entity_id}', 'SettingsApiController', 'update', 'POST');
+$router->addRoute('/{org_slug}/{orchestra_id}/api/test', 'ApiController', 'test');
+$router->addRoute('/{org_slug}/{orchestra_id}/api/minimal-stats', 'ApiController', 'minimalStats');
+$router->addRoute('/{org_slug}/{orchestra_id}/api/user-stats', 'ApiController', 'getUserStats');
+$router->addRoute('/{org_slug}/{orchestra_id}/api/settings/{entity}/{entity_id}', 'SettingsApiController', 'update', 'POST');
 
-// Global orchestra creation routes (admin only)
-$router->addRoute('/orchestras/create', 'OrchestraController', 'create');
-$router->addRoute('/orchestras/store', 'OrchestraController', 'store');
+
 
 // Process the request
 try {

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Configuration file
  * Contains application settings and constants
@@ -33,8 +34,7 @@ if (APP_ENV !== 'development' && APP_ENV !== 'test') {
 }
 
 // Application-specific constants
-define('ADMIN_PW', getenv('ADMIN_PW')); // Password for creating new orchestras
-define('DEFAULT_LEADER_PASSWORD', getenv('DEFAULT_LEADER_PASSWORD') ?: 'stimmfuehrer'); // Fallback when no orchestra context
+define('ADMIN_PW', getenv('ADMIN_PW'));
 
 // Security Constants
 define('PASSWORD_MIN_LENGTH', 8);

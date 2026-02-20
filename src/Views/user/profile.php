@@ -93,25 +93,31 @@ include __DIR__ . '/../components/theme-selector.php';
                 <label for="group_type" class="form-label-modern">
                     <?= icon('music', 'form-label-icon') ?> Instrument / Stimmgruppe
                 </label>
-                <?php $currentType = $user['type'] ?? ''; ?>
-                <select class="form-input-modern" id="group_type" name="group_type" required>
-                    <option value="">Bitte Instrument / Stimmgruppe wählen</option>
-                    <?php
-                    function renderTypeOptions($structure, $level = 0, $currentType = '')
-                    {
-                        foreach ($structure as $key => $value) {
-                            if (is_array($value)) {
-                                echo '<option value="" disabled class="font-bold text-gray-600">' . str_replace('_', ' ', $key) . '</option>';
-                                renderTypeOptions($value, $level + 1, $currentType);
-                            } else {
-                                $selected = ($value === $currentType) ? ' selected' : '';
-                                echo '<option value="' . $value . '"' . $selected . '>' . str_repeat('&nbsp;&nbsp;', $level) . str_replace('_', ' ', $value) . '</option>';
+                <?php
+                $isConductor = !empty($_SESSION['current_permissions']['can_manage_ensemble']);
+                if ($isConductor): ?>
+                    <div class="form-input-modern" style="background: var(--color-bg-tertiary); cursor: default;">Leitung</div>
+                <?php else: ?>
+                    <?php $currentType = $user['type'] ?? ''; ?>
+                    <select class="form-input-modern" id="group_type" name="group_type" required>
+                        <option value="">Bitte Instrument / Stimmgruppe wählen</option>
+                        <?php
+                        function renderTypeOptions($structure, $level = 0, $currentType = '')
+                        {
+                            foreach ($structure as $key => $value) {
+                                if (is_array($value)) {
+                                    echo '<option value="" disabled class="font-bold text-gray-600">' . str_replace('_', ' ', $key) . '</option>';
+                                    renderTypeOptions($value, $level + 1, $currentType);
+                                } else {
+                                    $selected = ($value === $currentType) ? ' selected' : '';
+                                    echo '<option value="' . $value . '"' . $selected . '>' . str_repeat('&nbsp;&nbsp;', $level) . str_replace('_', ' ', $value) . '</option>';
+                                }
                             }
                         }
-                    }
-                    renderTypeOptions($typeStructure, 0, $currentType);
-                    ?>
-                </select>
+                        renderTypeOptions($typeStructure, 0, $currentType);
+                        ?>
+                    </select>
+                <?php endif; ?>
 
                 <div class="mt-6 space-y-4">
                     <div class="modern-checkbox-group">
@@ -124,14 +130,18 @@ include __DIR__ . '/../components/theme-selector.php';
                             </div>
                         </div>
                     </div>
-                    <div class="modern-checkbox-group">
-                        <div class="flex items-start">
-                            <input type="checkbox" id="group_leader" name="group_leader" class="modern-checkbox"
-                                <?= ($user['role'] === 'leader') ? 'checked' : '' ?>>
-                            <div class="ml-3 flex-1">
-                                <label for="group_leader" class="modern-checkbox-label">Stimmführung</label>
-                                <p class="modern-checkbox-description">Erweiterte Berechtigungen für Stimmführung</p>
-                            </div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h3 class="text-base font-medium text-gray-900">Orchester verlassen</h3>
+                            <p class="text-sm text-gray-500 mt-1">Du entfernst dich aus diesem Orchester. Du kannst später über einen Einladungslink jederzeit wieder beitreten.</p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <button type="button" id="leaveOrchestra" class="btn-modern btn-secondary w-full sm:w-auto">
+                                <?= icon('person-walking-arrow-right', 'btn-icon text-gray-600') ?> Verlassen
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -140,7 +150,7 @@ include __DIR__ . '/../components/theme-selector.php';
 
         <!-- Password -->
         <?php
-        $passwordChangeUrl = '/' . $orchestraId . '/profile';
+        $passwordChangeUrl = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '') . '/profile';
         $hasPassword = $hasPassword ?? !empty($user['password']);
         include __DIR__ . '/../components/password-change-modal.php';
         ?>
@@ -205,9 +215,9 @@ include __DIR__ . '/../components/theme-selector.php';
 <script src="/assets/js/settings-engine.js"></script>
 <script>
     $(document).ready(function() {
-        <?php $orchestraId = $_SESSION['current_orchestra_id'] ?? 1; ?>
+        <?php $orchestraBase = ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? ''); ?>
         const userId = <?= (int)$user['id'] ?>;
-        const orchestraId = <?= (int)$orchestraId ?>;
+        const orchestraSlug = '<?= $orchestraBase ?>';
         const csrfToken = '<?= \App\Core\CSRF::getToken() ?>';
 
         function wireField(selector, fieldName, fieldType) {
@@ -215,7 +225,7 @@ include __DIR__ . '/../components/theme-selector.php';
             if (!el) return;
             el.dataset.entity = 'user';
             el.dataset.entityId = userId;
-            el.dataset.orchestraId = orchestraId;
+            el.dataset.orchestraId = orchestraSlug;
             el.dataset.field = fieldName;
             el.dataset.saveMode = 'auto';
             if (fieldType) el.dataset.fieldType = fieldType;
@@ -227,95 +237,6 @@ include __DIR__ . '/../components/theme-selector.php';
 
         if (window.SettingsEngine) window.SettingsEngine.init();
 
-        // Leader checkbox — password verification before auto-save
-        const leaderCheckbox = document.getElementById('group_leader');
-        if (leaderCheckbox) {
-            leaderCheckbox.addEventListener('change', function() {
-                if (this.checked) {
-                    this.checked = false;
-                    Swal.fire({
-                        title: 'Berechtigung für Stimmführung',
-                        html: '<p class="text-gray-600 mb-3">Um Berechtigungen für Stimmführung zu erhalten, benötigst du das entsprechende Passwort.</p>',
-                        input: 'password',
-                        inputPlaceholder: 'Stimmführungs-Passwort eingeben',
-                        inputAttributes: {
-                            autocapitalize: 'off',
-                            autocorrect: 'off'
-                        },
-                        showCancelButton: true,
-                        confirmButtonText: 'Bestätigen',
-                        cancelButtonText: 'Abbrechen',
-                        confirmButtonColor: '#478cf4',
-                        cancelButtonColor: '#6b7280',
-                        preConfirm: (password) => {
-                            if (!password) {
-                                Swal.showValidationMessage('Bitte gib das Passwort ein');
-                                return false;
-                            }
-                            return password.trim();
-                        }
-                    }).then((result) => {
-                        if (!result.isConfirmed) return;
-                        Swal.fire({
-                            title: 'Überprüfung...',
-                            allowOutsideClick: false,
-                            showConfirmButton: false,
-                            willOpen: () => Swal.showLoading()
-                        });
-
-                        $.ajax({
-                            type: 'POST',
-                            url: '/' + orchestraId + '/profile/check-leader-password',
-                            data: {
-                                password: result.value
-                            },
-                            success: function(response) {
-                                if (typeof response === 'string') try {
-                                    response = JSON.parse(response);
-                                } catch (e) {}
-                                if (response.valid) {
-                                    leaderCheckbox.checked = true;
-                                    saveLeaderStatus(true);
-                                    window.notifySuccess('Passwort akzeptiert');
-                                } else {
-                                    window.notifyErrorWithDetails('Ungültiges Passwort', response.message || response.error || 'Stimmführungs-Passwort ist falsch');
-                                }
-                            },
-                            error: function(xhr, status, error) {
-                                const details = 'Status: ' + status + '\nError: ' + error + '\nResponse: ' + xhr.responseText;
-                                window.notifyErrorWithDetails('Überprüfung fehlgeschlagen', details);
-                            }
-                        });
-                    });
-                } else {
-                    saveLeaderStatus(false);
-                }
-            });
-        }
-
-        function saveLeaderStatus(isLeader) {
-            fetch('/' + orchestraId + '/api/settings/user/' + userId, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    field: 'group_leader',
-                    value: isLeader ? '1' : '0'
-                })
-            }).then(r => r.json()).then(data => {
-                if (data.success) {
-                    if (window.SettingsEngine && window.SettingsEngine.showSaveState) {
-                        window.SettingsEngine.showSaveState('success');
-                    }
-                } else {
-                    window.notifyErrorWithDetails('Fehler beim Speichern', data.error || JSON.stringify(data));
-                }
-            }).catch(err => {
-                window.notifyErrorWithDetails('Netzwerkfehler', err.message || String(err));
-            });
-        }
-
         // Theme selection
         $('.theme-radio-compact').on('change', function() {
             if (!$(this).is(':checked')) return;
@@ -325,7 +246,7 @@ include __DIR__ . '/../components/theme-selector.php';
 
             $.ajax({
                 type: 'POST',
-                url: '/' + orchestraId + '/profile/switch-theme',
+                url: '/' + orchestraSlug + '/profile/switch-theme',
                 data: {
                     theme: themeKey,
                     csrf_token: csrfToken
@@ -361,6 +282,32 @@ include __DIR__ . '/../components/theme-selector.php';
             });
         });
 
+        // Leave Orchestra
+        $('#leaveOrchestra').click(function() {
+            Swal.fire({
+                title: 'Orchester verlassen?',
+                text: 'Möchtest du dieses Orchester wirklich verlassen? Du hast danach keinen Zugriff mehr auf die Proben dieses Orchesters, kannst aber später über einen Link wieder beitreten.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Ja, Orchester verlassen',
+                cancelButtonText: 'Abbrechen',
+                confirmButtonColor: '#4f46e5',
+                cancelButtonColor: '#6b7280',
+                focusCancel: true,
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Wird verlassen...',
+                        allowOutsideClick: false,
+                        showConfirmButton: false,
+                        willOpen: () => Swal.showLoading()
+                    });
+                    window.location.href = '/' + orchestraSlug + '/profile/leave';
+                }
+            });
+        });
+
         // Account deletion
         $('#deleteAccount').click(function() {
             Swal.fire({
@@ -382,7 +329,7 @@ include __DIR__ . '/../components/theme-selector.php';
                         showConfirmButton: false,
                         willOpen: () => Swal.showLoading()
                     });
-                    window.location.href = '/' + orchestraId + '/profile/delete';
+                    window.location.href = '/' + orchestraSlug + '/profile/delete';
                 }
             });
         });

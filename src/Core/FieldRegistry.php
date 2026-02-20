@@ -88,12 +88,53 @@ class FieldRegistry
     /** Get the DB table name for an entity. */
     public static function getTable(string $entity): ?string
     {
-        $map = [
+        return match ($entity) {
             'orchestra' => 'orchestras',
-            'user'      => 'users',
+            'user' => 'users',
             'rehearsal' => 'rehearsals',
-        ];
-        return $map[$entity] ?? null;
+            default => throw new \InvalidArgumentException("Unknown entity: {$entity}"),
+        };
+    }
+
+    /**
+     * Get section→instruments map from GroupManager config.
+     *
+     * @return array<string, string[]> Group name → list of instrument IDs
+     */
+    public static function getSections(): array
+    {
+        $groupManager = new \App\Core\GroupManager();
+        $config = $groupManager->getConfig();
+        $structure = [];
+
+        if (!isset($config['tutti']['children'])) {
+            return $structure;
+        }
+
+        foreach ($config['tutti']['children'] as $section) {
+            if (($section['type'] ?? '') !== 'section') continue;
+            $instruments = [];
+            if (isset($section['children'])) {
+                foreach ($section['children'] as $child) {
+                    if (($child['type'] ?? '') === 'instrument') {
+                        $instruments[] = $child['id'];
+                    } elseif (($child['type'] ?? '') === 'section' && isset($child['children'])) {
+                        foreach ($child['children'] as $inst) {
+                            if (($inst['type'] ?? '') === 'instrument') {
+                                $instruments[] = $inst['id'];
+                            }
+                        }
+                    }
+                }
+            } else {
+                $instruments[] = $section['id'];
+            }
+            if (!empty($instruments)) {
+                $structure[$section['id']] = $instruments;
+            }
+        }
+
+        return $structure;
     }
 
     // ── Field Definitions ──────────────────────────────────────────
@@ -112,24 +153,13 @@ class FieldRegistry
                 'permission' => 'conductor',
             ],
             [
-                'name'       => 'token',
-                'type'       => 'secret',
-                'label'      => 'Orchester-Token',
-                'description' => 'Für Mitglieder-Registrierung',
-                'icon'       => 'key',
-                'group'      => 'security',
+                'name'       => 'slug',
+                'type'       => 'text',
+                'label'      => 'Orchester-Slug',
+                'description' => 'URL-Kennung für das Orchester',
+                'icon'       => 'link',
+                'group'      => 'basic',
                 'validation' => ['required', 'pattern:/^[a-zA-Z0-9_-]+$/'],
-                'save'       => 'auto',
-                'permission' => 'conductor',
-            ],
-            [
-                'name'       => 'leader_pw',
-                'type'       => 'secret',
-                'label'      => 'Stimmführer-Passwort',
-                'description' => 'Für Stimmführer-Berechtigungen',
-                'icon'       => 'shield',
-                'group'      => 'security',
-                'validation' => ['required', 'min:4'],
                 'save'       => 'auto',
                 'permission' => 'conductor',
             ],
@@ -201,14 +231,6 @@ class FieldRegistry
                 'name'       => 'small_group',
                 'type'       => 'toggle',
                 'label'      => 'Kleine Besetzung',
-                'group'      => 'orchestra',
-                'save'       => 'auto',
-                'permission' => 'member',
-            ],
-            [
-                'name'       => 'group_leader',
-                'type'       => 'toggle',
-                'label'      => 'Stimmführung',
                 'group'      => 'orchestra',
                 'save'       => 'auto',
                 'permission' => 'member',

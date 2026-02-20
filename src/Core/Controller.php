@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Core;
 
 /**
@@ -11,7 +12,7 @@ class Controller
      * @var Database
      */
     protected $db;
-    
+
     /**
      * Constructor
      */
@@ -19,7 +20,7 @@ class Controller
     {
         $this->db = Database::getInstance();
     }
-    
+
     /**
      * Render a view
      * 
@@ -31,14 +32,14 @@ class Controller
     {
         // Create a template renderer
         $template = new TemplateRenderer();
-        
+
         // Render the view
         $content = $template->render($view, $data);
-        
+
         // Output the content
         echo $content;
     }
-    
+
     /**
      * Render a view without header and footer
      * 
@@ -50,7 +51,7 @@ class Controller
     {
         // Extract data to make it available in the view
         extract($data);
-        
+
         // Include the view
         include APP_ROOT . '/Views/' . $view . '.php';
     }
@@ -60,14 +61,14 @@ class Controller
      *
      * @return bool
      */
-    private function isJsonRequest(): bool
+    protected function isJsonRequest(): bool
     {
         $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
         $xhr = $_SERVER['HTTP_X_REQUESTED_WITH'] ?? '';
         return (stripos($accept, 'application/json') !== false)
             || (strcasecmp($xhr, 'XMLHttpRequest') === 0);
     }
-    
+
     /**
      * Redirect to a URL
      * 
@@ -79,7 +80,7 @@ class Controller
         header('Location: ' . $url);
         exit;
     }
-    
+
     /**
      * Check if user is logged in
      * 
@@ -89,27 +90,16 @@ class Controller
     {
         return isset($_SESSION['username']);
     }
-    
+
     /**
-     * Check if user is admin
-     * 
-     * @return bool
+     * Check if user has a specific permission in the current orchestra.
      */
-    protected function isAdmin(): bool
+    protected function hasPermission(string $permission): bool
     {
-        return isset($_SESSION['current_role']) && $_SESSION['current_role'] === 'conductor';
+        if (!isset($_SESSION['current_permissions'])) return false;
+        return !empty($_SESSION['current_permissions'][$permission]);
     }
-    
-    /**
-     * Check if user is leader
-     * 
-     * @return bool
-     */
-    protected function isLeader(): bool
-    {
-        return isset($_SESSION['current_role']) && $_SESSION['current_role'] === 'leader';
-    }
-    
+
     /**
      * Add alert message to session
      * 
@@ -124,7 +114,7 @@ class Controller
         if (!isset($_SESSION['alerts']) || !is_array($_SESSION['alerts'])) {
             $_SESSION['alerts'] = [];
         }
-        
+
         // Handle array messages
         if (is_array($message)) {
             $message = implode(', ', $message);
@@ -134,10 +124,10 @@ class Controller
         if (is_array($details)) {
             $details = json_encode($details, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         }
-        
+
         $_SESSION['alerts'][] = [$title, $message, $type, $details];
     }
-    
+
     /**
      * Handle error response consistently using ErrorHandler
      * 
@@ -160,12 +150,12 @@ class Controller
                 $errorResponse['type']
             );
         }
-        
+
         if ($redirectUrl) {
             $this->redirect($redirectUrl);
         }
     }
-    
+
     /**
      * Set flash message using SweetAlert toast
      * 
@@ -179,29 +169,38 @@ class Controller
         if (!isset($_SESSION['flash_messages'])) {
             $_SESSION['flash_messages'] = [];
         }
-        
+
         // Convert type to match SweetAlert types
         $swalType = $type === 'warning' ? 'warning' : ($type === 'error' ? 'error' : ($type === 'success' ? 'success' : 'info'));
-        
+
         $_SESSION['flash_messages'][] = [
             'type' => $swalType,
             'message' => $message,
             'details' => $details
         ];
     }
-    
+
     /**
-     * Protect against CSRF attacks
-     * Call this in controllers that handle POST requests
-     * 
-     * @throws \Exception If CSRF token is invalid
-     * @return void
+     * Protect against CSRF attacks.
+     * Returns JSON error for AJAX or redirects with flash for form submissions.
      */
     protected function protectCSRF(): void
     {
-        CSRF::protect();
+        try {
+            CSRF::protect();
+        } catch (\Exception $e) {
+            if ($this->isJsonRequest()) {
+                http_response_code(403);
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+                exit;
+            }
+            $this->setFlash('error', $e->getMessage());
+            $referer = $_SERVER['HTTP_REFERER'] ?? '/';
+            $this->redirect($referer);
+        }
     }
-    
+
     /**
      * Get CSRF token for forms
      * 
@@ -211,7 +210,7 @@ class Controller
     {
         return CSRF::getToken();
     }
-    
+
     /**
      * Get CSRF token HTML field
      * 
@@ -221,16 +220,16 @@ class Controller
     {
         return CSRF::getTokenField();
     }
-    
+
     /**
-     * Validate orchestra context for orchestra-specific routes
+     * Validate orchestra context for orchestra-specific routes.
+     * Resolves the URL slug to a numeric orchestra ID.
      * 
-     * @param array $params Route parameters (should contain orchestra_id)
+     * @param array $params Route parameters (orchestra_id contains the slug)
      * @return array|null Orchestra context data or null if invalid
      */
     protected function validateOrchestraContext(array $params): ?array
     {
-        // Must be logged in
         if (!$this->isLoggedIn()) {
             if ($this->isJsonRequest()) {
                 http_response_code(401);
@@ -241,124 +240,142 @@ class Controller
             $this->redirect('/login');
             return null;
         }
-        
-        // Extract orchestra ID from route parameters
-        $orchestraId = (int)($params['orchestra_id'] ?? 0);
-        
-        if (!$orchestraId) {
-            $this->addAlert('Fehler!', 'Ungültige Orchester-ID.', 'error');
+
+        $slug = $params['orchestra_id'] ?? '';
+        $orgSlug = $params['org_slug'] ?? '';
+
+        if (empty($slug)) {
+            $this->addAlert('Fehler!', 'Ungültiger Ensemble-Slug.', 'error');
             if ($this->isJsonRequest()) {
                 http_response_code(400);
                 header('Content-Type: application/json');
-                echo json_encode(['success' => false, 'error' => 'Ungültige Orchester-ID.']);
+                echo json_encode(['success' => false, 'error' => 'Ungültiger Ensemble-Slug.']);
                 exit;
             }
             $this->redirect('/orchestras/select');
             return null;
         }
-        
-        // Check if user has access to this orchestra
-        $userOrchestraModel = new \App\Models\UserOrchestra();
-        $relation = $userOrchestraModel->getUserOrchestraRelation($_SESSION['user_id'], $orchestraId, true);
-        
-        if (!$relation) {
-            $this->addAlert('Fehler!', 'Sie haben keinen Zugriff auf dieses Orchester.', 'error');
-            if ($this->isJsonRequest()) {
-                http_response_code(403);
-                header('Content-Type: application/json');
-                echo json_encode(['success' => false, 'error' => 'Kein Zugriff auf dieses Orchester']);
-                exit;
-            }
-            $this->redirect('/orchestras/select');
-            return null;
-        }
-        
-        // Get orchestra details
+
+        // Resolve slug to orchestra with org info
         $orchestraModel = new \App\Models\Orchestra();
-        $orchestra = $orchestraModel->findById($orchestraId);
-        
+        $orchestra = $orchestraModel->findBySlugWithOrg($slug);
+
         if (!$orchestra) {
-            $this->addAlert('Fehler!', 'Orchester nicht gefunden.', 'error');
+            $this->addAlert('Fehler!', 'Ensemble nicht gefunden.', 'error');
             if ($this->isJsonRequest()) {
                 http_response_code(404);
                 header('Content-Type: application/json');
-                echo json_encode(['success' => false, 'error' => 'Orchester nicht gefunden']);
+                echo json_encode(['success' => false, 'error' => 'Ensemble nicht gefunden']);
                 exit;
             }
             $this->redirect('/orchestras/select');
             return null;
         }
-        
-        // Set current orchestra context if not already set or different
+
+        $orchestraId = (int)$orchestra['id'];
+
+        // Check user access
+        $userOrchestraModel = new \App\Models\UserOrchestra();
+        $relation = $userOrchestraModel->getUserOrchestraRelation($_SESSION['user_id'], $orchestraId, true);
+
+        if (!$relation) {
+            $this->addAlert('Fehler!', 'Sie haben keinen Zugriff auf dieses Ensemble.', 'error');
+            if ($this->isJsonRequest()) {
+                http_response_code(403);
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'error' => 'Kein Zugriff auf dieses Ensemble']);
+                exit;
+            }
+            $this->redirect('/orchestras/select');
+            return null;
+        }
+
+        // Set current orchestra context
         if (!isset($_SESSION['current_orchestra_id']) || $_SESSION['current_orchestra_id'] != $orchestraId) {
             $_SESSION['current_orchestra_id'] = $orchestraId;
+            $_SESSION['current_orchestra_slug'] = $orchestra['slug'];
+            $_SESSION['current_org_slug'] = $orchestra['org_slug'] ?? '';
             $_SESSION['current_orchestra_name'] = $orchestra['name'];
             $_SESSION['current_type'] = $relation['type'];
-            $_SESSION['current_role'] = $relation['role'];
+            $userOrchestraModel = new \App\Models\UserOrchestra();
+            $_SESSION['current_permissions'] = $userOrchestraModel->getPermissions($_SESSION['user_id'], $orchestraId);
         }
-        
+        // Keep slugs in sync
+        $_SESSION['current_orchestra_slug'] = $orchestra['slug'];
+        $_SESSION['current_org_slug'] = $orchestra['org_slug'] ?? '';
+
         return [
             'orchestra_id' => $orchestraId,
             'orchestra' => $orchestra,
             'relation' => $relation,
-            'user_role' => $relation['role'],
-            'user_type' => $relation['type']
+            'user_type' => $relation['type'],
         ];
     }
-    
+
     /**
-     * Require specific role in current orchestra
-     * 
-     * @param string $requiredRole Required role (member, leader, conductor)
-     * @param array|null $context Orchestra context from validateOrchestraContext()
-     * @return bool
+     * Build an orchestra-scoped URL using the current session slug.
+     *
+     * @param string $path Path relative to the orchestra root (e.g. '/promises')
      */
-    protected function requireRole(string $requiredRole, ?array $context = null): bool
+    protected function orchestraUrl(string $path = ''): string
     {
-        if (!$context && isset($_SESSION['current_role'])) {
-            $userRole = $_SESSION['current_role'];
-        } elseif ($context) {
-            $userRole = $context['user_role'];
-        } else {
-            $this->addAlert('Fehler!', 'Keine Berechtigung.', 'error');
+        $orgSlug = $_SESSION['current_org_slug'] ?? '';
+        $slug = $_SESSION['current_orchestra_slug'] ?? '';
+        return '/' . $orgSlug . '/' . $slug . $path;
+    }
+    /**
+     * Require a specific permission in the current orchestra context.
+     */
+    protected function requirePermission(string $permission): bool
+    {
+        if (!$this->hasPermission($permission)) {
             if ($this->isJsonRequest()) {
                 http_response_code(403);
                 header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'error' => 'Keine Berechtigung']);
                 exit;
             }
-            $this->redirect('/orchestras/select');
-            return false;
-        }
-        
-        // Role hierarchy: conductor > leader > member
-        $roleHierarchy = ['member' => 1, 'leader' => 2, 'conductor' => 3];
-        
-        $userLevel = $roleHierarchy[$userRole] ?? 0;
-        $requiredLevel = $roleHierarchy[$requiredRole] ?? 0;
-        
-        if ($userLevel < $requiredLevel) {
             $this->addAlert('Fehler!', 'Sie haben nicht die erforderliche Berechtigung für diese Aktion.', 'error');
-            
-            if ($this->isJsonRequest()) {
-                http_response_code(403);
-                header('Content-Type: application/json');
-                echo json_encode(['success' => false, 'error' => 'Nicht ausreichend berechtigt']);
-                exit;
-            }
-            // Redirect based on current role
-            if (isset($_SESSION['current_orchestra_id'])) {
-                if ($userRole === 'conductor') {
-                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/promises/admin');
-                } else {
-                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/promises');
-                }
-            } else {
-                $this->redirect('/orchestras/select');
-            }
+            $slug = $_SESSION['current_orchestra_slug'] ?? null;
+            $this->redirect($slug ? $this->orchestraUrl('/promises') : '/orchestras/select');
             return false;
         }
-        
         return true;
     }
-} 
+
+    /**
+     * Require authenticated user session.
+     */
+    protected function requireLogin(): bool
+    {
+        if (!$this->isLoggedIn()) {
+            $this->redirect('/login');
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Require super-admin session (username "admin").
+     */
+    protected function requireSuperAdmin(): bool
+    {
+        if (empty($_SESSION['username']) || $_SESSION['username'] !== 'admin') {
+            $this->redirect('/login');
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Require org-admin session.
+     */
+    protected function requireOrgAdmin(): bool
+    {
+        if (empty($_SESSION['is_org_admin'])) {
+            $this->redirect('/login');
+            return false;
+        }
+        return true;
+    }
+}

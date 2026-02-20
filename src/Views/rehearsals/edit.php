@@ -8,8 +8,8 @@ include __DIR__ . '/../components/checkbox.php';
 include __DIR__ . '/../components/modern-checkbox.php';
 $renderComponent = true;
 
-$orchestraId = $_SESSION['current_orchestra_id'] ?? '';
-$backUrl = '/' . $orchestraId . '/rehearsals';
+$orchestraBase = ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '');
+$backUrl = '/' . $orchestraBase . '/rehearsals';
 ?>
 
 <div class="container-app">
@@ -85,7 +85,7 @@ $backUrl = '/' . $orchestraId . '/rehearsals';
             <?php
             // API URL is same for both as they hit the same settings endpoint structure
             $autoSave = true;
-            $apiUrl = '/' . $orchestraId . '/api/settings/rehearsal/' . $rehearsal['id'];
+            $apiUrl = '/' . $orchestraBase . '/api/settings/rehearsal/' . $rehearsal['id'];
             include __DIR__ . '/../components/infobox-editor.php';
             include __DIR__ . '/../components/schedule-editor.php';
             ?>
@@ -141,7 +141,7 @@ $backUrl = '/' . $orchestraId . '/rehearsals';
 <script>
     (function() {
         const REHEARSAL_ID = '<?= $rehearsal['id'] ?>';
-        const ORCHESTRA_ID = '<?= $orchestraId ?>';
+        const ORCHESTRA_ID = '<?= $orchestraBase ?>';
         const API_URL = `/${ORCHESTRA_ID}/api/settings/rehearsal/${REHEARSAL_ID}`;
 
         // ── Wire simple fields for auto-save ──

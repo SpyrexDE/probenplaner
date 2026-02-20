@@ -37,6 +37,12 @@ class UserController extends Controller
     {
         $this->validateOrchestraContext($params);
 
+        // Conductors use their own profile page
+        if (!empty($_SESSION['current_permissions']['can_manage_ensemble'])) {
+            $this->redirect($this->orchestraUrl('/conductor/profile'));
+            return;
+        }
+
         $username = $_SESSION['username'];
         $user = $this->userModel->findByUsername($username);
 
@@ -46,12 +52,11 @@ class UserController extends Controller
             return;
         }
 
-        // Enrich user data with current context
         if (isset($_SESSION['current_type'])) {
             $user['type'] = $_SESSION['current_type'];
         }
-        if (isset($_SESSION['current_role'])) {
-            $user['role'] = $_SESSION['current_role'];
+        if (isset($_SESSION['current_permissions'])) {
+            $user['permissions'] = $_SESSION['current_permissions'];
         }
 
         // Get small group status from user_orchestras table
@@ -71,7 +76,7 @@ class UserController extends Controller
         error_log("User data for profile: " . json_encode([
             'type' => $user['type'] ?? null,
             'is_small_group' => $user['is_small_group'] ?? null,
-            'role' => $user['role'] ?? null
+            'permissions' => $user['permissions'] ?? null
         ]));
 
         $this->render('user/profile', [
@@ -95,7 +100,7 @@ class UserController extends Controller
     {
         $this->validateOrchestraContext($params);
 
-        $this->requireRole('conductor');
+        $this->requirePermission('can_manage_ensemble');
 
         $username = $_SESSION['username'];
         $user = $this->userModel->findByUsername($username);
@@ -133,7 +138,7 @@ class UserController extends Controller
             $this->protectCSRF();
         } catch (\Exception $e) {
             $this->addAlert('Sicherheitsfehler!', $e->getMessage(), 'error');
-            $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/conductor/profile');
+            $this->redirect($this->orchestraUrl('/conductor/profile'));
             return;
         }
         $oldUsername = $user['username'];
@@ -155,7 +160,7 @@ class UserController extends Controller
 
             if (!$usernameValidation['valid']) {
                 $this->addAlert('Fehler!', implode(", ", $usernameValidation['errors']), 'error');
-                $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/conductor/profile');
+                $this->redirect($this->orchestraUrl('/conductor/profile'));
                 return;
             }
 
@@ -168,13 +173,13 @@ class UserController extends Controller
             if ($hasPassword) {
                 if (empty($currentPassword)) {
                     $this->addAlert('Fehler!', 'Bitte geben Sie Ihr aktuelles Passwort ein.', 'error');
-                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/conductor/profile');
+                    $this->redirect($this->orchestraUrl('/conductor/profile'));
                     return;
                 }
 
                 if (!password_verify($currentPassword, $user['password'])) {
                     $this->addAlert('Fehler!', 'Das aktuelle Passwort ist falsch.', 'error');
-                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/conductor/profile');
+                    $this->redirect($this->orchestraUrl('/conductor/profile'));
                     return;
                 }
             }
@@ -183,14 +188,14 @@ class UserController extends Controller
             $passwordValidation = $this->userModel->validateUserInput(null, $newPassword);
             if (!$passwordValidation['valid']) {
                 $this->addAlert('Fehler!', implode(", ", $passwordValidation['errors']), 'error');
-                $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/conductor/profile');
+                $this->redirect($this->orchestraUrl('/conductor/profile'));
                 return;
             }
 
             // Check passwords match
             if ($newPassword !== $confirmPassword) {
                 $this->addAlert('Fehler!', 'Die neuen Passwörter stimmen nicht überein.', 'error');
-                $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/conductor/profile');
+                $this->redirect($this->orchestraUrl('/conductor/profile'));
                 return;
             }
 
@@ -200,7 +205,7 @@ class UserController extends Controller
         // If no changes were made
         if (empty($updateData)) {
             $this->addAlert('Info', 'Keine Änderungen vorgenommen.', 'info');
-            $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/conductor/profile');
+            $this->redirect($this->orchestraUrl('/conductor/profile'));
             return;
         }
 
@@ -214,11 +219,11 @@ class UserController extends Controller
                 $this->logout();
             } else {
                 $this->setFlash('success', 'Profil erfolgreich aktualisiert.');
-                $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/conductor/profile');
+                $this->redirect($this->orchestraUrl('/conductor/profile'));
             }
         } else {
             $this->addAlert('Fehler!', 'Fehler beim Aktualisieren des Profils.', 'error');
-            $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/conductor/profile');
+            $this->redirect($this->orchestraUrl('/conductor/profile'));
         }
     }
 
@@ -234,7 +239,7 @@ class UserController extends Controller
             $this->protectCSRF();
         } catch (\Exception $e) {
             $this->addAlert('Sicherheitsfehler!', $e->getMessage(), 'error');
-            $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
+            $this->redirect($this->orchestraUrl('/profile'));
             return;
         }
         $oldUsername = $user['username'];
@@ -244,8 +249,6 @@ class UserController extends Controller
         $confirmPassword = $_POST['confirm_password'] ?? '';
         $groupType = Validator::sanitizeUtf8($_POST['group_type'] ?? '');
         $smallGroup = isset($_POST['small_group']) ? true : false;
-        $groupLeader = isset($_POST['group_leader']) ? true : false;
-        $groupLeaderPassword = Validator::sanitizeUtf8($_POST['group_leader_password'] ?? '');
 
         $updateData = [];
         $relationChangesMade = false;
@@ -261,7 +264,7 @@ class UserController extends Controller
 
             if (!$usernameValidation['valid']) {
                 $this->addAlert('Fehler!', implode(", ", $usernameValidation['errors']), 'error');
-                $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
+                $this->redirect($this->orchestraUrl('/profile'));
                 return;
             }
 
@@ -274,13 +277,13 @@ class UserController extends Controller
             if ($hasPassword) {
                 if (empty($currentPassword)) {
                     $this->addAlert('Fehler!', 'Bitte geben Sie Ihr aktuelles Passwort ein.', 'error');
-                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
+                    $this->redirect($this->orchestraUrl('/profile'));
                     return;
                 }
 
                 if (!password_verify($currentPassword, $user['password'])) {
                     $this->addAlert('Fehler!', 'Das aktuelle Passwort ist falsch.', 'error');
-                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
+                    $this->redirect($this->orchestraUrl('/profile'));
                     return;
                 }
             }
@@ -289,14 +292,14 @@ class UserController extends Controller
             $passwordValidation = $this->userModel->validateUserInput(null, $newPassword);
             if (!$passwordValidation['valid']) {
                 $this->addAlert('Fehler!', implode(", ", $passwordValidation['errors']), 'error');
-                $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
+                $this->redirect($this->orchestraUrl('/profile'));
                 return;
             }
 
             // Check passwords match
             if ($newPassword !== $confirmPassword) {
                 $this->addAlert('Fehler!', 'Die neuen Passwörter stimmen nicht überein.', 'error');
-                $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
+                $this->redirect($this->orchestraUrl('/profile'));
                 return;
             }
 
@@ -322,45 +325,13 @@ class UserController extends Controller
             }
         }
 
-        // Process group leader status
-        $isCurrentlyLeader = ($user['role'] === 'leader');
-
-        if ($groupLeader && !$isCurrentlyLeader) {
-            // Check leader password
-            $leaderPassword = $this->getLeaderPassword();
-            // Use case-insensitive comparison
-            if (strtolower($groupLeaderPassword) !== strtolower($leaderPassword)) {
-                $this->addAlert('Fehler!', 'Das Stimmführungs-Passwort ist falsch.', 'error');
-                $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
-                return;
-            }
-            // Update role in relation
-            if ($orchestraId) {
-                $userOrchestraModel = $userOrchestraModel ?? new \App\Models\UserOrchestra();
-                $roleUpdated = $userOrchestraModel->updateUserRole((int)$user['id'], (int)$orchestraId, 'leader');
-                if ($roleUpdated) {
-                    $_SESSION['current_role'] = 'leader';
-                    $relationChangesMade = true;
-                }
-            }
-        } else if (!$groupLeader && $isCurrentlyLeader) {
-            if ($orchestraId) {
-                $userOrchestraModel = $userOrchestraModel ?? new \App\Models\UserOrchestra();
-                $roleUpdated = $userOrchestraModel->updateUserRole((int)$user['id'], (int)$orchestraId, 'member');
-                if ($roleUpdated) {
-                    $_SESSION['current_role'] = 'member';
-                    $relationChangesMade = true;
-                }
-            }
-        }
 
         if (empty($updateData) && !$relationChangesMade) {
             $this->addAlert('Info', 'Keine Änderungen vorgenommen.', 'info');
-            $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
+            $this->redirect($this->orchestraUrl('/profile'));
             return;
         }
 
-        // Update user profile if there are user-table changes
         $result = true;
         if (!empty($updateData)) {
             $result = $this->userModel->updateProfile($user['id'], $updateData);
@@ -368,24 +339,19 @@ class UserController extends Controller
 
         if ($result === true) {
             if ($usernameChanged) {
-                // Re-login required after username change
                 $this->setFlash('success', 'Profil aktualisiert. Bitte melden Sie sich erneut an.');
                 $this->logout();
             } else {
-                // Session updates for relation handled above when applying relation changes
                 $this->setFlash('success', 'Profil erfolgreich aktualisiert.');
-                $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
+                $this->redirect($this->orchestraUrl('/profile'));
             }
         } else {
-            // Log the error for debugging
             error_log("Profile update failed: " . json_encode($updateData));
 
-            // Check if it's an array with error details
             if (is_array($result) && isset($result['error']) && isset($result['message'])) {
                 $errorDetails = isset($result['details']) ? $result['details'] : '';
                 $this->addAlert('Fehler!', $result['message'], 'error', $errorDetails);
             } else {
-                // Try to get a better error message from the database
                 $db = new \App\Core\Database();
                 $errorMsg = $db->getLastError();
 
@@ -397,34 +363,8 @@ class UserController extends Controller
                     $this->addAlert('Fehler!', 'Fehler beim Aktualisieren des Profils.', 'error', $errorMsg);
                 }
             }
-            $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
+            $this->redirect($this->orchestraUrl('/profile'));
         }
-    }
-
-    /**
-     * Check if leader password is valid
-     * 
-     * @return void
-     */
-    public function checkLeaderPassword()
-    {
-        // Check if user is logged in
-        if (!$this->isLoggedIn()) {
-            echo json_encode(['valid' => false, 'message' => 'Nicht eingeloggt', 'debug_message' => 'User not logged in']);
-            return;
-        }
-
-        // Get submitted password
-        $password = isset($_POST['password']) ? trim($_POST['password']) : '';
-
-        // Get leader password from configuration
-        $leaderPassword = $this->getLeaderPassword();
-
-        // Check if the password matches (case-insensitive)
-        $isValid = (strtolower($password) === strtolower($leaderPassword));
-
-        // Return result
-        echo json_encode(['valid' => $isValid]);
     }
 
     /**
@@ -434,7 +374,6 @@ class UserController extends Controller
      */
     public function delete()
     {
-        // Check if user is logged in
         if (!$this->isLoggedIn()) {
             $this->redirect('/login');
             return;
@@ -449,39 +388,92 @@ class UserController extends Controller
             return;
         }
 
-        // Delete user account
         $result = $this->userModel->delete($user['id']);
 
         if ($result) {
-            // Log out the user
             $this->setFlash('success', 'Dein Account wurde erfolgreich gelöscht.');
             $this->logout();
         } else {
             $this->addAlert('Fehler!', 'Fehler beim Löschen des Accounts.', 'error');
-            $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/profile');
+            $this->redirect($this->orchestraUrl('/profile'));
         }
     }
 
     /**
-     * Get leader password from the current orchestra
-     * 
-     * @return string
+     * Leave the current orchestra
+     *
+     * @param array $params Route parameters containing orchestra_id
+     * @return void
      */
-    private function getLeaderPassword()
+    public function leaveOrchestra($params = [])
     {
-        // Get the current orchestra from session
-        $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
+        $this->validateOrchestraContext($params);
 
-        if ($orchestraId) {
-            $orchestraModel = new \App\Models\Orchestra();
-            $orchestra = $orchestraModel->findById($orchestraId);
-
-            if ($orchestra && isset($orchestra['leader_pw'])) {
-                return $orchestra['leader_pw'];
-            }
+        if (!$this->isLoggedIn()) {
+            $this->redirect('/login');
+            return;
         }
 
-        return DEFAULT_LEADER_PASSWORD;
+        $userId = $_SESSION['user_id'];
+        $orchestraId = $_SESSION['current_orchestra_id'];
+
+        $userOrchestraModel = new \App\Models\UserOrchestra();
+        $result = $userOrchestraModel->leaveOrchestra((int)$userId, (int)$orchestraId);
+
+        if ($result) {
+            $this->setFlash('success', 'Du hast das Orchester verlassen.');
+            $this->redirect('/orchestras/select');
+        } else {
+            $this->addAlert('Fehler!', 'Fehler beim Verlassen des Orchesters.', 'error');
+            $this->redirect($this->orchestraUrl('/profile'));
+        }
+    }
+
+    /**
+     * Show the onboarding screen (set display_name).
+     */
+    public function onboarding(): void
+    {
+        $this->requireLogin();
+
+        $user = $this->userModel->findById((int)$_SESSION['user_id']);
+        if (!empty($user['display_name'])) {
+            $this->redirect('/orchestras/select');
+            return;
+        }
+
+        $this->render('user/onboarding', [
+            'currentPage' => 'onboarding',
+            'csrf_token' => $this->getCSRFToken(),
+        ]);
+    }
+
+    /**
+     * Save display name from onboarding (POST).
+     */
+    public function saveOnboarding(): void
+    {
+        $this->requireLogin();
+        $this->protectCSRF();
+
+        $displayName = trim($_POST['display_name'] ?? '');
+        if ($displayName === '') {
+            $this->setFlash('error', 'Bitte gib deinen Namen ein.');
+            $this->redirect('/onboarding');
+            return;
+        }
+
+        $this->userModel->update((int)$_SESSION['user_id'], ['display_name' => $displayName]);
+        $_SESSION['display_name'] = $displayName;
+
+        // Redirect to invite flow if pending, otherwise orchestra selection
+        $inviteToken = $_SESSION['invite_token'] ?? null;
+        if ($inviteToken) {
+            unset($_SESSION['invite_token']);
+            $this->redirect('/invite/' . urlencode($inviteToken));
+        } else {
+            $this->redirect('/orchestras/select');
+        }
     }
 
     /**
@@ -563,8 +555,7 @@ class UserController extends Controller
     {
         $this->validateOrchestraContext($params);
 
-        // Check if user is authorized (either conductor or group leader)
-        $this->requireRole('leader'); // This allows both leader and conductor
+        $this->requirePermission('can_view_own_section_stats');
 
         // Always return JSON for this endpoint
         header('Content-Type: application/json');
@@ -608,8 +599,7 @@ class UserController extends Controller
     {
         $this->validateOrchestraContext($params);
 
-        // Check if user is authorized (either conductor or group leader)
-        $this->requireRole('leader'); // This allows both leader and conductor
+        $this->requirePermission('can_view_own_section_stats');
 
         // Always return JSON for this endpoint
         header('Content-Type: application/json');
@@ -695,8 +685,7 @@ class UserController extends Controller
     {
         $this->validateOrchestraContext($params);
 
-        // Check if user is authorized (either conductor or group leader)
-        $this->requireRole('leader'); // This allows both leader and conductor
+        $this->requirePermission('can_view_own_section_stats');
 
         // Always return JSON for this endpoint
         header('Content-Type: application/json');

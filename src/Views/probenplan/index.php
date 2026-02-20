@@ -13,7 +13,11 @@ include __DIR__ . '/../components/table.php';
                 <div class="print-subtitle">
                     <?= $_SESSION['current_orchestra_name'] ?? 'Orchester' ?>
                     <?php if ($personalized): ?>
-                        · Personalisierte Ansicht (<?= $_SESSION['current_type'] ?? '' ?>)
+                        <?php
+                        $isConductor = !empty($_SESSION['current_permissions']['can_manage_ensemble']);
+                        $typeLabel = $isConductor ? 'Leitung' : ($_SESSION['current_type'] ?? '');
+                        ?>
+                        · Personalisierte Ansicht (<?= $typeLabel ?>)
                     <?php else: ?>
                         · Alle Proben
                     <?php endif; ?>
@@ -41,7 +45,7 @@ include __DIR__ . '/../components/table.php';
             <h5>Stand: <?= date("d.m.Y") ?></h5>
 
             <div class="filter-controls">
-                <?php if ($userRole !== 'conductor'): ?>
+                <?php if (!$canManageRehearsals): ?>
                     <div class="filter-toggle-container">
                         <span class="filter-label">Personalisierte Ansicht</span>
                         <label class="toggle-switch">

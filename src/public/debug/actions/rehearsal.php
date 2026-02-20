@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Rehearsal Testing Action
  */
@@ -53,7 +54,7 @@ $orchestra = $orchestraResult->fetch_assoc();
 $stmt->close();
 
 // Get users in the orchestra
-$stmt = $conn->prepare("SELECT u.id, uo.type FROM users u INNER JOIN user_orchestras uo ON u.id = uo.user_id WHERE uo.orchestra_id = ? AND uo.role = 'member' AND uo.is_active = TRUE");
+$stmt = $conn->prepare("SELECT u.id, uo.type FROM users u INNER JOIN user_orchestras uo ON u.id = uo.user_id WHERE uo.orchestra_id = ? AND uo.is_active = TRUE");
 $stmt->bind_param('i', $orchestraId);
 $stmt->execute();
 $usersResult = $stmt->get_result();
@@ -131,39 +132,40 @@ if (!isset($testPatterns[$pattern])) {
 $selectedPattern = $testPatterns[$pattern];
 
 // Apply severity multiplier to pattern
-function applySeverityToPattern($pattern, $severity) {
+function applySeverityToPattern($pattern, $severity)
+{
     $adjusted = $pattern;
-    
+
     // Adjust attendance range
     $rangeCenter = ($pattern['attendance_range'][0] + $pattern['attendance_range'][1]) / 2;
     $rangeSpread = $pattern['attendance_range'][1] - $pattern['attendance_range'][0];
     $newSpread = $rangeSpread * $severity;
-    
+
     $adjusted['attendance_range'] = [
         max(0, round($rangeCenter - $newSpread / 2)),
         min(100, round($rangeCenter + $newSpread / 2))
     ];
-    
+
     // Adjust standard deviation
     $adjusted['std_dev'] = round($pattern['std_dev'] * $severity);
-    
+
     // Adjust problem range if exists
     if (isset($pattern['problem_range'])) {
         $problemCenter = ($pattern['problem_range'][0] + $pattern['problem_range'][1]) / 2;
         $problemSpread = $pattern['problem_range'][1] - $pattern['problem_range'][0];
         $newProblemSpread = $problemSpread * $severity;
-        
+
         $adjusted['problem_range'] = [
             max(0, round($problemCenter - $newProblemSpread / 2)),
             min(100, round($problemCenter + $newProblemSpread / 2))
         ];
     }
-    
+
     // Adjust no response rate if exists
     if (isset($pattern['no_response_rate'])) {
         $adjusted['no_response_rate'] = min(1, $pattern['no_response_rate'] * $severity);
     }
-    
+
     return $adjusted;
 }
 
@@ -190,7 +192,7 @@ try {
     for ($i = 0; $i < $numRehearsals; $i++) {
         $rehearsalDate = clone $currentDate;
         $rehearsalDate->add(new DateInterval('P' . ($i * $daysBetween) . 'D'));
-        
+
         // Create rehearsal
         $startDatetime = $rehearsalDate->format('Y-m-d') . ' 19:00:00';
         $endDatetime = $rehearsalDate->format('Y-m-d') . ' 20:00:00';
@@ -200,14 +202,14 @@ try {
             throw new Exception("Failed to prepare rehearsal insert statement: " . $conn->error);
         }
         $stmt->bind_param('ssssi', $defaultRehearsalType, $startDatetime, $endDatetime, $location, $orchestraId);
-        
+
         if (!$stmt->execute()) {
             throw new Exception("Failed to create rehearsal: " . $stmt->error);
         }
-        
+
         $rehearsalId = $conn->insert_id;
         $stmt->close();
-        
+
         // Add "tutti" group to make this a tutti rehearsal
         $stmt = $conn->prepare("INSERT INTO rehearsal_groups (rehearsal_id, name) VALUES (?, 'tutti')");
         if (!$stmt) {
@@ -218,23 +220,23 @@ try {
             throw new Exception("Failed to add tutti group to rehearsal: " . $stmt->error);
         }
         $stmt->close();
-        
+
         // Calculate base attendance rate for this rehearsal
-        $baseRate = $selectedPattern['attendance_range'][0] + 
-                   (rand(0, 100) / 100) * ($selectedPattern['attendance_range'][1] - $selectedPattern['attendance_range'][0]);
-        
+        $baseRate = $selectedPattern['attendance_range'][0] +
+            (rand(0, 100) / 100) * ($selectedPattern['attendance_range'][1] - $selectedPattern['attendance_range'][0]);
+
         // Apply trend if specified
         if (isset($selectedPattern['trend'])) {
             $trendProgress = $i / ($numRehearsals - 1); // 0 to 1
             if ($selectedPattern['trend'] === 'decline') {
-                $baseRate = $selectedPattern['attendance_range'][1] - 
-                           $trendProgress * ($selectedPattern['attendance_range'][1] - $selectedPattern['attendance_range'][0]);
+                $baseRate = $selectedPattern['attendance_range'][1] -
+                    $trendProgress * ($selectedPattern['attendance_range'][1] - $selectedPattern['attendance_range'][0]);
             } elseif ($selectedPattern['trend'] === 'improve') {
-                $baseRate = $selectedPattern['attendance_range'][0] + 
-                           $trendProgress * ($selectedPattern['attendance_range'][1] - $selectedPattern['attendance_range'][0]);
+                $baseRate = $selectedPattern['attendance_range'][0] +
+                    $trendProgress * ($selectedPattern['attendance_range'][1] - $selectedPattern['attendance_range'][0]);
             }
         }
-        
+
         // Generate promises for each user
         $rehearsalStats = [
             'total_users' => 0,
@@ -242,38 +244,38 @@ try {
             'not_attending' => 0,
             'no_response' => 0
         ];
-        
+
         foreach ($usersByType as $userType => $typeUsers) {
             // Determine attendance rate for this section
             $sectionRate = $baseRate;
-            
+
             // Apply problem section logic
             if (isset($selectedPattern['problem_sections']) && in_array($userType, $selectedPattern['problem_sections'])) {
-                $sectionRate = $selectedPattern['problem_range'][0] + 
-                              (rand(0, 100) / 100) * ($selectedPattern['problem_range'][1] - $selectedPattern['problem_range'][0]);
+                $sectionRate = $selectedPattern['problem_range'][0] +
+                    (rand(0, 100) / 100) * ($selectedPattern['problem_range'][1] - $selectedPattern['problem_range'][0]);
             }
-            
+
             // Add some variance
             $variance = (rand(-100, 100) / 100) * $selectedPattern['std_dev'];
             $sectionRate = max(0, min(100, $sectionRate + $variance));
-            
+
             foreach ($typeUsers as $user) {
                 $rehearsalStats['total_users']++;
-                
+
                 // Determine no response chance based on pattern
-                $baseNoResponseChance = isset($selectedPattern['no_response_rate']) 
-                    ? $selectedPattern['no_response_rate'] * 100 
+                $baseNoResponseChance = isset($selectedPattern['no_response_rate'])
+                    ? $selectedPattern['no_response_rate'] * 100
                     : rand(5, 15); // 5-15% default if not specified
-                    
+
                 if (rand(1, 100) <= $baseNoResponseChance) {
                     // User doesn't respond at all - no promise record created
                     $rehearsalStats['no_response']++;
                     continue; // Skip to next user
                 }
-                
+
                 // Determine user's response
                 $rand = rand(1, 100);
-                
+
                 // Handle no_response pattern
                 if (isset($selectedPattern['no_response_rate']) && $rand <= $selectedPattern['no_response_rate'] * 100) {
                     $status = 'maybe';
@@ -285,7 +287,7 @@ try {
                     $status = 'no';
                     $rehearsalStats['not_attending']++;
                 }
-                
+
                 // Insert promise
                 $stmt = $conn->prepare("INSERT INTO user_promises (user_id, rehearsal_id, status) VALUES (?, ?, ?)");
                 $stmt->bind_param('iis', $user['id'], $rehearsalId, $status);
@@ -293,11 +295,11 @@ try {
                 $stmt->close();
             }
         }
-        
+
         // Calculate attendance rate
-        $attendanceRate = $rehearsalStats['total_users'] > 0 ? 
-                        ($rehearsalStats['attending'] / $rehearsalStats['total_users']) * 100 : 0;
-        
+        $attendanceRate = $rehearsalStats['total_users'] > 0 ?
+            ($rehearsalStats['attending'] / $rehearsalStats['total_users']) * 100 : 0;
+
         $generatedRehearsals[] = [
             'date' => $rehearsalDate->format('Y-m-d'),
             'start_time' => '19:00',
@@ -309,9 +311,9 @@ try {
             'attendance_rate' => $attendanceRate
         ];
     }
-    
+
     $conn->commit();
-    
+
     return [
         'message' => "Successfully generated {$numRehearsals} rehearsals with '{$testPatterns[$pattern]['name']}' pattern (severity: {$severity}x)",
         'messageType' => 'success',
@@ -320,7 +322,6 @@ try {
             'rehearsals' => $generatedRehearsals
         ]
     ];
-    
 } catch (Exception $e) {
     $conn->rollback();
     return [

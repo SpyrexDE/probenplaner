@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use App\Core\Model;
@@ -10,338 +11,395 @@ use App\Core\ErrorHandler;
  */
 class UserOrchestra extends Model
 {
-    /**
-     * @var string
-     */
     protected $table = 'user_orchestras';
-    
+
+    /** Named permission presets (map preset name -> list of permission names) */
+    public const PRESETS = [
+        'member' => [
+            'can_attend_rehearsals',
+        ],
+        'section_leader' => [
+            'can_attend_rehearsals',
+            'can_view_own_section_stats',
+            'can_view_all_section_stats',
+            'can_manage_rehearsals',
+            'can_view_members',
+        ],
+        'conductor' => [
+            'can_view_own_section_stats',
+            'can_view_all_section_stats',
+            'can_view_members',
+            'can_manage_rehearsals',
+            'can_manage_members',
+            'can_manage_permissions',
+            'can_manage_ensemble',
+        ],
+    ];
+
     /**
-     * Get all orchestras for a user
-     * 
-     * @param int $userId
-     * @param bool $activeOnly Only return active relationships
-     * @return array
+     * @return array All orchestras for a user with orchestra name
      */
     public function getUserOrchestras(int $userId, bool $activeOnly = true): array
     {
         $activeClause = $activeOnly ? "AND uo.is_active = 1" : "";
-        
-        $sql = "SELECT uo.*, o.name as orchestra_name, o.token as orchestra_token
+
+        $sql = "SELECT uo.*, o.name as orchestra_name, o.slug as orchestra_slug
                 FROM {$this->table} uo
                 JOIN orchestras o ON uo.orchestra_id = o.id
                 WHERE uo.user_id = ? {$activeClause}
                 ORDER BY uo.joined_at DESC";
-        
+
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param('i', $userId);
         $stmt->execute();
         $result = $stmt->get_result();
-        
+
         $orchestras = [];
-        if ($result) {
-            while ($row = $result->fetch_assoc()) {
-                $orchestras[] = $row;
-            }
+        while ($row = $result->fetch_assoc()) {
+            $orchestras[] = $row;
         }
-        
         $stmt->close();
         return $orchestras;
     }
-    
+
     /**
-     * Get all users for an orchestra
-     * 
-     * @param int $orchestraId
-     * @param bool $activeOnly Only return active relationships
-     * @return array
+     * @return array All active users for an orchestra
      */
     public function getOrchestraUsers(int $orchestraId, bool $activeOnly = true): array
     {
         $activeClause = $activeOnly ? "AND uo.is_active = 1" : "";
-        
-        $sql = "SELECT uo.*, u.username, u.created_at as user_created_at
+
+        $sql = "SELECT uo.*, u.username, u.display_name, u.created_at as user_created_at
                 FROM {$this->table} uo
                 JOIN users u ON uo.user_id = u.id
                 WHERE uo.orchestra_id = ? {$activeClause}
-                ORDER BY uo.type, u.username";
-        
+                ORDER BY uo.type, COALESCE(u.display_name, u.username)";
+
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param('i', $orchestraId);
         $stmt->execute();
         $result = $stmt->get_result();
-        
+
         $users = [];
-        if ($result) {
-            while ($row = $result->fetch_assoc()) {
-                $users[] = $row;
-            }
+        while ($row = $result->fetch_assoc()) {
+            $users[] = $row;
         }
-        
         $stmt->close();
         return $users;
     }
-    
+
     /**
-     * Get specific user-orchestra relationship
-     * 
-     * @param int $userId
-     * @param int $orchestraId
-     * @param bool $activeOnly Only return if active
-     * @return array|null
+     * @return array|null The relationship record, or null if not found
      */
     public function getUserOrchestraRelation(int $userId, int $orchestraId, bool $activeOnly = true): ?array
     {
         $activeClause = $activeOnly ? "AND is_active = 1" : "";
-        
-        $sql = "SELECT * FROM {$this->table} 
+
+        $sql = "SELECT * FROM {$this->table}
                 WHERE user_id = ? AND orchestra_id = ? {$activeClause}";
-        
+
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param('ii', $userId, $orchestraId);
         $stmt->execute();
         $result = $stmt->get_result();
-        
-        $relation = null;
-        if ($result && $result instanceof \mysqli_result) {
-            $relation = $result->fetch_assoc();
-        }
-        
+        $relation = ($result instanceof \mysqli_result) ? $result->fetch_assoc() : null;
         $stmt->close();
         return $relation;
     }
-    
+
     /**
-     * Join user to orchestra
-     * 
-     * @param int $userId
-     * @param int $orchestraId
-     * @param string $type Instrument/section
-     * @param string $role User role (member, leader, conductor)
+     * @param array $permissions Permission column names to enable
      * @return int|array Relationship ID on success, error array on failure
      */
-    public function joinOrchestra(int $userId, int $orchestraId, string $type, string $role = 'member')
+    public function joinOrchestra(int $userId, int $orchestraId, string $type, array $permissions = [])
     {
         try {
-            // Check if relationship already exists (including inactive ones)
             $existing = $this->getUserOrchestraRelation($userId, $orchestraId, false);
-            
+
             if ($existing) {
                 if ($existing['is_active']) {
                     return ['error' => true, 'message' => 'Sie sind bereits Mitglied dieses Orchesters.'];
-                } else {
-                    // Reactivate existing relationship
-                    $result = $this->update($existing['id'], [
-                        'type' => $type,
-                        'role' => $role,
-                        'is_active' => true,
-                        'joined_at' => date('Y-m-d H:i:s'),
-                        'updated_at' => date('Y-m-d H:i:s')
-                    ]);
-                    
-                    return $result ? $existing['id'] : ['error' => true, 'message' => 'Fehler beim Reaktivieren der Mitgliedschaft.'];
                 }
+
+                // Reactivate
+                $result = $this->update($existing['id'], [
+                    'type' => $type,
+                    'is_active' => 1,
+                    'joined_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ]);
+                if ($result) {
+                    $this->syncPermissions($existing['id'], $permissions);
+                    return $existing['id'];
+                }
+                return ['error' => true, 'message' => 'Fehler beim Reaktivieren der Mitgliedschaft.'];
             }
-            
-            // Create new relationship
-            $data = [
+
+            $relationId = $this->insert([
                 'user_id' => $userId,
                 'orchestra_id' => $orchestraId,
                 'type' => $type,
-                'role' => $role,
-                'is_active' => true,
-                'joined_at' => date('Y-m-d H:i:s')
-            ];
-            
-            $result = $this->insert($data);
-            
-            if ($result === false) {
+                'is_active' => 1,
+                'joined_at' => date('Y-m-d H:i:s'),
+            ]);
+
+            if ($relationId === false) {
                 $error = $this->db->getLastError();
                 error_log("Failed to join orchestra - Database error: " . $error);
                 return ErrorHandler::handleDatabaseError(new \Exception($error), 'Orchestra join');
             }
-            
-            return $result;
-            
+
+            $this->syncPermissions($relationId, $permissions);
+            return $relationId;
         } catch (\Exception $e) {
             return ErrorHandler::handleDatabaseError($e, 'Orchestra join');
         }
     }
-    
+
     /**
-     * Leave orchestra (soft delete)
-     * 
-     * @param int $userId
-     * @param int $orchestraId
-     * @return bool Success or failure
+     * Soft-delete the membership.
      */
     public function leaveOrchestra(int $userId, int $orchestraId): bool
     {
         $relation = $this->getUserOrchestraRelation($userId, $orchestraId, true);
-        
-        if (!$relation) {
-            return false; // User is not a member of this orchestra
-        }
-        
+        if (!$relation) return false;
+
         return $this->update($relation['id'], [
-            'is_active' => false,
-            'updated_at' => date('Y-m-d H:i:s')
+            'is_active' => 0,
+            'updated_at' => date('Y-m-d H:i:s'),
         ]);
     }
-    
+
+    // ── Permission helpers ───────────────────────────────────────
+
     /**
-     * Update user role in orchestra
-     * 
-     * @param int $userId
-     * @param int $orchestraId
-     * @param string $role New role
-     * @return bool Success or failure
+     * Check if user has a specific permission in an orchestra.
      */
-    public function updateUserRole(int $userId, int $orchestraId, string $role): bool
+    public function hasPermission(int $userId, int $orchestraId, string $permission): bool
     {
         $relation = $this->getUserOrchestraRelation($userId, $orchestraId, true);
-        
-        if (!$relation) {
-            return false;
-        }
-        
-        return $this->update($relation['id'], [
-            'role' => $role,
-            'updated_at' => date('Y-m-d H:i:s')
-        ]);
+        if (!$relation) return false;
+
+        $sql = "SELECT 1 FROM user_ensemble_permissions uep
+                JOIN permissions p ON uep.permission_id = p.id
+                WHERE uep.user_orchestra_id = ? AND p.name = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param('is', $relation['id'], $permission);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $found = $result->num_rows > 0;
+        $stmt->close();
+        return $found;
     }
-    
+
     /**
-     * Update user type (instrument/section) in orchestra
-     * 
-     * @param int $userId
-     * @param int $orchestraId
-     * @param string $type New type
-     * @return bool Success or failure
+     * @return array Associative map of permission name => bool
      */
+    public function getPermissions(int $userId, int $orchestraId): array
+    {
+        $relation = $this->getUserOrchestraRelation($userId, $orchestraId, true);
+
+        // Start with all permissions as false
+        $allPerms = $this->getAllPermissionNames('ensemble');
+        $perms = array_fill_keys($allPerms, false);
+
+        if (!$relation) return $perms;
+
+        $sql = "SELECT p.name FROM user_ensemble_permissions uep
+                JOIN permissions p ON uep.permission_id = p.id
+                WHERE uep.user_orchestra_id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param('i', $relation['id']);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        while ($row = $result->fetch_assoc()) {
+            $perms[$row['name']] = true;
+        }
+        $stmt->close();
+        return $perms;
+    }
+
+    /**
+     * Replace all permissions for a membership with the given set.
+     *
+     * @param array $permissions Permission names to enable (all others revoked)
+     */
+    public function setPermissions(int $userId, int $orchestraId, array $permissions): bool
+    {
+        $relation = $this->getUserOrchestraRelation($userId, $orchestraId, true);
+        if (!$relation) return false;
+
+        return $this->syncPermissions($relation['id'], $permissions);
+    }
+
+    /**
+     * Apply a named permission preset.
+     */
+    public function applyPreset(int $userId, int $orchestraId, string $presetName): bool
+    {
+        $permissions = self::PRESETS[$presetName] ?? [];
+        return $this->setPermissions($userId, $orchestraId, $permissions);
+    }
+
+    /**
+     * Derive the highest matching preset name from current permissions.
+     */
+    public static function derivePreset(array $permissionMap): string
+    {
+        foreach (['conductor', 'section_leader'] as $preset) {
+            $presetPerms = self::PRESETS[$preset];
+            $match = true;
+            foreach ($permissionMap as $name => $granted) {
+                $expected = in_array($name, $presetPerms);
+                if ($expected !== (bool)$granted) {
+                    $match = false;
+                    break;
+                }
+            }
+            if ($match) return $preset;
+        }
+        return 'custom';
+    }
+
+    // ── Type / small-group helpers ───────────────────────────────
+
     public function updateUserType(int $userId, int $orchestraId, string $type): bool
     {
         $relation = $this->getUserOrchestraRelation($userId, $orchestraId, true);
-        
-        if (!$relation) {
-            return false;
-        }
-        
+        if (!$relation) return false;
+
         return $this->update($relation['id'], [
             'type' => $type,
-            'updated_at' => date('Y-m-d H:i:s')
+            'updated_at' => date('Y-m-d H:i:s'),
         ]);
     }
-    
-    /**
-     * Update user small group status in orchestra
-     * 
-     * @param int $userId
-     * @param int $orchestraId
-     * @param bool $isSmallGroup Whether user is in small group
-     * @return bool Success or failure
-     */
+
     public function updateUserSmallGroupStatus(int $userId, int $orchestraId, bool $isSmallGroup): bool
     {
         $relation = $this->getUserOrchestraRelation($userId, $orchestraId, true);
-        
-        if (!$relation) {
-            return false;
-        }
-        
+        if (!$relation) return false;
+
         return $this->update($relation['id'], [
             'is_small_group' => $isSmallGroup ? 1 : 0,
-            'updated_at' => date('Y-m-d H:i:s')
+            'updated_at' => date('Y-m-d H:i:s'),
         ]);
     }
-    
-    /**
-     * Check if user is in small group for orchestra
-     * 
-     * @param int $userId
-     * @param int $orchestraId
-     * @return bool
-     */
+
     public function isUserInSmallGroup(int $userId, int $orchestraId): bool
     {
         $relation = $this->getUserOrchestraRelation($userId, $orchestraId, true);
-        
-        return $relation && (int)$relation['is_small_group'] === 1;
+        return $relation && (int)($relation['is_small_group'] ?? 0) === 1;
     }
-    
+
     /**
-     * Check if user has specific role in orchestra
-     * 
-     * @param int $userId
-     * @param int $orchestraId
-     * @param string $role Role to check
-     * @return bool
-     */
-    public function hasRole(int $userId, int $orchestraId, string $role): bool
-    {
-        $relation = $this->getUserOrchestraRelation($userId, $orchestraId, true);
-        
-        return $relation && $relation['role'] === $role;
-    }
-    
-    /**
-     * Get users by type within an orchestra
-     * 
-     * @param string $type
-     * @param int $orchestraId
-     * @return array
+     * @return array Users of a specific instrument/section within an orchestra
      */
     public function getUsersByType(string $type, int $orchestraId): array
     {
-        $sql = "SELECT uo.*, u.username, u.created_at as user_created_at
+        $sql = "SELECT uo.*, u.username, u.display_name, u.created_at as user_created_at
                 FROM {$this->table} uo
                 JOIN users u ON uo.user_id = u.id
                 WHERE uo.type = ? AND uo.orchestra_id = ? AND uo.is_active = 1
-                ORDER BY u.username";
-        
+                ORDER BY COALESCE(u.display_name, u.username)";
+
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param('si', $type, $orchestraId);
         $stmt->execute();
         $result = $stmt->get_result();
-        
+
         $users = [];
-        if ($result) {
-            while ($row = $result->fetch_assoc()) {
-                $users[] = $row;
-            }
+        while ($row = $result->fetch_assoc()) {
+            $users[] = $row;
         }
-        
         $stmt->close();
         return $users;
     }
-    
+
     /**
-     * Get users by role within an orchestra
-     * 
-     * @param string $role
-     * @param int $orchestraId
-     * @return array
+     * Remove a user from an orchestra (hard delete).
      */
-    public function getUsersByRole(string $role, int $orchestraId): array
+    public function removeFromOrchestra(int $userId, int $orchestraId): bool
     {
-        $sql = "SELECT uo.*, u.username, u.created_at as user_created_at
-                FROM {$this->table} uo
-                JOIN users u ON uo.user_id = u.id
-                WHERE uo.role = ? AND uo.orchestra_id = ? AND uo.is_active = 1
-                ORDER BY u.username";
-        
+        $sql = "DELETE FROM {$this->table} WHERE user_id = ? AND orchestra_id = ?";
         $stmt = $this->db->prepare($sql);
-        $stmt->bind_param('si', $role, $orchestraId);
+        $stmt->bind_param('ii', $userId, $orchestraId);
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result;
+    }
+
+    /**
+     * Count members in an orchestra.
+     */
+    public function getOrchestraUserCount(int $orchestraId): int
+    {
+        $stmt = $this->db->prepare("SELECT COUNT(*) AS cnt FROM {$this->table} WHERE orchestra_id = ?");
+        $stmt->bind_param('i', $orchestraId);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        return (int)($result['cnt'] ?? 0);
+    }
+
+    // ── Internal ─────────────────────────────────────────────────
+
+    /**
+     * @return string[] All permission names for a given scope
+     */
+    private function getAllPermissionNames(string $scope = 'ensemble'): array
+    {
+        $sql = "SELECT name FROM permissions WHERE scope = ? ORDER BY id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param('s', $scope);
         $stmt->execute();
         $result = $stmt->get_result();
-        
-        $users = [];
-        if ($result) {
-            while ($row = $result->fetch_assoc()) {
-                $users[] = $row;
-            }
+        $names = [];
+        while ($row = $result->fetch_assoc()) {
+            $names[] = $row['name'];
         }
-        
         $stmt->close();
-        return $users;
+        return $names;
+    }
+
+    /**
+     * Sync permissions for a user_orchestras membership row (delete + insert).
+     */
+    private function syncPermissions(int $userOrchestraId, array $permissionNames): bool
+    {
+        $stmt = $this->db->prepare("DELETE FROM user_ensemble_permissions WHERE user_orchestra_id = ?");
+        $stmt->bind_param('i', $userOrchestraId);
+        $stmt->execute();
+        $stmt->close();
+
+        if (empty($permissionNames)) return true;
+
+        $placeholders = implode(',', array_fill(0, count($permissionNames), '?'));
+        $sql = "INSERT INTO user_ensemble_permissions (user_orchestra_id, permission_id)
+                SELECT ?, id FROM permissions WHERE name IN ($placeholders)";
+        $stmt = $this->db->prepare($sql);
+        $types = 'i' . str_repeat('s', count($permissionNames));
+        $params = array_merge([$userOrchestraId], $permissionNames);
+        $stmt->bind_param($types, ...$params);
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result;
+    }
+
+    /**
+     * Remove a single permission from a user's orchestra membership.
+     */
+    public function removePermission(int $userId, int $orchestraId, string $permissionName): bool
+    {
+        $relation = $this->getUserOrchestraRelation($userId, $orchestraId, true);
+        if (!$relation) return false;
+
+        $sql = "DELETE uep FROM user_ensemble_permissions uep
+                JOIN permissions p ON p.id = uep.permission_id
+                WHERE uep.user_orchestra_id = ? AND p.name = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param('is', $relation['id'], $permissionName);
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result;
     }
 }

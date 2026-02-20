@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use App\Core\Model;
@@ -14,7 +15,7 @@ class UserPromise extends Model
      * @var string
      */
     protected $table = 'user_promises';
-    
+
     /**
      * Find a promise by user ID and rehearsal ID
      * 
@@ -28,16 +29,50 @@ class UserPromise extends Model
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param('ii', $userId, $rehearsalId);
         $stmt->execute();
-        
+
         $result = $stmt->get_result();
-        
+
         if ($result->num_rows > 0) {
             return $result->fetch_assoc();
         }
-        
+
         return null;
     }
-    
+
+    /**
+     * @param int[] $rehearsalIds
+     * @return array<int, array{attending: bool, note: string}> Keyed by rehearsal_id
+     */
+    public function findPromisesForRehearsalsAndUser(array $rehearsalIds, int $userId): array
+    {
+        if (empty($rehearsalIds)) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($rehearsalIds), '?'));
+        $types = str_repeat('i', count($rehearsalIds)) . 'i';
+
+        $sql = "SELECT rehearsal_id, status, note
+                FROM {$this->table}
+                WHERE rehearsal_id IN ({$placeholders}) AND user_id = ?";
+
+        $stmt = $this->db->prepare($sql);
+        $params = [...$rehearsalIds, $userId];
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $promises = [];
+        while ($row = $result->fetch_assoc()) {
+            $promises[(int)$row['rehearsal_id']] = [
+                'attending' => $row['status'] === 'yes',
+                'note' => $row['note'] ?? '',
+            ];
+        }
+        $stmt->close();
+        return $promises;
+    }
+
     /**
      * Get all promises for a specific rehearsal
      * 
@@ -53,21 +88,21 @@ class UserPromise extends Model
                 JOIN rehearsals r ON up.rehearsal_id = r.id
                 WHERE up.rehearsal_id = ? AND uo.orchestra_id = r.orchestra_id AND uo.is_active = 1
                 ORDER BY uo.type, u.username";
-        
+
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param('i', $rehearsalId);
         $stmt->execute();
-        
+
         $result = $stmt->get_result();
-        
+
         $promises = [];
         while ($row = $result->fetch_assoc()) {
             $promises[] = $row;
         }
-        
+
         return $promises;
     }
-    
+
     /**
      * Get promise statistics for a rehearsal
      * 
@@ -84,42 +119,41 @@ class UserPromise extends Model
             'no_response' => 0,
             'details' => []
         ];
-        
+
         $rehearsalModel = new Rehearsal();
         $rehearsal = $rehearsalModel->findById($rehearsalId);
-        
+
         if (!$rehearsal) {
             return $stats;
         }
-        
+
         $sql = "SELECT name FROM rehearsal_groups WHERE rehearsal_id = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param('i', $rehearsalId);
         $stmt->execute();
         $result = $stmt->get_result();
-        
+
         $groups = [];
         while ($row = $result->fetch_assoc()) {
             $groups[$row['name']] = true;
         }
-        
+
         $userOrchestraModel = new UserOrchestra();
         $users = $userOrchestraModel->getOrchestraUsers($orchestraId);
-        
+
         foreach ($users as $user) {
-            // Skip conductors for attendance tracking
-            if ($user['role'] === 'conductor') {
+            if (empty($user['can_attend_rehearsals'])) {
                 continue;
             }
-            
+
             // Determine relevance based on group membership
             $isSmallGroup = isset($user['is_small_group']) && $user['is_small_group'];
             $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal);
             if ($rehearsalModel->isUserInRehearsalGroup($user['type'], $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
                 $stats['total']++;
-                
+
                 $promise = $this->findByUserAndRehearsal($user['id'], $rehearsalId);
-                
+
                 $userStat = [
                     'id' => $user['id'],
                     'username' => $user['username'],
@@ -127,7 +161,7 @@ class UserPromise extends Model
                     'status' => 'no_response',
                     'note' => ''
                 ];
-                
+
                 if ($promise && isset($promise['status'])) {
                     if ($promise['status'] === 'yes') {
                         $userStat['status'] = 'attending';
@@ -139,18 +173,16 @@ class UserPromise extends Model
                         $userStat['status'] = 'no_response';
                         $stats['no_response']++;
                     }
-                    
+
                     $userStat['note'] = $promise['note'] ?? '';
                 } else {
                     $stats['no_response']++;
                 }
-                
+
                 $stats['details'][] = $userStat;
             }
         }
-        
+
         return $stats;
     }
-    
-
-} 
+}

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controllers;
 
 use App\Core\Controller;
@@ -25,21 +26,42 @@ class HomeController extends Controller
 
         // If logged in, redirect to orchestra selection or main app
         if ($this->isLoggedIn()) {
-            // Check if user has selected an orchestra
-            if (isset($_SESSION['current_orchestra_id'])) {
-                // Redirect based on role in current orchestra
-                if ($_SESSION['current_role'] === 'conductor') {
-                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/promises/admin');
+            // Admin → admin dashboard
+            if (($_SESSION['username'] ?? '') === 'admin') {
+                $this->redirect('/admin/dashboard');
+                return;
+            }
+
+            // Orga-admin → orga panel
+            if (!empty($_SESSION['is_org_admin'])) {
+                $this->redirect('/orga');
+                return;
+            }
+
+            // Onboarding only for brand-new users without any orchestra
+            $userModel = new \App\Models\User();
+            $user = $userModel->findById((int)$_SESSION['user_id']);
+            if ($user && empty($user['display_name'])) {
+                $uoModel = new \App\Models\UserOrchestra();
+                $orchestras = $uoModel->getUserOrchestras((int)$_SESSION['user_id']);
+                if (empty($orchestras)) {
+                    $this->redirect('/onboarding');
+                    return;
+                }
+            }
+
+            if (isset($_SESSION['current_orchestra_slug'])) {
+                if (!empty($_SESSION['current_permissions']['can_manage_rehearsals'])) {
+                    $this->redirect($this->orchestraUrl('/promises/admin'));
                 } else {
-                    $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/promises');
+                    $this->redirect($this->orchestraUrl('/promises'));
                 }
             } else {
-                // No orchestra selected, go to orchestra selection
                 $this->redirect('/orchestras/select');
             }
             return;
         }
-        
+
         // Not logged in, show login page
         $this->redirect('/login');
     }
@@ -53,9 +75,9 @@ class HomeController extends Controller
     private function processJmdTokenLogin(string $jmdToken)
     {
         error_log("HomeController: JMD token login attempt with token: " . substr($jmdToken, 0, 20) . "...");
-        
+
         $keycloakAuth = new \App\Core\KeycloakAuth();
-        
+
         // Process login with token
         $userInfo = $keycloakAuth->loginWithToken($jmdToken);
         if (!$userInfo) {
@@ -64,7 +86,7 @@ class HomeController extends Controller
             $this->redirect('/login');
             return;
         }
-        
+
         // Create or link user
         $userModel = new \App\Models\User();
         $user = $userModel->createOrLinkKeycloakUser($userInfo, true);
@@ -73,7 +95,7 @@ class HomeController extends Controller
             $this->redirect('/login');
             return;
         }
-        
+
         // Process successful login
         $this->processSuccessfulLogin($user);
     }
@@ -88,11 +110,12 @@ class HomeController extends Controller
     {
         // Regenerate session ID to prevent session fixation attacks
         session_regenerate_id(true);
-        
+
         // Set basic session variables (no orchestra context yet)
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = $user['username'];
-        
+        $_SESSION['display_name'] = $user['display_name'] ?? '';
+
         // Set secure cookies
         $cookieOptions = [
             'expires' => time() + COOKIE_LIFETIME,
@@ -103,10 +126,10 @@ class HomeController extends Controller
             'samesite' => 'Strict' // CSRF protection
         ];
         setcookie("username", $user['username'], $cookieOptions);
-        
+
         $this->setFlash('success', 'Sie wurden erfolgreich eingeloggt.');
-        
+
         // Redirect to orchestra selection
         $this->redirect('/orchestras/select');
     }
-} 
+}

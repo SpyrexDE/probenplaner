@@ -79,9 +79,11 @@ include __DIR__ . '/../components/theme-selector.php';
             </div>
         </div>
 
+
+
         <!-- Password -->
         <?php
-        $passwordChangeUrl = '/' . $orchestraId . '/conductor/profile';
+        $passwordChangeUrl = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($orchestraSlug ?? '') . '/conductor/profile';
         $hasPassword = $hasPassword ?? !empty($user['password']);
         include __DIR__ . '/../components/password-change-modal.php';
         ?>
@@ -146,9 +148,9 @@ include __DIR__ . '/../components/theme-selector.php';
 <script src="/assets/js/settings-engine.js"></script>
 <script>
     $(document).ready(function() {
-        <?php $orchestraId = $_SESSION['current_orchestra_id'] ?? 1; ?>
+        <?php $orchestraBase = ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? ''); ?>
         const userId = <?= (int)$user['id'] ?>;
-        const orchestraId = <?= (int)$orchestraId ?>;
+        const orchestraSlug = '<?= $orchestraBase ?>';
         const csrfToken = '<?= \App\Core\CSRF::getToken() ?>';
 
         // Wire username for auto-save
@@ -173,7 +175,7 @@ include __DIR__ . '/../components/theme-selector.php';
 
             $.ajax({
                 type: 'POST',
-                url: '/' + orchestraId + '/profile/switch-theme',
+                url: '/' + orchestraSlug + '/profile/switch-theme',
                 data: {
                     theme: themeKey,
                     csrf_token: csrfToken
@@ -209,6 +211,8 @@ include __DIR__ . '/../components/theme-selector.php';
             });
         });
 
+
+
         // Account deletion
         $('#deleteAccount').click(function() {
             Swal.fire({
@@ -230,7 +234,7 @@ include __DIR__ . '/../components/theme-selector.php';
                         showConfirmButton: false,
                         willOpen: () => Swal.showLoading()
                     });
-                    window.location.href = '/' + orchestraId + '/conductor/profile/delete';
+                    window.location.href = '/' + orchestraSlug + '/conductor/profile/delete';
                 }
             });
         });

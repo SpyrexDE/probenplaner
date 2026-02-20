@@ -222,7 +222,6 @@ class Validator
             'type' => 'Instrument/Rolle',
             'token' => 'Orchester-Token',
             'name' => 'Name',
-            'leader_password' => 'Stimmführungs-Passwort',
             'conductor_username' => 'Dirigent*in Benutzername',
             'conductor_password' => 'Dirigent*in Passwort',
             'date' => 'Datum',

@@ -19,7 +19,7 @@ $entity   = $settingsEntity ?? '';
 $entityId = $settingsEntityId ?? 0;
 $data     = $settingsData ?? [];
 $groups   = $settingsGroups ?? null; // null = all groups
-$orchestraId = $_SESSION['current_orchestra_id'] ?? '';
+$orchestraSlug = ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '');
 
 $allFields  = FieldRegistry::getFields($entity);
 $groupDefs  = FieldRegistry::getGroups($entity);
@@ -131,7 +131,7 @@ foreach ($allFields as $field) {
                         htmlspecialchars($name),
                         htmlspecialchars($entity),
                         htmlspecialchars((string) $entityId),
-                        htmlspecialchars((string) $orchestraId),
+                        htmlspecialchars((string) $orchestraSlug),
                         htmlspecialchars($type)
                     );
 

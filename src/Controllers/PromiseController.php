@@ -52,8 +52,9 @@ class PromiseController extends Controller
     {
         $this->validateOrchestraContext($params);
 
-        if ($_SESSION['current_role'] === 'conductor') {
-            $this->redirect('/' . $_SESSION['current_orchestra_id'] . '/promises/admin');
+        // If the user can manage rehearsals but CANNOT attend them, redirect to admin interface
+        if (!empty($_SESSION['current_permissions']['can_manage_rehearsals']) && empty($_SESSION['current_permissions']['can_attend_rehearsals'])) {
+            $this->redirect($this->orchestraUrl('/promises/admin'));
             return;
         }
 
@@ -122,7 +123,7 @@ class PromiseController extends Controller
     {
         $this->validateOrchestraContext($params);
 
-        $this->requireRole('leader');
+        $this->requirePermission('can_view_own_section_stats');
 
         $showOld = isset($_GET['showOld']);
 
@@ -191,10 +192,8 @@ class PromiseController extends Controller
             $members = [];
         }
 
-        // Exclude conductors from leader view
         $members = array_values(array_filter($members, function ($m) {
-            $role = isset($m['role']) ? $m['role'] : '';
-            return $role !== 'conductor';
+            return !empty($m['can_attend_rehearsals']);
         }));
 
         // Initialize GroupManager for dynamic section handling
@@ -285,7 +284,7 @@ class PromiseController extends Controller
                             'type' => $member['type'],
                             'status' => $status,
                             'note' => $note,
-                            'role' => $member['role'] ?? null,
+                            'permissions' => $member['permissions'] ?? [],
                             'is_small_group' => $isSmallGroup ? \App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED : \App\Core\RehearsalTypeManager::SMALL_GROUP_DISABLED,
                             'id' => $member['user_id'] // Use 'id' not 'user_id' for badge lookup
                         ];
@@ -535,8 +534,7 @@ class PromiseController extends Controller
     {
         $this->validateOrchestraContext($params);
 
-        // Check if user is a conductor
-        $this->requireRole('conductor');
+        $this->requirePermission('can_manage_rehearsals');
 
         $showOld = isset($_GET['showOld']);
 
@@ -578,8 +576,7 @@ class PromiseController extends Controller
             $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal);
 
             foreach ($users as $user) {
-                // Skip conductors - they shouldn't be displayed in the attendance list
-                if ($user['role'] === 'conductor') {
+                if (empty($user['can_attend_rehearsals'])) {
                     continue;
                 }
 
@@ -610,7 +607,7 @@ class PromiseController extends Controller
                         'type' => $user['type'],
                         'status' => $status,
                         'note' => $note,
-                        'role' => $user['role'] ?? null,
+                        'permissions' => $user['permissions'] ?? [],
                         'is_small_group' => $isSmallGroup ? \App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED : \App\Core\RehearsalTypeManager::SMALL_GROUP_DISABLED,
                         'id' => $user['user_id'] // Use 'id' not 'user_id' for badge lookup
                     ];
@@ -685,7 +682,8 @@ class PromiseController extends Controller
             $rehearsalIds = array_column($paginatedRehearsals, 'id');
             $promises = [];
             if (!empty($rehearsalIds)) {
-                $promises = $this->promiseModel->findPromisesForRehearsalsAndUser($rehearsalIds, $_SESSION['user_id']);
+                $promiseModel = new \App\Models\UserPromise();
+                $promises = $promiseModel->findPromisesForRehearsalsAndUser($rehearsalIds, $_SESSION['user_id']);
             }
 
             $html = '';
