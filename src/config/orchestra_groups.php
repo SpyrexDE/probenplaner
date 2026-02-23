@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Orchestra Groups Configuration
  * 
@@ -25,6 +26,9 @@ return [
                 'id' => 'Streicher',
                 'display_name' => 'Streicher',
                 'type' => 'section',
+                'icon' => 'fas fa-guitar',
+                'bg' => 'background: var(--color-blue-100);',
+                'tc' => 'color: var(--color-primary);',
                 'children' => [
                     'violin1' => [
                         'id' => 'Violine_1',
@@ -32,7 +36,7 @@ return [
                         'type' => 'instrument'
                     ],
                     'violin2' => [
-                        'id' => 'Violine_2', 
+                        'id' => 'Violine_2',
                         'display_name' => 'Violine 2',
                         'type' => 'instrument'
                     ],
@@ -57,8 +61,11 @@ return [
             ],
             'winds' => [
                 'id' => 'Bläser',
-                'display_name' => 'Bläser', 
+                'display_name' => 'Bläser',
                 'type' => 'section',
+                'icon' => 'fas fa-wind',
+                'bg' => 'background: rgba(124, 58, 237, 0.1);',
+                'tc' => 'color: #7c3aed;',
                 'children' => [
                     'woodwinds' => [
                         'id' => 'Holzbläser',
@@ -127,18 +134,27 @@ return [
             'percussion' => [
                 'id' => 'Schlagwerk',
                 'display_name' => 'Schlagwerk',
-                'type' => 'section'
+                'type' => 'section',
+                'icon' => 'fas fa-drum',
+                'bg' => 'background: var(--color-warning-100);',
+                'tc' => 'color: var(--color-warning-dark);',
             ],
             'harp' => [
                 'id' => 'Harfe',
                 'display_name' => 'Harfe',
                 'plural' => 'Harfen',
-                'type' => 'section'
+                'type' => 'section',
+                'icon' => 'fas fa-music',
+                'bg' => 'background: var(--color-success-100);',
+                'tc' => 'color: var(--color-success);',
             ],
             'other' => [
                 'id' => 'Andere',
                 'display_name' => 'Andere',
-                'type' => 'section'
+                'type' => 'section',
+                'icon' => 'fas fa-ellipsis-h',
+                'bg' => 'background: var(--color-error-100);',
+                'tc' => 'color: var(--color-error);',
             ]
         ]
     ],
@@ -146,14 +162,14 @@ return [
     'special_groups' => [
         'concert' => [
             'id' => 'Konzert',
-            'display_name' => 'Konzert', 
+            'display_name' => 'Konzert',
             'type' => 'special',
             'special_rules' => ['affects_all' => true]
         ],
         'concert_tour' => [
             'id' => 'Konzertreise',
             'display_name' => 'Konzertreise',
-            'type' => 'special', 
+            'type' => 'special',
             'special_rules' => ['affects_all' => true]
         ],
         'dress_rehearsal' => [

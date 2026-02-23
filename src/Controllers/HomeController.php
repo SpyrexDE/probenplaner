@@ -51,7 +51,7 @@ class HomeController extends Controller
             }
 
             if (isset($_SESSION['current_orchestra_slug'])) {
-                if (!empty($_SESSION['current_permissions']['can_manage_rehearsals'])) {
+                if (!empty($_SESSION['current_permissions']['can_manage_ensemble'])) {
                     $this->redirect($this->orchestraUrl('/promises/admin'));
                 } else {
                     $this->redirect($this->orchestraUrl('/promises'));

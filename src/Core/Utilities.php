@@ -70,7 +70,8 @@ class Utilities
         if (!empty($permissions['can_manage_ensemble'])) {
             $result['role'] = self::getRoleDisplayName('conductor');
         } elseif ($type !== 'conductor' && $type !== 'none') {
-            $result['type'] = str_replace('_', ' ', $type);
+            $groupManager = new GroupManager();
+            $result['type'] = $groupManager->getDisplayName($type);
         }
 
         return $result;

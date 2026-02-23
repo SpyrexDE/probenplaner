@@ -29,7 +29,7 @@ class InviteLink extends Model
 
     protected function getAllowedFields(): array
     {
-        return ['token', 'orchestra_id', 'email', 'default_permissions', 'expires_at', 'used_at', 'created_by'];
+        return ['token', 'orchestra_id', 'email', 'default_permissions', 'expires_at', 'used_at', 'created_by', 'keycloak_only'];
     }
 
     /**

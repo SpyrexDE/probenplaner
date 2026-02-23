@@ -124,7 +124,7 @@ class OrchestraSelectionController extends Controller
         $this->setFlash('success', 'Orchester ausgewählt: ' . $orchestra['name']);
 
         $slug = $orchestra['slug'];
-        if (!empty($_SESSION['current_permissions']['can_manage_rehearsals'])) {
+        if (!empty($_SESSION['current_permissions']['can_manage_ensemble'])) {
             $this->redirect('/' . $orgSlug . '/' . $slug . '/promises/admin');
         } else {
             $this->redirect('/' . $orgSlug . '/' . $slug . '/promises');
@@ -410,7 +410,7 @@ class OrchestraSelectionController extends Controller
         $this->setFlash('success', 'Gewechselt zu: ' . $orchestra['name']);
 
         $slug = $orchestra['slug'];
-        if (!empty($_SESSION['current_permissions']['can_manage_rehearsals'])) {
+        if (!empty($_SESSION['current_permissions']['can_manage_ensemble'])) {
             $this->redirect('/' . $orgSlug . '/' . $slug . '/promises/admin');
         } else {
             $this->redirect('/' . $orgSlug . '/' . $slug . '/promises');

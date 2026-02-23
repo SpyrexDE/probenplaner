@@ -63,7 +63,7 @@ class AuthController extends Controller
             }
 
             if (isset($_SESSION['current_orchestra_slug'])) {
-                if (!empty($_SESSION['current_permissions']['can_manage_rehearsals'])) {
+                if (!empty($_SESSION['current_permissions']['can_manage_ensemble'])) {
                     $this->redirect($this->orchestraUrl('/promises/admin'));
                 } else {
                     $this->redirect($this->orchestraUrl('/promises'));
@@ -240,7 +240,7 @@ class AuthController extends Controller
         // If already logged in, redirect to orchestra selection or main app
         if ($this->isLoggedIn()) {
             if (isset($_SESSION['current_orchestra_slug'])) {
-                if (!empty($_SESSION['current_permissions']['can_manage_rehearsals'])) {
+                if (!empty($_SESSION['current_permissions']['can_manage_ensemble'])) {
                     $this->redirect($this->orchestraUrl('/promises/admin'));
                 } else {
                     $this->redirect($this->orchestraUrl('/promises'));

@@ -104,13 +104,15 @@ include __DIR__ . '/../components/theme-selector.php';
                         <?php
                         function renderTypeOptions($structure, $level = 0, $currentType = '')
                         {
+                            static $gm = null;
+                            $gm ??= new \App\Core\GroupManager();
                             foreach ($structure as $key => $value) {
                                 if (is_array($value)) {
-                                    echo '<option value="" disabled class="font-bold text-gray-600">' . str_replace('_', ' ', $key) . '</option>';
+                                    echo '<option value="" disabled class="font-bold text-gray-600">' . htmlspecialchars($gm->getDisplayName($key)) . '</option>';
                                     renderTypeOptions($value, $level + 1, $currentType);
                                 } else {
                                     $selected = ($value === $currentType) ? ' selected' : '';
-                                    echo '<option value="' . $value . '"' . $selected . '>' . str_repeat('&nbsp;&nbsp;', $level) . str_replace('_', ' ', $value) . '</option>';
+                                    echo '<option value="' . $value . '"' . $selected . '>' . str_repeat('&nbsp;&nbsp;', $level) . htmlspecialchars($gm->getDisplayName($value)) . '</option>';
                                 }
                             }
                         }

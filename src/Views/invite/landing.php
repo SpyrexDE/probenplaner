@@ -105,8 +105,10 @@ if (!empty($orgName)) {
 $content .= '</div>';
 
 $content .= '<a href="/auth/keycloak/login" class="invite-btn invite-btn-primary" style="margin-bottom: var(--space-3)">Mit JMD-Account anmelden</a>';
-$content .= '<div class="invite-divider">oder</div>';
-$content .= '<a href="/login" class="invite-btn invite-btn-secondary">Anmelden / Registrieren</a>';
+if (empty($keycloakOnly)) {
+    $content .= '<div class="invite-divider">oder</div>';
+    $content .= '<a href="/login" class="invite-btn invite-btn-secondary">Anmelden / Registrieren</a>';
+}
 $content .= '</div>';
 
 $headerContent = '<img src="/assets/img/Logo.png" alt="Probenplaner" style="height:64px">';

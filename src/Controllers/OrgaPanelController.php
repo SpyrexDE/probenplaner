@@ -249,7 +249,7 @@ class OrgaPanelController extends Controller
     }
 
     /**
-     * Remove a conductor's can_manage_ensemble permission.
+     * Remove a conductor from the ensemble entirely.
      */
     public function removeConductor(array $params): void
     {
@@ -265,7 +265,7 @@ class OrgaPanelController extends Controller
             return;
         }
 
-        $this->userOrchestraModel->removePermission($userId, (int)$ensemble['id'], 'can_manage_ensemble');
+        $this->userOrchestraModel->removeFromOrchestra($userId, (int)$ensemble['id']);
 
         header('Content-Type: application/json');
         echo json_encode(['success' => true]);

@@ -65,6 +65,12 @@ class InviteController extends Controller
                 return;
             }
 
+            if (!empty($link['keycloak_only']) && !$this->isKeycloakUser()) {
+                $this->setFlash('error', 'Dieser Einladungslink ist nur für JMD-Accounts.');
+                $this->redirect('/orchestras/select');
+                return;
+            }
+
             $existing = $this->userOrchestraModel->getUserOrchestraRelation(
                 (int)$_SESSION['user_id'],
                 (int)$orchestra['id']
@@ -125,6 +131,7 @@ class InviteController extends Controller
             'orchestra' => $orchestra,
             'orgName' => $orgName,
             'linkType' => $linkType,
+            'keycloakOnly' => !empty($link['keycloak_only']),
         ]);
     }
 
@@ -148,6 +155,12 @@ class InviteController extends Controller
         $link = $this->inviteLinkModel->findActiveByToken($token);
         if (!$link) {
             $this->setFlash('error', 'Ungültiger oder abgelaufener Link.');
+            $this->redirect('/orchestras/select');
+            return;
+        }
+
+        if (!empty($link['keycloak_only']) && !$this->isKeycloakUser()) {
+            $this->setFlash('error', 'Dieser Einladungslink ist nur für JMD-Accounts.');
             $this->redirect('/orchestras/select');
             return;
         }
@@ -246,6 +259,12 @@ class InviteController extends Controller
     /**
      * Check if current user is admin or orga account.
      */
+    private function isKeycloakUser(): bool
+    {
+        $user = $this->userModel->findById((int)$_SESSION['user_id']);
+        return !empty($user['keycloak_id']);
+    }
+
     private function isAdminOrOrgAccount(): bool
     {
         return !empty($_SESSION['is_admin']) || !empty($_SESSION['is_org_admin']);

@@ -52,8 +52,8 @@ class PromiseController extends Controller
     {
         $this->validateOrchestraContext($params);
 
-        // If the user can manage rehearsals but CANNOT attend them, redirect to admin interface
-        if (!empty($_SESSION['current_permissions']['can_manage_rehearsals']) && empty($_SESSION['current_permissions']['can_attend_rehearsals'])) {
+        // Conductors don't give promises — redirect to admin view
+        if (!empty($_SESSION['current_permissions']['can_manage_ensemble'])) {
             $this->redirect($this->orchestraUrl('/promises/admin'));
             return;
         }
@@ -397,6 +397,12 @@ class PromiseController extends Controller
             return;
         }
 
+        if (empty($_SESSION['current_permissions']['can_attend_rehearsals'])) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Keine Berechtigung', 'details' => 'Sie haben keine Berechtigung, Rückmeldungen abzugeben.']);
+            return;
+        }
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'Ungültige Anfrage', 'details' => 'Diese Aktion ist nur über AJAX erlaubt.']);
@@ -472,6 +478,12 @@ class PromiseController extends Controller
         if (!$this->isLoggedIn()) {
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'Nicht eingeloggt', 'details' => 'Bitte melden Sie sich erneut an.']);
+            return;
+        }
+
+        if (empty($_SESSION['current_permissions']['can_attend_rehearsals'])) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Keine Berechtigung', 'details' => 'Sie haben keine Berechtigung, Rückmeldungen abzugeben.']);
             return;
         }
 

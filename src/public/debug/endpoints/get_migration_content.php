@@ -1,8 +1,12 @@
 <?php
+
 /**
  * Migration Content Endpoint
  * Serves raw SQL content of migration files
  */
+
+// Bootstrap for APP_ROOT constant
+require_once __DIR__ . '/../../../bootstrap.php';
 
 // Only allow AJAX requests
 if (!isset($_SERVER['HTTP_X_REQUESTED_WITH']) || $_SERVER['HTTP_X_REQUESTED_WITH'] !== 'XMLHttpRequest') {
@@ -21,7 +25,7 @@ if (!$filePath || !file_exists($filePath)) {
 
 // Only allow reading .sql files from the migrations directory
 $realPath = realpath($filePath);
-$migrationsDir = realpath('/var/www/html/database/migrations');
+$migrationsDir = realpath(APP_ROOT . '/../database/migrations');
 
 if (!$realPath || !str_starts_with($realPath, $migrationsDir) || !str_ends_with($realPath, '.sql')) {
     http_response_code(403);
@@ -37,4 +41,4 @@ while (ob_get_level()) ob_end_clean();
 
 // Output raw file content
 readfile($filePath);
-exit; 
+exit;

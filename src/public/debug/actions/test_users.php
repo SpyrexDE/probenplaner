@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Test Users Generator Action
  */
@@ -40,13 +41,24 @@ $stmt->close();
 // Define user sections
 $sections = [
     // Strings
-    'Violine_1', 'Violine_2', 'Bratsche', 'Cello', 'Kontrabass',
+    'Violine_1',
+    'Violine_2',
+    'Bratsche',
+    'Cello',
+    'Kontrabass',
     // Woodwinds
-    'Flöte', 'Oboe', 'Klarinette', 'Fagott',
+    'Flöte',
+    'Oboe',
+    'Klarinette',
+    'Fagott',
     // Brass
-    'Trompete', 'Posaune', 'Tuba', 'Horn',
+    'Trompete',
+    'Posaune',
+    'Tuba',
+    'Horn',
     // Other
-    'Schlagwerk', 'Andere'
+    'Schlagwerk',
+    'Andere'
 ];
 
 // For storing generated users
@@ -62,12 +74,12 @@ try {
     foreach ($sections as $section) {
         // Generate a random number of users for this section (0-10)
         $numUsers = rand(0, min(10, $maxUsers));
-        
+
         // Create the users for this section
         for ($i = 0; $i < $numUsers; $i++) {
             $username = $usernamePrefix . $usernameCounter;
             $usernameCounter++;
-            
+
             // Check if user with this username already exists in this orchestra
             $checkStmt = $conn->prepare("SELECT u.id FROM users u INNER JOIN user_orchestras uo ON u.id = uo.user_id WHERE u.username = ? AND uo.orchestra_id = ? AND uo.is_active = TRUE");
             $checkStmt->bind_param('si', $username, $orchestraId);
@@ -78,40 +90,52 @@ try {
                 // Skip this username
                 continue;
             }
-            
+
             // Hash the password (same as username)
             $hashedPassword = password_hash($username, PASSWORD_DEFAULT);
-            
+
             // Create the user with prepared statement (without orchestra-specific fields)
             $insertStmt = $conn->prepare("INSERT INTO users (username, password) VALUES (?, ?)");
             $insertStmt->bind_param('ss', $username, $hashedPassword);
-            
+
             if ($insertStmt->execute()) {
                 $userId = $conn->insert_id;
                 $insertStmt->close();
-                
+
                 // Create the user-orchestra relationship
-                $userOrchestraStmt = $conn->prepare("INSERT INTO user_orchestras (user_id, orchestra_id, type, role) VALUES (?, ?, ?, 'member')");
-                $userOrchestraStmt->bind_param('iis', $userId, $orchestraId, $section);
-                
+                $joinedAt = date('Y-m-d H:i:s');
+                $userOrchestraStmt = $conn->prepare("INSERT INTO user_orchestras (user_id, orchestra_id, type, is_active, joined_at) VALUES (?, ?, ?, 1, ?)");
+                $userOrchestraStmt->bind_param('iiss', $userId, $orchestraId, $section, $joinedAt);
+
                 if ($userOrchestraStmt->execute()) {
+                    $uoId = $conn->insert_id;
+                    $userOrchestraStmt->close();
+
+                    // Grant member permissions
+                    $permStmt = $conn->prepare("INSERT INTO user_ensemble_permissions (user_orchestra_id, permission_id)
+                        SELECT ?, id FROM permissions WHERE name = 'can_attend_rehearsals'");
+                    $permStmt->bind_param('i', $uoId);
+                    $permStmt->execute();
+                    $permStmt->close();
+
                     $generatedUsers[] = [
                         'username' => $username,
-                        'password' => $username, // Username is the password
+                        'password' => $username,
                         'type' => $section
                     ];
                     $totalGenerated++;
+                } else {
+                    $userOrchestraStmt->close();
                 }
-                $userOrchestraStmt->close();
             } else {
                 $insertStmt->close();
             }
         }
     }
-    
+
     // If successful, commit the transaction
     $conn->commit();
-    
+
     return [
         'message' => "Successfully generated {$totalGenerated} test users for orchestra '{$orchestra['name']}'",
         'messageType' => 'success',
@@ -121,13 +145,12 @@ try {
             'orchestra' => $orchestra
         ]
     ];
-    
 } catch (\Exception $e) {
     // If there's an error, roll back the transaction
     $conn->rollback();
-    
+
     return [
         'message' => 'Error generating users: ' . $e->getMessage(),
         'messageType' => 'error'
     ];
-} 
+}

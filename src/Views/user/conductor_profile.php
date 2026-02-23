@@ -158,7 +158,7 @@ include __DIR__ . '/../components/theme-selector.php';
         if (usernameEl) {
             usernameEl.dataset.entity = 'user';
             usernameEl.dataset.entityId = userId;
-            usernameEl.dataset.orchestraId = orchestraId;
+            usernameEl.dataset.orchestraId = orchestraSlug;
             usernameEl.dataset.field = 'username';
             usernameEl.dataset.saveMode = 'auto';
             usernameEl.dataset.fieldType = 'text';

@@ -69,10 +69,14 @@ class UserOrchestra extends Model
     {
         $activeClause = $activeOnly ? "AND uo.is_active = 1" : "";
 
-        $sql = "SELECT uo.*, u.username, u.display_name, u.created_at as user_created_at
+        $sql = "SELECT uo.*, u.username, u.display_name, u.created_at as user_created_at,
+                GROUP_CONCAT(p.name) as permission_names
                 FROM {$this->table} uo
                 JOIN users u ON uo.user_id = u.id
+                LEFT JOIN user_ensemble_permissions uep ON uep.user_orchestra_id = uo.id
+                LEFT JOIN permissions p ON uep.permission_id = p.id
                 WHERE uo.orchestra_id = ? {$activeClause}
+                GROUP BY uo.id
                 ORDER BY uo.type, COALESCE(u.display_name, u.username)";
 
         $stmt = $this->db->prepare($sql);
@@ -82,6 +86,10 @@ class UserOrchestra extends Model
 
         $users = [];
         while ($row = $result->fetch_assoc()) {
+            $permNames = $row['permission_names'] ? explode(',', $row['permission_names']) : [];
+            $row['permissions'] = $permNames;
+            $row['can_attend_rehearsals'] = in_array('can_attend_rehearsals', $permNames);
+            unset($row['permission_names']);
             $users[] = $row;
         }
         $stmt->close();
@@ -296,10 +304,14 @@ class UserOrchestra extends Model
      */
     public function getUsersByType(string $type, int $orchestraId): array
     {
-        $sql = "SELECT uo.*, u.username, u.display_name, u.created_at as user_created_at
+        $sql = "SELECT uo.*, u.username, u.display_name, u.created_at as user_created_at,
+                GROUP_CONCAT(p.name) as permission_names
                 FROM {$this->table} uo
                 JOIN users u ON uo.user_id = u.id
+                LEFT JOIN user_ensemble_permissions uep ON uep.user_orchestra_id = uo.id
+                LEFT JOIN permissions p ON uep.permission_id = p.id
                 WHERE uo.type = ? AND uo.orchestra_id = ? AND uo.is_active = 1
+                GROUP BY uo.id
                 ORDER BY COALESCE(u.display_name, u.username)";
 
         $stmt = $this->db->prepare($sql);
@@ -309,6 +321,10 @@ class UserOrchestra extends Model
 
         $users = [];
         while ($row = $result->fetch_assoc()) {
+            $permNames = $row['permission_names'] ? explode(',', $row['permission_names']) : [];
+            $row['permissions'] = $permNames;
+            $row['can_attend_rehearsals'] = in_array('can_attend_rehearsals', $permNames);
+            unset($row['permission_names']);
             $users[] = $row;
         }
         $stmt->close();

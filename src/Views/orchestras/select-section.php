@@ -27,7 +27,7 @@ ob_start();
                     <option
                         value="<?= htmlspecialchars($instrument) ?>"
                         <?= (isset($_SESSION['form_data']['type']) && $_SESSION['form_data']['type'] === $instrument) ? 'selected' : '' ?>>
-                        <?= htmlspecialchars(str_replace('_', ' ', $instrument)) ?>
+                        <?php $gm = $gm ?? new \App\Core\GroupManager(); ?><?= htmlspecialchars($gm->getDisplayName($instrument)) ?>
                     </option>
                 <?php endforeach; ?>
             </optgroup>

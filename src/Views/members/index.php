@@ -3,58 +3,173 @@
 <?php
 $renderComponent = false;
 include __DIR__ . '/../components/user-badge.php';
+include __DIR__ . '/../components/form-input.php';
 $renderComponent = true;
 ?>
 
 <style>
-    .members-header {
+    /* === MEMBERS PAGE === */
+
+    .members-toolbar {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: var(--space-4);
+        gap: var(--space-3);
+        margin-bottom: var(--space-6);
+        flex-wrap: wrap;
+    }
+
+    .members-count {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        font-weight: var(--font-weight-medium);
+    }
+
+    .members-count strong {
+        color: var(--color-text-primary);
+        font-weight: var(--font-weight-bold);
+    }
+
+    /* Search */
+    .members-search-wrapper {
+        position: relative;
+        flex: 1;
+        max-width: 320px;
+        min-width: 200px;
+    }
+
+    .members-search-icon {
+        position: absolute;
+        left: var(--space-3);
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--color-text-muted);
+        font-size: var(--font-size-sm);
+        pointer-events: none;
+        transition: color var(--transition-base);
     }
 
     .members-search {
         width: 100%;
-        max-width: 300px;
-        padding: var(--space-2) var(--space-3);
-        border: 1px solid var(--color-gray-300);
+        padding: var(--space-2) var(--space-3) var(--space-2) var(--space-8);
+        border: 2px solid var(--color-border);
         border-radius: var(--radius-lg);
         font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+        background: var(--color-bg-primary);
+        transition: all var(--transition-base);
+    }
+
+    .members-search:hover {
+        border-color: var(--color-primary-200);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
     }
 
     .members-search:focus {
         outline: none;
         border-color: var(--color-primary);
-        box-shadow: 0 0 0 2px rgba(71, 140, 244, 0.15);
+        box-shadow: 0 0 0 3px rgba(71, 140, 244, 0.1), 0 2px 6px rgba(0, 0, 0, 0.06);
+        transform: translateY(-1px);
     }
 
-    .section-group-card {
-        background: white;
-        border: 1px solid var(--color-gray-200);
-        border-radius: var(--radius-xl);
+    .members-search:focus~.members-search-icon {
+        color: var(--color-primary);
+    }
+
+    /* Section cards */
+    .section-card {
         margin-bottom: var(--space-4);
-        overflow: hidden;
     }
 
-    .section-group-title {
+    .section-card .modern-card-header {
+        cursor: pointer;
+        user-select: none;
+        transition: background var(--transition-base);
+    }
+
+    .section-card .modern-card-header:hover {
+        background: linear-gradient(135deg, var(--color-gray-100) 0%, var(--color-gray-50) 100%);
+    }
+
+    .section-header-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .section-header-left {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+    }
+
+    .section-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .section-title {
+        font-size: var(--font-size-base);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+    }
+
+    .section-count {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        font-weight: var(--font-weight-medium);
+        background: var(--color-bg-tertiary);
+        padding: 2px 8px;
+        border-radius: var(--radius-full);
+    }
+
+    .section-chevron {
+        color: var(--color-text-muted);
         font-size: var(--font-size-sm);
-        font-weight: 600;
-        color: var(--color-gray-500);
+        transition: transform var(--transition-base);
+    }
+
+    .section-card.expanded .section-chevron {
+        transform: rotate(90deg);
+    }
+
+    /* Subsection headers */
+    .subsection-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--space-2) var(--space-5);
+        background: var(--color-bg-secondary);
+        border-bottom: 1px solid var(--color-border-light);
+    }
+
+    .subsection-title {
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-bold);
+        color: var(--color-text-secondary);
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        padding: var(--space-3) var(--space-4);
-        border-bottom: 1px solid var(--color-gray-100);
-        background: var(--color-gray-50);
     }
 
+    .subsection-count {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-muted);
+    }
+
+    /* Member items */
     .member-item {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: var(--space-3) var(--space-4);
-        border-bottom: 1px solid var(--color-gray-50);
-        transition: background var(--transition-base);
+        padding: var(--space-3) var(--space-5);
+        border-bottom: 1px solid var(--color-border-light);
+        transition: all var(--transition-base);
     }
 
     .member-item:last-child {
@@ -62,201 +177,263 @@ $renderComponent = true;
     }
 
     .member-item:hover {
-        background: var(--color-gray-50);
+        background: linear-gradient(135deg, var(--color-bg-secondary), var(--color-bg-tertiary));
+        transform: translateX(2px);
     }
 
     .member-info {
         display: flex;
         align-items: center;
         gap: var(--space-3);
+        min-width: 0;
+        flex: 1;
     }
 
     .member-avatar {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: var(--color-primary-100);
-        color: var(--color-primary);
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-md);
+        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+        color: var(--color-white);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-weight: 600;
+        font-weight: var(--font-weight-bold);
         font-size: var(--font-size-sm);
         flex-shrink: 0;
+        box-shadow: 0 2px 6px rgba(71, 140, 244, 0.15);
+    }
+
+    .member-details {
+        min-width: 0;
     }
 
     .member-name {
-        font-weight: 500;
+        font-weight: var(--font-weight-semibold);
         font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.3;
     }
 
-    .member-badges {
+    .member-meta {
         display: flex;
-        gap: var(--space-1);
         align-items: center;
+        gap: var(--space-1);
+        margin-top: 1px;
     }
 
     .member-badge {
-        font-size: var(--font-size-xs);
+        font-size: 10px;
+        font-weight: var(--font-weight-semibold);
         padding: 1px 6px;
-        border-radius: var(--radius-md);
-        font-weight: 500;
+        border-radius: var(--radius-sm);
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
     }
 
     .member-badge-leader {
-        background: var(--color-primary-100);
-        color: var(--color-primary);
+        background: linear-gradient(135deg, var(--color-primary-100), var(--color-primary-200));
+        color: var(--color-primary-dark);
     }
 
     .member-badge-section-leader {
-        background: var(--color-success-100);
-        color: var(--color-success-700);
+        background: linear-gradient(135deg, var(--color-success-100), var(--color-success-200));
+        color: var(--color-success-dark);
+    }
+
+    .member-badge-small-group {
+        background: var(--color-warning-100);
+        color: var(--color-warning-dark);
     }
 
     .member-edit-btn {
+        width: 32px;
+        height: 32px;
         background: none;
-        border: none;
+        border: 1px solid transparent;
         cursor: pointer;
-        color: var(--color-gray-400);
-        padding: var(--space-1);
-        border-radius: var(--radius-md);
+        color: var(--color-text-muted);
+        border-radius: var(--radius-base);
         transition: all var(--transition-base);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
     }
 
     .member-edit-btn:hover {
-        color: var(--color-gray-600);
-        background: var(--color-gray-100);
-    }
-
-    .invite-btn-header {
-        padding: var(--space-2) var(--space-3);
-        border-radius: var(--radius-lg);
-        font-size: var(--font-size-sm);
-        font-weight: 500;
-        background: white;
-        border: 1px solid var(--color-gray-300);
-        cursor: pointer;
-        transition: all var(--transition-base);
-        display: flex;
-        align-items: center;
-        gap: var(--space-1);
-    }
-
-    .invite-btn-header:hover {
-        border-color: var(--color-primary);
         color: var(--color-primary);
+        background: var(--color-primary-50);
+        border-color: var(--color-primary-200);
+        transform: scale(1.05);
     }
 
-    /* Edit modal */
-    .member-modal-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.4);
-        z-index: 1000;
-        display: none;
-        align-items: center;
-        justify-content: center;
+    .member-edit-btn:active {
+        transform: scale(0.95);
     }
 
-    .member-modal-overlay.active {
-        display: flex;
+    /* Section body collapse */
+    .section-body {
+        max-height: 2000px;
+        overflow: hidden;
+        transition: max-height var(--transition-slow);
     }
 
-    .member-modal {
-        background: white;
-        border-radius: var(--radius-xl);
-        box-shadow: var(--shadow-xl);
-        width: 100%;
-        max-width: 480px;
-        max-height: 90vh;
-        overflow-y: auto;
-        padding: var(--space-6);
-        position: relative;
+    .section-card:not(.expanded) .section-body {
+        max-height: 0;
     }
 
-    .member-modal-close {
-        position: absolute;
-        top: var(--space-4);
-        right: var(--space-4);
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: var(--color-gray-400);
-        font-size: var(--font-size-lg);
+    /* No results state */
+    .members-no-results {
+        text-align: center;
+        padding: var(--space-8) var(--space-4);
+        color: var(--color-text-muted);
     }
 
-    .member-modal-close:hover {
-        color: var(--color-gray-600);
+    .members-no-results i {
+        font-size: var(--font-size-2xl);
+        margin-bottom: var(--space-2);
+        display: block;
     }
 
-    .member-modal-title {
-        font-size: var(--font-size-lg);
-        font-weight: 600;
-        margin-bottom: var(--space-1);
+    /* SweetAlert2 members modal overrides */
+    .swal-members-permissions {
+        text-align: left;
     }
 
-    .member-modal-email {
-        font-size: var(--font-size-sm);
-        color: var(--color-gray-500);
-        margin-bottom: var(--space-4);
+    .swal-perm-group {
+        margin-bottom: var(--space-3);
     }
 
-    .modal-section-title {
-        font-size: var(--font-size-sm);
-        font-weight: 500;
-        color: var(--color-gray-400);
-        margin: var(--space-4) 0 var(--space-2);
+    .swal-perm-title {
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-bold);
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: var(--space-2);
         padding-bottom: var(--space-1);
-        border-bottom: 1px solid var(--color-gray-100);
+        border-bottom: 1px solid var(--color-border-light);
     }
 
-    .modal-perm-row {
+    .swal-perm-row {
         display: flex;
         align-items: center;
         gap: var(--space-2);
         padding: var(--space-1) 0;
         font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
     }
 
-    .modal-perm-row input[type="checkbox"] {
+    .swal-perm-row input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
         accent-color: var(--color-primary);
+        cursor: pointer;
     }
 
-    .modal-danger-section {
-        margin-top: var(--space-4);
-        padding-top: var(--space-3);
-        border-top: 1px solid var(--color-gray-100);
+    .swal-perm-row label {
+        cursor: pointer;
+        flex: 1;
     }
 
-    /* Invite modal */
-    .invite-modal-link {
-        background: var(--color-gray-50);
-        border-radius: var(--radius-lg);
-        padding: var(--space-3);
-        font-family: monospace;
-        font-size: var(--font-size-sm);
-        word-break: break-all;
-        margin-bottom: var(--space-3);
+    .swal-member-header {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: var(--space-2);
+        gap: var(--space-3);
+        margin-bottom: var(--space-4);
+    }
+
+    .swal-member-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-lg);
+        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: var(--font-weight-bold);
+        font-size: var(--font-size-lg);
+        flex-shrink: 0;
+        box-shadow: 0 4px 10px rgba(71, 140, 244, 0.2);
+    }
+
+    .swal-member-info {
+        text-align: left;
+    }
+
+    .swal-member-name {
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-bold);
+        color: var(--color-text-primary);
+    }
+
+    .swal-member-username {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+    }
+
+    .swal-select-modern {
+        width: 100%;
+        padding: var(--space-2) var(--space-3);
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-base);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+        background: var(--color-bg-primary);
+        transition: all var(--transition-base);
+        cursor: pointer;
+    }
+
+    .swal-select-modern:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(71, 140, 244, 0.1);
+    }
+
+    .swal-field-group {
+        text-align: left;
+        margin-bottom: var(--space-3);
+    }
+
+    .swal-field-label {
+        display: block;
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-primary);
+        margin-bottom: var(--space-1);
+    }
+
+    .swal-invite-link {
+        background: var(--color-bg-tertiary);
+        border-radius: var(--radius-base);
+        padding: var(--space-3);
+        font-family: var(--font-family-mono);
+        font-size: var(--font-size-sm);
+        word-break: break-all;
+        color: var(--color-text-primary);
+        border: 1px solid var(--color-border);
+    }
+
+    .swal-invite-stat {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-muted);
+        margin-top: var(--space-2);
     }
 </style>
 
-<div class="members-header">
-    <h1 class="text-xl font-bold flex items-center gap-2">👥 Mitglieder</h1>
-    <div class="flex items-center gap-3">
-        <?php if ($canManage): ?>
-            <button class="invite-btn-header" onclick="openInviteModal()">🔗 Einladen</button>
-        <?php endif; ?>
-    </div>
-</div>
-
-<input type="text" class="members-search mb-4" placeholder="🔍 Suchen..." id="memberSearch" oninput="filterMembers(this.value)">
-
 <?php
-// Group into display-friendly sections
+$groupManager = new \App\Core\GroupManager();
+$totalMembers = 0;
+foreach ($grouped as $members) {
+    $totalMembers += count($members);
+}
+
+// Map instrument → top-level section using config
 $sectionOrder = [];
 foreach ($sections as $groupName => $groupSections) {
     foreach ($groupSections as $s) {
@@ -264,151 +441,212 @@ foreach ($sections as $groupName => $groupSections) {
     }
 }
 
-$displayGroups = [];
+$ungrouped = [];
 foreach ($grouped as $sectionName => $members) {
-    $groupName = $sectionOrder[$sectionName] ?? 'Sonstige';
-    $displayGroups[$groupName][$sectionName] = $members;
+    // Skip types that aren't part of any configured instrument section
+    if (!isset($sectionOrder[$sectionName]) && !isset($sections[$sectionName])) continue;
+    $groupName = $sectionOrder[$sectionName] ?? $sectionName;
+    $ungrouped[$groupName][$sectionName] = $members;
+}
+
+// Order sections to match orchestra_groups.php config hierarchy
+$configOrder = array_keys($sections);
+$displayGroups = [];
+foreach ($configOrder as $groupName) {
+    if (isset($ungrouped[$groupName])) {
+        $displayGroups[$groupName] = $ungrouped[$groupName];
+        unset($ungrouped[$groupName]);
+    }
+}
+// Append any remaining groups not in config
+foreach ($ungrouped as $groupName => $sectionMembers) {
+    $displayGroups[$groupName] = $sectionMembers;
+}
+
+// Build section visual metadata dynamically from config
+$defaultMeta = ['icon' => 'fas fa-users', 'bg' => 'background: var(--color-bg-tertiary);', 'tc' => 'color: var(--color-text-secondary);'];
+$sectionMeta = [];
+foreach ($sections as $sectionId => $_instruments) {
+    $group = $groupManager->getGroup($sectionId);
+    if ($group) {
+        $sectionMeta[$sectionId] = [
+            'icon' => $group['icon'] ?? $defaultMeta['icon'],
+            'bg'   => $group['bg']   ?? $defaultMeta['bg'],
+            'tc'   => $group['tc']   ?? $defaultMeta['tc'],
+        ];
+    }
 }
 ?>
 
-<?php foreach ($displayGroups as $groupName => $sectionMembers): ?>
-    <div class="section-group-card" data-group>
-        <div class="section-group-title"><?= htmlspecialchars($groupName) ?></div>
-        <?php foreach ($sectionMembers as $sectionName => $members): ?>
-            <div class="section-group-title" style="font-size:var(--font-size-xs);padding:var(--space-2) var(--space-4);background:transparent">
-                <?= htmlspecialchars($sectionName) ?> (<?= count($members) ?>)
+<div class="container-app">
+    <!-- Toolbar -->
+    <div class="members-toolbar">
+        <div class="members-count">
+            <strong><?= $totalMembers ?></strong> Mitglieder
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div class="members-search-wrapper">
+                <i class="fas fa-search members-search-icon"></i>
+                <input type="text"
+                    class="members-search"
+                    placeholder="Mitglied suchen..."
+                    id="memberSearch"
+                    oninput="filterMembers(this.value)">
             </div>
-            <?php foreach ($members as $member):
-                $displayName = $member['display_name'] ?? $member['username'];
-                $initial = strtoupper(substr($displayName, 0, 1));
-                $isLeader = !empty($member['can_manage_ensemble']);
-                $isSectionLeader = !empty($member['can_view_own_section_stats']) && empty($member['can_manage_ensemble']);
+
+            <?php if ($canManage): ?>
+                <button class="btn-modern btn-primary" onclick="openInviteModal()" style="white-space: nowrap; padding: var(--space-2) var(--space-4); font-size: var(--font-size-sm);">
+                    <i class="fas fa-link" style="margin-right: var(--space-1);"></i> Einladen
+                </button>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <?php if (empty($displayGroups)): ?>
+        <?php
+        $title = 'Keine Mitglieder';
+        $message = 'Es gibt noch keine Mitglieder in diesem Ensemble.';
+        include __DIR__ . '/../components/empty-state.php';
+        ?>
+    <?php else: ?>
+        <!-- Section Cards -->
+        <?php foreach ($displayGroups as $groupName => $sectionMembers): ?>
+            <?php
+            $meta = $sectionMeta[$groupName] ?? $defaultMeta;
+            $groupMemberCount = 0;
+            foreach ($sectionMembers as $members) {
+                $groupMemberCount += count($members);
+            }
             ?>
-                <div class="member-item" data-member-name="<?= htmlspecialchars(strtolower($displayName)) ?>">
-                    <div class="member-info">
-                        <div class="member-avatar"><?= $initial ?></div>
-                        <div>
-                            <div class="member-name"><?= htmlspecialchars($displayName) ?></div>
-                            <div class="member-badges">
-                                <?php if ($isLeader): ?>
-                                    <span class="member-badge member-badge-leader">Leitung</span>
-                                <?php elseif ($isSectionLeader): ?>
-                                    <span class="member-badge member-badge-section-leader">Reg.leitung</span>
+            <div class="modern-card section-card expanded mb-4" data-group>
+                <div class="modern-card-header" onclick="toggleSection(this)">
+                    <div class="section-header-content">
+                        <div class="section-header-left">
+                            <div class="section-icon" style="<?= $meta['bg'] ?>">
+                                <i class="<?= $meta['icon'] ?>" style="<?= $meta['tc'] ?> font-size: var(--font-size-sm);"></i>
+                            </div>
+                            <div>
+                                <div class="section-title"><?= htmlspecialchars($groupManager->getDisplayName($groupName)) ?></div>
+                            </div>
+                            <span class="section-count"><?= $groupMemberCount ?></span>
+                        </div>
+                        <i class="fas fa-chevron-right section-chevron"></i>
+                    </div>
+                </div>
+
+                <div class="section-body">
+                    <?php foreach ($sectionMembers as $sectionName => $members): ?>
+                        <?php if (count($sectionMembers) > 1): ?>
+                            <div class="subsection-header">
+                                <span class="subsection-title"><?= htmlspecialchars($groupManager->getDisplayName($sectionName)) ?></span>
+                                <span class="subsection-count"><?= count($members) ?></span>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php foreach ($members as $member):
+                            $displayName = $member['display_name'] ?? $member['username'];
+                            $initial = strtoupper(substr($displayName, 0, 1));
+                            $isLeader = !empty($member['can_manage_ensemble']);
+                            $isSectionLeader = !empty($member['can_view_own_section_stats']) && empty($member['can_manage_ensemble']);
+                            $isSmallGroup = !empty($member['is_small_group']);
+                        ?>
+                            <div class="member-item" data-member-name="<?= htmlspecialchars(strtolower($displayName)) ?>">
+                                <div class="member-info">
+                                    <div class="member-avatar"><?= $initial ?></div>
+                                    <div class="member-details">
+                                        <div class="member-name"><?= htmlspecialchars($displayName) ?></div>
+                                        <div class="member-meta">
+                                            <?php if ($isLeader): ?>
+                                                <span class="member-badge member-badge-leader">Leitung</span>
+                                            <?php elseif ($isSectionLeader): ?>
+                                                <span class="member-badge member-badge-section-leader">Reg.leitung</span>
+                                            <?php endif; ?>
+                                            <?php if ($isSmallGroup): ?>
+                                                <span class="member-badge member-badge-small-group">KG</span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php if ($canManage): ?>
+                                    <button class="member-edit-btn" onclick="openEditModal(<?= (int)$member['user_id'] ?>)" title="Bearbeiten">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
                                 <?php endif; ?>
                             </div>
-                        </div>
-                    </div>
-                    <?php if ($canManage): ?>
-                        <button class="member-edit-btn" onclick="openEditModal(<?= (int)$member['user_id'] ?>)" title="Bearbeiten">
-                            ⚙️
-                        </button>
-                    <?php endif; ?>
-                </div>
-            <?php endforeach; ?>
-        <?php endforeach; ?>
-    </div>
-<?php endforeach; ?>
-
-<!-- Edit Member Modal -->
-<div class="member-modal-overlay" id="editModal">
-    <div class="member-modal">
-        <button class="member-modal-close" onclick="closeEditModal()">✕</button>
-        <div class="member-modal-title" id="modalName"></div>
-        <div class="member-modal-email" id="modalEmail"></div>
-
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Register</label>
-            <select id="modalType" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                <?php foreach ($sections as $group => $items): ?>
-                    <optgroup label="<?= htmlspecialchars($group) ?>">
-                        <?php foreach ($items as $item): ?>
-                            <option value="<?= htmlspecialchars($item) ?>"><?= htmlspecialchars($item) ?></option>
                         <?php endforeach; ?>
-                    </optgroup>
-                <?php endforeach; ?>
-            </select>
-        </div>
-
-        <div class="mt-3">
-            <label class="modal-perm-row">
-                <input type="checkbox" id="modalSmallGroup">
-                Kleingruppe
-            </label>
-        </div>
-
-        <div class="modal-section-title">Berechtigungen</div>
-
-        <div class="modal-perm-row"><input type="checkbox" id="perm_view_own_section"> Eigenes Register sehen</div>
-        <div class="modal-perm-row"><input type="checkbox" id="perm_view_all_section"> Alle Register-Statistiken sehen</div>
-        <div class="modal-perm-row"><input type="checkbox" id="perm_view_members"> Mitgliederliste sehen</div>
-        <div class="modal-perm-row"><input type="checkbox" id="perm_manage_rehearsals"> Proben verwalten</div>
-        <div class="modal-perm-row"><input type="checkbox" id="perm_manage_members"> Mitglieder verwalten</div>
-        <div class="modal-perm-row"><input type="checkbox" id="perm_manage_permissions"> Berechtigungen vergeben</div>
-
-        <div class="modal-danger-section">
-            <div class="modal-section-title" style="color:var(--color-error)">Gefährliche Aktionen</div>
-            <button class="px-3 py-1 border border-red-300 text-red-600 rounded-lg text-sm hover:bg-red-50 transition-colors"
-                id="removeMemberBtn">
-                Aus Ensemble entfernen
-            </button>
-        </div>
-
-        <button class="w-full mt-4 px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-600 transition-colors"
-            onclick="saveEditModal()">
-            Speichern
-        </button>
-    </div>
-</div>
-
-<!-- Invite Link Modal -->
-<div class="member-modal-overlay" id="inviteModal">
-    <div class="member-modal" style="max-width:420px">
-        <button class="member-modal-close" onclick="closeInviteModal()">✕</button>
-        <div class="member-modal-title" style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-3)">🔗 Einladungslink</div>
-
-        <p class="text-sm text-gray-500 mb-3">Teile diesen Link mit neuen Mitgliedern.</p>
-
-        <?php if ($inviteLink): ?>
-            <div class="invite-modal-link" id="inviteLinkText">
-                <span><?= htmlspecialchars(rtrim($_SERVER['HTTP_HOST'] ?? '', '/') . '/invite/' . $inviteLink['token']) ?></span>
-                <button onclick="copyLink()" class="text-gray-400 hover:text-gray-600 cursor-pointer" style="background:none;border:none">📋</button>
+                    <?php endforeach; ?>
+                </div>
             </div>
-            <div class="text-sm text-gray-500 mb-3">
-                Bisher genutzt: <?= (int)($inviteLink['used_count'] ?? 0) ?>×
-            </div>
-            <label class="modal-perm-row mb-3">
-                <input type="checkbox" id="keycloakOnlyToggle" <?= !empty($inviteLink['keycloak_only']) ? 'checked' : '' ?>
-                    onchange="toggleKeycloak()">
-                Nur JMD-Accounts erlauben
-            </label>
-            <button class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors"
-                onclick="regenerateLink()">
-                🔄 Neuen Link generieren
-            </button>
-            <div class="text-xs text-gray-400 mt-1">Alter Link wird sofort ungültig.</div>
-        <?php else: ?>
-            <button class="w-full px-3 py-2 bg-primary text-white rounded-lg text-sm"
-                onclick="regenerateLink()">
-                Link generieren
-            </button>
-        <?php endif; ?>
+        <?php endforeach; ?>
+    <?php endif; ?>
+
+    <!-- No search results message -->
+    <div class="members-no-results" id="noResults" style="display:none;">
+        <i class="fas fa-search"></i>
+        <div>Kein Mitglied gefunden</div>
     </div>
 </div>
 
 <script>
     const orchestraBase = '<?= htmlspecialchars(($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '')) ?>';
-    let currentMemberId = null;
+    const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
 
-    function filterMembers(query) {
-        query = query.toLowerCase();
-        document.querySelectorAll('[data-member-name]').forEach(function(el) {
-            el.style.display = el.dataset.memberName.includes(query) ? '' : 'none';
-        });
+    // Section collapse
+    function toggleSection(header) {
+        const card = header.closest('.section-card');
+        card.classList.toggle('expanded');
     }
 
+    // Search filter
+    function filterMembers(query) {
+        query = query.toLowerCase().trim();
+        let visibleCount = 0;
+
+        document.querySelectorAll('[data-member-name]').forEach(el => {
+            const match = !query || el.dataset.memberName.includes(query);
+            el.style.display = match ? '' : 'none';
+            if (match) visibleCount++;
+        });
+
+        // Hide empty section cards
+        document.querySelectorAll('.section-card[data-group]').forEach(card => {
+            const visibleItems = card.querySelectorAll('.member-item:not([style*="display: none"])');
+            card.style.display = visibleItems.length === 0 ? 'none' : '';
+        });
+
+        // Toggle no-results
+        document.getElementById('noResults').style.display = visibleCount === 0 && query ? '' : 'none';
+    }
+
+    // Sections data for select dropdowns
+    const sectionsData = <?= json_encode($sections) ?>;
+    const displayNames = <?= json_encode(array_reduce(
+                                array_keys($sections),
+                                function ($carry, $key) use ($sections, $groupManager) {
+                                    $carry[$key] = $groupManager->getDisplayName($key);
+                                    foreach ($sections[$key] as $id) {
+                                        $carry[$id] = $groupManager->getDisplayName($id);
+                                    }
+                                    return $carry;
+                                },
+                                []
+                            )) ?>;
+
+    function buildSectionOptions() {
+        let html = '';
+        for (const [group, items] of Object.entries(sectionsData)) {
+            html += `<optgroup label="${displayNames[group] || group}">`;
+            for (const item of items) {
+                html += `<option value="${item}">${displayNames[item] || item}</option>`;
+            }
+            html += '</optgroup>';
+        }
+        return html;
+    }
+
+    // Edit member modal
     function openEditModal(userId) {
-        currentMemberId = userId;
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
         fetch('/' + orchestraBase + '/members/' + userId + '/details', {
                 headers: {
                     'Accept': 'application/json',
@@ -417,62 +655,111 @@ foreach ($grouped as $sectionName => $members) {
             })
             .then(r => r.json())
             .then(data => {
-                document.getElementById('modalName').textContent = data.display_name;
-                document.getElementById('modalEmail').textContent = data.username;
-                document.getElementById('modalType').value = data.type || '';
-                document.getElementById('modalSmallGroup').checked = data.is_small_group;
+                const initial = (data.display_name || 'U').charAt(0).toUpperCase();
 
-                const permMap = {
-                    'perm_view_own_section': 'can_view_own_section_stats',
-                    'perm_view_all_section': 'can_view_all_section_stats',
-                    'perm_view_members': 'can_view_members',
-                    'perm_manage_rehearsals': 'can_manage_rehearsals',
-                    'perm_manage_members': 'can_manage_members',
-                    'perm_manage_permissions': 'can_manage_permissions',
-                };
-                Object.entries(permMap).forEach(function([elId, perm]) {
-                    document.getElementById(elId).checked = data.permissions[perm] || false;
+                Swal.fire({
+                    html: `
+                    <div class="swal-members-permissions">
+                        <div class="swal-member-header">
+                            <div class="swal-member-avatar">${initial}</div>
+                            <div class="swal-member-info">
+                                <div class="swal-member-name">${data.display_name || data.username}</div>
+                                <div class="swal-member-username">@${data.username}</div>
+                            </div>
+                        </div>
+
+                        <div class="swal-field-group">
+                            <label class="swal-field-label">Register</label>
+                            <select id="swalType" class="swal-select-modern">
+                                ${buildSectionOptions()}
+                            </select>
+                        </div>
+
+                        <div class="swal-perm-row" style="margin-bottom: var(--space-3);">
+                            <input type="checkbox" id="swalSmallGroup" ${data.is_small_group ? 'checked' : ''}>
+                            <label for="swalSmallGroup">Kleingruppe</label>
+                        </div>
+
+                        <div class="swal-perm-group">
+                            <div class="swal-perm-title">Berechtigungen</div>
+                            <div class="swal-perm-row">
+                                <input type="checkbox" id="sp_view_own" ${data.permissions?.can_view_own_section_stats ? 'checked' : ''}>
+                                <label for="sp_view_own">Eigenes Register sehen</label>
+                            </div>
+                            <div class="swal-perm-row">
+                                <input type="checkbox" id="sp_view_all" ${data.permissions?.can_view_all_section_stats ? 'checked' : ''}>
+                                <label for="sp_view_all">Alle Register-Statistiken</label>
+                            </div>
+                            <div class="swal-perm-row">
+                                <input type="checkbox" id="sp_members" ${data.permissions?.can_view_members ? 'checked' : ''}>
+                                <label for="sp_members">Mitgliederliste sehen</label>
+                            </div>
+                            <div class="swal-perm-row">
+                                <input type="checkbox" id="sp_rehearsals" ${data.permissions?.can_manage_rehearsals ? 'checked' : ''}>
+                                <label for="sp_rehearsals">Proben verwalten</label>
+                            </div>
+                            <div class="swal-perm-row">
+                                <input type="checkbox" id="sp_manage" ${data.permissions?.can_manage_members ? 'checked' : ''}>
+                                <label for="sp_manage">Mitglieder verwalten</label>
+                            </div>
+                            <div class="swal-perm-row">
+                                <input type="checkbox" id="sp_perms" ${data.permissions?.can_manage_permissions ? 'checked' : ''}>
+                                <label for="sp_perms">Berechtigungen vergeben</label>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                    showCancelButton: true,
+                    showDenyButton: true,
+                    confirmButtonText: '<i class="fas fa-save"></i> Speichern',
+                    cancelButtonText: 'Abbrechen',
+                    denyButtonText: '<i class="fas fa-user-minus"></i> Entfernen',
+                    confirmButtonColor: '#478cf4',
+                    cancelButtonColor: '#6b7280',
+                    denyButtonColor: '#ef4444',
+                    reverseButtons: true,
+                    focusConfirm: false,
+                    didOpen: () => {
+                        const sel = document.getElementById('swalType');
+                        if (sel && data.type) sel.value = data.type;
+                    }
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        saveEditModal(userId);
+                    } else if (result.isDenied) {
+                        confirmRemoveMember(userId, data.display_name || data.username);
+                    }
                 });
-
-                document.getElementById('removeMemberBtn').onclick = function() {
-                    removeMember(userId);
-                };
-                document.getElementById('editModal').classList.add('active');
             })
-            .catch(function(err) {
+            .catch(err => {
                 window.notifyErrorWithDetails('Fehler beim Laden der Mitgliederdaten', err.message || String(err));
             });
     }
 
-    function closeEditModal() {
-        document.getElementById('editModal').classList.remove('active');
-        currentMemberId = null;
-    }
-
-    function saveEditModal() {
-        if (!currentMemberId) return;
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-        const perms = [];
+    function saveEditModal(userId) {
         const permMap = {
-            'perm_view_own_section': 'can_view_own_section_stats',
-            'perm_view_all_section': 'can_view_all_section_stats',
-            'perm_view_members': 'can_view_members',
-            'perm_manage_rehearsals': 'can_manage_rehearsals',
-            'perm_manage_members': 'can_manage_members',
-            'perm_manage_permissions': 'can_manage_permissions',
+            'sp_view_own': 'can_view_own_section_stats',
+            'sp_view_all': 'can_view_all_section_stats',
+            'sp_members': 'can_view_members',
+            'sp_rehearsals': 'can_manage_rehearsals',
+            'sp_manage': 'can_manage_members',
+            'sp_perms': 'can_manage_permissions',
         };
-        Object.entries(permMap).forEach(function([elId, perm]) {
-            if (document.getElementById(elId).checked) perms.push(perm);
-        });
+
+        const perms = [];
+        for (const [elId, perm] of Object.entries(permMap)) {
+            const el = document.getElementById(elId);
+            if (el && el.checked) perms.push(perm);
+        }
 
         const body = new URLSearchParams({
-            csrf_token: csrfToken,
-            type: document.getElementById('modalType').value,
-            is_small_group: document.getElementById('modalSmallGroup').checked ? '1' : '0',
+            csrf_token: csrfToken(),
+            type: document.getElementById('swalType')?.value || '',
+            is_small_group: document.getElementById('swalSmallGroup')?.checked ? '1' : '0',
             permissions: JSON.stringify(perms),
         });
 
-        fetch('/' + orchestraBase + '/members/' + currentMemberId + '/update', {
+        fetch('/' + orchestraBase + '/members/' + userId + '/update', {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
@@ -483,21 +770,40 @@ foreach ($grouped as $sectionName => $members) {
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    if (window.notifySuccess) window.notifySuccess('Gespeichert');
-                    closeEditModal();
-                    location.reload();
+                    window.notifySuccess('Gespeichert');
+                    setTimeout(() => location.reload(), 600);
                 } else {
                     window.notifyErrorWithDetails('Speichern fehlgeschlagen', data.debug_message || data.error || JSON.stringify(data));
                 }
             })
-            .catch(function(err) {
+            .catch(err => {
                 window.notifyErrorWithDetails('Speichern fehlgeschlagen', err.message || String(err));
             });
     }
 
+    // Remove member with confirmation
+    function confirmRemoveMember(userId, displayName) {
+        Swal.fire({
+            title: 'Mitglied entfernen?',
+            html: `<p style="color: var(--color-text-secondary);">
+                <strong>${displayName}</strong> wird aus dem Ensemble entfernt. Diese Aktion kann nicht rückgängig gemacht werden.
+            </p>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ja, entfernen',
+            cancelButtonText: 'Abbrechen',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            reverseButtons: true,
+            focusCancel: true,
+        }).then(result => {
+            if (result.isConfirmed) {
+                removeMember(userId);
+            }
+        });
+    }
+
     function removeMember(userId) {
-        if (!confirm('Mitglied wirklich aus dem Ensemble entfernen?')) return;
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
         fetch('/' + orchestraBase + '/members/' + userId + '/remove', {
                 method: 'POST',
                 headers: {
@@ -505,69 +811,121 @@ foreach ($grouped as $sectionName => $members) {
                     'X-Requested-With': 'XMLHttpRequest'
                 },
                 body: new URLSearchParams({
-                    csrf_token: csrfToken
+                    csrf_token: csrfToken()
                 }),
             })
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    if (window.notifySuccess) window.notifySuccess('Mitglied entfernt');
-                    closeEditModal();
-                    location.reload();
+                    window.notifySuccess('Mitglied entfernt');
+                    setTimeout(() => location.reload(), 600);
                 } else {
                     window.notifyErrorWithDetails('Entfernen fehlgeschlagen', data.debug_message || data.error || JSON.stringify(data));
                 }
             })
-            .catch(function(err) {
+            .catch(err => {
                 window.notifyErrorWithDetails('Entfernen fehlgeschlagen', err.message || String(err));
             });
     }
 
+    // Invite modal
     function openInviteModal() {
-        document.getElementById('inviteModal').classList.add('active');
-    }
+        <?php if ($inviteLink): ?>
+            const linkUrl = '<?= htmlspecialchars(rtrim($_SERVER['HTTP_HOST'] ?? '', '/') . '/invite/' . $inviteLink['token']) ?>';
+            const usedCount = <?= (int)($inviteLink['used_count'] ?? 0) ?>;
+            const keycloakOnly = <?= !empty($inviteLink['keycloak_only']) ? 'true' : 'false' ?>;
 
-    function closeInviteModal() {
-        document.getElementById('inviteModal').classList.remove('active');
-    }
-
-    function copyLink() {
-        const text = document.querySelector('#inviteLinkText span')?.textContent?.trim();
-        if (text) {
-            navigator.clipboard.writeText('https://' + text).then(function() {
-                if (window.notifySuccess) window.notifySuccess('Link kopiert');
+            Swal.fire({
+                title: 'Einladungslink',
+                html: `
+                    <div style="text-align: left;">
+                        <p style="font-size: var(--font-size-sm); color: var(--color-text-secondary); margin-bottom: var(--space-3);">
+                            Teile diesen Link mit neuen Mitgliedern.
+                        </p>
+                        <div class="swal-invite-link" id="swalInviteLink">${linkUrl}</div>
+                        <div class="swal-invite-stat">${usedCount}× genutzt</div>
+                        <div class="swal-perm-row" style="margin-top: var(--space-3);">
+                            <input type="checkbox" id="swalKeycloak" ${keycloakOnly ? 'checked' : ''} onchange="toggleKeycloak()">
+                            <label for="swalKeycloak">Nur JMD-Accounts erlauben</label>
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                showDenyButton: true,
+                confirmButtonText: '<i class="fas fa-copy"></i> Link kopieren',
+                denyButtonText: '<i class="fas fa-sync-alt"></i> Neuen Link',
+                cancelButtonText: 'Schließen',
+                confirmButtonColor: '#478cf4',
+                denyButtonColor: '#6b7280',
+                cancelButtonColor: '#9ca3af',
+                reverseButtons: true,
+                focusConfirm: false,
+            }).then(result => {
+                if (result.isConfirmed) {
+                    navigator.clipboard.writeText('https://' + linkUrl).then(() => {
+                        window.notifySuccess('Link kopiert');
+                    });
+                } else if (result.isDenied) {
+                    regenerateLink();
+                }
             });
-        }
+        <?php else: ?>
+            Swal.fire({
+                title: 'Einladungslink',
+                text: 'Noch kein Einladungslink vorhanden. Jetzt einen generieren?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Link generieren',
+                cancelButtonText: 'Abbrechen',
+                confirmButtonColor: '#478cf4',
+                cancelButtonColor: '#6b7280',
+                reverseButtons: true,
+            }).then(result => {
+                if (result.isConfirmed) regenerateLink();
+            });
+        <?php endif; ?>
     }
 
     function regenerateLink() {
-        if (!confirm('Neuen Link generieren? Alter Link wird ungültig.')) return;
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-        fetch('/' + orchestraBase + '/invite/regenerate', {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: new URLSearchParams({
-                    csrf_token: csrfToken
-                }),
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success === false) {
-                    window.notifyErrorWithDetails('Link-Generierung fehlgeschlagen', data.debug_message || data.error || JSON.stringify(data));
-                } else {
-                    location.reload();
-                }
-            })
-            .catch(function(err) {
-                window.notifyErrorWithDetails('Link-Generierung fehlgeschlagen', err.message || String(err));
-            });
+        Swal.fire({
+            title: 'Neuen Link generieren?',
+            text: 'Der alte Link wird sofort ungültig.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ja, neuen Link',
+            cancelButtonText: 'Abbrechen',
+            confirmButtonColor: '#478cf4',
+            cancelButtonColor: '#6b7280',
+            reverseButtons: true,
+        }).then(result => {
+            if (!result.isConfirmed) return;
+
+            fetch('/' + orchestraBase + '/invite/regenerate', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: new URLSearchParams({
+                        csrf_token: csrfToken()
+                    }),
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success === false) {
+                        window.notifyErrorWithDetails('Link-Generierung fehlgeschlagen', data.debug_message || data.error || JSON.stringify(data));
+                    } else {
+                        window.notifySuccess('Neuer Link generiert');
+                        setTimeout(() => location.reload(), 600);
+                    }
+                })
+                .catch(err => {
+                    window.notifyErrorWithDetails('Link-Generierung fehlgeschlagen', err.message || String(err));
+                });
+        });
     }
 
     function toggleKeycloak() {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
         fetch('/' + orchestraBase + '/invite/toggle-keycloak', {
                 method: 'POST',
                 headers: {
@@ -575,7 +933,7 @@ foreach ($grouped as $sectionName => $members) {
                     'X-Requested-With': 'XMLHttpRequest'
                 },
                 body: new URLSearchParams({
-                    csrf_token: csrfToken
+                    csrf_token: csrfToken()
                 }),
             })
             .then(r => r.json())
@@ -584,17 +942,8 @@ foreach ($grouped as $sectionName => $members) {
                     window.notifyErrorWithDetails('Einstellung fehlgeschlagen', data.debug_message || data.error || JSON.stringify(data));
                 }
             })
-            .catch(function(err) {
+            .catch(err => {
                 window.notifyErrorWithDetails('Einstellung fehlgeschlagen', err.message || String(err));
             });
     }
-
-    // Close modals on overlay click
-    document.querySelectorAll('.member-modal-overlay').forEach(function(overlay) {
-        overlay.addEventListener('click', function(e) {
-            if (e.target === overlay) {
-                overlay.classList.remove('active');
-            }
-        });
-    });
 </script>

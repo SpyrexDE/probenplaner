@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Debug Dashboard
  * Modular debugging tools for development
@@ -9,7 +10,7 @@ require_once '../../bootstrap.php';
 
 // Security check - only allow in development environment
 $devEnvironments = ['development', 'local', 'dev', 'test'];
-$isDevEnvironment = isset($_ENV['APP_ENV']) && in_array(strtolower($_ENV['APP_ENV']), $devEnvironments);
+$isDevEnvironment = defined('APP_ENV') && in_array(strtolower(APP_ENV), $devEnvironments);
 
 // Also allow local access regardless of environment setting
 $isLocalAccess = in_array($_SERVER['REMOTE_ADDR'], ['127.0.0.1', '::1', 'localhost', '172.28.0.1', '172.17.0.1']);
@@ -41,7 +42,7 @@ if (is_dir($modulesDir)) {
         if (pathinfo($file, PATHINFO_EXTENSION) === 'php' && $file !== 'index.php') {
             $moduleName = pathinfo($file, PATHINFO_FILENAME);
             $moduleInfo = require $modulesDir . $file;
-            
+
             // Each module file should return an array with 'name', 'icon', and 'description'
             if (is_array($moduleInfo) && isset($moduleInfo['name'])) {
                 $modules[$moduleName] = $moduleInfo;
@@ -51,7 +52,7 @@ if (is_dir($modulesDir)) {
 }
 
 // Sort modules by priority if specified
-uasort($modules, function($a, $b) {
+uasort($modules, function ($a, $b) {
     $aPriority = isset($a['priority']) ? $a['priority'] : 999;
     $bPriority = isset($b['priority']) ? $b['priority'] : 999;
     return $aPriority - $bPriority;
@@ -67,17 +68,17 @@ $messageType = '';
 
 if (isset($_POST['action']) && !empty($currentModule)) {
     $actionFile = __DIR__ . '/actions/' . $currentModule . '.php';
-    
+
     if (file_exists($actionFile)) {
         // Execute the module's action and get results
         $actionResult = include $actionFile;
-        
+
         if (is_array($actionResult)) {
             if (isset($actionResult['message'])) {
                 $message = $actionResult['message'];
                 $messageType = isset($actionResult['messageType']) ? $actionResult['messageType'] : 'info';
             }
-            
+
             if (isset($actionResult['data'])) {
                 $moduleData = $actionResult['data'];
             }
@@ -92,7 +93,8 @@ if (empty($moduleData) && file_exists(__DIR__ . '/data/' . $currentModule . '.ph
 }
 
 // Save a shared helper
-function isColumnExists($conn, $table, $column) {
+function isColumnExists($conn, $table, $column)
+{
     $stmt = $conn->prepare("SHOW COLUMNS FROM `$table` LIKE ?");
     $stmt->bind_param('s', $column);
     $stmt->execute();
@@ -104,31 +106,33 @@ function isColumnExists($conn, $table, $column) {
 
 // Pass this helper to modules
 $helpers = [
-    'isColumnExists' => function($table, $column) use ($conn) {
+    'isColumnExists' => function ($table, $column) use ($conn) {
         return isColumnExists($conn, $table, $column);
     }
 ];
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Debug Dashboard</title>
     <link rel="stylesheet" href="assets/debug.css">
 </head>
+
 <body>
     <h1>
         Debug Dashboard
-        <small>ENV: <?= htmlspecialchars($_ENV['APP_ENV'] ?? 'unknown') ?></small>
+        <small>ENV: <?= htmlspecialchars(defined('APP_ENV') ? APP_ENV : 'unknown') ?></small>
     </h1>
-    
+
     <?php if (!empty($message)): ?>
         <div class="message <?= $messageType ?>">
             <?= htmlspecialchars($message) ?>
         </div>
     <?php endif; ?>
-    
+
     <div style="display: flex; gap: 20px;">
         <!-- Simple navigation -->
         <nav style="min-width: 200px;">
@@ -138,7 +142,7 @@ $helpers = [
             <p class="status-<?= $dbConnection ? 'ok' : 'error' ?>">
                 Database: <?= $dbConnection ? 'Connected' : 'Disconnected' ?>
             </p>
-            
+
             <ul style="list-style: none; padding: 0;">
                 <?php foreach ($modules as $moduleId => $moduleInfo): ?>
                     <li style="margin: 5px 0;">
@@ -149,12 +153,12 @@ $helpers = [
                 <?php endforeach; ?>
             </ul>
         </nav>
-        
+
         <!-- Main content -->
         <main style="flex: 1;">
             <?php
             $viewFile = __DIR__ . '/views/' . $currentModule . '.php';
-            
+
             if (file_exists($viewFile)) {
                 include $viewFile;
             } else {
@@ -163,11 +167,12 @@ $helpers = [
             ?>
         </main>
     </div>
-    
+
     <footer style="margin-top: 20px; text-align: center; color: #666;">
         Debug Dashboard | <span class="timestamp"><?= date('Y-m-d H:i:s') ?></span>
     </footer>
-    
+
     <script src="assets/debug.js"></script>
 </body>
-</html> 
+
+</html>
