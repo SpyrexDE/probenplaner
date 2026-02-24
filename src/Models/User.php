@@ -102,52 +102,6 @@ class User extends Model
 
         // Insert and return the result
         try {
-            // Get table schema first
-            $tableSchema = [];
-            $describeResult = $this->db->query("DESCRIBE users");
-            if ($describeResult) {
-                while ($row = $describeResult->fetch_assoc()) {
-                    $tableSchema[$row['Field']] = [
-                        'type' => $row['Type'],
-                        'null' => $row['Null'],
-                        'key' => $row['Key'],
-                        'default' => $row['Default']
-                    ];
-                }
-            }
-
-            // Check required columns
-            $missingColumns = [];
-            foreach (['username', 'password'] as $requiredCol) {
-                if (!isset($tableSchema[$requiredCol])) {
-                    $missingColumns[] = $requiredCol;
-                }
-            }
-
-            // Check for old schema columns
-            $oldColumns = [];
-            foreach (['orchestra_id', 'type'] as $oldCol) {
-                if (isset($tableSchema[$oldCol])) {
-                    $oldColumns[] = $oldCol;
-                }
-            }
-
-            if (!empty($missingColumns)) {
-                return [
-                    'error' => true,
-                    'message' => 'Datenbank-Schema-Fehler',
-                    'details' => 'Fehlende Spalten: ' . implode(', ', $missingColumns)
-                ];
-            }
-
-            if (!empty($oldColumns)) {
-                return [
-                    'error' => true,
-                    'message' => 'Altes Datenbankschema erkannt',
-                    'details' => 'Die Migration wurde nicht vollständig angewendet. Alte Spalten gefunden: ' . implode(', ', $oldColumns)
-                ];
-            }
-
             $result = $this->insert($userData);
 
             if ($result === false) {
