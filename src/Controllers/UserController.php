@@ -627,7 +627,8 @@ class UserController extends Controller
         if ($result === true) {
             echo json_encode([
                 'success' => true,
-                'message' => "Das Passwort des Nutzers $username wurde zurückgesetzt: $newPassword"
+                'password' => $newPassword,
+                'message' => "Das Passwort des Nutzers $username wurde zurückgesetzt."
             ]);
         } else {
             http_response_code(500);
@@ -641,31 +642,29 @@ class UserController extends Controller
     }
 
     /**
-     * Generate a secure password containing at least one uppercase, one lowercase, and one digit
+     * Generate a readable temporary password with at least one uppercase, one lowercase, and one digit.
+     * Excludes ambiguous characters (l, I, O, 0, 1) for easy communication.
      *
      * @param int $length
      * @return string
      */
-    private function generateSecurePassword($length = 12)
+    private function generateSecurePassword($length = 10)
     {
         $length = max(8, (int)$length);
-        $lower = 'abcdefghijklmnopqrstuvwxyz';
-        $upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        $digits = '0123456789';
+        $lower = 'abcdefghjkmnpqrstuvwxyz';
+        $upper = 'ABCDEFGHJKMNPQRSTUVWXYZ';
+        $digits = '23456789';
         $all = $lower . $upper . $digits;
 
-        // Ensure required character classes
         $passwordChars = [];
         $passwordChars[] = $lower[random_int(0, strlen($lower) - 1)];
         $passwordChars[] = $upper[random_int(0, strlen($upper) - 1)];
         $passwordChars[] = $digits[random_int(0, strlen($digits) - 1)];
 
-        // Fill remaining length
         for ($i = count($passwordChars); $i < $length; $i++) {
             $passwordChars[] = $all[random_int(0, strlen($all) - 1)];
         }
 
-        // Shuffle to avoid predictable pattern
         for ($i = 0; $i < $length; $i++) {
             $j = random_int(0, $length - 1);
             $tmp = $passwordChars[$i];

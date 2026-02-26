@@ -33,7 +33,7 @@ switch ($memberStatus) {
 }
 ?>
 
-<li class="tree-user-item userSpan">
+<li class="tree-user-item userSpan" data-user-id="<?= $member['user_id'] ?? $member['id'] ?>">
     <i class="tree-user-item-icon fas fa-user"></i>
     
     <div class="tree-user-item-content">

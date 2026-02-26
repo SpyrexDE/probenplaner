@@ -105,7 +105,7 @@ include __DIR__ . '/../components/theme-selector.php';
                         <p class="text-red-700 mb-4">Alle Daten werden unwiderruflich gelöscht.</p>
                     </div>
                     <button type="button" id="deleteAccount" class="btn-modern btn-danger">
-                        <?= icon('trash', 'btn-icon') ?> Account löschen
+                        <?= icon('trash', 'btn-icon mr-2') ?> Account löschen
                     </button>
                 </div>
             </div>

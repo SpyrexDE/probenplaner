@@ -16,8 +16,16 @@ if (isset($_POST['action']) && $_POST['action'] === 'run_migration') {
     }
 
     try {
-        // Check if migration exists
-        $migrationPath = APP_ROOT . '/../database/migrations/' . $migrationFile;
+        // Resolve migration directory across local and Docker layouts
+        $migrationDir = null;
+        foreach ([APP_ROOT . '/../database/migrations', APP_ROOT . '/database/migrations'] as $c) {
+            if (is_dir($c)) { $migrationDir = $c; break; }
+        }
+        if (!$migrationDir) {
+            throw new Exception("Migration directory not found.");
+        }
+        $migrationPath = $migrationDir . '/' . $migrationFile;
+        
         if (!file_exists($migrationPath)) {
             throw new Exception("Migration file not found: $migrationFile");
         }

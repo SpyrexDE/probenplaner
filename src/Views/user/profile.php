@@ -134,15 +134,15 @@ include __DIR__ . '/../components/theme-selector.php';
                     </div>
                 </div>
 
-                <div class="mt-8 pt-6 border-t border-gray-200">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="mt-8">
+                    <div class="bg-gray-50 rounded-lg p-5 border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
                             <h3 class="text-base font-medium text-gray-900">Orchester verlassen</h3>
                             <p class="text-sm text-gray-500 mt-1">Du entfernst dich aus diesem Orchester. Du kannst später über einen Einladungslink jederzeit wieder beitreten.</p>
                         </div>
                         <div class="flex-shrink-0">
                             <button type="button" id="leaveOrchestra" class="btn-modern btn-secondary w-full sm:w-auto">
-                                <?= icon('person-walking-arrow-right', 'btn-icon text-gray-600') ?> Verlassen
+                                <?= icon('person-walking-arrow-right', 'btn-icon mr-2 text-gray-600') ?> Verlassen
                             </button>
                         </div>
                     </div>
@@ -174,7 +174,7 @@ include __DIR__ . '/../components/theme-selector.php';
                         <p class="text-red-700 mb-4">Alle Daten werden unwiderruflich gelöscht.</p>
                     </div>
                     <button type="button" id="deleteAccount" class="btn-modern btn-danger">
-                        <?= icon('trash', 'btn-icon') ?> Account löschen
+                        <?= icon('trash', 'btn-icon mr-2') ?> Account löschen
                     </button>
                 </div>
             </div>

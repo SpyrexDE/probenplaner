@@ -14,6 +14,6 @@
  * Include this at the end of the body to include shared JavaScript
  */
 function includePromisesScript() {
-    echo '<script src="/assets/js/promises-shared.js"></script>';
+    echo '<script src="/assets/js/promises-shared.js?v=' . time() . '"></script>';
 }
 ?>

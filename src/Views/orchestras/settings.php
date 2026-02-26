@@ -1,4 +1,4 @@
-<?php $this->layout('layouts/default', ['title' => 'Orchester bearbeiten', 'currentPage' => $currentPage, 'isFluid' => true]) ?>
+<?php $this->layout('layouts/default', ['title' => 'Orchester-Einstellungen', 'currentPage' => $currentPage, 'isFluid' => true]) ?>
 
 <?php
 $renderComponent = false;

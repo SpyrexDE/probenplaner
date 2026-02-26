@@ -100,6 +100,16 @@ class MemberController extends Controller
 
         $permissions = $this->userOrchestraModel->getPermissions($memberId, $orchestraId);
 
+        $sections = FieldRegistry::getSections();
+        $groupManager = new \App\Core\GroupManager();
+        $displayNames = [];
+        foreach ($sections as $key => $items) {
+            $displayNames[$key] = $groupManager->getDisplayName($key);
+            foreach ($items as $item) {
+                $displayNames[$item] = $groupManager->getDisplayName($item);
+            }
+        }
+
         header('Content-Type: application/json');
         echo json_encode([
             'user_id' => $user['id'],
@@ -108,6 +118,9 @@ class MemberController extends Controller
             'type' => $relation['type'] ?? '',
             'is_small_group' => !empty($relation['is_small_group']),
             'permissions' => $permissions,
+            'available_sections' => $sections,
+            'display_names' => $displayNames,
+            'current_user_can_manage_permissions' => $this->hasPermission('can_manage_permissions'),
         ]);
     }
 

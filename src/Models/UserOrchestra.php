@@ -362,7 +362,7 @@ class UserOrchestra extends Model
     /**
      * @return string[] All permission names for a given scope
      */
-    private function getAllPermissionNames(string $scope = 'ensemble'): array
+    public function getAllPermissionNames(string $scope = 'ensemble'): array
     {
         $sql = "SELECT name FROM permissions WHERE scope = ? ORDER BY id";
         $stmt = $this->db->prepare($sql);

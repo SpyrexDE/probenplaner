@@ -283,52 +283,18 @@ class OrchestraController extends Controller
             return;
         }
 
-        // Validate input and sanitize for UTF-8
-        $name = Validator::sanitizeUtf8($_POST['name'] ?? '');
-        $slug = Validator::sanitizeUtf8($_POST['slug'] ?? '');
 
-        $requiredValidation = Validator::validateRequired([
-            'name' => $name,
-            'slug' => $slug,
-        ], ['name', 'slug']);
-
-        $slugValidation = Validator::validateToken($slug);
-
-        // Slug uniqueness (only if changed)
-        $slugErrors = [];
-        if ($slug !== ($context['orchestra']['slug'] ?? '') && $this->orchestraModel->findBySlug($slug)) {
-            $slugErrors[] = "Dieser Slug wird bereits verwendet";
-        }
-
-        $validation = Validator::mergeResults([
-            $requiredValidation,
-            $slugValidation,
-            ['valid' => empty($slugErrors), 'errors' => $slugErrors]
-        ]);
-
-        if (!$validation['valid']) {
-            $errorMsg = implode(", ", $validation['errors']);
-            $this->addAlert('Fehler!', $errorMsg, 'error');
-            $this->redirect($this->orchestraUrl('/orchestras/settings'));
-            return;
-        }
 
         $leadersCanViewAll = isset($_POST['leaders_can_view_all_sections']) ? 1 : 0;
         $showRehearsalInsights = isset($_POST['show_rehearsal_insights']) ? 1 : 0;
 
         $result = $this->orchestraModel->update($context['orchestra_id'], [
-            'name' => $name,
-            'slug' => $slug,
             'leaders_can_view_all_sections' => $leadersCanViewAll,
             'show_rehearsal_insights' => $showRehearsalInsights,
             'force_decline_reason' => isset($_POST['force_decline_reason']) ? 1 : 0
         ]);
 
         if ($result) {
-            // Update session orchestra name if changed
-            if ($name !== $_SESSION['current_orchestra_name']) {
-                $_SESSION['current_orchestra_name'] = $name;
-            }
             $this->setFlash('success', 'Die Orchestereinstellungen wurden aktualisiert.');
         } else {
             $this->addAlert('Fehler!', 'Die Einstellungen konnten nicht aktualisiert werden.', 'error');

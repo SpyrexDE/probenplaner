@@ -810,7 +810,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
     </div>
 </div>
 
-<script src="/assets/js/promises-shared.js"></script>
+<script src="/assets/js/promises-shared.js?v=<?= time() ?>"></script>
 <script>
     // Interactions
     document.addEventListener('DOMContentLoaded', function() {

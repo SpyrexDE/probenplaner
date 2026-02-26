@@ -49,7 +49,6 @@ class FieldRegistry
         self::init();
         $groupDefs = [
             'orchestra' => [
-                'basic'       => ['label' => 'Orchester bearbeiten', 'icon' => 'cog', 'iconBg' => 'blue'],
                 'security'    => ['label' => 'Zugang & Sicherheit', 'icon' => 'shield', 'iconBg' => 'yellow'],
                 'permissions' => ['label' => 'Berechtigungen', 'icon' => 'users-cog', 'iconBg' => 'green'],
                 'features'    => ['label' => 'Features', 'icon' => 'flask', 'iconBg' => 'purple'],
@@ -142,27 +141,6 @@ class FieldRegistry
     private static function orchestraFields(): array
     {
         return [
-            [
-                'name'       => 'name',
-                'type'       => 'text',
-                'label'      => 'Orchestername',
-                'icon'       => 'music',
-                'group'      => 'basic',
-                'validation' => ['required', 'min:1', 'max:100'],
-                'save'       => 'auto',
-                'permission' => 'conductor',
-            ],
-            [
-                'name'       => 'slug',
-                'type'       => 'text',
-                'label'      => 'Orchester-Slug',
-                'description' => 'URL-Kennung für das Orchester',
-                'icon'       => 'link',
-                'group'      => 'basic',
-                'validation' => ['required', 'pattern:/^[a-zA-Z0-9_-]+$/'],
-                'save'       => 'auto',
-                'permission' => 'conductor',
-            ],
             [
                 'name'       => 'leaders_can_view_all_sections',
                 'type'       => 'toggle',

@@ -193,7 +193,7 @@ $hideNavbar = $isAuthPage || $isStandalone;
                     'rehearsals' => 'Termine',
                     'probenplan' => 'Probenplan',
                     'conductor_profile' => 'Profil bearbeiten',
-                    'orchestra_settings' => 'Orchester bearbeiten',
+                    'orchestra_settings' => 'Orchester-Einstellungen',
                     'promises' => 'Meine Meldungen',
                     'leader' => 'Rückmeldungen',
                     'profile' => 'Profil bearbeiten',
@@ -355,6 +355,7 @@ $hideNavbar = $isAuthPage || $isStandalone;
     <script src="/assets/js/collapse.js"></script>
     <script src="/assets/js/dropdown.js"></script>
     <script src="/assets/js/tooltip.js"></script>
+    <script src="/assets/js/member-actions.js?v=<?= time() ?>"></script>
     <script src="/assets/js/script.min.js"></script>
     <script src="/assets/js/tree-view-clickable.js"></script>
     <?php include __DIR__ . '/../components/help-modal.php'; ?>

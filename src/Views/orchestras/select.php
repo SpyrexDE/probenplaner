@@ -109,18 +109,27 @@ $renderComponent = true;
                                 <h3><?= htmlspecialchars($orchestra['orchestra_name']) ?></h3>
                                 <div class="orchestra-meta">
                                     <?php
-                                    $orchPerms = [
-                                        'can_manage_ensemble' => !empty($orchestra['can_manage_ensemble']),
-                                        'can_view_own_section_stats' => !empty($orchestra['can_view_own_section_stats']),
-                                    ];
-                                    $displayInfo = \App\Core\Utilities::getUserDisplayInfo($orchestra['type'], $orchPerms);
+                                    $displayType = '';
+                                    if (!empty($orchestra['type'])) {
+                                        if ($orchestra['type'] === 'conductor') {
+                                            $displayType = 'Dirigent*in';
+                                        } elseif ($orchestra['type'] !== 'none') {
+                                            $groupManager = new \App\Core\GroupManager();
+                                            $displayType = $groupManager->getDisplayName($orchestra['type']);
+                                        }
+                                    }
                                     ?>
-                                    <?php if ($displayInfo['type']): ?>
-                                        <span><?= htmlspecialchars($displayInfo['type']) ?></span>
+                                    <?php if ($displayType): ?>
+                                        <span><?= htmlspecialchars($displayType) ?></span>
                                     <?php endif; ?>
-                                    <span><?= htmlspecialchars($displayInfo['role']) ?></span>
+                                    
                                     <?php
-                                    $userData = ['permissions' => $orchPerms, 'is_small_group' => false];
+                                    // Generate badges for small group members, but skip the leader crown 
+                                    // since we don't load permissions here
+                                    $userData = [
+                                        'permissions' => [], 
+                                        'is_small_group' => !empty($orchestra['is_small_group'])
+                                    ];
                                     echo \App\Core\Utilities::generateUserBadges($userData);
                                     ?>
                                 </div>

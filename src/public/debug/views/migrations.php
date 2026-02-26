@@ -13,24 +13,46 @@ if (empty($moduleData)) {
     ];
 
     try {
-        // Get list of applied migrations
-        $result = $conn->query("SELECT migration FROM migrations ORDER BY applied_at");
-        $appliedMigrations = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
-        $moduleData['applied'] = array_column($appliedMigrations, 'migration');
+        if ($conn) {
+            // Get list of applied migrations
+            $result = $conn->query("SELECT migration FROM migrations ORDER BY applied_at");
+            $appliedMigrations = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+            $moduleData['applied'] = array_column($appliedMigrations, 'migration');
+        }
+    } catch (Exception $e) {
+        $moduleData['error'] = "Could not fetch applied migrations: " . $e->getMessage();
+    }
 
-        // Scan migration files
-        $migrationDir = APP_ROOT . '/../database/migrations';
-        if (is_dir($migrationDir)) {
+    try {
+        // Resolve migration directory across local and Docker layouts
+        $candidates = [
+            APP_ROOT . '/../database/migrations',
+            APP_ROOT . '/database/migrations',
+        ];
+        $migrationDir = null;
+        foreach ($candidates as $candidate) {
+            if (is_dir($candidate)) {
+                $migrationDir = $candidate;
+                break;
+            }
+        }
+
+        if ($migrationDir) {
             $files = array_diff(scandir($migrationDir), ['.', '..', 'README.md']);
             foreach ($files as $file) {
                 if (pathinfo($file, PATHINFO_EXTENSION) === 'sql') {
                     $filePath = $migrationDir . '/' . $file;
-                    $firstLine = fgets(fopen($filePath, 'r'));
-                    $description = trim(str_replace(['--', '/*', '*/', '#'], '', $firstLine));
+                    $handle = fopen($filePath, 'r');
+                    $firstLine = '';
+                    if ($handle) {
+                        $firstLine = fgets($handle);
+                        fclose($handle);
+                    }
+                    $description = $firstLine ? trim(str_replace(['--', '/*', '*/', '#'], '', $firstLine)) : '';
 
                     $moduleData['migrations'][] = [
                         'file' => $file,
-                        'description' => $description,
+                        'description' => $description ? $description : 'No description',
                         'applied' => in_array($file, $moduleData['applied']),
                         'path' => $filePath
                     ];
@@ -43,7 +65,7 @@ if (empty($moduleData)) {
             });
         }
     } catch (Exception $e) {
-        $moduleData['error'] = $e->getMessage();
+        $moduleData['error'] = ($moduleData['error'] ? $moduleData['error'] . " | " : "") . "Failed to read migrations directory: " . $e->getMessage();
     }
 }
 
@@ -62,9 +84,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_content' && isset($_GET['
 
     // Only allow reading .sql files from the migrations directory
     $realPath = realpath($filePath);
-    $migrationsDir = realpath(APP_ROOT . '/../database/migrations');
+    $migrationsDir = false;
+    foreach ([APP_ROOT . '/../database/migrations', APP_ROOT . '/database/migrations'] as $c) {
+        $resolved = realpath($c);
+        if ($resolved) { $migrationsDir = $resolved; break; }
+    }
 
-    if (!$realPath || !str_starts_with($realPath, $migrationsDir) || !str_ends_with($realPath, '.sql')) {
+    if (!$realPath || !$migrationsDir || !str_starts_with($realPath, $migrationsDir) || !str_ends_with($realPath, '.sql')) {
         http_response_code(403);
         echo "Access denied";
         exit;
