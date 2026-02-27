@@ -27,7 +27,7 @@ class HomeController extends Controller
         // If logged in, redirect to orchestra selection or main app
         if ($this->isLoggedIn()) {
             // Admin → admin dashboard
-            if (($_SESSION['username'] ?? '') === 'admin') {
+            if (!empty($_SESSION['is_super_admin'])) {
                 $this->redirect('/admin/dashboard');
                 return;
             }
@@ -108,28 +108,14 @@ class HomeController extends Controller
      */
     private function processSuccessfulLogin($user)
     {
-        // Regenerate session ID to prevent session fixation attacks
         session_regenerate_id(true);
 
-        // Set basic session variables (no orchestra context yet)
         $_SESSION['user_id'] = $user['id'];
-        $_SESSION['username'] = $user['username'];
+        $_SESSION['email'] = $user['email'];
         $_SESSION['display_name'] = $user['display_name'] ?? '';
-
-        // Set secure cookies
-        $cookieOptions = [
-            'expires' => time() + COOKIE_LIFETIME,
-            'path' => '/',
-            'domain' => '',
-            'secure' => (APP_ENV !== 'development' && APP_ENV !== 'test'), // Only over HTTPS in production
-            'httponly' => true, // Prevent XSS attacks
-            'samesite' => 'Strict' // CSRF protection
-        ];
-        setcookie("username", $user['username'], $cookieOptions);
 
         $this->setFlash('success', 'Sie wurden erfolgreich eingeloggt.');
 
-        // Redirect to orchestra selection
         $this->redirect('/orchestras/select');
     }
 }

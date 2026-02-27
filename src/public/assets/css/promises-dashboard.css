@@ -122,10 +122,15 @@
 }
 
 .analytics-chart {
-  flex: 1;
-  margin: var(--space-4) 0;
-  height: 80px;
-  min-height: 80px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 120px;
+  min-height: 120px;
+  z-index: 0;
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .analytics-subtitle {
@@ -1170,8 +1175,8 @@
   }
 
   .analytics-chart {
-    height: 60px;
-    min-height: 60px;
+    height: 90px;
+    min-height: 90px;
   }
 
   .rehearsal-compact {
@@ -1255,8 +1260,8 @@
   }
 
   .analytics-chart {
-    height: 50px;
-    min-height: 50px;
+    height: 75px;
+    min-height: 75px;
   }
 
   .analytics-trend {

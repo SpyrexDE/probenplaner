@@ -1,4 +1,5 @@
 <?php
+
 /**
  * User item component for promise views
  * 
@@ -9,7 +10,7 @@
 
 use App\Core\Utilities;
 
-$username = htmlspecialchars($member['username']);
+$username = htmlspecialchars($member['display_name'] ?? $member['email'] ?? '');
 $note = !empty($member['note']) ? htmlspecialchars($member['note']) : '';
 $memberStatus = $status ?? $member['status'] ?? 'no_response';
 $additionalInfo = $additionalInfo ?? '';
@@ -35,7 +36,7 @@ switch ($memberStatus) {
 
 <li class="tree-user-item userSpan" data-user-id="<?= $member['user_id'] ?? $member['id'] ?>">
     <i class="tree-user-item-icon fas fa-user"></i>
-    
+
     <div class="tree-user-item-content">
         <span class="tree-user-item-name"><?= $username ?><?= $userBadges ?></span>
         <?php if ($additionalInfo): ?>
@@ -45,7 +46,7 @@ switch ($memberStatus) {
             <span class="tree-user-item-note"><?= icon('quote-left', 'tree-user-note-icon') ?> <?= $note ?></span>
         <?php endif; ?>
     </div>
-    
+
     <div class="tree-user-item-status">
         <i class="tree-user-item-status-icon <?= $iconClass ?> status-<?= $memberStatus ?>"></i>
     </div>

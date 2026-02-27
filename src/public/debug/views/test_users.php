@@ -49,7 +49,7 @@ $userTypes = [
                 <table>
                     <thead>
                         <tr>
-                            <th>Username</th>
+                            <th>E-Mail</th>
                             <th>Password</th>
                             <th>Role</th>
                         </tr>
@@ -57,7 +57,7 @@ $userTypes = [
                     <tbody>
                         <?php foreach ($moduleData['credentials'] as $cred): ?>
                             <tr>
-                                <td><code><?= htmlspecialchars($cred['username']) ?></code></td>
+                                <td><code><?= htmlspecialchars($cred['email']) ?></code></td>
                                 <td><code><?= htmlspecialchars($cred['password']) ?></code></td>
                                 <td><?= htmlspecialchars($cred['role']) ?></td>
                             </tr>
@@ -113,9 +113,9 @@ $userTypes = [
                 </div>
 
                 <div class="form-group">
-                    <label>Username Prefix (will be appended with number):</label>
+                    <label>Email Prefix (will be appended with number @test.local):</label>
                     <input type="text" name="username_prefix" class="form-input" value="tester" required>
-                    <small class="form-text text-muted">Both username and password will be set to the same value.</small>
+                    <small class="form-text text-muted">Password will be set to the display name.</small>
                 </div>
 
                 <div class="form-group">
@@ -138,7 +138,7 @@ $userTypes = [
                     <table>
                         <thead>
                             <tr>
-                                <th>Username</th>
+                                <th>E-Mail</th>
                                 <th>Password</th>
                                 <th>Section</th>
                             </tr>
@@ -146,7 +146,7 @@ $userTypes = [
                         <tbody>
                             <?php foreach ($moduleData['users'] as $user): ?>
                                 <tr>
-                                    <td><?= htmlspecialchars($user['username']) ?></td>
+                                    <td><?= htmlspecialchars($user['email']) ?></td>
                                     <td><?= htmlspecialchars($user['password']) ?></td>
                                     <td><?= htmlspecialchars(str_replace('_', ' ', $user['type'])) ?></td>
                                 </tr>

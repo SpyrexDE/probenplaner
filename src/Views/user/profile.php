@@ -70,12 +70,19 @@ include __DIR__ . '/../components/theme-selector.php';
                 </div>
             </div>
             <div class="modern-card-body">
-                <label for="username" class="form-label-modern">
-                    <?= icon('user', 'form-label-icon') ?> Nutzername
+                <label for="email" class="form-label-modern">
+                    <?= icon('envelope', 'form-label-icon') ?> E-Mail
                 </label>
-                <input type="text" class="form-input-modern" id="username" name="username"
-                    placeholder="Dein Nutzername" minlength="3" maxlength="20"
-                    value="<?= htmlspecialchars($user['username']) ?>" required>
+                <input type="email" class="form-input-modern" id="email" name="email"
+                    placeholder="Deine E-Mail-Adresse"
+                    value="<?= htmlspecialchars($user['email'] ?? '') ?>" required>
+
+                <label for="display_name" class="form-label-modern" style="margin-top: 1rem;">
+                    <?= icon('user', 'form-label-icon') ?> Anzeigename
+                </label>
+                <input type="text" class="form-input-modern" id="display_name" name="display_name"
+                    placeholder="Dein Anzeigename" minlength="2" maxlength="100"
+                    value="<?= htmlspecialchars($user['display_name'] ?? '') ?>" required>
             </div>
         </div>
 
@@ -233,7 +240,8 @@ include __DIR__ . '/../components/theme-selector.php';
             if (fieldType) el.dataset.fieldType = fieldType;
         }
 
-        wireField('#username', 'username', 'text');
+        wireField('#email', 'email', 'text');
+        wireField('#display_name', 'display_name', 'text');
         wireField('#group_type', 'group_type', 'select');
         wireField('#small_group', 'small_group', 'toggle');
 

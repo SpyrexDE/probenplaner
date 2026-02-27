@@ -20,32 +20,8 @@ class User extends Model
     protected $table = 'users';
 
     /**
-     * Find user by username (orchestra-independent)
-     * 
-     * @param string $username
-     * @return array|null
-     */
-    public function findByUsername(string $username): ?array
-    {
-        $sql = "SELECT * FROM {$this->table} WHERE username = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bind_param('s', $username);
-
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        $user = null;
-        if ($result && $result instanceof \mysqli_result) {
-            $user = $result->fetch_assoc();
-        }
-
-        $stmt->close();
-        return $user;
-    }
-
-    /**
      * Get user orchestras (delegated to UserOrchestra model)
-     * 
+     *
      * @param int $userId
      * @return array
      */
@@ -56,15 +32,13 @@ class User extends Model
     }
 
     /**
-     * Authenticate user (orchestra-independent)
-     * 
-     * @param string $username
-     * @param string $password
-     * @return array|null
+     * Authenticate user by email.
+     *
+     * @return array|null User row on success
      */
-    public function authenticate(string $username, string $password): ?array
+    public function authenticate(string $email, string $password): ?array
     {
-        $user = $this->findByUsername($username);
+        $user = $this->findByEmail($email);
 
         if ($user && password_verify($password, $user['password'])) {
             return $user;
@@ -74,33 +48,26 @@ class User extends Model
     }
 
     /**
-     * Register a new user (orchestra-independent)
-     * 
-     * @param string $username
-     * @param string $password
-     * @return int|array Inserted user ID on success, array with error info on failure
+     * Register a new user.
+     *
+     * @return int|array Inserted user ID on success, error array on failure
      */
-    public function register(string $username, string $password)
+    public function register(string $email, string $displayName, string $password)
     {
-        // Validate input
-        $validation = $this->validateUserInput($username, $password);
+        $validation = $this->validateUserInput($email, $password, null, null, $displayName);
         if (!$validation['valid']) {
             error_log("Registration failed: " . implode(', ', $validation['errors']));
             return ['error' => true, 'message' => implode(', ', $validation['errors'])];
         }
 
-        // Hash password
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-        // Insert new user
         $userData = [
-            'username' => $username,
-            'password' => $hashedPassword
+            'email' => $email,
+            'display_name' => $displayName,
+            'password' => $hashedPassword,
         ];
 
-        error_log("Registering user: " . json_encode($userData));
-
-        // Insert and return the result
         try {
             $result = $this->insert($userData);
 
@@ -112,7 +79,7 @@ class User extends Model
                 return [
                     'error' => true,
                     'message' => 'Datenbankfehler #' . $errorCode,
-                    'details' => $errorMsg
+                    'details' => $errorMsg,
                 ];
             }
 
@@ -121,7 +88,7 @@ class User extends Model
             return [
                 'error' => true,
                 'message' => 'Bei der Registrierung ist ein Fehler aufgetreten.',
-                'details' => $e->getMessage()
+                'details' => $e->getMessage(),
             ];
         }
     }
@@ -136,41 +103,35 @@ class User extends Model
     public function updateProfile(int $id, array $data)
     {
         try {
-            // Validate data before updating
             $validationErrors = [];
 
-            // Validate username if it's being updated
-            if (isset($data['username'])) {
-                $user = $this->findById($id);
-                if (!$user) {
-                    return ['error' => true, 'message' => 'Benutzer nicht gefunden.'];
-                }
-
-                $validation = $this->validateUserInput($data['username'], null, $id);
+            if (isset($data['email'])) {
+                $validation = $this->validateUserInput($data['email'], null, $id);
                 if (!$validation['valid']) {
                     $validationErrors = array_merge($validationErrors, $validation['errors']);
                 }
             }
 
-            // Validate password if it's being updated
+            if (isset($data['display_name'])) {
+                $dnValidation = \App\Core\Validator::validateDisplayName($data['display_name']);
+                if (!$dnValidation['valid']) {
+                    $validationErrors = array_merge($validationErrors, $dnValidation['errors']);
+                }
+            }
+
             if (isset($data['password'])) {
-                // Use consistent validation through Validator class
                 $passwordValidation = \App\Core\Validator::validatePassword($data['password']);
                 if (!$passwordValidation['valid']) {
                     $validationErrors = array_merge($validationErrors, $passwordValidation['errors']);
                 }
-
-                // Hash the password before updating
                 $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
             }
 
-            // Return errors if validation failed
             if (!empty($validationErrors)) {
                 error_log("User profile update failed - Validation errors: " . implode(', ', $validationErrors));
                 return ['error' => true, 'message' => implode(', ', $validationErrors)];
             }
 
-            // Debug log
             error_log("Updating user profile. ID: $id, Data: " . json_encode($data));
 
             $result = $this->update($id, $data);
@@ -180,10 +141,9 @@ class User extends Model
                 $error = is_string($error) ? $error : '';
                 error_log("User profile update failed - Database error: " . $error);
 
-                // Check for specific error types
-                if (strpos($error, '1062') !== false) { // Duplicate entry
-                    return ['error' => true, 'message' => 'Der Benutzername ist bereits vergeben.', 'details' => 'Ein Benutzer mit diesem Namen existiert bereits.'];
-                } elseif (strpos($error, '1054') !== false) { // Unknown column
+                if (strpos($error, '1062') !== false) {
+                    return ['error' => true, 'message' => 'Diese E-Mail-Adresse ist bereits vergeben.', 'details' => 'Ein Benutzer mit dieser E-Mail existiert bereits.'];
+                } elseif (strpos($error, '1054') !== false) {
                     return ['error' => true, 'message' => 'Datenbank-Schema-Fehler', 'details' => 'Eine Spalte in der Datenbank fehlt. Bitte führen Sie alle Migrationen aus.'];
                 } else {
                     return ['error' => true, 'message' => 'Bei der Aktualisierung ist ein Fehler aufgetreten.', 'details' => 'Technischer Fehler: ' . $error];
@@ -337,12 +297,14 @@ class User extends Model
      */
     public function createOrgAccount(int $orgId, string $slug): array
     {
-        $username = $slug . '-admin';
+        $email = $slug . '-admin@probenplaner.local';
+        $displayName = $slug . '-admin';
         $password = $this->generateSecurePassword();
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
         $userId = $this->insert([
-            'username' => $username,
+            'email' => $email,
+            'display_name' => $displayName,
             'password' => $hashedPassword,
             'is_org_admin' => 1,
             'organization_id' => $orgId,
@@ -369,36 +331,39 @@ class User extends Model
     }
 
     /**
-     * Validate user input for registration or profile updates
-     * 
-     * @param string $username Username to validate
-     * @param string $password Password to validate (if provided)
-     * @param int|null $excludeUserId User ID to exclude from duplicate check (for updates)
-     * @param string|null $passwordConfirm Confirmation password to check (if provided)
-     * @return array Array with 'valid' => bool and 'errors' => array
+     * Validate user input for registration or profile updates.
+     *
+     * @param string|null $email Email to validate (null = skip)
+     * @param string|null $password Password to validate (null = skip)
+     * @param int|null $excludeUserId User ID to exclude from uniqueness check
+     * @param string|null $passwordConfirm Password confirmation
+     * @param string|null $displayName Display name to validate (null = skip)
+     * @return array{valid: bool, errors: string[]}
      */
-    public function validateUserInput(?string $username = null, ?string $password = null, ?int $excludeUserId = null, ?string $passwordConfirm = null): array
+    public function validateUserInput(?string $email = null, ?string $password = null, ?int $excludeUserId = null, ?string $passwordConfirm = null, ?string $displayName = null): array
     {
         $errors = [];
 
-        // Validate username only when provided (null means skip username validation)
-        if ($username !== null) {
-            if ($username === '') {
-                $errors[] = "Benutzername fehlt";
-            } elseif (strlen($username) < 3 || strlen($username) > 20) {
-                $errors[] = "Der Benutzername muss zwischen 3 und 20 Zeichen haben";
+        if ($email !== null) {
+            $emailValidation = \App\Core\Validator::validateEmail($email);
+            if (!$emailValidation['valid']) {
+                $errors = array_merge($errors, $emailValidation['errors']);
             } else {
-                // Check for duplicates if not updating own username
-                $existingUser = $this->findByUsername($username);
+                $existingUser = $this->findByEmail($email);
                 if ($existingUser && (!$excludeUserId || $existingUser['id'] != $excludeUserId)) {
-                    $errors[] = "Dieser Benutzername ist bereits vergeben";
+                    $errors[] = "Diese E-Mail-Adresse ist bereits vergeben";
                 }
             }
         }
 
-        // Validate password if provided
+        if ($displayName !== null) {
+            $dnValidation = \App\Core\Validator::validateDisplayName($displayName);
+            if (!$dnValidation['valid']) {
+                $errors = array_merge($errors, $dnValidation['errors']);
+            }
+        }
+
         if ($password !== null) {
-            // Use consistent validation through Validator class
             $passwordValidation = \App\Core\Validator::validatePassword($password, $passwordConfirm);
             if (!$passwordValidation['valid']) {
                 $errors = array_merge($errors, $passwordValidation['errors']);
@@ -407,7 +372,7 @@ class User extends Model
 
         return [
             'valid' => empty($errors),
-            'errors' => $errors
+            'errors' => $errors,
         ];
     }
 
@@ -518,40 +483,37 @@ class User extends Model
     {
         $keycloakId = $keycloakUserInfo['sub'] ?? null;
         $email = $keycloakUserInfo['email'] ?? null;
-        $username = $keycloakUserInfo['preferred_username'] ?? $email;
+        $displayName = trim(($keycloakUserInfo['given_name'] ?? '') . ' ' . ($keycloakUserInfo['family_name'] ?? ''))
+            ?: ($keycloakUserInfo['preferred_username'] ?? $email);
 
         if (!$keycloakId) {
             return ['error' => true, 'message' => 'Keycloak ID fehlt'];
         }
 
-        // Check if user already exists by Keycloak ID
         $existingUser = $this->findByKeycloakId($keycloakId);
         if ($existingUser) {
             return $existingUser;
         }
 
-        // Check if user exists by email/username
-        $existingUser = $this->findByEmail($email) ?: $this->findByUsername($username);
-        if ($existingUser) {
-            // Link existing account to Keycloak
-            $this->update($existingUser['id'], [
-                'keycloak_id' => $keycloakId,
-                'email' => $email,
-                'auth_provider' => 'keycloak'
-            ]);
-            return $existingUser;
+        if ($email) {
+            $existingUser = $this->findByEmail($email);
+            if ($existingUser) {
+                $this->update($existingUser['id'], [
+                    'keycloak_id' => $keycloakId,
+                    'auth_provider' => 'keycloak',
+                ]);
+                return $existingUser;
+            }
         }
 
-        // Create new user
         $userData = [
-            'username' => $username,
-            'keycloak_id' => $keycloakId,
             'email' => $email,
+            'display_name' => $displayName,
+            'keycloak_id' => $keycloakId,
             'auth_provider' => 'keycloak',
-            'password' => null // No password for Keycloak users
+            'password' => null,
         ];
 
-        // Set jeunesse theme for new users registered via JMD token
         if ($isJmdToken) {
             $userData['theme'] = 'jeunesse';
         }

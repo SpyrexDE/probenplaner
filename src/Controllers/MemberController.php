@@ -118,8 +118,8 @@ class MemberController extends Controller
         header('Content-Type: application/json');
         echo json_encode([
             'user_id' => $user['id'],
-            'display_name' => $user['display_name'] ?? $user['username'],
-            'username' => $user['username'],
+            'display_name' => $user['display_name'] ?? $user['email'] ?? '',
+            'email' => $user['email'],
             'type' => $relation['type'] ?? '',
             'is_small_group' => !empty($relation['is_small_group']),
             'role_id' => $relation['role_id'] ?? null,

@@ -38,8 +38,8 @@ define('ADMIN_PW', getenv('ADMIN_PW'));
 
 // Security Constants
 define('PASSWORD_MIN_LENGTH', 8);
-define('USERNAME_MIN_LENGTH', 3);
-define('USERNAME_MAX_LENGTH', 20);
+define('DISPLAY_NAME_MIN_LENGTH', 2);
+define('DISPLAY_NAME_MAX_LENGTH', 100);
 define('TOKEN_MIN_LENGTH', 2);
 define('COOKIE_LIFETIME', 604800); // 7 days in seconds
 

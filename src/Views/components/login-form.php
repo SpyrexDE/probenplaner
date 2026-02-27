@@ -61,7 +61,7 @@ include __DIR__ . '/form-input.php';
 
 <?php
 $action = $action ?? '/login';
-$usernameLabel = $usernameLabel ?? 'Nutzername';
+$usernameLabel = $usernameLabel ?? 'E-Mail';
 $passwordLabel = $passwordLabel ?? 'Passwort';
 $submitText = $submitText ?? 'Einloggen';
 $registerText = $registerText ?? 'Noch keinen Account?';
@@ -83,7 +83,7 @@ ob_start();
         required
         minlength="2"
         maxlength="20"
-        autocomplete="username">
+        autocomplete="email">
 
     <input class="login-input"
         type="password"

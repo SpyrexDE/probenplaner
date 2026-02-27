@@ -88,7 +88,7 @@ class Controller
      */
     protected function isLoggedIn(): bool
     {
-        return isset($_SESSION['username']);
+        return isset($_SESSION['user_id']);
     }
 
     /**
@@ -363,11 +363,11 @@ class Controller
     }
 
     /**
-     * Require super-admin session (username "admin").
+     * Require super-admin session.
      */
     protected function requireSuperAdmin(): bool
     {
-        if (empty($_SESSION['username']) || $_SESSION['username'] !== 'admin') {
+        if (empty($_SESSION['is_super_admin'])) {
             $this->redirect('/login');
             return false;
         }

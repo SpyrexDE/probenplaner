@@ -9,7 +9,7 @@ use App\Models\User;
 /**
  * Super-Admin Panel Controller
  *
- * Access restricted to user with username "admin" via normal login.
+ * Access restricted to super-admin via is_super_admin flag.
  */
 class AdminController extends Controller
 {
@@ -100,7 +100,7 @@ class AdminController extends Controller
             'csrf_token' => $this->getCSRFToken(),
             'created' => [
                 'org_name' => $name,
-                'username' => $result['user']['username'],
+                'email' => $result['user']['email'],
                 'password' => $result['password'],
             ],
         ]);
@@ -210,7 +210,7 @@ class AdminController extends Controller
         // Passwords are hashed — we can only show the username
         // To reveal a password, regenerate it
         $this->jsonResponse([
-            'username' => $orgAccount['username'],
+            'email' => $orgAccount['email'],
             'message' => 'Passwort ist gehasht. Nutze "PW neu generieren" für ein neues Passwort.',
         ]);
     }

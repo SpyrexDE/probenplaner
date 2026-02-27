@@ -63,7 +63,7 @@ $renderComponent = true;
 
         <div class="admin-credential-row">
             <span>Benutzer:</span>
-            <code><?= htmlspecialchars($created['username']) ?></code>
+            <code><?= htmlspecialchars($created['email']) ?></code>
         </div>
         <div class="admin-credential-row">
             <span>Passwort:</span>

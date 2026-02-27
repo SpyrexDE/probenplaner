@@ -47,8 +47,8 @@ include __DIR__ . '/../components/panel-section.php';
         <?php foreach ($conductors as $conductor): ?>
             <div class="conductor-row" data-user-id="<?= (int)$conductor['id'] ?>">
                 <div class="flex-start gap-2">
-                    <span class="conductor-avatar"><?= mb_strtoupper(mb_substr($conductor['display_name'] ?? $conductor['username'], 0, 1)) ?></span>
-                    <span><?= htmlspecialchars($conductor['display_name'] ?? $conductor['username']) ?></span>
+                    <span class="conductor-avatar"><?= mb_strtoupper(mb_substr($conductor['display_name'] ?? $conductor['email'], 0, 1)) ?></span>
+                    <span><?= htmlspecialchars($conductor['display_name'] ?? $conductor['email']) ?></span>
                 </div>
                 <button type="button" class="btn-base btn-xs btn-ghost text-danger" onclick="removeConductor('<?= $ensembleSlug ?>', <?= (int)$conductor['id'] ?>, this)">
                     Entfernen

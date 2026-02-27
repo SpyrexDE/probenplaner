@@ -13,13 +13,22 @@ ob_start();
     <?php include __DIR__ . '/../components/logo.php'; ?>
 
     <input class="login-input"
+        type="email"
+        name="email"
+        placeholder="E-Mail-Adresse"
+        required
+        minlength="3"
+        maxlength="254"
+        autocomplete="email">
+
+    <input class="login-input"
         type="text"
-        name="username"
-        placeholder="Nutzername"
+        name="display_name"
+        placeholder="Anzeigename"
         required
         minlength="2"
-        maxlength="20"
-        autocomplete="username">
+        maxlength="100"
+        autocomplete="name">
 
     <input class="login-input"
         type="password"

@@ -82,7 +82,7 @@ class PromiseController extends Controller
         $rehearsals = $this->rehearsalModel->getForUser($userType, $_SESSION['current_orchestra_id'], $showOld, $isSmallGroup);
 
         $promises = [];
-        $user = $this->userModel->findByUsername($_SESSION['username']);
+        $user = $this->userModel->findById((int)$_SESSION['user_id']);
 
         if ($user) {
             $userPromises = $this->userModel->getPromises($user['id']);
@@ -280,7 +280,7 @@ class PromiseController extends Controller
 
                         // Add user to the appropriate section
                         $memberInfo = [
-                            'username' => $member['username'],
+                            'display_name' => $member['display_name'] ?? $member['email'] ?? '',
                             'type' => $member['type'],
                             'status' => $status,
                             'note' => $note,
@@ -330,7 +330,7 @@ class PromiseController extends Controller
                         if ($promise['rehearsal_id'] == $rehearsalId) {
                             $category = ($promise['status'] === 'yes') ? 'attending' : 'not_attending';
                             $memberPromises[$rehearsalId][$category][] = [
-                                'username' => $member['username'],
+                                'display_name' => $member['display_name'] ?? $member['email'] ?? '',
                                 'type' => $member['type'],
                                 'note' => $promise['note']
                             ];
@@ -341,7 +341,7 @@ class PromiseController extends Controller
 
                     if (!$found) {
                         $memberPromises[$rehearsalId]['no_response'][] = [
-                            'username' => $member['username'],
+                            'display_name' => $member['display_name'] ?? $member['email'] ?? '',
                             'type' => $member['type']
                         ];
                     }
@@ -426,8 +426,7 @@ class PromiseController extends Controller
             return;
         }
 
-        $username = $_SESSION['username'];
-        $user = $this->userModel->findByUsername($username);
+        $user = $this->userModel->findById((int)$_SESSION['user_id']);
 
         if (!$user) {
             header('Content-Type: application/json');
@@ -502,8 +501,7 @@ class PromiseController extends Controller
             return;
         }
 
-        $username = $_SESSION['username'];
-        $user = $this->userModel->findByUsername($username);
+        $user = $this->userModel->findById((int)$_SESSION['user_id']);
 
         if (!$user) {
             header('Content-Type: application/json');
@@ -615,7 +613,7 @@ class PromiseController extends Controller
 
                     // Add user to the appropriate section
                     $memberInfo = [
-                        'username' => $user['username'],
+                        'display_name' => $user['display_name'] ?? $user['email'] ?? '',
                         'type' => $user['type'],
                         'status' => $status,
                         'note' => $note,

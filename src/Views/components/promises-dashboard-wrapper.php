@@ -722,7 +722,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                                             $aOrder = $statusOrder[$a['status']] ?? 3;
                                                             $bOrder = $statusOrder[$b['status']] ?? 3;
                                                             if ($aOrder === $bOrder) {
-                                                                return strcasecmp($a['username'] ?? '', $b['username'] ?? '');
+                                                                return strcasecmp($a['display_name'] ?? '', $b['display_name'] ?? '');
                                                             }
                                                             return $aOrder - $bOrder;
                                                         });

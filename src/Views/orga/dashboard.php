@@ -51,7 +51,7 @@ $orgSlug = htmlspecialchars($org['slug'] ?? '');
                         <?php if (!empty($ensemble['conductors'])): ?>
                             <span class="ensemble-stat">
                                 <i class="fas fa-music"></i> Leitung:
-                                <?= implode(', ', array_map(fn($c) => htmlspecialchars($c['display_name'] ?? $c['username']), $ensemble['conductors'])) ?>
+                                <?= implode(', ', array_map(fn($c) => htmlspecialchars($c['display_name'] ?? $c['email']), $ensemble['conductors'])) ?>
                             </span>
                         <?php else: ?>
                             <span class="ensemble-stat text-subtle">

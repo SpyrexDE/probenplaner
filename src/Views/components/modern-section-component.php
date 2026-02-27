@@ -162,7 +162,7 @@ $sectionElementId = 'section-' . preg_replace('/[^a-zA-Z0-9]/', '', $sectionId) 
                                     $aOrder = $statusOrder[$a['status']] ?? 3;
                                     $bOrder = $statusOrder[$b['status']] ?? 3;
                                     if ($aOrder === $bOrder) {
-                                        return strcasecmp($a['username'] ?? '', $b['username'] ?? '');
+                                        return strcasecmp($a['display_name'] ?? '', $b['display_name'] ?? '');
                                     }
                                     return $aOrder - $bOrder;
                                 });
@@ -189,7 +189,7 @@ $sectionElementId = 'section-' . preg_replace('/[^a-zA-Z0-9]/', '', $sectionId) 
 
                                             <div class="player-info">
                                                 <div class="player-name">
-                                                    <?= htmlspecialchars($player['username'] ?? $player['name'] ?? 'Unbekannt') ?>
+                                                    <?= htmlspecialchars($player['display_name'] ?? $player['name'] ?? 'Unbekannt') ?>
                                                     <?php if (!empty($player['badges'])): ?>
                                                         <?php foreach ($player['badges'] as $badge): ?>
                                                             <span class="user-badge">
@@ -223,7 +223,7 @@ $sectionElementId = 'section-' . preg_replace('/[^a-zA-Z0-9]/', '', $sectionId) 
                     $aOrder = $statusOrder[$a['status']] ?? 3;
                     $bOrder = $statusOrder[$b['status']] ?? 3;
                     if ($aOrder === $bOrder) {
-                        return strcasecmp($a['username'] ?? '', $b['username'] ?? '');
+                        return strcasecmp($a['display_name'] ?? '', $b['display_name'] ?? '');
                     }
                     return $aOrder - $bOrder;
                 });
@@ -250,7 +250,7 @@ $sectionElementId = 'section-' . preg_replace('/[^a-zA-Z0-9]/', '', $sectionId) 
 
                                 <div class="player-info">
                                     <div class="player-name">
-                                        <?= htmlspecialchars($player['username'] ?? $player['name'] ?? 'Unbekannt') ?>
+                                        <?= htmlspecialchars($player['display_name'] ?? $player['name'] ?? 'Unbekannt') ?>
                                         <?php if ($sectionId === 'Andere' && !empty($player['type'])): ?>
                                             <span class="player-instrument">(<?= htmlspecialchars($groupManager->getDisplayName($player['type'])) ?>)</span>
                                         <?php endif; ?>

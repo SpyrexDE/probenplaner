@@ -48,14 +48,14 @@ class UserOrchestra extends Model
     {
         $activeClause = $activeOnly ? "AND uo.is_active = 1" : "";
 
-        $sql = "SELECT uo.*, u.username, u.display_name, u.created_at as user_created_at,
+        $sql = "SELECT uo.*, u.email, u.display_name, uo.display_name as orchestra_display_name, u.created_at as user_created_at,
                 r.id as role_id, r.name as role_name, r.name as role_tag_label,
                 r.tag_color as role_tag_color, r.permissions as role_permissions
                 FROM {$this->table} uo
                 JOIN users u ON uo.user_id = u.id
                 LEFT JOIN roles r ON uo.role_id = r.id
                 WHERE uo.orchestra_id = ? {$activeClause}
-                ORDER BY r.sort_order, uo.type, COALESCE(u.display_name, u.username)";
+                ORDER BY r.sort_order, uo.type, COALESCE(uo.display_name, u.display_name, u.email)";
 
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param('i', $orchestraId);
@@ -249,14 +249,14 @@ class UserOrchestra extends Model
      */
     public function getUsersByType(string $type, int $orchestraId): array
     {
-        $sql = "SELECT uo.*, u.username, u.display_name, u.created_at as user_created_at,
+        $sql = "SELECT uo.*, u.email, u.display_name, uo.display_name as orchestra_display_name, u.created_at as user_created_at,
                 r.id as role_id, r.name as role_name, r.name as role_tag_label,
                 r.tag_color as role_tag_color, r.permissions as role_permissions
                 FROM {$this->table} uo
                 JOIN users u ON uo.user_id = u.id
                 LEFT JOIN roles r ON uo.role_id = r.id
                 WHERE uo.type = ? AND uo.orchestra_id = ? AND uo.is_active = 1
-                ORDER BY COALESCE(u.display_name, u.username)";
+                ORDER BY COALESCE(uo.display_name, u.display_name, u.email)";
 
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param('si', $type, $orchestraId);

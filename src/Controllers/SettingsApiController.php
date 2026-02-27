@@ -133,9 +133,12 @@ class SettingsApiController extends Controller
         // Persist
         $saved = $this->persistUpdate($entity, $entityId, $fieldsToUpdate, $context);
         if ($saved) {
-            // Update session on username change
-            if ($entity === 'user' && isset($fieldsToUpdate['username'])) {
-                $_SESSION['username'] = $fieldsToUpdate['username'];
+            // Sync session on email/display_name change
+            if ($entity === 'user' && isset($fieldsToUpdate['email'])) {
+                $_SESSION['email'] = $fieldsToUpdate['email'];
+            }
+            if ($entity === 'user' && isset($fieldsToUpdate['display_name'])) {
+                $_SESSION['display_name'] = $fieldsToUpdate['display_name'];
             }
             if ($entity === 'orchestra' && isset($fieldsToUpdate['name'])) {
                 $_SESSION['current_orchestra_name'] = $fieldsToUpdate['name'];

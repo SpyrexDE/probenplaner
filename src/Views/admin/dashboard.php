@@ -160,7 +160,7 @@ foreach ($organizations as $org) {
                 <div class="org-card-credential">
                     <i class="fas fa-user-shield text-muted"></i>
                     <span>Orga-Account:</span>
-                    <code><?= htmlspecialchars($org['org_account']['username']) ?></code>
+                    <code><?= htmlspecialchars($org['org_account']['email']) ?></code>
                     <button type="button" class="btn-base btn-xs btn-ghost" style="margin-left: auto;"
                         onclick="regeneratePassword('<?= htmlspecialchars($org['slug']) ?>', this)">
                         <i class="fas fa-rotate"></i> PW neu

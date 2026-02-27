@@ -89,13 +89,13 @@ class Organization extends Model
      */
     public function getEnsembleConductors(int $orchestraId): array
     {
-        $sql = "SELECT u.id, u.username, u.display_name
+        $sql = "SELECT u.id, u.email, u.display_name
                 FROM users u
                 JOIN user_orchestras uo ON uo.user_id = u.id
                 JOIN roles r ON r.id = uo.role_id
                 WHERE uo.orchestra_id = ? AND uo.is_active = 1
                   AND JSON_CONTAINS(r.permissions, '\"can_manage_ensemble\"')
-                ORDER BY u.display_name, u.username";
+                ORDER BY COALESCE(u.display_name, u.email)";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param('i', $orchestraId);
         $stmt->execute();
@@ -109,14 +109,14 @@ class Organization extends Model
     }
 
     /**
-     * Rename the org-admin account's username when the org slug changes.
+     * Rename the org-admin account's email when the org slug changes.
      */
     public function renameOrgAccount(int $orgId, string $newSlug): bool
     {
-        $sql = "UPDATE users SET username = ? WHERE organization_id = ? AND is_org_admin = 1";
+        $sql = "UPDATE users SET email = ? WHERE organization_id = ? AND is_org_admin = 1";
         $stmt = $this->db->prepare($sql);
-        $newUsername = $newSlug . '-admin';
-        $stmt->bind_param('si', $newUsername, $orgId);
+        $newEmail = $newSlug . '-admin@probenplaner.local';
+        $stmt->bind_param('si', $newEmail, $orgId);
         $result = $stmt->execute();
         $stmt->close();
         return $result;

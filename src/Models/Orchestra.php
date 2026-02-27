@@ -93,13 +93,13 @@ class Orchestra extends Model
      */
     public function getConductors(int $orchestraId): array
     {
-        $sql = "SELECT u.id, u.username, u.display_name
+        $sql = "SELECT u.id, u.email, u.display_name
                 FROM users u
                 JOIN user_orchestras uo ON uo.user_id = u.id
                 JOIN roles r ON uo.role_id = r.id
                 WHERE uo.orchestra_id = ? AND uo.is_active = 1
                   AND JSON_CONTAINS(r.permissions, '\"can_manage_ensemble\"')
-                ORDER BY COALESCE(u.display_name, u.username)";
+                ORDER BY COALESCE(u.display_name, u.email)";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param('i', $orchestraId);
         $stmt->execute();

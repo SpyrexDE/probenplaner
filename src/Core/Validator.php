@@ -87,25 +87,39 @@ class Validator
     }
 
     /**
-     * Validate username requirements
-     * 
-     * @param string $username Username to validate
-     * @return array Array with 'valid' boolean and 'errors' array
+     * Validate email format.
+     *
+     * @return array{valid: bool, errors: string[]}
      */
-    public static function validateUsername(string $username): array
+    public static function validateEmail(string $email): array
     {
         $errors = [];
 
-        if (empty($username)) {
-            $errors[] = "Benutzername fehlt";
-        } elseif (strlen($username) < USERNAME_MIN_LENGTH || strlen($username) > USERNAME_MAX_LENGTH) {
-            $errors[] = "Der Benutzername muss zwischen " . USERNAME_MIN_LENGTH . " und " . USERNAME_MAX_LENGTH . " Zeichen haben";
+        if (empty($email)) {
+            $errors[] = "E-Mail-Adresse fehlt";
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = "Ungültige E-Mail-Adresse";
         }
 
-        return [
-            'valid' => empty($errors),
-            'errors' => $errors
-        ];
+        return ['valid' => empty($errors), 'errors' => $errors];
+    }
+
+    /**
+     * Validate display name length.
+     *
+     * @return array{valid: bool, errors: string[]}
+     */
+    public static function validateDisplayName(string $displayName): array
+    {
+        $errors = [];
+
+        if (empty($displayName)) {
+            $errors[] = "Anzeigename fehlt";
+        } elseif (mb_strlen($displayName) < DISPLAY_NAME_MIN_LENGTH || mb_strlen($displayName) > DISPLAY_NAME_MAX_LENGTH) {
+            $errors[] = "Der Anzeigename muss zwischen " . DISPLAY_NAME_MIN_LENGTH . " und " . DISPLAY_NAME_MAX_LENGTH . " Zeichen haben";
+        }
+
+        return ['valid' => empty($errors), 'errors' => $errors];
     }
 
     /**
@@ -216,18 +230,17 @@ class Validator
     private static function getFieldDisplayName(string $fieldName): string
     {
         $displayNames = [
-            'username' => 'Benutzername',
+            'email' => 'E-Mail-Adresse',
+            'display_name' => 'Anzeigename',
             'password' => 'Passwort',
             'password_confirm' => 'Passwort bestätigen',
             'type' => 'Instrument/Rolle',
             'token' => 'Orchester-Token',
             'name' => 'Name',
-            'conductor_username' => 'Dirigent*in Benutzername',
-            'conductor_password' => 'Dirigent*in Passwort',
             'date' => 'Datum',
             'start' => 'Anfang',
             'end' => 'Ende',
-            'location' => 'Ort'
+            'location' => 'Ort',
         ];
 
         return $displayNames[$fieldName] ?? $fieldName;

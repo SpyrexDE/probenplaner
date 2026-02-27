@@ -122,7 +122,7 @@ $pwUrl = $passwordChangeUrl ?? ('/' . ($_SESSION['current_org_slug'] ?? '') . '/
                     current_password: result.value.current_password,
                     new_password: result.value.new_password,
                     confirm_password: result.value.confirm_password,
-                    username: '<?= htmlspecialchars($_SESSION['username'] ?? '') ?>'
+                    username: '<?= htmlspecialchars($_SESSION['email'] ?? '') ?>'
                 };
 
                 for (const [key, val] of Object.entries(fields)) {

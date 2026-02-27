@@ -15,14 +15,14 @@ if ($_POST['action'] === 'generate_users') {
         return ['message' => 'Please select a valid orchestra', 'messageType' => 'error'];
     }
     if (empty($_POST['username_prefix'])) {
-        return ['message' => 'Username prefix is required', 'messageType' => 'error'];
+        return ['message' => 'Email prefix is required', 'messageType' => 'error'];
     }
     if (empty($_POST['max_users']) || !is_numeric($_POST['max_users']) || $_POST['max_users'] < 1) {
         return ['message' => 'Please enter a valid maximum number of users', 'messageType' => 'error'];
     }
 
     $orchestraId = (int)$_POST['orchestra_id'];
-    $usernamePrefix = $_POST['username_prefix'];
+    $emailPrefix = $_POST['username_prefix'];
     $maxUsers = min((int)$_POST['max_users'], 20);
 
     $stmt = $conn->prepare("SELECT id, name FROM orchestras WHERE id = ?");
@@ -55,7 +55,7 @@ if ($_POST['action'] === 'generate_users') {
 
     $generatedUsers = [];
     $totalGenerated = 0;
-    $usernameCounter = 1;
+    $emailCounter = 1;
 
     $conn->begin_transaction();
 
@@ -64,11 +64,12 @@ if ($_POST['action'] === 'generate_users') {
             $numUsers = rand(0, min(10, $maxUsers));
 
             for ($i = 0; $i < $numUsers; $i++) {
-                $username = $usernamePrefix . $usernameCounter;
-                $usernameCounter++;
+                $email = $emailPrefix . $emailCounter . '@test.local';
+                $displayName = $emailPrefix . $emailCounter;
+                $emailCounter++;
 
-                $checkStmt = $conn->prepare("SELECT u.id FROM users u INNER JOIN user_orchestras uo ON u.id = uo.user_id WHERE u.username = ? AND uo.orchestra_id = ? AND uo.is_active = TRUE");
-                $checkStmt->bind_param('si', $username, $orchestraId);
+                $checkStmt = $conn->prepare("SELECT u.id FROM users u INNER JOIN user_orchestras uo ON u.id = uo.user_id WHERE u.email = ? AND uo.orchestra_id = ? AND uo.is_active = TRUE");
+                $checkStmt->bind_param('si', $email, $orchestraId);
                 $checkStmt->execute();
                 $checkResult = $checkStmt->get_result();
                 if ($checkResult->num_rows > 0) {
@@ -76,32 +77,36 @@ if ($_POST['action'] === 'generate_users') {
                     continue;
                 }
 
-                $hashedPassword = password_hash($username, PASSWORD_DEFAULT);
+                $hashedPassword = password_hash($displayName, PASSWORD_DEFAULT);
 
-                $insertStmt = $conn->prepare("INSERT INTO users (username, password) VALUES (?, ?)");
-                $insertStmt->bind_param('ss', $username, $hashedPassword);
+                $insertStmt = $conn->prepare("INSERT INTO users (email, display_name, password) VALUES (?, ?, ?)");
+                $insertStmt->bind_param('sss', $email, $displayName, $hashedPassword);
 
                 if ($insertStmt->execute()) {
                     $userId = $conn->insert_id;
                     $insertStmt->close();
 
                     $joinedAt = date('Y-m-d H:i:s');
-                    $userOrchestraStmt = $conn->prepare("INSERT INTO user_orchestras (user_id, orchestra_id, type, is_active, joined_at) VALUES (?, ?, ?, 1, ?)");
-                    $userOrchestraStmt->bind_param('iiss', $userId, $orchestraId, $section, $joinedAt);
+
+                    // Find or create default member role for this orchestra
+                    $roleStmt = $conn->prepare("SELECT id FROM roles WHERE orchestra_id = ? AND is_default = 1 LIMIT 1");
+                    $roleStmt->bind_param('i', $orchestraId);
+                    $roleStmt->execute();
+                    $roleResult = $roleStmt->get_result();
+                    $defaultRoleId = null;
+                    if ($roleRow = $roleResult->fetch_assoc()) {
+                        $defaultRoleId = (int)$roleRow['id'];
+                    }
+                    $roleStmt->close();
+
+                    $userOrchestraStmt = $conn->prepare("INSERT INTO user_orchestras (user_id, orchestra_id, type, is_active, role_id, joined_at) VALUES (?, ?, ?, 1, ?, ?)");
+                    $userOrchestraStmt->bind_param('iisis', $userId, $orchestraId, $section, $defaultRoleId, $joinedAt);
 
                     if ($userOrchestraStmt->execute()) {
-                        $uoId = $conn->insert_id;
                         $userOrchestraStmt->close();
-
-                        $permStmt = $conn->prepare("INSERT INTO user_ensemble_permissions (user_orchestra_id, permission_id)
-                            SELECT ?, id FROM permissions WHERE name = 'can_attend_rehearsals'");
-                        $permStmt->bind_param('i', $uoId);
-                        $permStmt->execute();
-                        $permStmt->close();
-
                         $generatedUsers[] = [
-                            'username' => $username,
-                            'password' => $username,
+                            'email' => $email,
+                            'password' => $displayName,
                             'type' => $section
                         ];
                         $totalGenerated++;
@@ -142,6 +147,21 @@ if ($_POST['action'] === 'generate_full_setup') {
         $now = date('Y-m-d H:i:s');
         $counts = ['org' => 0, 'orchestras' => 0, 'users' => 0, 'rehearsals' => 0, 'promises' => 0, 'infos' => 0, 'schedules' => 0];
 
+        // Clean up any leftover data from a previous run
+        $existingOrg = $conn->query("SELECT id FROM organizations WHERE slug = 'harmonia'")->fetch_assoc();
+        if ($existingOrg) {
+            $eOrgId = (int)$existingOrg['id'];
+            $conn->query("DELETE FROM roles WHERE orchestra_id IN (SELECT id FROM orchestras WHERE organization_id = {$eOrgId})");
+            $conn->query("DELETE uo FROM user_orchestras uo JOIN orchestras o ON uo.orchestra_id = o.id WHERE o.organization_id = {$eOrgId}");
+            $conn->query("DELETE FROM orchestras WHERE organization_id = {$eOrgId}");
+            $conn->query("DELETE FROM users WHERE organization_id = {$eOrgId}");
+            $conn->query("DELETE FROM organizations WHERE id = {$eOrgId}");
+            // Remove test users created by this function (by email domain)
+            $conn->query("DELETE FROM user_orchestras WHERE user_id IN (SELECT id FROM users WHERE email LIKE '%@test.local')");
+            $conn->query("DELETE FROM users WHERE email LIKE '%@test.local'");
+            $conn->query("DELETE FROM users WHERE email = 'harmonia-admin@probenplaner.local'");
+        }
+
         // ── 1. Organization ──────────────────────────────────────────
         $conn->query("INSERT INTO organizations (name, slug, created_at, updated_at) VALUES ('Testverein Harmonia e.V.', 'harmonia', '{$now}', '{$now}')");
         $orgId = $conn->insert_id;
@@ -149,7 +169,7 @@ if ($_POST['action'] === 'generate_full_setup') {
 
         // Org-admin account
         $adminPw = password_hash('testadmin', PASSWORD_DEFAULT);
-        $conn->query("INSERT INTO users (username, password, is_org_admin, organization_id) VALUES ('harmonia-admin', '{$adminPw}', 1, {$orgId})");
+        $conn->query("INSERT INTO users (email, display_name, password, is_org_admin, organization_id) VALUES ('harmonia-admin@probenplaner.local', 'Harmonia Admin', '{$adminPw}', 1, {$orgId})");
 
         // ── 2. Orchestras ────────────────────────────────────────────
         $conn->query("INSERT INTO orchestras (name, slug, organization_id) VALUES ('Sinfonieorchester Harmonia', 'sinfonie-harmonia', {$orgId})");
@@ -160,94 +180,107 @@ if ($_POST['action'] === 'generate_full_setup') {
         $counts['orchestras'] = 2;
 
         // ── 3. Users ─────────────────────────────────────────────────
-        // Roster: [username, display_name, section, orchestra_id, preset, is_active, is_small_group]
+        // Roster: [email, display_name, section, orchestra_id, preset, is_active, is_small_group]
         $roster = [
             // Sinfonie — Conductor
-            ['dirigent',        'Thomas Müller',        'Andere',       $sinfonieId, 'conductor',      1, 0],
-            // Sinfonie — Section Leader
-            ['stimmfuehrer',    'Sabine Becker',        'Violine_1',    $sinfonieId, 'section_leader', 1, 0],
-            // Sinfonie — Members across sections
-            ['anna.mueller',    'Anna Müller',          'Violine_1',    $sinfonieId, 'member', 1, 0],
-            ['jan.schmidt',     'Jan Schmidt',          'Violine_1',    $sinfonieId, 'member', 1, 0],
-            ['lisa.weber',      'Lisa Weber',           'Violine_2',    $sinfonieId, 'member', 1, 0],
-            ['peter.fischer',   'Peter Fischer',        'Violine_2',    $sinfonieId, 'member', 1, 0],
-            ['marie.koch',      'Marie Koch',           'Violine_2',    $sinfonieId, 'member', 1, 0],
-            ['sarah.braun',     'Sarah Braun',          'Bratsche',     $sinfonieId, 'member', 1, 0],
-            ['felix.wolf',      'Felix Wolf',           'Bratsche',     $sinfonieId, 'member', 1, 0],
-            ['julia.richter',   'Julia Richter',        'Cello',        $sinfonieId, 'member', 1, 0],
-            ['noah.klein',      'Noah Klein',           'Cello',        $sinfonieId, 'member', 1, 0],
-            ['emma.schroeder',  'Emma Schröder',        'Kontrabass',   $sinfonieId, 'member', 1, 0],
-            ['lukas.neumann',   'Lukas Neumann',        'Flöte',        $sinfonieId, 'member', 1, 0],
-            ['hannah.schwarz',  'Hannah Schwarz',       'Oboe',         $sinfonieId, 'member', 1, 0],
-            ['max.zimmermann',  'Max Zimmermann',       'Klarinette',   $sinfonieId, 'member', 1, 0],
-            ['lena.hoffmann',   'Lena Hoffmann',        'Fagott',       $sinfonieId, 'member', 1, 0],
-            ['david.wagner',    'David Wagner',         'Trompete',     $sinfonieId, 'member', 1, 0],
-            ['sophie.bauer',    'Sophie Bauer',         'Trompete',     $sinfonieId, 'member', 1, 0],
-            ['tim.schulz',      'Tim Schulz',           'Posaune',      $sinfonieId, 'member', 1, 0],
-            ['laura.hartmann',  'Laura Hartmann',       'Tuba',         $sinfonieId, 'member', 1, 0],
-            ['paul.krueger',    'Paul Krüger',          'Horn',         $sinfonieId, 'member', 1, 0],
-            ['mia.lang',        'Mia Lang',             'Horn',         $sinfonieId, 'member', 1, 0],
-            ['leon.frank',      'Leon Frank',           'Schlagwerk',   $sinfonieId, 'member', 1, 0],
-            ['clara.roth',      'Clara Roth',           'Andere',       $sinfonieId, 'member', 1, 0],
-            // Sinfonie — Small-group member
-            ['nina.berg',       'Nina Berg',            'Violine_1',    $sinfonieId, 'member', 1, 1],
-            // Sinfonie — Inactive members (left the orchestra)
-            ['oldinactive1',    'Karl Ehemalig',        'Cello',        $sinfonieId, 'member', 0, 0],
-            ['oldinactive2',    'Ute Vergangen',        'Flöte',        $sinfonieId, 'member', 0, 0],
-            // Kammer — Conductor
-            ['kammer.dirigent', 'Eva Schneider',        'Andere',       $kammerId,   'conductor',      1, 0],
-            // Kammer — Members
-            ['kammer.geige',    'Moritz Stein',         'Violine_1',    $kammerId,   'member', 1, 0],
-            ['kammer.bratsche', 'Klara Weiß',           'Bratsche',     $kammerId,   'member', 1, 0],
-            ['kammer.cello',    'Anton Frei',           'Cello',        $kammerId,   'member', 1, 0],
-            ['kammer.bass',     'Greta Haus',           'Kontrabass',   $kammerId,   'member', 1, 0],
+            ['dirigent@test.local',        'Thomas Müller',        null,           $sinfonieId, 'conductor',      1, 0],
+            ['stimmfuehrer@test.local',    'Sabine Becker',        'Violine_1',    $sinfonieId, 'section_leader', 1, 0],
+            ['anna.mueller@test.local',    'Anna Müller',          'Violine_1',    $sinfonieId, 'member', 1, 0],
+            ['jan.schmidt@test.local',     'Jan Schmidt',          'Violine_1',    $sinfonieId, 'member', 1, 0],
+            ['lisa.weber@test.local',      'Lisa Weber',           'Violine_2',    $sinfonieId, 'member', 1, 0],
+            ['peter.fischer@test.local',   'Peter Fischer',        'Violine_2',    $sinfonieId, 'member', 1, 0],
+            ['marie.koch@test.local',      'Marie Koch',           'Violine_2',    $sinfonieId, 'member', 1, 0],
+            ['sarah.braun@test.local',     'Sarah Braun',          'Bratsche',     $sinfonieId, 'member', 1, 0],
+            ['felix.wolf@test.local',      'Felix Wolf',           'Bratsche',     $sinfonieId, 'member', 1, 0],
+            ['julia.richter@test.local',   'Julia Richter',        'Cello',        $sinfonieId, 'member', 1, 0],
+            ['noah.klein@test.local',      'Noah Klein',           'Cello',        $sinfonieId, 'member', 1, 0],
+            ['emma.schroeder@test.local',  'Emma Schröder',        'Kontrabass',   $sinfonieId, 'member', 1, 0],
+            ['lukas.neumann@test.local',   'Lukas Neumann',        'Flöte',        $sinfonieId, 'member', 1, 0],
+            ['hannah.schwarz@test.local',  'Hannah Schwarz',       'Oboe',         $sinfonieId, 'member', 1, 0],
+            ['max.zimmermann@test.local',  'Max Zimmermann',       'Klarinette',   $sinfonieId, 'member', 1, 0],
+            ['lena.hoffmann@test.local',   'Lena Hoffmann',        'Fagott',       $sinfonieId, 'member', 1, 0],
+            ['david.wagner@test.local',    'David Wagner',         'Trompete',     $sinfonieId, 'member', 1, 0],
+            ['sophie.bauer@test.local',    'Sophie Bauer',         'Trompete',     $sinfonieId, 'member', 1, 0],
+            ['tim.schulz@test.local',      'Tim Schulz',           'Posaune',      $sinfonieId, 'member', 1, 0],
+            ['laura.hartmann@test.local',  'Laura Hartmann',       'Tuba',         $sinfonieId, 'member', 1, 0],
+            ['paul.krueger@test.local',    'Paul Krüger',          'Horn',         $sinfonieId, 'member', 1, 0],
+            ['mia.lang@test.local',        'Mia Lang',             'Horn',         $sinfonieId, 'member', 1, 0],
+            ['leon.frank@test.local',      'Leon Frank',           'Schlagwerk',   $sinfonieId, 'member', 1, 0],
+            ['clara.roth@test.local',      'Clara Roth',           'Andere',       $sinfonieId, 'member', 1, 0],
+            ['nina.berg@test.local',       'Nina Berg',            'Violine_1',    $sinfonieId, 'member', 1, 1],
+            ['oldinactive1@test.local',    'Karl Ehemalig',        'Cello',        $sinfonieId, 'member', 0, 0],
+            ['oldinactive2@test.local',    'Ute Vergangen',        'Flöte',        $sinfonieId, 'member', 0, 0],
+            ['kammer.dirigent@test.local', 'Eva Schneider',        null,           $kammerId,   'conductor',      1, 0],
+            ['kammer.geige@test.local',    'Moritz Stein',         'Violine_1',    $kammerId,   'member', 1, 0],
+            ['kammer.bratsche@test.local', 'Klara Weiß',           'Bratsche',     $kammerId,   'member', 1, 0],
+            ['kammer.cello@test.local',    'Anton Frei',           'Cello',        $kammerId,   'member', 1, 0],
+            ['kammer.bass@test.local',     'Greta Haus',           'Kontrabass',   $kammerId,   'member', 1, 0],
         ];
 
-        // Permission preset → permission names (mirrors UserOrchestra::PRESETS)
-        $presets = [
-            'member'         => ['can_attend_rehearsals'],
-            'section_leader' => ['can_attend_rehearsals', 'can_view_own_section_stats', 'can_view_all_section_stats', 'can_manage_rehearsals', 'can_view_members'],
-            'conductor'      => ['can_view_own_section_stats', 'can_view_all_section_stats', 'can_view_members', 'can_manage_rehearsals', 'can_manage_members', 'can_manage_permissions', 'can_manage_ensemble'],
+        // ── 3a. Create system roles per orchestra ──────────────────────
+        $rolePresets = [
+            'conductor' => [
+                'name' => 'Leitung',
+                'tag_color' => '#478cf4',
+                'permissions' => json_encode(['can_view_own_section_stats', 'can_view_all_section_stats', 'can_view_members', 'can_manage_rehearsals', 'can_manage_members', 'can_manage_permissions', 'can_manage_ensemble']),
+                'is_system' => 1,
+                'is_default' => 0,
+                'sort_order' => 0,
+            ],
+            'section_leader' => [
+                'name' => 'Stimmführer',
+                'tag_color' => '#f59e0b',
+                'permissions' => json_encode(['can_attend_rehearsals', 'can_view_own_section_stats', 'can_view_all_section_stats', 'can_manage_rehearsals', 'can_view_members']),
+                'is_system' => 1,
+                'is_default' => 0,
+                'sort_order' => 10,
+            ],
+            'member' => [
+                'name' => 'Mitglied',
+                'tag_color' => '#10b981',
+                'permissions' => json_encode(['can_attend_rehearsals']),
+                'is_system' => 1,
+                'is_default' => 1,
+                'sort_order' => 100,
+            ],
         ];
 
-        // Cache permission IDs
-        $permIdMap = [];
-        $permResult = $conn->query("SELECT id, name FROM permissions WHERE scope = 'ensemble'");
-        while ($row = $permResult->fetch_assoc()) {
-            $permIdMap[$row['name']] = (int)$row['id'];
+        // role_id cache: orchestraId → preset → role_id
+        $roleIdMap = [];
+        foreach ([$sinfonieId, $kammerId] as $oId) {
+            foreach ($rolePresets as $preset => $rp) {
+                $stmt = $conn->prepare("INSERT INTO roles (orchestra_id, name, tag_color, permissions, is_system, is_default, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                if (!$stmt) {
+                    throw new \Exception("Role INSERT prepare failed: " . $conn->error);
+                }
+                $stmt->bind_param('isssiii', $oId, $rp['name'], $rp['tag_color'], $rp['permissions'], $rp['is_system'], $rp['is_default'], $rp['sort_order']);
+                $stmt->execute();
+                $roleIdMap[$oId][$preset] = $conn->insert_id;
+                $stmt->close();
+            }
         }
 
-        $userIdMap = []; // username → user_id (for creating promises later)
-        $sinfonieUserIds = []; // active sinfonie member user IDs
+        $userIdMap = [];
+        $sinfonieUserIds = [];
         $kammerUserIds = [];
 
         foreach ($roster as $entry) {
-            [$username, $displayName, $section, $orchId, $preset, $isActive, $isSmallGroup] = $entry;
+            [$email, $displayName, $section, $orchId, $preset, $isActive, $isSmallGroup] = $entry;
 
-            $pw = password_hash($username, PASSWORD_DEFAULT);
-            $stmt = $conn->prepare("INSERT INTO users (username, password, display_name) VALUES (?, ?, ?)");
-            $stmt->bind_param('sss', $username, $pw, $displayName);
+            $pw = password_hash($email, PASSWORD_DEFAULT);
+            $stmt = $conn->prepare("INSERT INTO users (email, password, display_name) VALUES (?, ?, ?)");
+            $stmt->bind_param('sss', $email, $pw, $displayName);
             $stmt->execute();
             $userId = $conn->insert_id;
             $stmt->close();
 
-            $stmt = $conn->prepare("INSERT INTO user_orchestras (user_id, orchestra_id, type, is_active, is_small_group, joined_at) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param('iisiis', $userId, $orchId, $section, $isActive, $isSmallGroup, $now);
+            $roleId = $roleIdMap[$orchId][$preset];
+            $stmt = $conn->prepare("INSERT INTO user_orchestras (user_id, orchestra_id, type, is_active, is_small_group, role_id, joined_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param('iisiiis', $userId, $orchId, $section, $isActive, $isSmallGroup, $roleId, $now);
             $stmt->execute();
-            $uoId = $conn->insert_id;
             $stmt->close();
 
-            // Sync permissions
-            foreach ($presets[$preset] as $permName) {
-                if (!isset($permIdMap[$permName])) continue;
-                $pid = $permIdMap[$permName];
-                $stmt = $conn->prepare("INSERT INTO user_ensemble_permissions (user_orchestra_id, permission_id) VALUES (?, ?)");
-                $stmt->bind_param('ii', $uoId, $pid);
-                $stmt->execute();
-                $stmt->close();
-            }
-
-            $userIdMap[$username] = $userId;
+            $userIdMap[$email] = $userId;
             if ($isActive && $orchId === $sinfonieId) {
                 $sinfonieUserIds[] = $userId;
             }
@@ -491,12 +524,12 @@ if ($_POST['action'] === 'generate_full_setup') {
                 'summary' => $summary,
                 'counts' => $counts,
                 'credentials' => [
-                    ['username' => 'harmonia-admin',  'password' => 'testadmin',        'role' => 'Org-Admin'],
-                    ['username' => 'dirigent',        'password' => 'dirigent',          'role' => 'Dirigent (Sinfonie)'],
-                    ['username' => 'stimmfuehrer',    'password' => 'stimmfuehrer',      'role' => 'Stimmführer (Sinfonie)'],
-                    ['username' => 'anna.mueller',    'password' => 'anna.mueller',      'role' => 'Mitglied (Violine 1)'],
-                    ['username' => 'kammer.dirigent', 'password' => 'kammer.dirigent',   'role' => 'Dirigent (Kammer)'],
-                    ['username' => 'nina.berg',       'password' => 'nina.berg',         'role' => 'Kleingruppe (Violine 1)'],
+                    ['email' => 'harmonia-admin@probenplaner.local', 'password' => 'testadmin',           'role' => 'Org-Admin'],
+                    ['email' => 'dirigent@test.local',               'password' => 'dirigent@test.local',  'role' => 'Dirigent (Sinfonie)'],
+                    ['email' => 'stimmfuehrer@test.local',           'password' => 'stimmfuehrer@test.local', 'role' => 'Stimmführer (Sinfonie)'],
+                    ['email' => 'anna.mueller@test.local',           'password' => 'anna.mueller@test.local', 'role' => 'Mitglied (Violine 1)'],
+                    ['email' => 'kammer.dirigent@test.local',        'password' => 'kammer.dirigent@test.local', 'role' => 'Dirigent (Kammer)'],
+                    ['email' => 'nina.berg@test.local',              'password' => 'nina.berg@test.local',  'role' => 'Kleingruppe (Violine 1)'],
                 ],
             ]
         ];

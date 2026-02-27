@@ -43,8 +43,7 @@ class UserController extends Controller
             return;
         }
 
-        $username = $_SESSION['username'];
-        $user = $this->userModel->findByUsername($username);
+        $user = $this->userModel->findById((int)$_SESSION['user_id']);
 
         if (!$user) {
             $this->addAlert('Fehler!', 'Benutzer*in nicht gefunden.', 'error');
@@ -102,8 +101,7 @@ class UserController extends Controller
 
         $this->requirePermission('can_manage_ensemble');
 
-        $username = $_SESSION['username'];
-        $user = $this->userModel->findByUsername($username);
+        $user = $this->userModel->findById((int)$_SESSION['user_id']);
 
         if (!$user) {
             $this->addAlert('Fehler!', 'Benutzer*in nicht gefunden.', 'error');
@@ -141,31 +139,26 @@ class UserController extends Controller
             $this->redirect($this->orchestraUrl('/conductor/profile'));
             return;
         }
-        $oldUsername = $user['username'];
-        $newUsername = Validator::sanitizeUtf8($_POST['username'] ?? '');
+        $newEmail = Validator::sanitizeUtf8($_POST['email'] ?? '');
+        $newDisplayName = Validator::sanitizeUtf8($_POST['display_name'] ?? '');
         $currentPassword = $_POST['current_password'] ?? '';
         $newPassword = $_POST['new_password'] ?? '';
         $confirmPassword = $_POST['confirm_password'] ?? '';
 
         $updateData = [];
-        $usernameChanged = false;
 
-        if (!empty($newUsername) && $newUsername != $oldUsername) {
-            // Validate username using the model's validation method
-            $usernameValidation = $this->userModel->validateUserInput(
-                $newUsername,
-                null,
-                $user['id']
-            );
-
-            if (!$usernameValidation['valid']) {
-                $this->addAlert('Fehler!', implode(", ", $usernameValidation['errors']), 'error');
+        if (!empty($newEmail) && $newEmail !== ($user['email'] ?? '')) {
+            $emailValidation = $this->userModel->validateUserInput($newEmail, null, $user['id']);
+            if (!$emailValidation['valid']) {
+                $this->addAlert('Fehler!', implode(", ", $emailValidation['errors']), 'error');
                 $this->redirect($this->orchestraUrl('/conductor/profile'));
                 return;
             }
+            $updateData['email'] = $newEmail;
+        }
 
-            $updateData['username'] = $newUsername;
-            $usernameChanged = true;
+        if (!empty($newDisplayName) && $newDisplayName !== ($user['display_name'] ?? '')) {
+            $updateData['display_name'] = $newDisplayName;
         }
 
         if (!empty($newPassword)) {
@@ -184,7 +177,6 @@ class UserController extends Controller
                 }
             }
 
-            // Validate password using the model's validation method
             $passwordValidation = $this->userModel->validateUserInput(null, $newPassword);
             if (!$passwordValidation['valid']) {
                 $this->addAlert('Fehler!', implode(", ", $passwordValidation['errors']), 'error');
@@ -192,7 +184,6 @@ class UserController extends Controller
                 return;
             }
 
-            // Check passwords match
             if ($newPassword !== $confirmPassword) {
                 $this->addAlert('Fehler!', 'Die neuen Passwörter stimmen nicht überein.', 'error');
                 $this->redirect($this->orchestraUrl('/conductor/profile'));
@@ -202,25 +193,23 @@ class UserController extends Controller
             $updateData['password'] = $newPassword;
         }
 
-        // If no changes were made
         if (empty($updateData)) {
             $this->addAlert('Info', 'Keine Änderungen vorgenommen.', 'info');
             $this->redirect($this->orchestraUrl('/conductor/profile'));
             return;
         }
 
-        // Update user profile
         $result = $this->userModel->updateProfile($user['id'], $updateData);
 
         if ($result) {
-            if ($usernameChanged) {
-                // Re-login required after username change
-                $this->setFlash('success', 'Profil aktualisiert. Bitte melden Sie sich erneut an.');
-                $this->logout();
-            } else {
-                $this->setFlash('success', 'Profil erfolgreich aktualisiert.');
-                $this->redirect($this->orchestraUrl('/conductor/profile'));
+            if (isset($updateData['email'])) {
+                $_SESSION['email'] = $updateData['email'];
             }
+            if (isset($updateData['display_name'])) {
+                $_SESSION['display_name'] = $updateData['display_name'];
+            }
+            $this->setFlash('success', 'Profil erfolgreich aktualisiert.');
+            $this->redirect($this->orchestraUrl('/conductor/profile'));
         } else {
             $this->addAlert('Fehler!', 'Fehler beim Aktualisieren des Profils.', 'error');
             $this->redirect($this->orchestraUrl('/conductor/profile'));
@@ -242,8 +231,8 @@ class UserController extends Controller
             $this->redirect($this->orchestraUrl('/profile'));
             return;
         }
-        $oldUsername = $user['username'];
-        $newUsername = Validator::sanitizeUtf8($_POST['username'] ?? '');
+        $newEmail = Validator::sanitizeUtf8($_POST['email'] ?? '');
+        $newDisplayName = Validator::sanitizeUtf8($_POST['display_name'] ?? '');
         $currentPassword = $_POST['current_password'] ?? '';
         $newPassword = $_POST['new_password'] ?? '';
         $confirmPassword = $_POST['confirm_password'] ?? '';
@@ -252,24 +241,19 @@ class UserController extends Controller
 
         $updateData = [];
         $relationChangesMade = false;
-        $usernameChanged = false;
 
-        if (!empty($newUsername) && $newUsername != $oldUsername) {
-            // Validate username using the model's validation method
-            $usernameValidation = $this->userModel->validateUserInput(
-                $newUsername,
-                null,
-                $user['id']
-            );
-
-            if (!$usernameValidation['valid']) {
-                $this->addAlert('Fehler!', implode(", ", $usernameValidation['errors']), 'error');
+        if (!empty($newEmail) && $newEmail !== ($user['email'] ?? '')) {
+            $emailValidation = $this->userModel->validateUserInput($newEmail, null, $user['id']);
+            if (!$emailValidation['valid']) {
+                $this->addAlert('Fehler!', implode(", ", $emailValidation['errors']), 'error');
                 $this->redirect($this->orchestraUrl('/profile'));
                 return;
             }
+            $updateData['email'] = $newEmail;
+        }
 
-            $updateData['username'] = $newUsername;
-            $usernameChanged = true;
+        if (!empty($newDisplayName) && $newDisplayName !== ($user['display_name'] ?? '')) {
+            $updateData['display_name'] = $newDisplayName;
         }
 
         if (!empty($newPassword)) {
@@ -288,7 +272,6 @@ class UserController extends Controller
                 }
             }
 
-            // Validate password using the model's validation method
             $passwordValidation = $this->userModel->validateUserInput(null, $newPassword);
             if (!$passwordValidation['valid']) {
                 $this->addAlert('Fehler!', implode(", ", $passwordValidation['errors']), 'error');
@@ -296,7 +279,6 @@ class UserController extends Controller
                 return;
             }
 
-            // Check passwords match
             if ($newPassword !== $confirmPassword) {
                 $this->addAlert('Fehler!', 'Die neuen Passwörter stimmen nicht überein.', 'error');
                 $this->redirect($this->orchestraUrl('/profile'));
@@ -318,7 +300,6 @@ class UserController extends Controller
                 }
             }
 
-            // Process small group status
             $smallGroupUpdated = $userOrchestraModel->updateUserSmallGroupStatus((int)$user['id'], (int)$orchestraId, $smallGroup);
             if ($smallGroupUpdated) {
                 $relationChangesMade = true;
@@ -338,13 +319,14 @@ class UserController extends Controller
         }
 
         if ($result === true) {
-            if ($usernameChanged) {
-                $this->setFlash('success', 'Profil aktualisiert. Bitte melden Sie sich erneut an.');
-                $this->logout();
-            } else {
-                $this->setFlash('success', 'Profil erfolgreich aktualisiert.');
-                $this->redirect($this->orchestraUrl('/profile'));
+            if (isset($updateData['email'])) {
+                $_SESSION['email'] = $updateData['email'];
             }
+            if (isset($updateData['display_name'])) {
+                $_SESSION['display_name'] = $updateData['display_name'];
+            }
+            $this->setFlash('success', 'Profil erfolgreich aktualisiert.');
+            $this->redirect($this->orchestraUrl('/profile'));
         } else {
             error_log("Profile update failed: " . json_encode($updateData));
 
@@ -379,8 +361,7 @@ class UserController extends Controller
             return;
         }
 
-        $username = $_SESSION['username'];
-        $user = $this->userModel->findByUsername($username);
+        $user = $this->userModel->findById((int)$_SESSION['user_id']);
 
         if (!$user) {
             $this->addAlert('Fehler!', 'Benutzer nicht gefunden.', 'error');
@@ -560,31 +541,26 @@ class UserController extends Controller
         // Always return JSON for this endpoint
         header('Content-Type: application/json');
 
-        // Check if username parameter exists
-        if (!isset($_GET['username'])) {
+        if (!isset($_GET['user_id'])) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Kein Benutzername angegeben', 'debug_message' => 'Missing username parameter']);
+            echo json_encode(['success' => false, 'message' => 'Keine Benutzer-ID angegeben']);
             return;
         }
 
-        $username = $_GET['username'];
-        $user = $this->userModel->findByUsername($username);
+        $user = $this->userModel->findById((int)$_GET['user_id']);
 
         if (!$user) {
             http_response_code(404);
-            echo json_encode(['success' => false, 'message' => 'Benutzer nicht gefunden', 'debug_message' => "User '$username' not found in database"]);
+            echo json_encode(['success' => false, 'message' => 'Benutzer nicht gefunden']);
             return;
         }
 
-        // Check which operation is requested
         if (isset($_GET['getLastLogin'])) {
-            // Return the last login time
             $lastLogin = $user['last_login'] ?? '–';
             echo json_encode(['last_login' => $lastLogin]);
             return;
         }
 
-        // Default behavior - return full user details excluding password
         unset($user['password']);
         echo json_encode($user);
     }
@@ -604,23 +580,21 @@ class UserController extends Controller
         // Always return JSON for this endpoint
         header('Content-Type: application/json');
 
-        // Check if username parameter exists
-        if (!isset($_GET['username'])) {
+        if (!isset($_GET['user_id'])) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Kein Benutzername angegeben', 'debug_message' => 'Missing username parameter']);
+            echo json_encode(['success' => false, 'message' => 'Keine Benutzer-ID angegeben']);
             return;
         }
 
-        $username = $_GET['username'];
-        $user = $this->userModel->findByUsername($username);
+        $user = $this->userModel->findById((int)$_GET['user_id']);
 
         if (!$user) {
             http_response_code(404);
-            echo json_encode(['success' => false, 'message' => 'Benutzer nicht gefunden', 'debug_message' => "User '$username' not found in database"]);
+            echo json_encode(['success' => false, 'message' => 'Benutzer nicht gefunden']);
             return;
         }
 
-        // Generate a secure random password (min 8 chars, at least one upper and one lower)
+        $displayName = $user['display_name'] ?? $user['email'];
         $newPassword = $this->generateSecurePassword(12);
         $result = $this->userModel->updateProfile($user['id'], ['password' => $newPassword]);
 
@@ -628,7 +602,7 @@ class UserController extends Controller
             echo json_encode([
                 'success' => true,
                 'password' => $newPassword,
-                'message' => "Das Passwort des Nutzers $username wurde zurückgesetzt."
+                'message' => "Das Passwort von $displayName wurde zurückgesetzt.",
             ]);
         } else {
             http_response_code(500);
@@ -636,7 +610,7 @@ class UserController extends Controller
             echo json_encode([
                 'success' => false,
                 'message' => is_array($result) && isset($result['message']) ? $result['message'] : "Fehler beim Zurücksetzen des Passworts.",
-                'debug_message' => $debugMessage
+                'debug_message' => $debugMessage,
             ]);
         }
     }
@@ -689,36 +663,33 @@ class UserController extends Controller
         // Always return JSON for this endpoint
         header('Content-Type: application/json');
 
-        // Check if username parameter exists
-        if (!isset($_GET['username'])) {
+        if (!isset($_GET['user_id'])) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Kein Benutzername angegeben', 'debug_message' => 'Missing username parameter']);
+            echo json_encode(['success' => false, 'message' => 'Keine Benutzer-ID angegeben']);
             return;
         }
 
-        $username = $_GET['username'];
-        $user = $this->userModel->findByUsername($username);
+        $user = $this->userModel->findById((int)$_GET['user_id']);
 
         if (!$user) {
             http_response_code(404);
-            echo json_encode(['success' => false, 'message' => 'Benutzer nicht gefunden', 'debug_message' => "User '$username' not found in database"]);
+            echo json_encode(['success' => false, 'message' => 'Benutzer nicht gefunden']);
             return;
         }
 
-        // Delete the user account
+        $displayName = $user['display_name'] ?? $user['email'];
         $result = $this->userModel->delete($user['id']);
 
         if ($result) {
             echo json_encode([
                 'success' => true,
-                'message' => "Der Nutzer $username wurde erfolgreich gelöscht."
+                'message' => "$displayName wurde erfolgreich gelöscht.",
             ]);
         } else {
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'message' => "Fehler beim Löschen des Accounts.",
-                'debug_message' => 'User deletion returned false'
             ]);
         }
     }
@@ -774,12 +745,12 @@ class UserController extends Controller
         }
 
         // Get current user
-        $username = $_SESSION['username'];
-        $user = $this->userModel->findByUsername($username);
+        $userId = (int)$_SESSION['user_id'];
+        $user = $this->userModel->findById($userId);
 
         if (!$user) {
             http_response_code(404);
-            echo json_encode(['success' => false, 'message' => 'Benutzer nicht gefunden', 'debug_message' => "User '$username' not found"]);
+            echo json_encode(['success' => false, 'message' => 'Benutzer nicht gefunden']);
             return;
         }
 

@@ -30,10 +30,10 @@ class Utilities
     }
 
     /**
-     * Display a username with badges.
+     * Display a user's name with badges.
      *
      * @param array $user User data array
-     * @return string Formatted username with badges
+     * @return string Formatted display name with badges
      */
     public static function displayUserNameWithBadges($user)
     {
@@ -41,10 +41,10 @@ class Utilities
             return '';
         }
 
-        $username = htmlspecialchars($user['username'] ?? '');
+        $displayName = htmlspecialchars($user['display_name'] ?? $user['email'] ?? '');
         $badges = self::generateUserBadges($user);
 
-        return $username . $badges;
+        return $displayName . $badges;
     }
 
     /**
@@ -89,8 +89,13 @@ class Utilities
     public static function getGermanDayAbbreviation(\DateTime $date)
     {
         static $germanDays = [
-            'Mon' => 'Mo', 'Tue' => 'Di', 'Wed' => 'Mi',
-            'Thu' => 'Do', 'Fri' => 'Fr', 'Sat' => 'Sa', 'Sun' => 'So'
+            'Mon' => 'Mo',
+            'Tue' => 'Di',
+            'Wed' => 'Mi',
+            'Thu' => 'Do',
+            'Fri' => 'Fr',
+            'Sat' => 'Sa',
+            'Sun' => 'So'
         ];
         return $germanDays[$date->format('D')] ?? $date->format('D');
     }

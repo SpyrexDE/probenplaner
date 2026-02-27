@@ -51,7 +51,7 @@ class AuthController extends Controller
         // If already logged in, redirect to orchestra selection or main app
         if ($this->isLoggedIn()) {
             // Admin → admin dashboard
-            if (($_SESSION['username'] ?? '') === 'admin') {
+            if (!empty($_SESSION['is_super_admin'])) {
                 $this->redirect('/admin/dashboard');
                 return;
             }
@@ -103,10 +103,10 @@ class AuthController extends Controller
             return;
         }
         // Validate input
-        $username = Validator::sanitizeUtf8($_POST['username'] ?? '');
+        $email = Validator::sanitizeUtf8($_POST['username'] ?? $_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
 
-        $validation = Validator::validateRequired(['username' => $username, 'password' => $password], ['username', 'password']);
+        $validation = Validator::validateRequired(['email' => $email, 'password' => $password], ['email', 'password']);
 
         if (!$validation['valid']) {
             $this->addAlert(
@@ -119,11 +119,11 @@ class AuthController extends Controller
         }
 
         // Super-admin: authenticate against ADMIN_PW
-        if ($username === 'admin') {
+        if ($email === 'admin') {
             $adminPw = defined('ADMIN_PW') ? ADMIN_PW : ($_ENV['ADMIN_PW'] ?? '');
             if ($adminPw !== '' && hash_equals($adminPw, $password)) {
                 $_SESSION['user_id'] = 0;
-                $_SESSION['username'] = 'admin';
+                $_SESSION['is_super_admin'] = true;
                 session_regenerate_id(true);
                 $this->setFlash('success', 'Admin-Login erfolgreich.');
                 $this->redirect('/admin/dashboard');
@@ -134,17 +134,14 @@ class AuthController extends Controller
             return;
         }
 
-        // Authenticate user (orchestra-independent)
-        $user = $this->userModel->authenticate($username, $password);
+        $user = $this->userModel->authenticate($email, $password);
 
         if ($user) {
-            // Login successful
             $this->processSuccessfulLogin($user);
             return;
         }
 
-        // Check if user exists to provide more specific error message
-        $userExists = $this->userModel->findByUsername($username);
+        $userExists = $this->userModel->findByEmail($email);
         if ($userExists) {
             $this->addAlert(
                 'Fehler!',
@@ -152,16 +149,15 @@ class AuthController extends Controller
                 'error',
                 'Bitte überprüfen Sie Ihr Passwort. Falls Sie Ihr Passwort vergessen haben, kontaktieren Sie bitte Ihren Dirigenten.'
             );
-            // Log failed login without exposing username for privacy
             error_log("Login failed - Wrong password attempt");
         } else {
             $this->addAlert(
                 'Fehler!',
-                'Der Benutzername wurde nicht gefunden.',
+                'Diese E-Mail-Adresse wurde nicht gefunden.',
                 'error',
-                'Bitte überprüfen Sie Ihren Benutzernamen oder registrieren Sie sich, falls Sie noch kein Konto haben.'
+                'Bitte überprüfen Sie Ihre E-Mail-Adresse oder registrieren Sie sich, falls Sie noch kein Konto haben.'
             );
-            error_log("Login failed - Username not found: $username");
+            error_log("Login failed - Email not found: $email");
         }
         $this->redirect('/login');
     }
@@ -174,49 +170,27 @@ class AuthController extends Controller
      */
     private function processSuccessfulLogin($user)
     {
-        // Validate user data before proceeding
-        if (!$user || !isset($user['id']) || !isset($user['username'])) {
+        if (!$user || !isset($user['id']) || !isset($user['email'])) {
             error_log("processSuccessfulLogin: Invalid user data: " . json_encode($user));
             $this->addAlert('Fehler!', 'Benutzerdaten konnten nicht geladen werden.', 'error');
             $this->redirect('/login');
             return;
         }
 
-        // Set basic session variables first (before regenerating session ID)
-        // This ensures the data is in the session before we regenerate
         $_SESSION['user_id'] = $user['id'];
-        $_SESSION['username'] = $user['username'];
+        $_SESSION['email'] = $user['email'];
+        $_SESSION['display_name'] = $user['display_name'] ?? '';
 
-        // Regenerate session ID to prevent session fixation attacks
-        // This will copy the existing session data to the new session ID
         session_regenerate_id(true);
 
-        // Verify session data is set (should be copied by regenerate_id)
-        if (!isset($_SESSION['user_id']) || !isset($_SESSION['username'])) {
+        if (!isset($_SESSION['user_id'])) {
             error_log("processSuccessfulLogin: Session data lost after regenerate_id. Re-setting...");
             $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username'];
+            $_SESSION['email'] = $user['email'];
+            $_SESSION['display_name'] = $user['display_name'] ?? '';
         }
-
-        // Set secure cookies
-        $cookieOptions = [
-            'expires' => time() + COOKIE_LIFETIME,
-            'path' => '/',
-            'domain' => '',
-            'secure' => (APP_ENV !== 'development' && APP_ENV !== 'test'), // Only over HTTPS in production
-            'httponly' => true, // Prevent XSS attacks
-            'samesite' => 'Strict' // CSRF protection
-        ];
-        setcookie("username", $user['username'], $cookieOptions);
-        // Do not store password in cookie for security reasons
 
         $this->setFlash('success', 'Sie wurden erfolgreich eingeloggt.');
-
-        // Super-admin → admin panel
-        if ($user['username'] === 'admin') {
-            $this->redirect('/admin/dashboard');
-            return;
-        }
 
         // Org-admin → orga panel
         if (!empty($user['is_org_admin'])) {
@@ -281,19 +255,19 @@ class AuthController extends Controller
         }
 
         // Get and sanitize POST data
-        $username = Validator::sanitizeUtf8($_POST['username'] ?? '');
+        $email = Validator::sanitizeUtf8($_POST['email'] ?? '');
+        $displayName = Validator::sanitizeUtf8($_POST['display_name'] ?? '');
         $password = $_POST['password'] ?? '';
         $passwordConfirm = $_POST['password_confirm'] ?? '';
 
-        // For debugging - log registration attempt
-        error_log("Registration attempt - Username: $username");
+        error_log("Registration attempt - Email: $email");
 
-        // Validate required fields
         $requiredValidation = Validator::validateRequired([
-            'username' => $username,
+            'email' => $email,
+            'display_name' => $displayName,
             'password' => $password,
-            'password_confirm' => $passwordConfirm
-        ], ['username', 'password', 'password_confirm']);
+            'password_confirm' => $passwordConfirm,
+        ], ['email', 'display_name', 'password', 'password_confirm']);
 
         if (!$requiredValidation['valid']) {
             $this->addAlert(
@@ -306,11 +280,11 @@ class AuthController extends Controller
             return;
         }
 
-        // Validate individual field formats
-        $usernameValidation = Validator::validateUsername($username);
+        $emailValidation = Validator::validateEmail($email);
+        $displayNameValidation = Validator::validateDisplayName($displayName);
         $passwordValidation = Validator::validatePassword($password, $passwordConfirm);
 
-        $validation = Validator::mergeResults([$usernameValidation, $passwordValidation]);
+        $validation = Validator::mergeResults([$emailValidation, $displayNameValidation, $passwordValidation]);
 
         if (!$validation['valid']) {
             $this->addAlert(
@@ -323,8 +297,7 @@ class AuthController extends Controller
             return;
         }
 
-        // Register the user
-        $result = $this->userModel->register($username, $password);
+        $result = $this->userModel->register($email, $displayName, $password);
 
         if (is_array($result)) {
             // Handle different array response formats
@@ -398,7 +371,6 @@ class AuthController extends Controller
             'samesite' => 'Strict'
         ];
         setcookie("username", "", $cookieOptions);
-        setcookie("password", "", $cookieOptions);
 
         $this->redirect('/login');
     }
@@ -491,7 +463,7 @@ class AuthController extends Controller
         }
 
         // Additional validation: ensure user data is complete
-        if (!$user || !isset($user['id']) || !isset($user['username'])) {
+        if (!$user || !isset($user['id']) || !isset($user['email'])) {
             error_log("keycloakCallback: Invalid user data after createOrLinkKeycloakUser: " . json_encode($user));
             $this->addAlert('Fehler!', 'Benutzerdaten konnten nicht geladen werden.', 'error');
             $this->redirect('/login');

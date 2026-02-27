@@ -30,7 +30,7 @@ $noSidebarPages = ['admin_verify'];
 $isAuthPage = isset($currentPage) && in_array($currentPage, $authPages);
 $isStandalone = isset($currentPage) && in_array($currentPage, $standalonePanels);
 $currentPageHidesSidebar = $isAuthPage || $isStandalone || in_array($currentPage ?? '', $noSidebarPages);
-$showSidebar = isset($_SESSION['username']) && isset($_SESSION['current_orchestra_id']) && !$currentPageHidesSidebar;
+$showSidebar = isset($_SESSION['user_id']) && isset($_SESSION['current_orchestra_id']) && !$currentPageHidesSidebar;
 $hideNavbar = $isAuthPage || $isStandalone;
 ?>
 <html lang="de" class="w-full h-full" data-current-theme="<?= htmlspecialchars($currentUserTheme) ?>">
@@ -38,7 +38,7 @@ $hideNavbar = $isAuthPage || $isStandalone;
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-    <?php if (isset($_SESSION['username'])): ?>
+    <?php if (isset($_SESSION['user_id'])): ?>
         <meta name="csrf-token" content="<?= htmlspecialchars(\App\Core\CSRF::getToken()) ?>">
     <?php endif; ?>
     <title>Probenplaner</title>

@@ -442,7 +442,7 @@ $renderComponent = true;
         color: var(--color-text-primary);
     }
 
-    .swal-member-username {
+    .swal-member-name {
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
     }
@@ -615,7 +615,7 @@ foreach ($sections as $sectionId => $_instruments) {
                         <?php endif; ?>
 
                         <?php foreach ($members as $member):
-                            $displayName = $member['display_name'] ?? $member['username'];
+                            $displayName = $member['display_name'] ?? $member['email'];
                             $initial = strtoupper(substr($displayName, 0, 1));
                             $isSmallGroup = !empty($member['is_small_group']);
                             $roleLabel = $member['role_tag_label'] ?? $member['role_name'] ?? '';
@@ -658,52 +658,52 @@ foreach ($sections as $sectionId => $_instruments) {
     </div>
 
     <?php if (!empty($canManagePermissions)): ?>
-    <!-- Role Management Panel -->
-    <div class="role-manager">
-        <div class="modern-card">
-            <div class="modern-card-header">
-                <div class="section-header-content">
-                    <div class="section-header-left">
-                        <div class="section-icon" style="background: var(--color-primary-50);">
-                            <i class="fas fa-shield-alt" style="color: var(--color-primary); font-size: var(--font-size-sm);"></i>
+        <!-- Role Management Panel -->
+        <div class="role-manager">
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <div class="section-header-content">
+                        <div class="section-header-left">
+                            <div class="section-icon" style="background: var(--color-primary-50);">
+                                <i class="fas fa-shield-alt" style="color: var(--color-primary); font-size: var(--font-size-sm);"></i>
+                            </div>
+                            <div>
+                                <div class="section-title">Rollen</div>
+                            </div>
+                            <span class="section-count"><?= count($roles) ?></span>
                         </div>
-                        <div>
-                            <div class="section-title">Rollen</div>
-                        </div>
-                        <span class="section-count"><?= count($roles) ?></span>
                     </div>
                 </div>
-            </div>
-            <div class="modern-card-body" style="padding: 0;">
-                <?php foreach ($roles as $role): ?>
-                <div class="role-list-item">
-                    <div class="role-list-info">
-                        <span class="role-tag" style="--role-color: <?= htmlspecialchars($role['tag_color']) ?>"><?= htmlspecialchars($role['name']) ?></span>
-                        <span class="role-list-meta">
-                            <?= (int)$role['user_count'] ?> Mitglieder
-                            <?php if (!empty($role['is_default'])): ?>
-                                &middot; Standard
-                            <?php endif; ?>
-                        </span>
-                    </div>
-                    <div class="role-list-actions">
-                        <?php if (empty($role['is_system'])): ?>
-                            <button onclick="editRole(<?= (int)$role['id'] ?>, <?= htmlspecialchars(json_encode($role), ENT_QUOTES) ?>)" title="Bearbeiten"><i class="fas fa-pen"></i></button>
-                            <button class="role-delete-btn" onclick="deleteRole(<?= (int)$role['id'] ?>, '<?= htmlspecialchars($role['name']) ?>', <?= (int)$role['user_count'] ?>)" title="Löschen"><i class="fas fa-trash"></i></button>
-                        <?php else: ?>
-                            <span style="font-size: var(--font-size-xs); color: var(--color-text-muted); padding: 0 var(--space-2);"><i class="fas fa-lock"></i></span>
-                        <?php endif; ?>
-                    </div>
+                <div class="modern-card-body" style="padding: 0;">
+                    <?php foreach ($roles as $role): ?>
+                        <div class="role-list-item">
+                            <div class="role-list-info">
+                                <span class="role-tag" style="--role-color: <?= htmlspecialchars($role['tag_color']) ?>"><?= htmlspecialchars($role['name']) ?></span>
+                                <span class="role-list-meta">
+                                    <?= (int)$role['user_count'] ?> Mitglieder
+                                    <?php if (!empty($role['is_default'])): ?>
+                                        &middot; Standard
+                                    <?php endif; ?>
+                                </span>
+                            </div>
+                            <div class="role-list-actions">
+                                <?php if (empty($role['is_system'])): ?>
+                                    <button onclick="editRole(<?= (int)$role['id'] ?>, <?= htmlspecialchars(json_encode($role), ENT_QUOTES) ?>)" title="Bearbeiten"><i class="fas fa-pen"></i></button>
+                                    <button class="role-delete-btn" onclick="deleteRole(<?= (int)$role['id'] ?>, '<?= htmlspecialchars($role['name']) ?>', <?= (int)$role['user_count'] ?>)" title="Löschen"><i class="fas fa-trash"></i></button>
+                                <?php else: ?>
+                                    <span style="font-size: var(--font-size-xs); color: var(--color-text-muted); padding: 0 var(--space-2);"><i class="fas fa-lock"></i></span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
-                <?php endforeach; ?>
-            </div>
-            <div class="modern-card-footer" style="padding: var(--space-3) var(--space-5);">
-                <button class="btn-modern btn-primary" onclick="createRole()" style="width: 100%; padding: var(--space-2); font-size: var(--font-size-sm);">
-                    <i class="fas fa-plus" style="margin-right: var(--space-1);"></i> Neue Rolle
-                </button>
+                <div class="modern-card-footer" style="padding: var(--space-3) var(--space-5);">
+                    <button class="btn-modern btn-primary" onclick="createRole()" style="width: 100%; padding: var(--space-2); font-size: var(--font-size-sm);">
+                        <i class="fas fa-plus" style="margin-right: var(--space-1);"></i> Neue Rolle
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
     <?php endif; ?>
 </div>
 
@@ -901,7 +901,10 @@ foreach ($sections as $sectionId => $_instruments) {
             focusConfirm: false,
             preConfirm: () => {
                 const name = document.getElementById('swalRoleName').value.trim();
-                if (!name) { Swal.showValidationMessage('Name darf nicht leer sein.'); return false; }
+                if (!name) {
+                    Swal.showValidationMessage('Name darf nicht leer sein.');
+                    return false;
+                }
                 const perms = [];
                 document.querySelectorAll('[id^="rp_"]:checked').forEach(el => perms.push(el.value));
                 return {
@@ -918,25 +921,28 @@ foreach ($sections as $sectionId => $_instruments) {
             if (!result.isConfirmed) return;
             const d = result.value;
             fetch('/' + orchestraBase + '/roles/create', {
-                method: 'POST',
-                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                body: new URLSearchParams({
-                    csrf_token: csrfToken(),
-                    name: d.name,
-                    tag_color: d.tag_color,
-                    permissions: JSON.stringify(d.permissions),
-                }),
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    window.notifySuccess('Rolle erstellt');
-                    setTimeout(() => location.reload(), 600);
-                } else {
-                    window.notifyErrorWithDetails('Fehler', data.error || 'Unbekannter Fehler');
-                }
-            })
-            .catch(err => window.notifyErrorWithDetails('Fehler', err.message));
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: new URLSearchParams({
+                        csrf_token: csrfToken(),
+                        name: d.name,
+                        tag_color: d.tag_color,
+                        permissions: JSON.stringify(d.permissions),
+                    }),
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        window.notifySuccess('Rolle erstellt');
+                        setTimeout(() => location.reload(), 600);
+                    } else {
+                        window.notifyErrorWithDetails('Fehler', data.error || 'Unbekannter Fehler');
+                    }
+                })
+                .catch(err => window.notifyErrorWithDetails('Fehler', err.message));
         });
     }
 
@@ -945,25 +951,28 @@ foreach ($sections as $sectionId => $_instruments) {
             if (!result.isConfirmed) return;
             const d = result.value;
             fetch('/' + orchestraBase + '/roles/' + roleId + '/update', {
-                method: 'POST',
-                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                body: new URLSearchParams({
-                    csrf_token: csrfToken(),
-                    name: d.name,
-                    tag_color: d.tag_color,
-                    permissions: JSON.stringify(d.permissions),
-                }),
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    window.notifySuccess('Rolle aktualisiert');
-                    setTimeout(() => location.reload(), 600);
-                } else {
-                    window.notifyErrorWithDetails('Fehler', data.error || 'Unbekannter Fehler');
-                }
-            })
-            .catch(err => window.notifyErrorWithDetails('Fehler', err.message));
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: new URLSearchParams({
+                        csrf_token: csrfToken(),
+                        name: d.name,
+                        tag_color: d.tag_color,
+                        permissions: JSON.stringify(d.permissions),
+                    }),
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        window.notifySuccess('Rolle aktualisiert');
+                        setTimeout(() => location.reload(), 600);
+                    } else {
+                        window.notifyErrorWithDetails('Fehler', data.error || 'Unbekannter Fehler');
+                    }
+                })
+                .catch(err => window.notifyErrorWithDetails('Fehler', err.message));
         });
     }
 
@@ -992,20 +1001,25 @@ foreach ($sections as $sectionId => $_instruments) {
         }).then(result => {
             if (!result.isConfirmed) return;
             fetch('/' + orchestraBase + '/roles/' + roleId + '/delete', {
-                method: 'POST',
-                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                body: new URLSearchParams({ csrf_token: csrfToken() }),
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    window.notifySuccess('Rolle gelöscht');
-                    setTimeout(() => location.reload(), 600);
-                } else {
-                    window.notifyErrorWithDetails('Fehler', data.error || 'Unbekannter Fehler');
-                }
-            })
-            .catch(err => window.notifyErrorWithDetails('Fehler', err.message));
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: new URLSearchParams({
+                        csrf_token: csrfToken()
+                    }),
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        window.notifySuccess('Rolle gelöscht');
+                        setTimeout(() => location.reload(), 600);
+                    } else {
+                        window.notifyErrorWithDetails('Fehler', data.error || 'Unbekannter Fehler');
+                    }
+                })
+                .catch(err => window.notifyErrorWithDetails('Fehler', err.message));
         });
     }
 </script>

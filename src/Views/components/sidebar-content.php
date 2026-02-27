@@ -11,7 +11,7 @@
     <div class="sidebar-user">
         <div class="sidebar-avatar">
             <?php
-            $displayName = $_SESSION['display_name'] ?? $_SESSION['username'] ?? 'U';
+            $displayName = $_SESSION['display_name'] ?? 'U';
             echo strtoupper(substr($displayName, 0, 1));
             ?>
         </div>
