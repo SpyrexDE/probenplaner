@@ -92,9 +92,9 @@ class Organization extends Model
         $sql = "SELECT u.id, u.username, u.display_name
                 FROM users u
                 JOIN user_orchestras uo ON uo.user_id = u.id
-                JOIN user_ensemble_permissions uep ON uep.user_orchestra_id = uo.id
-                JOIN permissions p ON uep.permission_id = p.id
-                WHERE uo.orchestra_id = ? AND uo.is_active = 1 AND p.name = 'can_manage_ensemble'
+                JOIN roles r ON r.id = uo.role_id
+                WHERE uo.orchestra_id = ? AND uo.is_active = 1
+                  AND JSON_CONTAINS(r.permissions, '\"can_manage_ensemble\"')
                 ORDER BY u.display_name, u.username";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param('i', $orchestraId);

@@ -301,13 +301,13 @@ class User extends Model
     }
 
     /**
-     * @param array $permissions Permission column names to enable
+     * @param int|null $roleId Role to assign (null uses orchestra default)
      * @return int|array Relationship ID on success, error array on failure
      */
-    public function joinOrchestra(int $userId, int $orchestraId, string $type, array $permissions = [])
+    public function joinOrchestra(int $userId, int $orchestraId, string $type, ?int $roleId = null)
     {
         $userOrchestraModel = new UserOrchestra();
-        return $userOrchestraModel->joinOrchestra($userId, $orchestraId, $type, $permissions);
+        return $userOrchestraModel->joinOrchestra($userId, $orchestraId, $type, $roleId);
     }
 
     /**

@@ -175,6 +175,12 @@ $router->addRoute('/{org_slug}/{orchestra_id}/members/{member_id}/details', 'Mem
 $router->addRoute('/{org_slug}/{orchestra_id}/members/{member_id}/update', 'MemberController', 'updateMember', 'POST');
 $router->addRoute('/{org_slug}/{orchestra_id}/members/{member_id}/remove', 'MemberController', 'removeMember', 'POST');
 
+// Role management routes
+$router->addRoute('/{org_slug}/{orchestra_id}/roles', 'MemberController', 'getRoles');
+$router->addRoute('/{org_slug}/{orchestra_id}/roles/create', 'MemberController', 'createRole', 'POST');
+$router->addRoute('/{org_slug}/{orchestra_id}/roles/{role_id}/update', 'MemberController', 'updateRole', 'POST');
+$router->addRoute('/{org_slug}/{orchestra_id}/roles/{role_id}/delete', 'MemberController', 'deleteRole', 'POST');
+
 // Invite management routes (within orchestra context)
 $router->addRoute('/{org_slug}/{orchestra_id}/invite/regenerate', 'InviteController', 'regenerate', 'POST');
 $router->addRoute('/{org_slug}/{orchestra_id}/invite/toggle-keycloak', 'InviteController', 'toggleKeycloak', 'POST');

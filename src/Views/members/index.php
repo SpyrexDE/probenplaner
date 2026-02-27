@@ -234,19 +234,89 @@ $renderComponent = true;
         text-transform: uppercase;
     }
 
-    .member-badge-leader {
-        background: linear-gradient(135deg, var(--color-primary-100), var(--color-primary-200));
-        color: var(--color-primary-dark);
-    }
-
-    .member-badge-section-leader {
-        background: linear-gradient(135deg, var(--color-success-100), var(--color-success-200));
-        color: var(--color-success-dark);
-    }
-
     .member-badge-small-group {
         background: var(--color-warning-100);
         color: var(--color-warning-dark);
+    }
+
+    /* Role tag pills */
+    .role-tag {
+        display: inline-flex;
+        align-items: center;
+        font-size: 10px;
+        font-weight: var(--font-weight-bold);
+        padding: 2px 8px;
+        border-radius: var(--radius-full);
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        background: color-mix(in srgb, var(--role-color) 15%, transparent);
+        color: var(--role-color);
+        border: 1px solid color-mix(in srgb, var(--role-color) 30%, transparent);
+        line-height: 1.4;
+    }
+
+    /* Role management panel */
+    .role-manager {
+        margin-top: var(--space-6);
+    }
+
+    .role-list-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--space-3) var(--space-5);
+        border-bottom: 1px solid var(--color-border-light);
+        transition: background var(--transition-base);
+    }
+
+    .role-list-item:last-child {
+        border-bottom: none;
+    }
+
+    .role-list-item:hover {
+        background: var(--color-bg-secondary);
+    }
+
+    .role-list-info {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        min-width: 0;
+    }
+
+    .role-list-meta {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-muted);
+    }
+
+    .role-list-actions {
+        display: flex;
+        gap: var(--space-1);
+    }
+
+    .role-list-actions button {
+        width: 28px;
+        height: 28px;
+        border: none;
+        background: none;
+        cursor: pointer;
+        border-radius: var(--radius-base);
+        color: var(--color-text-muted);
+        transition: all var(--transition-base);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--font-size-xs);
+    }
+
+    .role-list-actions button:hover {
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-primary);
+    }
+
+    .role-list-actions button.role-delete-btn:hover {
+        background: var(--color-error-50);
+        color: var(--color-error);
     }
 
     .member-edit-btn {
@@ -547,21 +617,21 @@ foreach ($sections as $sectionId => $_instruments) {
                         <?php foreach ($members as $member):
                             $displayName = $member['display_name'] ?? $member['username'];
                             $initial = strtoupper(substr($displayName, 0, 1));
-                            $isLeader = !empty($member['can_manage_ensemble']);
-                            $isSectionLeader = !empty($member['can_view_own_section_stats']) && empty($member['can_manage_ensemble']);
                             $isSmallGroup = !empty($member['is_small_group']);
+                            $roleLabel = $member['role_tag_label'] ?? $member['role_name'] ?? '';
+                            $roleColor = $member['role_tag_color'] ?? '#478cf4';
                         ?>
                             <div class="member-item" data-member-name="<?= htmlspecialchars(strtolower($displayName)) ?>">
                                 <div class="member-info">
                                     <div class="member-avatar"><?= $initial ?></div>
                                     <div class="member-details">
-                                        <div class="member-name"><?= htmlspecialchars($displayName) ?></div>
-                                        <div class="member-meta">
-                                            <?php if ($isLeader): ?>
-                                                <span class="member-badge member-badge-leader">Leitung</span>
-                                            <?php elseif ($isSectionLeader): ?>
-                                                <span class="member-badge member-badge-section-leader">Reg.leitung</span>
+                                        <div class="member-name">
+                                            <?= htmlspecialchars($displayName) ?>
+                                            <?php if ($roleLabel): ?>
+                                                <span class="role-tag" style="--role-color: <?= htmlspecialchars($roleColor) ?>"><?= htmlspecialchars($roleLabel) ?></span>
                                             <?php endif; ?>
+                                        </div>
+                                        <div class="member-meta">
                                             <?php if ($isSmallGroup): ?>
                                                 <span class="member-badge member-badge-small-group">KG</span>
                                             <?php endif; ?>
@@ -586,6 +656,55 @@ foreach ($sections as $sectionId => $_instruments) {
         <i class="fas fa-search"></i>
         <div>Kein Mitglied gefunden</div>
     </div>
+
+    <?php if (!empty($canManagePermissions)): ?>
+    <!-- Role Management Panel -->
+    <div class="role-manager">
+        <div class="modern-card">
+            <div class="modern-card-header">
+                <div class="section-header-content">
+                    <div class="section-header-left">
+                        <div class="section-icon" style="background: var(--color-primary-50);">
+                            <i class="fas fa-shield-alt" style="color: var(--color-primary); font-size: var(--font-size-sm);"></i>
+                        </div>
+                        <div>
+                            <div class="section-title">Rollen</div>
+                        </div>
+                        <span class="section-count"><?= count($roles) ?></span>
+                    </div>
+                </div>
+            </div>
+            <div class="modern-card-body" style="padding: 0;">
+                <?php foreach ($roles as $role): ?>
+                <div class="role-list-item">
+                    <div class="role-list-info">
+                        <span class="role-tag" style="--role-color: <?= htmlspecialchars($role['tag_color']) ?>"><?= htmlspecialchars($role['name']) ?></span>
+                        <span class="role-list-meta">
+                            <?= (int)$role['user_count'] ?> Mitglieder
+                            <?php if (!empty($role['is_default'])): ?>
+                                &middot; Standard
+                            <?php endif; ?>
+                        </span>
+                    </div>
+                    <div class="role-list-actions">
+                        <?php if (empty($role['is_system'])): ?>
+                            <button onclick="editRole(<?= (int)$role['id'] ?>, <?= htmlspecialchars(json_encode($role), ENT_QUOTES) ?>)" title="Bearbeiten"><i class="fas fa-pen"></i></button>
+                            <button class="role-delete-btn" onclick="deleteRole(<?= (int)$role['id'] ?>, '<?= htmlspecialchars($role['name']) ?>', <?= (int)$role['user_count'] ?>)" title="Löschen"><i class="fas fa-trash"></i></button>
+                        <?php else: ?>
+                            <span style="font-size: var(--font-size-xs); color: var(--color-text-muted); padding: 0 var(--space-2);"><i class="fas fa-lock"></i></span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <div class="modern-card-footer" style="padding: var(--space-3) var(--space-5);">
+                <button class="btn-modern btn-primary" onclick="createRole()" style="width: 100%; padding: var(--space-2); font-size: var(--font-size-sm);">
+                    <i class="fas fa-plus" style="margin-right: var(--space-1);"></i> Neue Rolle
+                </button>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 </div>
 
 <script>
@@ -738,5 +857,155 @@ foreach ($sections as $sectionId => $_instruments) {
             .catch(err => {
                 window.notifyErrorWithDetails('Einstellung fehlgeschlagen', err.message || String(err));
             });
+    }
+
+    // ── Role CRUD ──────────────────────────────────────────────
+
+    const permissionLabels = <?= json_encode(\App\Models\Role::PERMISSION_LABELS) ?>;
+
+    function buildPermissionCheckboxes(selected = []) {
+        return Object.entries(permissionLabels).map(([key, label]) => {
+            const checked = selected.includes(key) ? 'checked' : '';
+            return `<div class="swal-perm-row">
+                <input type="checkbox" id="rp_${key}" value="${key}" ${checked}>
+                <label for="rp_${key}">${label}</label>
+            </div>`;
+        }).join('');
+    }
+
+    function showRoleForm(title, confirmText, defaults = {}) {
+        return Swal.fire({
+            title,
+            html: `
+                <div class="swal-members-permissions">
+                    <div class="swal-field-group">
+                        <label class="swal-field-label">Name</label>
+                        <input type="text" id="swalRoleName" class="swal-select-modern" value="${defaults.name || ''}" placeholder="z.B. Registerleitung">
+                    </div>
+                    <div class="swal-field-group">
+                        <label class="swal-field-label">Farbe</label>
+                        <input type="color" id="swalRoleColor" value="${defaults.tag_color || '#478cf4'}" style="width: 100%; height: 36px; border: 2px solid var(--color-border); border-radius: var(--radius-base); cursor: pointer; padding: 2px;">
+                    </div>
+                    <div class="swal-perm-group" style="margin-top: var(--space-3);">
+                        <div class="swal-perm-title">Berechtigungen</div>
+                        ${buildPermissionCheckboxes(defaults.permissions || [])}
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: confirmText,
+            cancelButtonText: 'Abbrechen',
+            confirmButtonColor: '#478cf4',
+            cancelButtonColor: '#6b7280',
+            reverseButtons: true,
+            focusConfirm: false,
+            preConfirm: () => {
+                const name = document.getElementById('swalRoleName').value.trim();
+                if (!name) { Swal.showValidationMessage('Name darf nicht leer sein.'); return false; }
+                const perms = [];
+                document.querySelectorAll('[id^="rp_"]:checked').forEach(el => perms.push(el.value));
+                return {
+                    name,
+                    tag_color: document.getElementById('swalRoleColor').value,
+                    permissions: perms,
+                };
+            },
+        });
+    }
+
+    function createRole() {
+        showRoleForm('Neue Rolle', '<i class="fas fa-plus"></i> Erstellen').then(result => {
+            if (!result.isConfirmed) return;
+            const d = result.value;
+            fetch('/' + orchestraBase + '/roles/create', {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: new URLSearchParams({
+                    csrf_token: csrfToken(),
+                    name: d.name,
+                    tag_color: d.tag_color,
+                    permissions: JSON.stringify(d.permissions),
+                }),
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    window.notifySuccess('Rolle erstellt');
+                    setTimeout(() => location.reload(), 600);
+                } else {
+                    window.notifyErrorWithDetails('Fehler', data.error || 'Unbekannter Fehler');
+                }
+            })
+            .catch(err => window.notifyErrorWithDetails('Fehler', err.message));
+        });
+    }
+
+    function editRole(roleId, role) {
+        showRoleForm('Rolle bearbeiten', '<i class="fas fa-save"></i> Speichern', role).then(result => {
+            if (!result.isConfirmed) return;
+            const d = result.value;
+            fetch('/' + orchestraBase + '/roles/' + roleId + '/update', {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: new URLSearchParams({
+                    csrf_token: csrfToken(),
+                    name: d.name,
+                    tag_color: d.tag_color,
+                    permissions: JSON.stringify(d.permissions),
+                }),
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    window.notifySuccess('Rolle aktualisiert');
+                    setTimeout(() => location.reload(), 600);
+                } else {
+                    window.notifyErrorWithDetails('Fehler', data.error || 'Unbekannter Fehler');
+                }
+            })
+            .catch(err => window.notifyErrorWithDetails('Fehler', err.message));
+        });
+    }
+
+    function deleteRole(roleId, roleName, userCount) {
+        if (userCount > 0) {
+            Swal.fire({
+                title: 'Nicht möglich',
+                html: `<p>Die Rolle <strong>${roleName}</strong> hat noch <strong>${userCount}</strong> zugewiesene Mitglieder. Weise diese Mitglieder zuerst einer anderen Rolle zu.</p>`,
+                icon: 'warning',
+                confirmButtonText: 'Verstanden',
+                confirmButtonColor: '#478cf4',
+            });
+            return;
+        }
+
+        Swal.fire({
+            title: 'Rolle löschen?',
+            html: `<p>Die Rolle <strong>${roleName}</strong> wird gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.</p>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ja, löschen',
+            cancelButtonText: 'Abbrechen',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            reverseButtons: true,
+        }).then(result => {
+            if (!result.isConfirmed) return;
+            fetch('/' + orchestraBase + '/roles/' + roleId + '/delete', {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: new URLSearchParams({ csrf_token: csrfToken() }),
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    window.notifySuccess('Rolle gelöscht');
+                    setTimeout(() => location.reload(), 600);
+                } else {
+                    window.notifyErrorWithDetails('Fehler', data.error || 'Unbekannter Fehler');
+                }
+            })
+            .catch(err => window.notifyErrorWithDetails('Fehler', err.message));
+        });
     }
 </script>

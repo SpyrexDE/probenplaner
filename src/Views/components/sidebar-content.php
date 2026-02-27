@@ -19,20 +19,13 @@
             <div class="sidebar-name">
                 <?= htmlspecialchars($displayName) ?>
                 <?php
-                $isSmallGroup = false;
-                $userId = $_SESSION['user_id'] ?? null;
-                $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
-                if ($userId && $orchestraId) {
-                    $userOrchestraModel = new \App\Models\UserOrchestra();
-                    $isSmallGroup = $userOrchestraModel->isUserInSmallGroup((int)$userId, (int)$orchestraId);
-                }
-
-                $userData = [
-                    'permissions' => $_SESSION['current_permissions'] ?? [],
-                    'is_small_group' => $isSmallGroup
-                ];
-                echo \App\Core\Utilities::generateUserBadges($userData);
+                $currentRole = $_SESSION['current_role'] ?? null;
+                if ($currentRole && !empty($currentRole['name'])):
+                    $roleColor = htmlspecialchars($currentRole['tag_color'] ?? '#478cf4');
+                    $roleLabel = htmlspecialchars($currentRole['name']);
                 ?>
+                    <span class="role-tag" style="--role-color: <?= $roleColor ?>"><?= $roleLabel ?></span>
+                <?php endif; ?>
             </div>
             <div class="sidebar-details">
                 <?php
@@ -44,14 +37,11 @@
                 $parts[] = '<span class="orchestra">' . $orchestra . '</span>';
 
                 $displayInfo = \App\Core\Utilities::getUserDisplayInfo(
-                    $_SESSION['current_type'] ?? '',
-                    $_SESSION['current_permissions'] ?? []
+                    $_SESSION['current_type'] ?? ''
                 );
 
                 if ($displayInfo['type']) {
                     $parts[] = $displayInfo['type'];
-                } elseif ($displayInfo['role']) {
-                    $parts[] = $displayInfo['role'];
                 }
                 echo implode(' · ', $parts);
                 ?>

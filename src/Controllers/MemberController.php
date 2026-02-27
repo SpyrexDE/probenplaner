@@ -7,17 +7,19 @@ use App\Core\FieldRegistry;
 use App\Models\UserOrchestra;
 use App\Models\User;
 use App\Models\InviteLink;
+use App\Models\Role;
 
 /**
  * Member Controller
  *
- * Handles the members listing and member editing (section, permissions).
+ * Handles the members listing, member editing, and role management.
  */
 class MemberController extends Controller
 {
     private UserOrchestra $userOrchestraModel;
     private User $userModel;
     private InviteLink $inviteLinkModel;
+    private Role $roleModel;
 
     public function __construct()
     {
@@ -25,10 +27,11 @@ class MemberController extends Controller
         $this->userOrchestraModel = new UserOrchestra();
         $this->userModel = new User();
         $this->inviteLinkModel = new InviteLink();
+        $this->roleModel = new Role();
     }
 
     /**
-     * Members list page (6a).
+     * Members list page.
      */
     public function index(array $params): void
     {
@@ -49,25 +52,27 @@ class MemberController extends Controller
         $members = $this->userOrchestraModel->getOrchestraUsers($orchestraId);
         $sections = FieldRegistry::getSections();
 
-        // Group by section
         $grouped = [];
         foreach ($members as $member) {
             $type = $member['type'] ?? 'Sonstige';
             $grouped[$type][] = $member;
         }
 
-        // Get invite link info
         $inviteLink = null;
         if ($canManage) {
             $inviteLink = $this->inviteLinkModel->getActiveMemberLink($orchestraId);
         }
+
+        $roles = $this->roleModel->getByOrchestra($orchestraId);
 
         $this->render('members/index', [
             'currentPage' => 'members',
             'orchestraId' => $orchestraId,
             'grouped' => $grouped,
             'sections' => $sections,
+            'roles' => $roles,
             'canManage' => $canManage,
+            'canManagePermissions' => $this->hasPermission('can_manage_permissions'),
             'inviteLink' => $inviteLink,
             'csrf_token' => $this->getCSRFToken(),
         ]);
@@ -98,8 +103,6 @@ class MemberController extends Controller
             return;
         }
 
-        $permissions = $this->userOrchestraModel->getPermissions($memberId, $orchestraId);
-
         $sections = FieldRegistry::getSections();
         $groupManager = new \App\Core\GroupManager();
         $displayNames = [];
@@ -110,6 +113,8 @@ class MemberController extends Controller
             }
         }
 
+        $roles = $this->roleModel->getByOrchestra($orchestraId);
+
         header('Content-Type: application/json');
         echo json_encode([
             'user_id' => $user['id'],
@@ -117,7 +122,13 @@ class MemberController extends Controller
             'username' => $user['username'],
             'type' => $relation['type'] ?? '',
             'is_small_group' => !empty($relation['is_small_group']),
-            'permissions' => $permissions,
+            'role_id' => $relation['role_id'] ?? null,
+            'available_roles' => array_map(fn($r) => [
+                'id' => $r['id'],
+                'name' => $r['name'],
+                'tag_color' => $r['tag_color'],
+                'is_system' => $r['is_system'],
+            ], $roles),
             'available_sections' => $sections,
             'display_names' => $displayNames,
             'current_user_can_manage_permissions' => $this->hasPermission('can_manage_permissions'),
@@ -125,7 +136,7 @@ class MemberController extends Controller
     }
 
     /**
-     * Update member (section, permissions, small_group) via AJAX.
+     * Update member (section, role, small_group) via AJAX.
      */
     public function updateMember(array $params): void
     {
@@ -152,12 +163,10 @@ class MemberController extends Controller
             $data['is_small_group'] = (int)$_POST['is_small_group'];
         }
 
-        // Permission updates (only if user has can_manage_permissions)
-        if (isset($_POST['permissions']) && $this->hasPermission('can_manage_permissions')) {
-            $perms = is_array($_POST['permissions']) ? $_POST['permissions'] : json_decode($_POST['permissions'], true);
-            if (is_array($perms)) {
-                $this->userOrchestraModel->setPermissions($memberId, $orchestraId, $perms);
-            }
+        // Role assignment (requires can_manage_permissions)
+        if (isset($_POST['role_id']) && $this->hasPermission('can_manage_permissions')) {
+            $roleId = (int)$_POST['role_id'];
+            $this->userOrchestraModel->setRole($memberId, $orchestraId, $roleId);
         }
 
         if (!empty($data)) {
@@ -190,7 +199,6 @@ class MemberController extends Controller
             return;
         }
 
-        // Don't allow removing yourself
         if ($memberId === (int)$_SESSION['user_id']) {
             http_response_code(400);
             echo json_encode(['error' => 'Du kannst dich nicht selbst entfernen.']);
@@ -207,5 +215,154 @@ class MemberController extends Controller
 
         $this->setFlash('success', 'Mitglied entfernt.');
         $this->redirect($this->orchestraUrl('/members'));
+    }
+
+    // ── Role CRUD endpoints ─────────────────────────────────────────
+
+    /**
+     * Get all roles for the current orchestra (AJAX).
+     */
+    public function getRoles(array $params): void
+    {
+        $this->requireLogin();
+        $context = $this->validateOrchestraContext($params);
+        if (!$context) return;
+
+        $roles = $this->roleModel->getByOrchestra($context['orchestra_id']);
+
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'roles' => $roles]);
+    }
+
+    /**
+     * Create a new custom role (AJAX).
+     */
+    public function createRole(array $params): void
+    {
+        $this->requireLogin();
+        $context = $this->validateOrchestraContext($params);
+        if (!$context) return;
+
+        $this->protectCSRF();
+
+        if (!$this->hasPermission('can_manage_permissions')) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Keine Berechtigung']);
+            return;
+        }
+
+        $name = trim($_POST['name'] ?? '');
+        $tagColor = trim($_POST['tag_color'] ?? '#478cf4');
+        $permissions = $_POST['permissions'] ?? [];
+        if (is_string($permissions)) {
+            $permissions = json_decode($permissions, true) ?: [];
+        }
+
+        if ($name === '') {
+            http_response_code(400);
+            echo json_encode(['error' => 'Name darf nicht leer sein.']);
+            return;
+        }
+
+        try {
+            $id = $this->roleModel->createRole($context['orchestra_id'], $name, $tagColor, $permissions);
+            $role = $this->roleModel->findByIdDecoded($id);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'role' => $role]);
+        } catch (\Exception $e) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Rolle konnte nicht erstellt werden: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Update an existing custom role (AJAX).
+     */
+    public function updateRole(array $params): void
+    {
+        $this->requireLogin();
+        $context = $this->validateOrchestraContext($params);
+        if (!$context) return;
+
+        $this->protectCSRF();
+
+        if (!$this->hasPermission('can_manage_permissions')) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Keine Berechtigung']);
+            return;
+        }
+
+        $roleId = (int)($params['role_id'] ?? 0);
+        $role = $this->roleModel->findById($roleId);
+
+        if (!$role || (int)$role['orchestra_id'] !== $context['orchestra_id']) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Rolle nicht gefunden']);
+            return;
+        }
+
+        if (!empty($role['is_system'])) {
+            http_response_code(403);
+            echo json_encode(['error' => 'System-Rollen können nicht bearbeitet werden.']);
+            return;
+        }
+
+        $data = [];
+        if (isset($_POST['name'])) $data['name'] = trim($_POST['name']);
+        if (isset($_POST['tag_color'])) $data['tag_color'] = trim($_POST['tag_color']);
+        if (isset($_POST['permissions'])) {
+            $perms = $_POST['permissions'];
+            if (is_string($perms)) $perms = json_decode($perms, true) ?: [];
+            $data['permissions'] = $perms;
+        }
+
+        $success = $this->roleModel->updateRole($roleId, $data);
+
+        header('Content-Type: application/json');
+        echo json_encode(['success' => $success]);
+    }
+
+    /**
+     * Delete a custom role (AJAX).
+     */
+    public function deleteRole(array $params): void
+    {
+        $this->requireLogin();
+        $context = $this->validateOrchestraContext($params);
+        if (!$context) return;
+
+        $this->protectCSRF();
+
+        if (!$this->hasPermission('can_manage_permissions')) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Keine Berechtigung']);
+            return;
+        }
+
+        $roleId = (int)($params['role_id'] ?? 0);
+        $role = $this->roleModel->findById($roleId);
+
+        if (!$role || (int)$role['orchestra_id'] !== $context['orchestra_id']) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Rolle nicht gefunden']);
+            return;
+        }
+
+        if (!empty($role['is_system'])) {
+            http_response_code(403);
+            echo json_encode(['error' => 'System-Rollen können nicht gelöscht werden.']);
+            return;
+        }
+
+        $success = $this->roleModel->deleteRole($roleId);
+
+        if (!$success) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Rolle hat noch zugewiesene Mitglieder.']);
+            return;
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true]);
     }
 }

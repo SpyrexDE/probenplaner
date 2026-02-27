@@ -78,12 +78,14 @@ class InviteController extends Controller
 
             if ($existing) {
                 if ($linkType === InviteLink::TYPE_CONDUCTOR) {
-                    // Check if already a conductor
                     $perms = $this->userOrchestraModel->getPermissions((int)$_SESSION['user_id'], (int)$orchestra['id']);
                     if (!empty($perms['can_manage_ensemble'])) {
                         $this->setFlash('info', 'Du bist bereits Leitung dieses Ensembles.');
                     } else {
-                        $this->grantConductorPermissions((int)$_SESSION['user_id'], (int)$orchestra['id'], $link);
+                        $roleId = $this->inviteLinkModel->getJoinRoleId($link);
+                        if ($roleId) {
+                            $this->userOrchestraModel->setRole((int)$_SESSION['user_id'], (int)$orchestra['id'], $roleId);
+                        }
                         $this->setFlash('success', 'Du wurdest als Leitung hinzugefügt!');
                     }
                 } else {
@@ -97,13 +99,13 @@ class InviteController extends Controller
             if ($linkType === InviteLink::TYPE_CONDUCTOR) {
                 $userId = (int)$_SESSION['user_id'];
                 $orchestraId = (int)$orchestra['id'];
-                $result = $this->userModel->joinOrchestra($userId, $orchestraId, 'Leitung');
+                $roleId = $this->inviteLinkModel->getJoinRoleId($link);
+                $result = $this->userModel->joinOrchestra($userId, $orchestraId, 'Leitung', $roleId);
                 if (is_array($result) && isset($result['error'])) {
                     $this->setFlash('error', $result['message'] ?? 'Beitritt fehlgeschlagen.');
                     $this->redirect('/orchestras/select');
                     return;
                 }
-                $this->grantConductorPermissions($userId, $orchestraId, $link);
                 $_SESSION['current_orchestra_id'] = $orchestraId;
                 $this->setFlash('success', 'Willkommen als Leitung im Ensemble!');
                 $this->redirect('/orchestras/select');
@@ -179,20 +181,12 @@ class InviteController extends Controller
         $userId = (int)$_SESSION['user_id'];
         $orchestraId = (int)$link['orchestra_id'];
 
-        $result = $this->userModel->joinOrchestra($userId, $orchestraId, $section);
+        $roleId = $this->inviteLinkModel->getJoinRoleId($link);
+        $result = $this->userModel->joinOrchestra($userId, $orchestraId, $section, $roleId);
         if (is_array($result) && isset($result['error'])) {
             $this->setFlash('error', $result['message'] ?? 'Beitritt fehlgeschlagen.');
             $this->redirect('/orchestras/select');
             return;
-        }
-
-        // Grant permissions based on link type
-        if ($linkType === InviteLink::TYPE_CONDUCTOR) {
-            $this->grantConductorPermissions($userId, $orchestraId, $link);
-        } else {
-            $permissions = json_decode($link['default_permissions'] ?? '[]', true)
-                ?: UserOrchestra::PRESETS['member'];
-            $this->userOrchestraModel->setPermissions($userId, $orchestraId, $permissions);
         }
 
         $this->inviteLinkModel->redeem((int)$link['id']);
@@ -244,17 +238,7 @@ class InviteController extends Controller
         $this->redirect('/invite/' . urlencode($token));
     }
 
-    /**
-     * Grant conductor permissions from a conductor invite link.
-     */
-    private function grantConductorPermissions(int $userId, int $orchestraId, array $link): void
-    {
-        $permissions = json_decode($link['default_permissions'] ?? '[]', true) ?: UserOrchestra::PRESETS['conductor'];
-        $current = $this->userOrchestraModel->getPermissions($userId, $orchestraId);
-        $currentNames = array_keys(array_filter($current));
-        $merged = array_unique(array_merge($currentNames, $permissions));
-        $this->userOrchestraModel->setPermissions($userId, $orchestraId, $merged);
-    }
+
 
     /**
      * Check if current user is admin or orga account.

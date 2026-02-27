@@ -89,16 +89,16 @@ class Orchestra extends Model
     }
 
     /**
-     * @return array Users with can_manage_ensemble permission
+     * @return array Users with can_manage_ensemble permission (via role)
      */
     public function getConductors(int $orchestraId): array
     {
         $sql = "SELECT u.id, u.username, u.display_name
                 FROM users u
                 JOIN user_orchestras uo ON uo.user_id = u.id
-                JOIN user_ensemble_permissions uep ON uep.user_orchestra_id = uo.id
-                JOIN permissions p ON uep.permission_id = p.id
-                WHERE uo.orchestra_id = ? AND uo.is_active = 1 AND p.name = 'can_manage_ensemble'
+                JOIN roles r ON uo.role_id = r.id
+                WHERE uo.orchestra_id = ? AND uo.is_active = 1
+                  AND JSON_CONTAINS(r.permissions, '\"can_manage_ensemble\"')
                 ORDER BY COALESCE(u.display_name, u.username)";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param('i', $orchestraId);

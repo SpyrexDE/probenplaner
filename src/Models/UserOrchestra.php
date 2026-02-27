@@ -13,29 +13,6 @@ class UserOrchestra extends Model
 {
     protected $table = 'user_orchestras';
 
-    /** Named permission presets (map preset name -> list of permission names) */
-    public const PRESETS = [
-        'member' => [
-            'can_attend_rehearsals',
-        ],
-        'section_leader' => [
-            'can_attend_rehearsals',
-            'can_view_own_section_stats',
-            'can_view_all_section_stats',
-            'can_manage_rehearsals',
-            'can_view_members',
-        ],
-        'conductor' => [
-            'can_view_own_section_stats',
-            'can_view_all_section_stats',
-            'can_view_members',
-            'can_manage_rehearsals',
-            'can_manage_members',
-            'can_manage_permissions',
-            'can_manage_ensemble',
-        ],
-    ];
-
     /**
      * @return array All orchestras for a user with orchestra name
      */
@@ -43,9 +20,11 @@ class UserOrchestra extends Model
     {
         $activeClause = $activeOnly ? "AND uo.is_active = 1" : "";
 
-        $sql = "SELECT uo.*, o.name as orchestra_name, o.slug as orchestra_slug
+        $sql = "SELECT uo.*, o.name as orchestra_name, o.slug as orchestra_slug,
+                r.name as role_name, r.name as role_tag_label, r.tag_color as role_tag_color
                 FROM {$this->table} uo
                 JOIN orchestras o ON uo.orchestra_id = o.id
+                LEFT JOIN roles r ON uo.role_id = r.id
                 WHERE uo.user_id = ? {$activeClause}
                 ORDER BY uo.joined_at DESC";
 
@@ -63,21 +42,20 @@ class UserOrchestra extends Model
     }
 
     /**
-     * @return array All active users for an orchestra
+     * @return array All active users for an orchestra with role info
      */
     public function getOrchestraUsers(int $orchestraId, bool $activeOnly = true): array
     {
         $activeClause = $activeOnly ? "AND uo.is_active = 1" : "";
 
         $sql = "SELECT uo.*, u.username, u.display_name, u.created_at as user_created_at,
-                GROUP_CONCAT(p.name) as permission_names
+                r.id as role_id, r.name as role_name, r.name as role_tag_label,
+                r.tag_color as role_tag_color, r.permissions as role_permissions
                 FROM {$this->table} uo
                 JOIN users u ON uo.user_id = u.id
-                LEFT JOIN user_ensemble_permissions uep ON uep.user_orchestra_id = uo.id
-                LEFT JOIN permissions p ON uep.permission_id = p.id
+                LEFT JOIN roles r ON uo.role_id = r.id
                 WHERE uo.orchestra_id = ? {$activeClause}
-                GROUP BY uo.id
-                ORDER BY uo.type, COALESCE(u.display_name, u.username)";
+                ORDER BY r.sort_order, uo.type, COALESCE(u.display_name, u.username)";
 
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param('i', $orchestraId);
@@ -86,10 +64,10 @@ class UserOrchestra extends Model
 
         $users = [];
         while ($row = $result->fetch_assoc()) {
-            $permNames = $row['permission_names'] ? explode(',', $row['permission_names']) : [];
-            $row['permissions'] = $permNames;
-            $row['can_attend_rehearsals'] = in_array('can_attend_rehearsals', $permNames);
-            unset($row['permission_names']);
+            $perms = json_decode($row['role_permissions'] ?? '[]', true) ?: [];
+            $row['permissions'] = $perms;
+            $row['can_attend_rehearsals'] = in_array('can_attend_rehearsals', $perms);
+            unset($row['role_permissions']);
             $users[] = $row;
         }
         $stmt->close();
@@ -116,12 +94,18 @@ class UserOrchestra extends Model
     }
 
     /**
-     * @param array $permissions Permission column names to enable
+     * @param int|null $roleId Role to assign (null uses orchestra default)
      * @return int|array Relationship ID on success, error array on failure
      */
-    public function joinOrchestra(int $userId, int $orchestraId, string $type, array $permissions = [])
+    public function joinOrchestra(int $userId, int $orchestraId, string $type, ?int $roleId = null)
     {
         try {
+            if ($roleId === null) {
+                $roleModel = new Role();
+                $defaultRole = $roleModel->getDefaultRole($orchestraId);
+                $roleId = $defaultRole ? (int)$defaultRole['id'] : null;
+            }
+
             $existing = $this->getUserOrchestraRelation($userId, $orchestraId, false);
 
             if ($existing) {
@@ -133,11 +117,11 @@ class UserOrchestra extends Model
                 $result = $this->update($existing['id'], [
                     'type' => $type,
                     'is_active' => 1,
+                    'role_id' => $roleId,
                     'joined_at' => date('Y-m-d H:i:s'),
                     'updated_at' => date('Y-m-d H:i:s'),
                 ]);
                 if ($result) {
-                    $this->syncPermissions($existing['id'], $permissions);
                     return $existing['id'];
                 }
                 return ['error' => true, 'message' => 'Fehler beim Reaktivieren der Mitgliedschaft.'];
@@ -148,6 +132,7 @@ class UserOrchestra extends Model
                 'orchestra_id' => $orchestraId,
                 'type' => $type,
                 'is_active' => 1,
+                'role_id' => $roleId,
                 'joined_at' => date('Y-m-d H:i:s'),
             ]);
 
@@ -157,7 +142,6 @@ class UserOrchestra extends Model
                 return ErrorHandler::handleDatabaseError(new \Exception($error), 'Orchestra join');
             }
 
-            $this->syncPermissions($relationId, $permissions);
             return $relationId;
         } catch (\Exception $e) {
             return ErrorHandler::handleDatabaseError($e, 'Orchestra join');
@@ -178,26 +162,42 @@ class UserOrchestra extends Model
         ]);
     }
 
-    // ── Permission helpers ───────────────────────────────────────
+    // ── Role helpers ────────────────────────────────────────────────
 
     /**
-     * Check if user has a specific permission in an orchestra.
+     * Assign a role to a user in an orchestra.
      */
-    public function hasPermission(int $userId, int $orchestraId, string $permission): bool
+    public function setRole(int $userId, int $orchestraId, int $roleId): bool
     {
         $relation = $this->getUserOrchestraRelation($userId, $orchestraId, true);
         if (!$relation) return false;
 
-        $sql = "SELECT 1 FROM user_ensemble_permissions uep
-                JOIN permissions p ON uep.permission_id = p.id
-                WHERE uep.user_orchestra_id = ? AND p.name = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bind_param('is', $relation['id'], $permission);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $found = $result->num_rows > 0;
-        $stmt->close();
-        return $found;
+        return $this->update($relation['id'], [
+            'role_id' => $roleId,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+    }
+
+    /**
+     * @return array|null Full role row (decoded permissions), or null
+     */
+    public function getRole(int $userId, int $orchestraId): ?array
+    {
+        $relation = $this->getUserOrchestraRelation($userId, $orchestraId, true);
+        if (!$relation || empty($relation['role_id'])) return null;
+
+        $roleModel = new Role();
+        return $roleModel->findByIdDecoded((int)$relation['role_id']);
+    }
+
+    /**
+     * Check if user has a specific permission via their role.
+     */
+    public function hasPermission(int $userId, int $orchestraId, string $permission): bool
+    {
+        $role = $this->getRole($userId, $orchestraId);
+        if (!$role) return false;
+        return in_array($permission, $role['permissions'], true);
     }
 
     /**
@@ -205,68 +205,13 @@ class UserOrchestra extends Model
      */
     public function getPermissions(int $userId, int $orchestraId): array
     {
-        $relation = $this->getUserOrchestraRelation($userId, $orchestraId, true);
-
-        // Start with all permissions as false
-        $allPerms = $this->getAllPermissionNames('ensemble');
-        $perms = array_fill_keys($allPerms, false);
-
-        if (!$relation) return $perms;
-
-        $sql = "SELECT p.name FROM user_ensemble_permissions uep
-                JOIN permissions p ON uep.permission_id = p.id
-                WHERE uep.user_orchestra_id = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bind_param('i', $relation['id']);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        while ($row = $result->fetch_assoc()) {
-            $perms[$row['name']] = true;
+        $role = $this->getRole($userId, $orchestraId);
+        $granted = $role ? $role['permissions'] : [];
+        $map = [];
+        foreach (Role::getAvailablePermissions() as $perm) {
+            $map[$perm] = in_array($perm, $granted, true);
         }
-        $stmt->close();
-        return $perms;
-    }
-
-    /**
-     * Replace all permissions for a membership with the given set.
-     *
-     * @param array $permissions Permission names to enable (all others revoked)
-     */
-    public function setPermissions(int $userId, int $orchestraId, array $permissions): bool
-    {
-        $relation = $this->getUserOrchestraRelation($userId, $orchestraId, true);
-        if (!$relation) return false;
-
-        return $this->syncPermissions($relation['id'], $permissions);
-    }
-
-    /**
-     * Apply a named permission preset.
-     */
-    public function applyPreset(int $userId, int $orchestraId, string $presetName): bool
-    {
-        $permissions = self::PRESETS[$presetName] ?? [];
-        return $this->setPermissions($userId, $orchestraId, $permissions);
-    }
-
-    /**
-     * Derive the highest matching preset name from current permissions.
-     */
-    public static function derivePreset(array $permissionMap): string
-    {
-        foreach (['conductor', 'section_leader'] as $preset) {
-            $presetPerms = self::PRESETS[$preset];
-            $match = true;
-            foreach ($permissionMap as $name => $granted) {
-                $expected = in_array($name, $presetPerms);
-                if ($expected !== (bool)$granted) {
-                    $match = false;
-                    break;
-                }
-            }
-            if ($match) return $preset;
-        }
-        return 'custom';
+        return $map;
     }
 
     // ── Type / small-group helpers ───────────────────────────────
@@ -305,13 +250,12 @@ class UserOrchestra extends Model
     public function getUsersByType(string $type, int $orchestraId): array
     {
         $sql = "SELECT uo.*, u.username, u.display_name, u.created_at as user_created_at,
-                GROUP_CONCAT(p.name) as permission_names
+                r.id as role_id, r.name as role_name, r.name as role_tag_label,
+                r.tag_color as role_tag_color, r.permissions as role_permissions
                 FROM {$this->table} uo
                 JOIN users u ON uo.user_id = u.id
-                LEFT JOIN user_ensemble_permissions uep ON uep.user_orchestra_id = uo.id
-                LEFT JOIN permissions p ON uep.permission_id = p.id
+                LEFT JOIN roles r ON uo.role_id = r.id
                 WHERE uo.type = ? AND uo.orchestra_id = ? AND uo.is_active = 1
-                GROUP BY uo.id
                 ORDER BY COALESCE(u.display_name, u.username)";
 
         $stmt = $this->db->prepare($sql);
@@ -321,10 +265,10 @@ class UserOrchestra extends Model
 
         $users = [];
         while ($row = $result->fetch_assoc()) {
-            $permNames = $row['permission_names'] ? explode(',', $row['permission_names']) : [];
-            $row['permissions'] = $permNames;
-            $row['can_attend_rehearsals'] = in_array('can_attend_rehearsals', $permNames);
-            unset($row['permission_names']);
+            $perms = json_decode($row['role_permissions'] ?? '[]', true) ?: [];
+            $row['permissions'] = $perms;
+            $row['can_attend_rehearsals'] = in_array('can_attend_rehearsals', $perms);
+            unset($row['role_permissions']);
             $users[] = $row;
         }
         $stmt->close();
@@ -355,67 +299,5 @@ class UserOrchestra extends Model
         $result = $stmt->get_result()->fetch_assoc();
         $stmt->close();
         return (int)($result['cnt'] ?? 0);
-    }
-
-    // ── Internal ─────────────────────────────────────────────────
-
-    /**
-     * @return string[] All permission names for a given scope
-     */
-    public function getAllPermissionNames(string $scope = 'ensemble'): array
-    {
-        $sql = "SELECT name FROM permissions WHERE scope = ? ORDER BY id";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bind_param('s', $scope);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $names = [];
-        while ($row = $result->fetch_assoc()) {
-            $names[] = $row['name'];
-        }
-        $stmt->close();
-        return $names;
-    }
-
-    /**
-     * Sync permissions for a user_orchestras membership row (delete + insert).
-     */
-    private function syncPermissions(int $userOrchestraId, array $permissionNames): bool
-    {
-        $stmt = $this->db->prepare("DELETE FROM user_ensemble_permissions WHERE user_orchestra_id = ?");
-        $stmt->bind_param('i', $userOrchestraId);
-        $stmt->execute();
-        $stmt->close();
-
-        if (empty($permissionNames)) return true;
-
-        $placeholders = implode(',', array_fill(0, count($permissionNames), '?'));
-        $sql = "INSERT INTO user_ensemble_permissions (user_orchestra_id, permission_id)
-                SELECT ?, id FROM permissions WHERE name IN ($placeholders)";
-        $stmt = $this->db->prepare($sql);
-        $types = 'i' . str_repeat('s', count($permissionNames));
-        $params = array_merge([$userOrchestraId], $permissionNames);
-        $stmt->bind_param($types, ...$params);
-        $result = $stmt->execute();
-        $stmt->close();
-        return $result;
-    }
-
-    /**
-     * Remove a single permission from a user's orchestra membership.
-     */
-    public function removePermission(int $userId, int $orchestraId, string $permissionName): bool
-    {
-        $relation = $this->getUserOrchestraRelation($userId, $orchestraId, true);
-        if (!$relation) return false;
-
-        $sql = "DELETE uep FROM user_ensemble_permissions uep
-                JOIN permissions p ON p.id = uep.permission_id
-                WHERE uep.user_orchestra_id = ? AND p.name = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bind_param('is', $relation['id'], $permissionName);
-        $result = $stmt->execute();
-        $stmt->close();
-        return $result;
     }
 }

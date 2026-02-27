@@ -114,8 +114,9 @@ class OrchestraSelectionController extends Controller
         $_SESSION['current_orchestra_name'] = $orchestra['name'];
         $_SESSION['current_type'] = $relation['type'];
         $_SESSION['current_permissions'] = $this->userOrchestraModel->getPermissions($_SESSION['user_id'], $orchestraId);
+        $role = $this->userOrchestraModel->getRole($_SESSION['user_id'], $orchestraId);
+        $_SESSION['current_role'] = $role ? ['id' => $role['id'], 'name' => $role['name'], 'tag_color' => $role['tag_color'], 'is_system' => $role['is_system'] ?? 0] : null;
 
-        // Resolve org slug
         $orgModel = new \App\Models\Organization();
         $org = $orgModel->findById((int)($orchestra['organization_id'] ?? 0));
         $orgSlug = $org['slug'] ?? '';
@@ -334,8 +335,9 @@ class OrchestraSelectionController extends Controller
             $_SESSION['current_orchestra_name'] = $orchestra['name'];
             $_SESSION['current_type'] = $type;
             $_SESSION['current_permissions'] = $this->userOrchestraModel->getPermissions($_SESSION['user_id'], $orchestraId);
+            $role = $this->userOrchestraModel->getRole($_SESSION['user_id'], $orchestraId);
+            $_SESSION['current_role'] = $role ? ['id' => $role['id'], 'name' => $role['name'], 'tag_color' => $role['tag_color'], 'is_system' => $role['is_system'] ?? 0] : null;
 
-            // Resolve org slug
             $orgModel = new \App\Models\Organization();
             $org = $orgModel->findById((int)($orchestra['organization_id'] ?? 0));
             $orgSlug = $org['slug'] ?? '';
@@ -400,8 +402,9 @@ class OrchestraSelectionController extends Controller
         $_SESSION['current_orchestra_name'] = $orchestra['name'];
         $_SESSION['current_type'] = $relation['type'];
         $_SESSION['current_permissions'] = $this->userOrchestraModel->getPermissions($_SESSION['user_id'], $orchestraId);
+        $role = $this->userOrchestraModel->getRole($_SESSION['user_id'], $orchestraId);
+        $_SESSION['current_role'] = $role ? ['id' => $role['id'], 'name' => $role['name'], 'tag_color' => $role['tag_color'], 'is_system' => $role['is_system'] ?? 0] : null;
 
-        // Resolve org slug
         $orgModel = new \App\Models\Organization();
         $org = $orgModel->findById((int)($orchestra['organization_id'] ?? 0));
         $orgSlug = $org['slug'] ?? '';

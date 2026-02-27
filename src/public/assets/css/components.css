@@ -15,6 +15,23 @@
   transform: translateY(0);
 }
 
+/* === ROLE TAG PILL === */
+.role-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--role-color) 15%, transparent);
+  color: var(--role-color);
+  border: 1px solid color-mix(in srgb, var(--role-color) 30%, transparent);
+  line-height: 1.4;
+  vertical-align: middle;
+}
+
 
 /* === AUTH COMPONENTS === */
 .back-link {

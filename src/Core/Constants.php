@@ -15,20 +15,16 @@ class Constants
     const HTTP_FORBIDDEN = 403;
     const HTTP_NOT_FOUND = 404;
     const HTTP_INTERNAL_SERVER_ERROR = 500;
-    
-    // User Roles
-    const ROLE_MEMBER = 'member';
-    const ROLE_LEADER = 'leader';
-    const ROLE_CONDUCTOR = 'conductor';
-    
+
     // Section/Instrument types are dynamically loaded from config/orchestra_groups.php
     // Use GroupManager class to access group information
-    
+    // User roles are now dynamic per orchestra — see Role model
+
     // Rehearsal Types
     const REHEARSAL_TUTTI = 'tutti';
     const REHEARSAL_SECTIONAL = 'sectional';
     const REHEARSAL_SMALL_GROUP = 'small_group';
-    
+
     // Color Codes for Rehearsals
     const COLOR_WHITE = '#e5e7eb';
     const COLOR_BLUE = '#3b82f6';
@@ -42,29 +38,27 @@ class Constants
     const COLOR_INDIGO = '#6366f1';
     const COLOR_GRAY = '#6b7280';
     const COLOR_SLATE = '#475569';
-    
+
     // Date/Time Formats
     const DATE_FORMAT = 'Y-m-d';
     const TIME_FORMAT = 'H:i';
     const DATETIME_FORMAT = 'Y-m-d H:i:s';
     const DISPLAY_DATE_FORMAT = 'd.m.Y';
     const DISPLAY_TIME_FORMAT = 'H:i';
-    
-    // Database Table Names (if centralized)
+
+    // Database Table Names
     const TABLE_USERS = 'users';
     const TABLE_ORCHESTRAS = 'orchestras';
     const TABLE_REHEARSALS = 'rehearsals';
     const TABLE_USER_PROMISES = 'user_promises';
-    
-    // Cache Keys (if caching is implemented)
+
+    // Cache Keys
     const CACHE_USER_PREFIX = 'user_';
     const CACHE_ORCHESTRA_PREFIX = 'orchestra_';
     const CACHE_REHEARSAL_PREFIX = 'rehearsal_';
-    
+
     /**
-     * Get available rehearsal colors
-     * 
-     * @return array Array of color options
+     * @return array Color name => hex code
      */
     public static function getRehearsalColors(): array
     {
@@ -81,20 +75,6 @@ class Constants
             self::COLOR_INDIGO => 'Indigo',
             self::COLOR_GRAY => 'Grau',
             self::COLOR_SLATE => 'Schiefer'
-        ];
-    }
-    
-    /**
-     * Get available user roles
-     * 
-     * @return array Array of role options
-     */
-    public static function getUserRoles(): array
-    {
-        return [
-            self::ROLE_MEMBER => 'Mitglied',
-            self::ROLE_LEADER => 'Stimmführung',
-            self::ROLE_CONDUCTOR => 'Dirigent*in'
         ];
     }
 }

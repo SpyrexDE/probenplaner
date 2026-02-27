@@ -17,19 +17,10 @@ class InviteLink extends Model
     public const TYPE_CONDUCTOR = 'conductor';
 
     private const CONDUCTOR_EXPIRY_DAYS = 14;
-    private const CONDUCTOR_PERMISSIONS = [
-        'can_view_own_section_stats',
-        'can_view_all_section_stats',
-        'can_view_members',
-        'can_manage_rehearsals',
-        'can_manage_members',
-        'can_manage_permissions',
-        'can_manage_ensemble',
-    ];
 
     protected function getAllowedFields(): array
     {
-        return ['token', 'orchestra_id', 'email', 'default_permissions', 'expires_at', 'used_at', 'created_by', 'keycloak_only'];
+        return ['token', 'orchestra_id', 'email', 'default_role_id', 'expires_at', 'used_at', 'created_by', 'keycloak_only'];
     }
 
     /**
@@ -48,7 +39,11 @@ class InviteLink extends Model
         ];
 
         if ($type === self::TYPE_CONDUCTOR) {
-            $data['default_permissions'] = json_encode(self::CONDUCTOR_PERMISSIONS);
+            $roleModel = new Role();
+            $conductorRole = $roleModel->getConductorRole($orchestraId);
+            if ($conductorRole) {
+                $data['default_role_id'] = $conductorRole['id'];
+            }
             $data['expires_at'] = date('Y-m-d H:i:s', strtotime('+' . self::CONDUCTOR_EXPIRY_DAYS . ' days'));
         }
 
@@ -65,10 +60,10 @@ class InviteLink extends Model
     {
         if ($type === self::TYPE_CONDUCTOR) {
             $sql = "UPDATE invite_links SET used_at = NOW()
-                    WHERE orchestra_id = ? AND default_permissions IS NOT NULL AND used_at IS NULL";
+                    WHERE orchestra_id = ? AND default_role_id IS NOT NULL AND used_at IS NULL";
         } else {
             $sql = "UPDATE invite_links SET used_at = NOW()
-                    WHERE orchestra_id = ? AND default_permissions IS NULL AND used_at IS NULL";
+                    WHERE orchestra_id = ? AND default_role_id IS NULL AND used_at IS NULL";
         }
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param('i', $orchestraId);
@@ -108,8 +103,8 @@ class InviteLink extends Model
         $link = $this->findById($linkId);
         if (!$link) return false;
 
-        // Conductor links are multi-use — don't mark as used
-        if (!empty($link['default_permissions'])) {
+        // Conductor links are multi-use
+        if (!empty($link['default_role_id'])) {
             return true;
         }
 
@@ -148,7 +143,7 @@ class InviteLink extends Model
     public function getActiveMemberLink(int $orchestraId): ?array
     {
         $sql = "SELECT * FROM invite_links
-                WHERE orchestra_id = ? AND default_permissions IS NULL
+                WHERE orchestra_id = ? AND default_role_id IS NULL
                   AND used_at IS NULL AND (expires_at IS NULL OR expires_at > NOW())
                 ORDER BY created_at DESC LIMIT 1";
         $stmt = $this->db->prepare($sql);
@@ -166,7 +161,7 @@ class InviteLink extends Model
     public function getActiveConductorLink(int $orchestraId): ?array
     {
         $sql = "SELECT * FROM invite_links
-                WHERE orchestra_id = ? AND default_permissions IS NOT NULL
+                WHERE orchestra_id = ? AND default_role_id IS NOT NULL
                   AND used_at IS NULL AND (expires_at IS NULL OR expires_at > NOW())
                 ORDER BY created_at DESC LIMIT 1";
         $stmt = $this->db->prepare($sql);
@@ -183,7 +178,21 @@ class InviteLink extends Model
      */
     public static function getLinkType(array $link): string
     {
-        return !empty($link['default_permissions']) ? self::TYPE_CONDUCTOR : self::TYPE_MEMBER;
+        return !empty($link['default_role_id']) ? self::TYPE_CONDUCTOR : self::TYPE_MEMBER;
+    }
+
+    /**
+     * Get the role ID to assign when a link is redeemed.
+     * Conductor links use their stored default_role_id, member links use the orchestra default.
+     */
+    public function getJoinRoleId(array $link): ?int
+    {
+        if (!empty($link['default_role_id'])) {
+            return (int)$link['default_role_id'];
+        }
+        $roleModel = new Role();
+        $defaultRole = $roleModel->getDefaultRole((int)$link['orchestra_id']);
+        return $defaultRole ? (int)$defaultRole['id'] : null;
     }
 
     private function generateToken(): string

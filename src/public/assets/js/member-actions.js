@@ -1,6 +1,5 @@
 // Member Actions (Shared between Members Page and Promises Dashboard)
 
-// Utility to get current orchestra base path
 function getOrchestraBase() {
     const pathParts = window.location.pathname.split('/').filter(p => p);
     if (pathParts.length >= 2) {
@@ -14,7 +13,6 @@ function getCsrfToken() {
     return meta ? meta.content : '';
 }
 
-// Build section options for select
 function buildSectionOptions(availableSections, displayNames) {
     let html = '';
     for (const [group, items] of Object.entries(availableSections)) {
@@ -27,7 +25,13 @@ function buildSectionOptions(availableSections, displayNames) {
     return html;
 }
 
-// Open Member Edit Modal
+function buildRoleOptions(roles) {
+    return roles.map(r => {
+        const dot = `<span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${r.tag_color}; margin-right: 6px; vertical-align: middle;"></span>`;
+        return `<option value="${r.id}" data-color="${r.tag_color}">${r.name}</option>`;
+    }).join('');
+}
+
 function openEditModal(userId) {
     const orchestraBase = getOrchestraBase();
     fetch('/' + orchestraBase + '/members/' + userId + '/details', {
@@ -44,6 +48,7 @@ function openEditModal(userId) {
             }
 
             const initial = (data.display_name || 'U').charAt(0).toUpperCase();
+            const roles = data.available_roles || [];
 
             Swal.fire({
                 html: `
@@ -68,41 +73,19 @@ function openEditModal(userId) {
                     <label for="swalSmallGroup">Kleingruppe</label>
                 </div>
 
-                ${data.current_user_can_manage_permissions ? `
-                <div class="swal-perm-group">
-                    <div class="swal-perm-title">Berechtigungen</div>
-                    <div class="swal-perm-row">
-                        <input type="checkbox" id="sp_view_own" ${data.permissions?.can_view_own_section_stats ? 'checked' : ''}>
-                        <label for="sp_view_own">Eigenes Register sehen</label>
-                    </div>
-                    <div class="swal-perm-row">
-                        <input type="checkbox" id="sp_view_all" ${data.permissions?.can_view_all_section_stats ? 'checked' : ''}>
-                        <label for="sp_view_all">Alle Register-Statistiken</label>
-                    </div>
-                    <div class="swal-perm-row">
-                        <input type="checkbox" id="sp_members" ${data.permissions?.can_view_members ? 'checked' : ''}>
-                        <label for="sp_members">Mitgliederliste sehen</label>
-                    </div>
-                    <div class="swal-perm-row">
-                        <input type="checkbox" id="sp_rehearsals" ${data.permissions?.can_manage_rehearsals ? 'checked' : ''}>
-                        <label for="sp_rehearsals">Proben verwalten</label>
-                    </div>
-                    <div class="swal-perm-row">
-                        <input type="checkbox" id="sp_manage" ${data.permissions?.can_manage_members ? 'checked' : ''}>
-                        <label for="sp_manage">Mitglieder verwalten</label>
-                    </div>
-                    <div class="swal-perm-row">
-                        <input type="checkbox" id="sp_perms" ${data.permissions?.can_manage_permissions ? 'checked' : ''}>
-                        <label for="sp_perms">Berechtigungen vergeben</label>
-                    </div>
+                ${data.current_user_can_manage_permissions && roles.length ? `
+                <div class="swal-field-group">
+                    <label class="swal-field-label">Rolle</label>
+                    <select id="swalRole" class="swal-select-modern">
+                        ${buildRoleOptions(roles)}
+                    </select>
                 </div>
                 ` : ''}
-                
+
                 <div class="swal-field-group" style="margin-top: 1.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; border-top: 1px solid var(--color-gray-200); padding-top: 1.5rem;">
                     <button type="button" id="swalResetPasswordBtn" class="btn-modern" style="padding: 0.375rem 0.75rem; border-radius: 0.375rem; border: 1px solid #d1d5db; background: white; color: #4b5563; font-weight: 500; font-size: 0.875rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; transition: background-color 0.15s, border-color 0.15s;" onmouseover="this.style.backgroundColor='#f9fafb'; this.style.borderColor='#9ca3af'" onmouseout="this.style.backgroundColor='white'; this.style.borderColor='#d1d5db'">
                         <i class="fas fa-key" style="color: #f59e0b;"></i> Passwort zurücksetzen
                     </button>
-                    <!-- Small helper text -->
                     <small style="color: #6b7280; font-size: 0.75rem; margin-top: 0.375rem;">Setzt das Passwort auf ein neues, zufälliges Passwort zurück.</small>
                 </div>
             </div>
@@ -121,6 +104,9 @@ function openEditModal(userId) {
                     const sel = document.getElementById('swalType');
                     if (sel && data.type) sel.value = data.type;
 
+                    const roleSel = document.getElementById('swalRole');
+                    if (roleSel && data.role_id) roleSel.value = data.role_id;
+
                     const resetBtn = document.getElementById('swalResetPasswordBtn');
                     if (resetBtn) {
                         resetBtn.addEventListener('click', () => {
@@ -131,7 +117,7 @@ function openEditModal(userId) {
                 }
             }).then(result => {
                 if (result.isConfirmed) {
-                    saveEditModal(userId, data.available_sections ? true : false);
+                    saveEditModal(userId);
                 } else if (result.isDenied) {
                     confirmRemoveMember(userId, data.display_name || data.username);
                 }
@@ -144,30 +130,19 @@ function openEditModal(userId) {
 
 function saveEditModal(userId) {
     const orchestraBase = getOrchestraBase();
-    const permMap = {
-        'sp_view_own': 'can_view_own_section_stats',
-        'sp_view_all': 'can_view_all_section_stats',
-        'sp_members': 'can_view_members',
-        'sp_rehearsals': 'can_manage_rehearsals',
-        'sp_manage': 'can_manage_members',
-        'sp_perms': 'can_manage_permissions',
-    };
-
-    const perms = [];
-    for (const [elId, perm] of Object.entries(permMap)) {
-        const el = document.getElementById(elId);
-        if (el && el.checked) perms.push(perm);
-    }
-
     const typeEl = document.getElementById('swalType');
     const smallGrpEl = document.getElementById('swalSmallGroup');
+    const roleEl = document.getElementById('swalRole');
 
-    const body = new URLSearchParams({
+    const params = new URLSearchParams({
         csrf_token: getCsrfToken(),
         type: typeEl ? typeEl.value : '',
         is_small_group: (smallGrpEl && smallGrpEl.checked) ? '1' : '0',
-        permissions: JSON.stringify(perms),
     });
+
+    if (roleEl) {
+        params.set('role_id', roleEl.value);
+    }
 
     fetch('/' + orchestraBase + '/members/' + userId + '/update', {
         method: 'POST',
@@ -175,7 +150,7 @@ function saveEditModal(userId) {
             'Accept': 'application/json',
             'X-Requested-With': 'XMLHttpRequest'
         },
-        body: body,
+        body: params,
     })
         .then(r => r.json())
         .then(data => {
@@ -233,7 +208,6 @@ function confirmRemoveMember(userId, displayName) {
     });
 }
 
-// Reset user password (moved from promises-shared.js)
 function resetPassword(username) {
     const orchestraBase = getOrchestraBase();
     Swal.fire({
@@ -293,7 +267,6 @@ function resetPassword(username) {
                                             copyBtn.style.background = '#478cf4';
                                         }, 2000);
                                     }).catch(() => {
-                                        // fallback
                                         const ta = document.createElement('textarea');
                                         ta.value = password;
                                         document.body.appendChild(ta);

@@ -9,10 +9,10 @@ namespace App\Core;
 class Utilities
 {
     /**
-     * Generate user badges for role and small group indicators
-     * 
-     * @param array $user User data array containing role and is_small_group
-     * @return string HTML string with modern badge-style badges
+     * Generate user badges for small group indicator.
+     *
+     * @param array $user User data array
+     * @return string HTML string with badge spans
      */
     public static function generateUserBadges($user)
     {
@@ -22,23 +22,17 @@ class Utilities
 
         $badges = [];
 
-        $permissions = $user['permissions'] ?? [];
-        if (!empty($permissions['can_view_own_section_stats']) && empty($permissions['can_manage_ensemble'])) {
-            $badges[] = '<span class="user-badge" title="Stimmführung"><i class="fas fa-crown"></i></span>';
-        }
-
-        // Add small group badge for small group members
-        if (\App\Core\RehearsalTypeManager::isUserInSmallGroup($user)) {
-            $badges[] = '<span class="user-badge" title="' . \App\Core\RehearsalTypeManager::LABEL_SMALL_GROUP . '"><i class="fas fa-user-friends"></i></span>';
+        if (RehearsalTypeManager::isUserInSmallGroup($user)) {
+            $badges[] = '<span class="user-badge" title="' . RehearsalTypeManager::LABEL_SMALL_GROUP . '"><i class="fas fa-user-friends"></i></span>';
         }
 
         return implode('', $badges);
     }
 
     /**
-     * Display a username with role and small group badges
-     * 
-     * @param array $user User data array containing username, role, and is_small_group
+     * Display a username with badges.
+     *
+     * @param array $user User data array
      * @return string Formatted username with badges
      */
     public static function displayUserNameWithBadges($user)
@@ -54,22 +48,16 @@ class Utilities
     }
 
     /**
-     * Get display text for user type/permissions combination
-     * 
+     * Get display text for a user's type (instrument/section).
+     *
      * @param string $type User type (instrument/section)
-     * @param array $permissions User permissions array
-     * @return array Array with 'type' and 'role' display strings
+     * @return array Array with 'type' display string
      */
-    public static function getUserDisplayInfo(string $type, array $permissions = []): array
+    public static function getUserDisplayInfo(string $type): array
     {
-        $result = [
-            'type' => null,
-            'role' => null
-        ];
+        $result = ['type' => null];
 
-        if (!empty($permissions['can_manage_ensemble'])) {
-            $result['role'] = self::getRoleDisplayName('conductor');
-        } elseif ($type !== 'conductor' && $type !== 'none') {
+        if ($type !== 'conductor' && $type !== 'none' && $type !== '') {
             $groupManager = new GroupManager();
             $result['type'] = $groupManager->getDisplayName($type);
         }
@@ -78,91 +66,68 @@ class Utilities
     }
 
     /**
-     * Get German display name for a role
-     * 
-     * @param string $role Role key (conductor, leader, member)
-     * @return string German display name
+     * Render a role tag pill.
+     *
+     * @param array|null $role Role data with name and tag_color
+     * @return string HTML for the role tag
      */
-    public static function getRoleDisplayName(string $role): string
+    public static function renderRoleTag(?array $role): string
     {
-        $roleTranslations = \App\Core\Constants::getUserRoles();
-        return $roleTranslations[$role] ?? $role;
+        if (!$role || empty($role['name'])) {
+            return '';
+        }
+
+        $label = htmlspecialchars($role['name']);
+        $color = htmlspecialchars($role['tag_color'] ?? '#478cf4');
+
+        return '<span class="role-tag" style="--role-color: ' . $color . '">' . $label . '</span>';
     }
 
     /**
-     * Get German day abbreviation from a DateTime object
-     * 
-     * @param \DateTime $date Date to get day abbreviation for
-     * @return string German day abbreviation (Mo, Di, etc.)
+     * Get German day abbreviation from a DateTime object.
      */
     public static function getGermanDayAbbreviation(\DateTime $date)
     {
         static $germanDays = [
-            'Mon' => 'Mo',
-            'Tue' => 'Di',
-            'Wed' => 'Mi',
-            'Thu' => 'Do',
-            'Fri' => 'Fr',
-            'Sat' => 'Sa',
-            'Sun' => 'So'
+            'Mon' => 'Mo', 'Tue' => 'Di', 'Wed' => 'Mi',
+            'Thu' => 'Do', 'Fri' => 'Fr', 'Sat' => 'Sa', 'Sun' => 'So'
         ];
-
-        $englishDay = $date->format('D');
-        return $germanDays[$englishDay] ?? $englishDay;
+        return $germanDays[$date->format('D')] ?? $date->format('D');
     }
 
     /**
-     * Generate FontAwesome icon HTML
-     * 
-     * @param string $iconName Icon name (without fa- prefix)
-     * @param string $classes Additional CSS classes
-     * @return string FontAwesome icon HTML
+     * Generate FontAwesome icon HTML.
      */
     public static function icon($iconName, $classes = '')
     {
         $faClass = 'fas fa-' . $iconName;
         $allClasses = trim($faClass . ' ' . $classes);
-
         return '<i class="' . $allClasses . '"></i>';
     }
 
     /**
-     * Format a date for display
-     * 
-     * @param string $date Date string
-     * @return string Formatted date
+     * Format a date for display (dd.mm.YYYY).
      */
     public static function formatDate($date)
     {
-        if (empty($date)) {
-            return '';
-        }
-
+        if (empty($date)) return '';
         try {
-            $dateObj = new \DateTime($date);
-            return $dateObj->format('d.m.Y');
+            return (new \DateTime($date))->format('d.m.Y');
         } catch (\Exception $e) {
-            return $date; // Return original if parsing fails
+            return $date;
         }
     }
 
     /**
-     * Format a date for database storage
-     * 
-     * @param string $date Date string
-     * @return string Formatted date for database (Y-m-d)
+     * Format a date for database storage (Y-m-d).
      */
     public static function formatDateForDb($date)
     {
-        if (empty($date)) {
-            return '';
-        }
-
+        if (empty($date)) return '';
         try {
-            $dateObj = new \DateTime($date);
-            return $dateObj->format('Y-m-d');
+            return (new \DateTime($date))->format('Y-m-d');
         } catch (\Exception $e) {
-            return $date; // Return original if parsing fails
+            return $date;
         }
     }
 }
