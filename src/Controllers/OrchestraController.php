@@ -284,14 +284,9 @@ class OrchestraController extends Controller
         }
 
 
-
-        $leadersCanViewAll = isset($_POST['leaders_can_view_all_sections']) ? 1 : 0;
-        $showRehearsalInsights = isset($_POST['show_rehearsal_insights']) ? 1 : 0;
-
         $result = $this->orchestraModel->update($context['orchestra_id'], [
-            'leaders_can_view_all_sections' => $leadersCanViewAll,
-            'show_rehearsal_insights' => $showRehearsalInsights,
-            'force_decline_reason' => isset($_POST['force_decline_reason']) ? 1 : 0
+            'show_rehearsal_insights' => isset($_POST['show_rehearsal_insights']) ? 1 : 0,
+            'force_decline_reason' => isset($_POST['force_decline_reason']) ? 1 : 0,
         ]);
 
         if ($result) {

@@ -142,16 +142,6 @@ class FieldRegistry
     {
         return [
             [
-                'name'       => 'leaders_can_view_all_sections',
-                'type'       => 'toggle',
-                'label'      => 'Stimmführer dürfen alle Register sehen',
-                'description' => 'Stimmführer können alle Register in der Rückmeldungsübersicht einsehen. Das Proben-Insights-Feature ist davon ausgenommen.',
-                'group'      => 'permissions',
-                'default'    => false,
-                'save'       => 'auto',
-                'permission' => 'conductor',
-            ],
-            [
                 'name'       => 'force_decline_reason',
                 'type'       => 'toggle',
                 'label'      => 'Begründung bei Absage erzwingen',

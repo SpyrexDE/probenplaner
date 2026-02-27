@@ -123,7 +123,7 @@ class PromiseController extends Controller
     {
         $this->validateOrchestraContext($params);
 
-        $this->requirePermission('can_view_own_section_stats');
+        $this->requireAnyPermission('can_view_own_section_stats', 'can_view_all_section_stats');
 
         $showOld = isset($_GET['showOld']);
 
@@ -145,14 +145,12 @@ class PromiseController extends Controller
 
         $orchestraModel = new \App\Models\Orchestra();
         $orchestra = $orchestraModel->findById($_SESSION['current_orchestra_id']);
-        $leadersCanViewAllEnabled = !empty($orchestra['leaders_can_view_all_sections']);
-        // Default to own section view when the feature is enabled
-        $viewAllSections = isset($_GET['viewAll']) && $_GET['viewAll'] === '1';
-        $leadersCanViewAll = $leadersCanViewAllEnabled && $viewAllSections;
+        $canViewAllSections = !empty($_SESSION['current_permissions']['can_view_all_section_stats']);
+        $viewAllSections = $canViewAllSections && isset($_GET['viewAll']) && $_GET['viewAll'] === '1';
 
 
         $userOrchestraModel = new \App\Models\UserOrchestra();
-        if ($leadersCanViewAll) {
+        if ($viewAllSections) {
             $members = $userOrchestraModel->getOrchestraUsers($_SESSION['current_orchestra_id']);
         } else {
             $members = $userOrchestraModel->getUsersByType($sectionName, $_SESSION['current_orchestra_id']);
@@ -218,7 +216,7 @@ class PromiseController extends Controller
             ];
 
             // For leaders viewing only their section, structure data differently
-            if (!$leadersCanViewAll) {
+            if (!$viewAllSections) {
                 // Only include the leader's section in the data structure
                 $membersBySection[$rehearsalId] = ['all' => []];
                 $membersBySection[$rehearsalId][$leaderSectionId] = [];
@@ -257,7 +255,7 @@ class PromiseController extends Controller
                         }
 
                         // For leader view (not viewing all), only count members from leader's section
-                        if (!$leadersCanViewAll) {
+                        if (!$viewAllSections) {
                             // Verify this member belongs to leader's section
                             $memberResolvedType = $groupManager->resolveAlias($member['type']);
                             $memberSectionInfo = $groupManager->getSectionForInstrument($memberResolvedType);
@@ -292,7 +290,7 @@ class PromiseController extends Controller
                         $membersBySection[$rehearsalId]['all'][] = $memberInfo;
 
                         // Add to sections based on view mode
-                        if (!$leadersCanViewAll) {
+                        if (!$viewAllSections) {
                             // For leader view, add to their specific section
                             $membersBySection[$rehearsalId][$leaderSectionId][] = $memberInfo;
                         } else {
@@ -374,7 +372,7 @@ class PromiseController extends Controller
             'membersBySection' => $membersBySection,
             'memberPromises' => $memberPromises,
             'showOld' => $showOld,
-            'leadersCanViewAllSections' => $leadersCanViewAllEnabled,
+            'canViewAllSections' => $canViewAllSections,
             'currentlyViewingAll' => $viewAllSections,
             'leaderSection' => $leaderSectionId, // Pass the leader's section ID for filtering
             'leaderSectionDisplayName' => $groupManager->getDisplayName($leaderSectionId), // Pass display name for better matching

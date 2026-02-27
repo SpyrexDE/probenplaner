@@ -862,15 +862,76 @@ foreach ($sections as $sectionId => $_instruments) {
     // ── Role CRUD ──────────────────────────────────────────────
 
     const permissionLabels = <?= json_encode(\App\Models\Role::PERMISSION_LABELS) ?>;
+    const permissionHierarchy = <?= json_encode(\App\Models\Role::PERMISSION_HIERARCHY) ?>;
 
     function buildPermissionCheckboxes(selected = []) {
-        return Object.entries(permissionLabels).map(([key, label]) => {
+        function renderNode(node, depth = 0) {
+            const key = node.id;
+            const label = permissionLabels[key] || key;
             const checked = selected.includes(key) ? 'checked' : '';
-            return `<div class="swal-perm-row">
-                <input type="checkbox" id="rp_${key}" value="${key}" ${checked}>
+            const indent = depth > 0 ? `padding-left: ${depth * 24}px;` : '';
+            let html = `<div class="swal-perm-row" style="${indent}">
+                <input type="checkbox" id="rp_${key}" value="${key}" ${checked} data-depth="${depth}">
                 <label for="rp_${key}">${label}</label>
             </div>`;
-        }).join('');
+            if (node.children) {
+                node.children.forEach(child => {
+                    html += renderNode(child, depth + 1);
+                });
+            }
+            return html;
+        }
+        return permissionHierarchy.map(node => renderNode(node)).join('');
+    }
+
+    /** Wire up parent↔child auto-check after SweetAlert renders. */
+    function initPermissionHierarchy() {
+        function getParentMap(nodes, parent) {
+            const map = {};
+            nodes.forEach(n => {
+                if (parent) map[n.id] = parent;
+                if (n.children) Object.assign(map, getParentMap(n.children, n.id));
+            });
+            return map;
+        }
+
+        function getChildIds(nodes, targetId) {
+            for (const n of nodes) {
+                if (n.id === targetId) return collectAll(n.children || []);
+                if (n.children) {
+                    const r = getChildIds(n.children, targetId);
+                    if (r) return r;
+                }
+            }
+            return null;
+        }
+
+        function collectAll(nodes) {
+            return nodes.flatMap(n => [n.id, ...collectAll(n.children || [])]);
+        }
+
+        const parentMap = getParentMap(permissionHierarchy, null);
+        document.querySelectorAll('[id^="rp_"]').forEach(cb => {
+            cb.addEventListener('change', () => {
+                const id = cb.value;
+                if (cb.checked) {
+                    // Auto-check ancestors
+                    let pid = parentMap[id];
+                    while (pid) {
+                        const pel = document.getElementById('rp_' + pid);
+                        if (pel) pel.checked = true;
+                        pid = parentMap[pid];
+                    }
+                } else {
+                    // Auto-uncheck descendants
+                    const kids = getChildIds(permissionHierarchy, id) || [];
+                    kids.forEach(kid => {
+                        const el = document.getElementById('rp_' + kid);
+                        if (el) el.checked = false;
+                    });
+                }
+            });
+        });
     }
 
     function showRoleForm(title, confirmText, defaults = {}) {
@@ -899,6 +960,7 @@ foreach ($sections as $sectionId => $_instruments) {
             cancelButtonColor: '#6b7280',
             reverseButtons: true,
             focusConfirm: false,
+            didOpen: () => initPermissionHierarchy(),
             preConfirm: () => {
                 const name = document.getElementById('swalRoleName').value.trim();
                 if (!name) {

@@ -350,6 +350,24 @@ class Controller
         return true;
     }
 
+    /** Require at least one of the given permissions. */
+    protected function requireAnyPermission(string ...$permissions): bool
+    {
+        foreach ($permissions as $p) {
+            if ($this->hasPermission($p)) return true;
+        }
+        if ($this->isJsonRequest()) {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Keine Berechtigung']);
+            exit;
+        }
+        $this->addAlert('Fehler!', 'Sie haben nicht die erforderliche Berechtigung für diese Aktion.', 'error');
+        $slug = $_SESSION['current_orchestra_slug'] ?? null;
+        $this->redirect($slug ? $this->orchestraUrl('/probenplan') : '/orchestras/select');
+        return false;
+    }
+
     /**
      * Require authenticated user session.
      */

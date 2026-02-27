@@ -55,6 +55,32 @@ class Role extends Model
     ];
 
     /**
+     * Hierarchy tree for the role-editor UI.
+     *
+     * Each entry is a top-level node; nested 'children' arrays define
+     * dependent permissions. Checking a child auto-checks its parent,
+     * unchecking a parent auto-unchecks its children.
+     */
+    public const PERMISSION_HIERARCHY = [
+        ['id' => 'can_attend_rehearsals'],
+        [
+            'id'       => 'can_view_own_section_stats',
+            'children' => [
+                ['id' => 'can_view_all_section_stats'],
+            ],
+        ],
+        [
+            'id'       => 'can_view_members',
+            'children' => [
+                ['id' => 'can_manage_members'],
+                ['id' => 'can_manage_permissions'],
+            ],
+        ],
+        ['id' => 'can_manage_rehearsals'],
+        ['id' => 'can_manage_ensemble'],
+    ];
+
+    /**
      * @return string[] All valid permission names
      */
     public static function getAvailablePermissions(): array

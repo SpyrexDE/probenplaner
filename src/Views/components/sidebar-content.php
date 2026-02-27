@@ -99,7 +99,7 @@
         // Core menu items — permission-gated per wireframe
 
         // Show "Meine Meldungen" for anyone with the attendance permission
-        if (!empty($permissions['can_attend_rehearsals'])) {
+        if (!empty($permissions['can_attend_rehearsals']) && empty($permissions['can_manage_ensemble'])) {
             $menu[] = ['label' => 'Meine Meldungen', 'href' => "{$basePath}/promises", 'page' => 'promises', 'icon' => 'fas fa-clipboard-check'];
         }
 
