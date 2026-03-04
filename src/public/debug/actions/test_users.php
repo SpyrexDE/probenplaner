@@ -182,8 +182,8 @@ if ($_POST['action'] === 'generate_full_setup') {
         // ── 3. Users ─────────────────────────────────────────────────
         // Roster: [email, display_name, section, orchestra_id, preset, is_active, is_small_group]
         $roster = [
-            // Sinfonie — Conductor
-            ['dirigent@test.local',        'Thomas Müller',        null,           $sinfonieId, 'conductor',      1, 0],
+            // Sinfonie — Conductor (empty type = no instrument section)
+            ['dirigent@test.local',        'Thomas Müller',        '',             $sinfonieId, 'conductor',      1, 0],
             ['stimmfuehrer@test.local',    'Sabine Becker',        'Violine_1',    $sinfonieId, 'section_leader', 1, 0],
             ['anna.mueller@test.local',    'Anna Müller',          'Violine_1',    $sinfonieId, 'member', 1, 0],
             ['jan.schmidt@test.local',     'Jan Schmidt',          'Violine_1',    $sinfonieId, 'member', 1, 0],
@@ -210,7 +210,7 @@ if ($_POST['action'] === 'generate_full_setup') {
             ['nina.berg@test.local',       'Nina Berg',            'Violine_1',    $sinfonieId, 'member', 1, 1],
             ['oldinactive1@test.local',    'Karl Ehemalig',        'Cello',        $sinfonieId, 'member', 0, 0],
             ['oldinactive2@test.local',    'Ute Vergangen',        'Flöte',        $sinfonieId, 'member', 0, 0],
-            ['kammer.dirigent@test.local', 'Eva Schneider',        null,           $kammerId,   'conductor',      1, 0],
+            ['kammer.dirigent@test.local', 'Eva Schneider',        '',             $kammerId,   'conductor',      1, 0],
             ['kammer.geige@test.local',    'Moritz Stein',         'Violine_1',    $kammerId,   'member', 1, 0],
             ['kammer.bratsche@test.local', 'Klara Weiß',           'Bratsche',     $kammerId,   'member', 1, 0],
             ['kammer.cello@test.local',    'Anton Frei',           'Cello',        $kammerId,   'member', 1, 0],
@@ -254,7 +254,9 @@ if ($_POST['action'] === 'generate_full_setup') {
                     throw new \Exception("Role INSERT prepare failed: " . $conn->error);
                 }
                 $stmt->bind_param('isssiii', $oId, $rp['name'], $rp['tag_color'], $rp['permissions'], $rp['is_system'], $rp['is_default'], $rp['sort_order']);
-                $stmt->execute();
+                if (!$stmt->execute()) {
+                    throw new \Exception("Role INSERT execute failed: " . $stmt->error);
+                }
                 $roleIdMap[$oId][$preset] = $conn->insert_id;
                 $stmt->close();
             }

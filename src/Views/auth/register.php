@@ -36,7 +36,7 @@ ob_start();
         placeholder="Passwort"
         required
         minlength="4"
-        maxlength="20"
+        maxlength="128"
         autocomplete="new-password">
 
     <input class="login-input"
@@ -45,7 +45,7 @@ ob_start();
         placeholder="Passwort bestätigen"
         required
         minlength="4"
-        maxlength="20"
+        maxlength="128"
         autocomplete="new-password">
 
     <div class="form-text">Nach der Registrierung können Sie Orchestern beitreten</div>

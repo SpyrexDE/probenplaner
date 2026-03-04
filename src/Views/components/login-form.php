@@ -82,7 +82,7 @@ ob_start();
         placeholder="<?= htmlspecialchars($usernameLabel) ?>"
         required
         minlength="2"
-        maxlength="20"
+        maxlength="100"
         autocomplete="email">
 
     <input class="login-input"
@@ -91,7 +91,7 @@ ob_start();
         placeholder="<?= htmlspecialchars($passwordLabel) ?>"
         required
         minlength="4"
-        maxlength="20"
+        maxlength="128"
         autocomplete="current-password">
 
     <button class="login-button" type="submit">
