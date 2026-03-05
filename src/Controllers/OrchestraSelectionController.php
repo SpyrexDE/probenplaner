@@ -51,6 +51,15 @@ class OrchestraSelectionController extends Controller
 
         $userOrchestras = $this->userOrchestraModel->getUserOrchestras($_SESSION['user_id']);
 
+        // Attach user roles to each orchestra for display
+        foreach ($userOrchestras as &$uo) {
+            $uo['roles'] = $this->userOrchestraModel->getUserRoles(
+                $_SESSION['user_id'],
+                (int)$uo['orchestra_id']
+            );
+        }
+        unset($uo);
+
         $_SESSION['user_orchestras_count'] = count($userOrchestras);
 
         $this->render('orchestras/select', [
@@ -115,7 +124,14 @@ class OrchestraSelectionController extends Controller
         $_SESSION['current_type'] = $relation['type'];
         $_SESSION['current_permissions'] = $this->userOrchestraModel->getPermissions($_SESSION['user_id'], $orchestraId);
         $role = $this->userOrchestraModel->getRole($_SESSION['user_id'], $orchestraId);
-        $_SESSION['current_role'] = $role ? ['id' => $role['id'], 'name' => $role['name'], 'tag_color' => $role['tag_color'], 'is_system' => $role['is_system'] ?? 0] : null;
+        $allRoles = $this->userOrchestraModel->getUserRoles($_SESSION['user_id'], $orchestraId);
+        $_SESSION['current_roles'] = array_map(fn($r) => [
+            'id' => $r['id'],
+            'name' => $r['name'],
+            'tag_color' => $r['tag_color'] ?? '#478cf4',
+            'is_default' => $r['is_default'] ?? 0,
+            'is_system' => $r['is_system'] ?? 0,
+        ], $allRoles);
 
         $orgModel = new \App\Models\Organization();
         $org = $orgModel->findById((int)($orchestra['organization_id'] ?? 0));
@@ -336,7 +352,14 @@ class OrchestraSelectionController extends Controller
             $_SESSION['current_type'] = $type;
             $_SESSION['current_permissions'] = $this->userOrchestraModel->getPermissions($_SESSION['user_id'], $orchestraId);
             $role = $this->userOrchestraModel->getRole($_SESSION['user_id'], $orchestraId);
-            $_SESSION['current_role'] = $role ? ['id' => $role['id'], 'name' => $role['name'], 'tag_color' => $role['tag_color'], 'is_system' => $role['is_system'] ?? 0] : null;
+            $allRoles = $this->userOrchestraModel->getUserRoles($_SESSION['user_id'], $orchestraId);
+            $_SESSION['current_roles'] = array_map(fn($r) => [
+                'id' => $r['id'],
+                'name' => $r['name'],
+                'tag_color' => $r['tag_color'] ?? '#478cf4',
+                'is_default' => $r['is_default'] ?? 0,
+                'is_system' => $r['is_system'] ?? 0,
+            ], $allRoles);
 
             $orgModel = new \App\Models\Organization();
             $org = $orgModel->findById((int)($orchestra['organization_id'] ?? 0));
@@ -403,7 +426,14 @@ class OrchestraSelectionController extends Controller
         $_SESSION['current_type'] = $relation['type'];
         $_SESSION['current_permissions'] = $this->userOrchestraModel->getPermissions($_SESSION['user_id'], $orchestraId);
         $role = $this->userOrchestraModel->getRole($_SESSION['user_id'], $orchestraId);
-        $_SESSION['current_role'] = $role ? ['id' => $role['id'], 'name' => $role['name'], 'tag_color' => $role['tag_color'], 'is_system' => $role['is_system'] ?? 0] : null;
+        $allRoles = $this->userOrchestraModel->getUserRoles($_SESSION['user_id'], $orchestraId);
+        $_SESSION['current_roles'] = array_map(fn($r) => [
+            'id' => $r['id'],
+            'name' => $r['name'],
+            'tag_color' => $r['tag_color'] ?? '#478cf4',
+            'is_default' => $r['is_default'] ?? 0,
+            'is_system' => $r['is_system'] ?? 0,
+        ], $allRoles);
 
         $orgModel = new \App\Models\Organization();
         $org = $orgModel->findById((int)($orchestra['organization_id'] ?? 0));

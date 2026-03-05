@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Controller;
 use App\Core\Validator;
 use App\Models\Rehearsal;
+use App\Models\Role;
 use App\Core\Helpers;
 use App\Core\Constants;
 
@@ -69,19 +70,26 @@ class RehearsalController extends Controller
 
         $this->requirePermission('can_manage_rehearsals');
 
+        $orchestraId = (int)$_SESSION['current_orchestra_id'];
+        $roleModel = new Role();
+        $availableRoles = $roleModel->getByOrchestra($orchestraId);
+        $defaultRoles = $roleModel->getDefaultRoles($orchestraId);
+        $defaultRoleIds = array_map(fn($r) => (int)$r['id'], $defaultRoles);
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // Sanitize form data
             $start = \App\Core\Validator::sanitizeUtf8($_POST['start'] ?? '');
             $end = \App\Core\Validator::sanitizeUtf8($_POST['end'] ?? '');
             $location = \App\Core\Validator::sanitizeUtf8($_POST['location'] ?? '');
             $color = \App\Core\Validator::sanitizeUtf8($_POST['color'] ?? '');
 
-            // Handle group assignments
             $rehearsalType = \App\Core\Validator::sanitizeUtf8($_POST['rehearsal_type'] ?? '');
             $finalGroups = \App\Core\RehearsalGroupProcessor::processGroups($_POST);
             $groupValidationErrors = \App\Core\RehearsalGroupProcessor::validateGroups($finalGroups);
 
-            $isSmallGroup = isset($_POST['is_small_group']) && $_POST['is_small_group'] === (string)\App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED;
+            // Role scoping
+            $roleIds = $_POST['role_ids'] ?? [];
+            if (is_string($roleIds)) $roleIds = json_decode($roleIds, true) ?: [];
+            $roleIds = array_map('intval', array_filter($roleIds));
 
             $requiredValidation = \App\Core\Validator::validateRequired([
                 'start' => $start,
@@ -91,7 +99,6 @@ class RehearsalController extends Controller
             $startValidation = \App\Core\Validator::validateDateTime($start);
             $endValidation = \App\Core\Validator::validateDateTime($end);
 
-            // Check if end time is after start time
             $timeOrderErrors = [];
             if (!empty($start) && !empty($end) && strtotime($end) <= strtotime($start)) {
                 $timeOrderErrors[] = 'Die Endzeit muss nach der Startzeit liegen';
@@ -108,17 +115,14 @@ class RehearsalController extends Controller
             $errors = $validation['errors'];
 
             if (empty($errors)) {
-                // Save rehearsal
                 $rehearsalData = [
                     'start' => $start,
                     'end' => $end,
                     'type' => $rehearsalType,
                     'location' => $location,
-                    'orchestra_id' => (int)$_SESSION['current_orchestra_id'],
-                    'is_small_group' => $isSmallGroup ? 1 : 0
+                    'orchestra_id' => $orchestraId,
                 ];
 
-                // Only add color if it was submitted and if the field exists in the database
                 if (!empty($color)) {
                     $rehearsalData['color'] = $color;
                 }
@@ -126,20 +130,22 @@ class RehearsalController extends Controller
                 $result = $this->rehearsalModel->create($rehearsalData, $finalGroups);
 
                 if ($result && !is_array($result)) {
-                    // Save schedule items if provided
+                    // Save role scoping
+                    if (!empty($roleIds)) {
+                        $roleModel->setRehearsalRoles($result, $roleIds);
+                    }
+
                     $scheduleJson = $_POST['schedule_items'] ?? '';
                     if (!empty($scheduleJson)) {
                         $scheduleItems = json_decode($scheduleJson, true) ?: [];
                         $this->rehearsalModel->saveScheduleItems($result, $scheduleItems);
                     }
 
-                    // Save infos if provided
                     $infosJson = $_POST['infos'] ?? '';
                     if (!empty($infosJson)) {
                         $infosItems = json_decode($infosJson, true) ?: [];
                         $this->rehearsalModel->saveInfos($result, $infosItems);
                     }
-
 
                     $this->setFlash('success', 'Probe wurde erfolgreich erstellt.');
                     $this->redirect($this->orchestraUrl('/rehearsals'));
@@ -157,15 +163,13 @@ class RehearsalController extends Controller
                         $errorDetails = $errorMessage;
                     }
                     $this->addAlert('Fehler!', $errorMessage, 'error', $errorDetails);
-
-                    // Don't add to errors array to avoid duplicate notification (addAlert handles it with details)
                 }
             }
 
-            // If we get here, there were errors
             $this->render('rehearsals/create', [
                 'currentPage' => 'rehearsals',
                 'errors' => $errors,
+                'availableRoles' => $availableRoles,
                 'formData' => [
                     'start' => $start,
                     'end' => $end,
@@ -173,13 +177,14 @@ class RehearsalController extends Controller
                     'color' => $color,
                     'rehearsal_type' => $rehearsalType,
                     'groups' => $finalGroups,
-                    'is_small_group' => $isSmallGroup
+                    'role_ids' => $roleIds,
                 ]
             ]);
         } else {
             $this->render('rehearsals/create', [
                 'currentPage' => 'rehearsals',
                 'errors' => [],
+                'availableRoles' => $availableRoles,
                 'formData' => [
                     'start' => '',
                     'end' => '',
@@ -187,7 +192,7 @@ class RehearsalController extends Controller
                     'color' => Constants::COLOR_WHITE,
                     'rehearsal_type' => '',
                     'groups' => [],
-                    'is_small_group' => false
+                    'role_ids' => $defaultRoleIds,
                 ]
             ]);
         }
@@ -205,7 +210,6 @@ class RehearsalController extends Controller
 
         $this->requirePermission('can_manage_rehearsals');
 
-        // Get rehearsal ID from route parameters
         $rehearsalId = isset($params['id']) ? intval($params['id']) : 0;
 
         if ($rehearsalId <= 0) {
@@ -221,19 +225,24 @@ class RehearsalController extends Controller
             return;
         }
 
+        $orchestraId = (int)$_SESSION['current_orchestra_id'];
+        $roleModel = new Role();
+        $availableRoles = $roleModel->getByOrchestra($orchestraId);
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // Sanitize form data
             $start = \App\Core\Validator::sanitizeUtf8($_POST['start'] ?? '');
             $end = \App\Core\Validator::sanitizeUtf8($_POST['end'] ?? '');
             $location = \App\Core\Validator::sanitizeUtf8($_POST['location'] ?? '');
             $color = \App\Core\Validator::sanitizeUtf8($_POST['color'] ?? '');
 
-            // Handle group assignments
             $rehearsalType = \App\Core\Validator::sanitizeUtf8($_POST['rehearsal_type'] ?? '');
             $finalGroups = \App\Core\RehearsalGroupProcessor::processGroups($_POST);
             $groupValidationErrors = \App\Core\RehearsalGroupProcessor::validateGroups($finalGroups);
 
-            $isSmallGroup = isset($_POST['is_small_group']) && $_POST['is_small_group'] === (string)\App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED;
+            // Role scoping
+            $roleIds = $_POST['role_ids'] ?? [];
+            if (is_string($roleIds)) $roleIds = json_decode($roleIds, true) ?: [];
+            $roleIds = array_map('intval', array_filter($roleIds));
 
             $requiredValidation = \App\Core\Validator::validateRequired([
                 'start' => $start,
@@ -243,7 +252,6 @@ class RehearsalController extends Controller
             $startValidation = \App\Core\Validator::validateDateTime($start);
             $endValidation = \App\Core\Validator::validateDateTime($end);
 
-            // Check if end time is after start time
             $timeOrderErrors = [];
             if (!empty($start) && !empty($end) && strtotime($end) <= strtotime($start)) {
                 $timeOrderErrors[] = 'Die Endzeit muss nach der Startzeit liegen';
@@ -260,13 +268,11 @@ class RehearsalController extends Controller
             $errors = $validation['errors'];
 
             if (empty($errors)) {
-                // Update rehearsal
                 $updateData = [
                     'start' => $start,
                     'end' => $end,
                     'type' => $rehearsalType,
                     'location' => $location,
-                    'is_small_group' => $isSmallGroup ? 1 : 0
                 ];
 
                 if (!empty($color)) {
@@ -276,6 +282,9 @@ class RehearsalController extends Controller
                 $result = $this->rehearsalModel->updateRehearsal($rehearsalId, $updateData, $finalGroups);
 
                 if ($result === true) {
+                    // Update role scoping
+                    $roleModel->setRehearsalRoles($rehearsalId, $roleIds);
+
                     $this->setFlash('success', 'Probe wurde erfolgreich aktualisiert.');
                     $this->redirect($this->orchestraUrl('/rehearsals'));
                     return;
@@ -295,11 +304,11 @@ class RehearsalController extends Controller
                 }
             }
 
-            // If we get here, there were errors
             $this->render('rehearsals/edit', [
                 'currentPage' => 'rehearsals',
                 'rehearsal' => $rehearsal,
                 'errors' => $errors,
+                'availableRoles' => $availableRoles,
                 'formData' => [
                     'start' => $start,
                     'end' => $end,
@@ -307,22 +316,23 @@ class RehearsalController extends Controller
                     'color' => $color,
                     'rehearsal_type' => $rehearsalType,
                     'groups' => $finalGroups,
-                    'is_small_group' => $isSmallGroup
+                    'role_ids' => $roleIds,
                 ]
             ]);
         } else {
-            // Get rehearsal type from the new type field
             $rehearsalType = $rehearsal['type'] ?? '';
             $groups = $rehearsal['groups'] ?? [];
-
-            // Use the proper form data generation to handle tutti-with-exclusions
             $formData = \App\Core\RehearsalGroupProcessor::generateFormData($groups);
 
-            // Display the form
+            // Load existing role scoping
+            $existingRoles = $roleModel->getRehearsalRoles($rehearsalId);
+            $existingRoleIds = array_map(fn($r) => (int)$r['id'], $existingRoles);
+
             $this->render('rehearsals/edit', [
                 'currentPage' => 'rehearsals',
                 'rehearsal' => $rehearsal,
                 'errors' => [],
+                'availableRoles' => $availableRoles,
                 'formData' => [
                     'start' => $rehearsal['start'] ?? '',
                     'end' => $rehearsal['end'] ?? '',
@@ -330,7 +340,7 @@ class RehearsalController extends Controller
                     'color' => $rehearsal['color'] ?? '',
                     'rehearsal_type' => $rehearsalType,
                     'groups' => $formData['groups'],
-                    'is_small_group' => $rehearsal['is_small_group'] ?? false,
+                    'role_ids' => $existingRoleIds,
                     'schedule_items' => $rehearsal['schedule_items'] ?? [],
                     'infos' => $rehearsal['infos'] ?? []
                 ]

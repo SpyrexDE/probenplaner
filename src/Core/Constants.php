@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Core;
 
 /**
@@ -23,7 +24,6 @@ class Constants
     // Rehearsal Types
     const REHEARSAL_TUTTI = 'tutti';
     const REHEARSAL_SECTIONAL = 'sectional';
-    const REHEARSAL_SMALL_GROUP = 'small_group';
 
     // Color Codes for Rehearsals
     const COLOR_WHITE = '#e5e7eb';

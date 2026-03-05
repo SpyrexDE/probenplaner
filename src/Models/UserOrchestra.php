@@ -20,11 +20,9 @@ class UserOrchestra extends Model
     {
         $activeClause = $activeOnly ? "AND uo.is_active = 1" : "";
 
-        $sql = "SELECT uo.*, o.name as orchestra_name, o.slug as orchestra_slug,
-                r.name as role_name, r.name as role_tag_label, r.tag_color as role_tag_color
+        $sql = "SELECT uo.*, o.name as orchestra_name, o.slug as orchestra_slug
                 FROM {$this->table} uo
                 JOIN orchestras o ON uo.orchestra_id = o.id
-                LEFT JOIN roles r ON uo.role_id = r.id
                 WHERE uo.user_id = ? {$activeClause}
                 ORDER BY uo.joined_at DESC";
 
@@ -48,14 +46,11 @@ class UserOrchestra extends Model
     {
         $activeClause = $activeOnly ? "AND uo.is_active = 1" : "";
 
-        $sql = "SELECT uo.*, u.email, u.display_name, uo.display_name as orchestra_display_name, u.created_at as user_created_at,
-                r.id as role_id, r.name as role_name, r.name as role_tag_label,
-                r.tag_color as role_tag_color, r.is_default as role_is_default, r.permissions as role_permissions
+        $sql = "SELECT uo.*, u.email, u.display_name, uo.display_name as orchestra_display_name, u.created_at as user_created_at
                 FROM {$this->table} uo
                 JOIN users u ON uo.user_id = u.id
-                LEFT JOIN roles r ON uo.role_id = r.id
                 WHERE uo.orchestra_id = ? {$activeClause}
-                ORDER BY r.sort_order, uo.type, COALESCE(uo.display_name, u.display_name, u.email)";
+                ORDER BY uo.type, COALESCE(uo.display_name, u.display_name, u.email)";
 
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param('i', $orchestraId);
@@ -64,10 +59,36 @@ class UserOrchestra extends Model
 
         $users = [];
         while ($row = $result->fetch_assoc()) {
-            $perms = json_decode($row['role_permissions'] ?? '[]', true) ?: [];
-            $row['permissions'] = $perms;
-            $row['can_attend_rehearsals'] = in_array('can_attend_rehearsals', $perms);
-            unset($row['role_permissions']);
+            // Load all roles for this membership
+            $roles = $this->getRolesForRelation((int)$row['id']);
+            $row['roles'] = $roles;
+
+            // Merge permissions from all roles
+            $allPerms = [];
+            foreach ($roles as $role) {
+                $rolePerms = json_decode($role['permissions'] ?? '[]', true) ?: [];
+                $allPerms = array_merge($allPerms, $rolePerms);
+            }
+            $allPerms = array_unique($allPerms);
+            $row['permissions'] = $allPerms;
+            $row['can_attend_rehearsals'] = in_array('can_attend_rehearsals', $allPerms);
+
+            // Primary role for display (first non-default, or first role)
+            $primaryRole = null;
+            foreach ($roles as $r) {
+                if (empty($r['is_default'])) {
+                    $primaryRole = $r;
+                    break;
+                }
+            }
+            $primaryRole = $primaryRole ?? ($roles[0] ?? null);
+
+            $row['role_id'] = $primaryRole['id'] ?? null;
+            $row['role_name'] = $primaryRole['name'] ?? '';
+            $row['role_tag_label'] = $primaryRole['name'] ?? '';
+            $row['role_tag_color'] = $primaryRole['tag_color'] ?? '';
+            $row['role_is_default'] = !empty($primaryRole['is_default']);
+
             $users[] = $row;
         }
         $stmt->close();
@@ -94,16 +115,19 @@ class UserOrchestra extends Model
     }
 
     /**
-     * @param int|null $roleId Role to assign (null uses orchestra default)
+     * @param int|null $roleId Role to assign (null uses orchestra defaults)
      * @return int|array Relationship ID on success, error array on failure
      */
     public function joinOrchestra(int $userId, int $orchestraId, string $type, ?int $roleId = null)
     {
         try {
-            if ($roleId === null) {
-                $roleModel = new Role();
-                $defaultRole = $roleModel->getDefaultRole($orchestraId);
-                $roleId = $defaultRole ? (int)$defaultRole['id'] : null;
+            $roleModel = new Role();
+            $roleIds = [];
+            if ($roleId !== null) {
+                $roleIds = [$roleId];
+            } else {
+                $defaults = $roleModel->getDefaultRoles($orchestraId);
+                $roleIds = array_map(fn($r) => (int)$r['id'], $defaults);
             }
 
             $existing = $this->getUserOrchestraRelation($userId, $orchestraId, false);
@@ -113,15 +137,16 @@ class UserOrchestra extends Model
                     return ['error' => true, 'message' => 'Sie sind bereits Mitglied dieses Orchesters.'];
                 }
 
-                // Reactivate
                 $result = $this->update($existing['id'], [
                     'type' => $type,
                     'is_active' => 1,
-                    'role_id' => $roleId,
                     'joined_at' => date('Y-m-d H:i:s'),
                     'updated_at' => date('Y-m-d H:i:s'),
                 ]);
                 if ($result) {
+                    if (!empty($roleIds)) {
+                        $this->setRolesForRelation($existing['id'], $roleIds);
+                    }
                     return $existing['id'];
                 }
                 return ['error' => true, 'message' => 'Fehler beim Reaktivieren der Mitgliedschaft.'];
@@ -132,7 +157,6 @@ class UserOrchestra extends Model
                 'orchestra_id' => $orchestraId,
                 'type' => $type,
                 'is_active' => 1,
-                'role_id' => $roleId,
                 'joined_at' => date('Y-m-d H:i:s'),
             ]);
 
@@ -140,6 +164,10 @@ class UserOrchestra extends Model
                 $error = $this->db->getLastError();
                 error_log("Failed to join orchestra - Database error: " . $error);
                 return ErrorHandler::handleDatabaseError(new \Exception($error), 'Orchestra join');
+            }
+
+            if (!empty($roleIds)) {
+                $this->setRolesForRelation($relationId, $roleIds);
             }
 
             return $relationId;
@@ -162,51 +190,143 @@ class UserOrchestra extends Model
         ]);
     }
 
-    // ── Role helpers ────────────────────────────────────────────────
+    // ── Role helpers (multi-role via junction table) ─────────────
 
     /**
-     * Assign a role to a user in an orchestra.
+     * Get all roles for a user_orchestras row.
+     *
+     * @return array Array of role rows with decoded permissions
      */
-    public function setRole(int $userId, int $orchestraId, int $roleId): bool
+    private function getRolesForRelation(int $userOrchestraId): array
+    {
+        $sql = "SELECT r.* FROM roles r
+                JOIN user_orchestra_roles uor ON uor.role_id = r.id
+                WHERE uor.user_orchestra_id = ?
+                ORDER BY r.sort_order, r.name";
+        $stmt = $this->db->prepare($sql);
+        if (!$stmt) {
+            throw new \RuntimeException("Failed to query user_orchestra_roles — run migration 20260305_110500_role_system_refactor.sql: " . $this->db->error);
+        }
+        $stmt->bind_param('i', $userOrchestraId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $roles = [];
+        while ($row = $result->fetch_assoc()) {
+            $roles[] = $row;
+        }
+        $stmt->close();
+        return $roles;
+    }
+
+    /**
+     * Replace all roles for a user_orchestras row.
+     */
+    private function setRolesForRelation(int $userOrchestraId, array $roleIds): void
+    {
+        $stmt = $this->db->prepare("DELETE FROM user_orchestra_roles WHERE user_orchestra_id = ?");
+        $stmt->bind_param('i', $userOrchestraId);
+        $stmt->execute();
+        $stmt->close();
+
+        if (empty($roleIds)) return;
+
+        $stmt = $this->db->prepare("INSERT INTO user_orchestra_roles (user_orchestra_id, role_id) VALUES (?, ?)");
+        foreach ($roleIds as $roleId) {
+            $roleId = (int)$roleId;
+            $stmt->bind_param('ii', $userOrchestraId, $roleId);
+            $stmt->execute();
+        }
+        $stmt->close();
+    }
+
+    /**
+     * Set roles for a user in an orchestra.
+     * System roles (Leitung) are preserved and cannot be added/removed here.
+     */
+    public function setRoles(int $userId, int $orchestraId, array $roleIds): bool
     {
         $relation = $this->getUserOrchestraRelation($userId, $orchestraId, true);
         if (!$relation) return false;
 
-        return $this->update($relation['id'], [
-            'role_id' => $roleId,
-            'updated_at' => date('Y-m-d H:i:s'),
-        ]);
+        $roleModel = new \App\Models\Role();
+
+        // Preserve existing system roles and strip incoming system role IDs
+        $existing = $this->getRolesForRelation($relation['id']);
+        $systemRoleIds = [];
+        foreach ($existing as $r) {
+            if (!empty($r['is_system'])) {
+                $systemRoleIds[] = (int)$r['id'];
+            }
+        }
+        $roleIds = array_filter($roleIds, function ($id) use ($roleModel) {
+            $role = $roleModel->findById((int)$id);
+            return $role && empty($role['is_system']);
+        });
+
+        $finalRoleIds = array_unique(array_merge($systemRoleIds, array_map('intval', $roleIds)));
+        $this->setRolesForRelation($relation['id'], $finalRoleIds);
+        return true;
     }
 
     /**
-     * @return array|null Full role row (decoded permissions), or null
+     * @return array All role rows for a user in an orchestra
+     */
+    public function getUserRoles(int $userId, int $orchestraId): array
+    {
+        $relation = $this->getUserOrchestraRelation($userId, $orchestraId, true);
+        if (!$relation) return [];
+
+        return $this->getRolesForRelation((int)$relation['id']);
+    }
+
+    /**
+     * @return array|null Primary role (highest priority / first non-default), or null
      */
     public function getRole(int $userId, int $orchestraId): ?array
     {
-        $relation = $this->getUserOrchestraRelation($userId, $orchestraId, true);
-        if (!$relation || empty($relation['role_id'])) return null;
+        $roles = $this->getUserRoles($userId, $orchestraId);
+        if (empty($roles)) return null;
 
-        $roleModel = new Role();
-        return $roleModel->findByIdDecoded((int)$relation['role_id']);
+        foreach ($roles as $role) {
+            if (empty($role['is_default'])) {
+                $decoded = $role;
+                $decoded['permissions'] = json_decode($role['permissions'], true) ?: [];
+                return $decoded;
+            }
+        }
+
+        $first = $roles[0];
+        $first['permissions'] = json_decode($first['permissions'], true) ?: [];
+        return $first;
     }
 
     /**
-     * Check if user has a specific permission via their role.
+     * Check if user has a specific permission via any of their roles.
      */
     public function hasPermission(int $userId, int $orchestraId, string $permission): bool
     {
-        $role = $this->getRole($userId, $orchestraId);
-        if (!$role) return false;
-        return in_array($permission, $role['permissions'], true);
+        $roles = $this->getUserRoles($userId, $orchestraId);
+        foreach ($roles as $role) {
+            $perms = json_decode($role['permissions'] ?? '[]', true) ?: [];
+            if (in_array($permission, $perms, true)) return true;
+        }
+        return false;
     }
 
     /**
-     * @return array Associative map of permission name => bool
+     * @return array Associative map of permission name => bool (merged from all roles)
      */
     public function getPermissions(int $userId, int $orchestraId): array
     {
-        $role = $this->getRole($userId, $orchestraId);
-        $granted = $role ? $role['permissions'] : [];
+        $roles = $this->getUserRoles($userId, $orchestraId);
+        $granted = [];
+        foreach ($roles as $role) {
+            $perms = json_decode($role['permissions'] ?? '[]', true) ?: [];
+            $granted = array_merge($granted, $perms);
+        }
+        $granted = array_unique($granted);
+
         $map = [];
         foreach (Role::getAvailablePermissions() as $perm) {
             $map[$perm] = in_array($perm, $granted, true);
@@ -214,7 +334,17 @@ class UserOrchestra extends Model
         return $map;
     }
 
-    // ── Type / small-group helpers ───────────────────────────────
+    /**
+     * Check if user has any of the given role IDs.
+     */
+    public function hasAnyRole(int $userId, int $orchestraId, array $roleIds): bool
+    {
+        $roles = $this->getUserRoles($userId, $orchestraId);
+        $userRoleIds = array_column($roles, 'id');
+        return !empty(array_intersect($userRoleIds, $roleIds));
+    }
+
+    // ── Type helpers ────────────────────────────────────────────
 
     public function updateUserType(int $userId, int $orchestraId, string $type): bool
     {
@@ -227,34 +357,14 @@ class UserOrchestra extends Model
         ]);
     }
 
-    public function updateUserSmallGroupStatus(int $userId, int $orchestraId, bool $isSmallGroup): bool
-    {
-        $relation = $this->getUserOrchestraRelation($userId, $orchestraId, true);
-        if (!$relation) return false;
-
-        return $this->update($relation['id'], [
-            'is_small_group' => $isSmallGroup ? 1 : 0,
-            'updated_at' => date('Y-m-d H:i:s'),
-        ]);
-    }
-
-    public function isUserInSmallGroup(int $userId, int $orchestraId): bool
-    {
-        $relation = $this->getUserOrchestraRelation($userId, $orchestraId, true);
-        return $relation && (int)($relation['is_small_group'] ?? 0) === 1;
-    }
-
     /**
      * @return array Users of a specific instrument/section within an orchestra
      */
     public function getUsersByType(string $type, int $orchestraId): array
     {
-        $sql = "SELECT uo.*, u.email, u.display_name, uo.display_name as orchestra_display_name, u.created_at as user_created_at,
-                r.id as role_id, r.name as role_name, r.name as role_tag_label,
-                r.tag_color as role_tag_color, r.is_default as role_is_default, r.permissions as role_permissions
+        $sql = "SELECT uo.*, u.email, u.display_name, uo.display_name as orchestra_display_name, u.created_at as user_created_at
                 FROM {$this->table} uo
                 JOIN users u ON uo.user_id = u.id
-                LEFT JOIN roles r ON uo.role_id = r.id
                 WHERE uo.type = ? AND uo.orchestra_id = ? AND uo.is_active = 1
                 ORDER BY COALESCE(uo.display_name, u.display_name, u.email)";
 
@@ -265,10 +375,31 @@ class UserOrchestra extends Model
 
         $users = [];
         while ($row = $result->fetch_assoc()) {
-            $perms = json_decode($row['role_permissions'] ?? '[]', true) ?: [];
-            $row['permissions'] = $perms;
-            $row['can_attend_rehearsals'] = in_array('can_attend_rehearsals', $perms);
-            unset($row['role_permissions']);
+            $roles = $this->getRolesForRelation((int)$row['id']);
+            $row['roles'] = $roles;
+
+            $allPerms = [];
+            foreach ($roles as $role) {
+                $rolePerms = json_decode($role['permissions'] ?? '[]', true) ?: [];
+                $allPerms = array_merge($allPerms, $rolePerms);
+            }
+            $row['permissions'] = array_unique($allPerms);
+            $row['can_attend_rehearsals'] = in_array('can_attend_rehearsals', $allPerms);
+
+            $primaryRole = null;
+            foreach ($roles as $r) {
+                if (empty($r['is_default'])) {
+                    $primaryRole = $r;
+                    break;
+                }
+            }
+            $primaryRole = $primaryRole ?? ($roles[0] ?? null);
+            $row['role_id'] = $primaryRole['id'] ?? null;
+            $row['role_name'] = $primaryRole['name'] ?? '';
+            $row['role_tag_label'] = $primaryRole['name'] ?? '';
+            $row['role_tag_color'] = $primaryRole['tag_color'] ?? '';
+            $row['role_is_default'] = !empty($primaryRole['is_default']);
+
             $users[] = $row;
         }
         $stmt->close();

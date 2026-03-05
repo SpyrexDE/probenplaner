@@ -54,18 +54,17 @@ class ApiController extends Controller
                 // Check if user is relevant for this rehearsal
                 $groups = $this->rehearsalModel->getGroupsAsAssoc($rehearsal['id']);
 
-                // Get small group status from user_orchestras table
-                $isSmallGroup = false;
+                $userOrchestraModel = new \App\Models\UserOrchestra();
                 $userId = $_SESSION['user_id'] ?? null;
                 $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
+                $userRoleIds = [];
                 if ($userId && $orchestraId) {
-                    $userOrchestraModel = new \App\Models\UserOrchestra();
-                    $isSmallGroup = $userOrchestraModel->isUserInSmallGroup((int)$userId, (int)$orchestraId);
+                    $userRoles = $userOrchestraModel->getUserRoles((int)$userId, (int)$orchestraId);
+                    $userRoleIds = array_map(fn($r) => (int)$r['id'], $userRoles);
                 }
-                $user = ['is_small_group' => $isSmallGroup];
-                $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal);
+                $rehearsalRoleIds = $this->rehearsalModel->getRehearsalRoleIds($rehearsal['id']);
 
-                if ($this->rehearsalModel->isUserInRehearsalGroup($_SESSION['current_type'] ?? '', $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
+                if ($this->rehearsalModel->isUserInRehearsalGroup($_SESSION['current_type'] ?? '', $groups, $rehearsalRoleIds, $userRoleIds)) {
                     $stats['total']++;
 
                     // Check user's promise for this rehearsal

@@ -144,15 +144,15 @@ class Rehearsal extends Model
     }
 
     /**
-     * Get rehearsals for a specific user
-     * 
-     * @param string $userType User type/instrument
+     * Get rehearsals visible to a specific user based on groups and roles.
+     *
+     * @param string $userType User instrument/section type
      * @param int $orchestraId Orchestra ID
-     * @param bool $includeOld Whether to include past rehearsals
-     * @param bool $isSmallGroup Whether user is in small group
+     * @param bool $includeOld Include past rehearsals
+     * @param array $userRoleIds User's role IDs for role-scoped visibility
      * @return array
      */
-    public function getForUser(string $userType, int $orchestraId, bool $includeOld = false, bool $isSmallGroup = false): array
+    public function getForUser(string $userType, int $orchestraId, bool $includeOld = false, array $userRoleIds = []): array
     {
         $orchestraId = (int)$orchestraId;
 
@@ -170,9 +170,9 @@ class Rehearsal extends Model
         if ($result) {
             while ($row = $result->fetch_assoc()) {
                 $groups = $this->getGroupsAsAssoc($row['id']);
-                $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($row);
+                $rehearsalRoleIds = $this->getRehearsalRoleIds($row['id']);
 
-                if ($this->isUserInRehearsalGroup($userType, $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
+                if ($this->isUserInRehearsalGroup($userType, $groups, $rehearsalRoleIds, $userRoleIds)) {
                     $row['date'] = date('Y-m-d', strtotime($row['start']));
                     $row['start_time'] = date('H:i', strtotime($row['start']));
                     $row['end_time'] = date('H:i', strtotime($row['end']));
@@ -214,31 +214,45 @@ class Rehearsal extends Model
     }
 
     /**
-     * Check if user type is in the specified groups
-     * 
-     * @param string $userType User type/instrument
-     * @param bool $isSmallGroup Whether the user is in small group
-     * @param array $groups Groups to check
-     * @param bool $rehearsalIsSmallGroup Whether the rehearsal is a small group rehearsal
+     * Get role IDs assigned to a rehearsal via rehearsal_roles table.
+     *
+     * @param int $rehearsalId
+     * @return array Integer role IDs
+     */
+    public function getRehearsalRoleIds(int $rehearsalId): array
+    {
+        $rehearsalId = (int)$rehearsalId;
+        $result = $this->db->query(
+            "SELECT role_id FROM rehearsal_roles WHERE rehearsal_id = {$rehearsalId}"
+        );
+        $ids = [];
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $ids[] = (int)$row['role_id'];
+            }
+        }
+        return $ids;
+    }
+
+    /**
+     * Check if a user should see a rehearsal based on group membership and role scoping.
+     *
+     * @param string $userType User instrument/section type
+     * @param array $groups Rehearsal groups (assoc array, keys are group names)
+     * @param array $rehearsalRoleIds Role IDs assigned to the rehearsal
+     * @param array $userRoleIds Role IDs of the user
      * @return bool
      */
-    public function isUserInRehearsalGroup(string $userType, bool $isSmallGroup, $groups, bool $rehearsalIsSmallGroup = false): bool
+    public function isUserInRehearsalGroup(string $userType, array $groups, array $rehearsalRoleIds = [], array $userRoleIds = []): bool
     {
-        // Initialize user/rehearsal arrays for visibility check
-        $user = ['is_small_group' => $isSmallGroup ? \App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED : \App\Core\RehearsalTypeManager::SMALL_GROUP_DISABLED];
-        $rehearsal = ['is_small_group' => $rehearsalIsSmallGroup ? \App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED : \App\Core\RehearsalTypeManager::SMALL_GROUP_DISABLED];
-
-        if (!\App\Core\RehearsalTypeManager::canUserSeeRehearsal($user, $rehearsal)) {
+        // Role-based visibility: if rehearsal has role restrictions, user must share at least one
+        if (!empty($rehearsalRoleIds) && empty(array_intersect($rehearsalRoleIds, $userRoleIds))) {
             return false;
         }
 
-        // Use GroupManager for dynamic group checking
         $groupManager = new \App\Core\GroupManager();
-
-        // Resolve any aliases first
         $userType = $groupManager->resolveAlias($userType);
 
-        // Check each group
         foreach (array_keys($groups) as $group) {
             if ($groupManager->isUserInGroup($userType, $group)) {
                 return true;
@@ -427,16 +441,15 @@ class Rehearsal extends Model
     }
 
     /**
-     * Get rehearsals relevant for a specific user
-     * 
+     * Get rehearsals relevant for a specific user based on groups and roles.
+     *
      * @param int $orchestraId Orchestra ID
-     * @param string $userType User type/instrument
-     * @param array $userGroups User's groups
-     * @param bool $includeOld Whether to include past rehearsals
-     * @param bool $isSmallGroup Whether the user is in a small group
+     * @param string $userType User instrument/section type
+     * @param bool $includeOld Include past rehearsals
+     * @param array $userRoleIds User's role IDs for role-scoped visibility
      * @return array
      */
-    public function getRelevantForUser($orchestraId, $userType, $includeOld = false, $isSmallGroup = false)
+    public function getRelevantForUser($orchestraId, $userType, $includeOld = false, array $userRoleIds = [])
     {
         $orchestraId = (int)$orchestraId;
 
@@ -454,9 +467,9 @@ class Rehearsal extends Model
         if ($result) {
             while ($row = $result->fetch_assoc()) {
                 $groups = $this->getGroupsAsAssoc($row['id']);
-                $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($row);
+                $rehearsalRoleIds = $this->getRehearsalRoleIds($row['id']);
 
-                if ($this->isUserInRehearsalGroup($userType, $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
+                if ($this->isUserInRehearsalGroup($userType, $groups, $rehearsalRoleIds, $userRoleIds)) {
                     $row['date'] = date('Y-m-d', strtotime($row['start']));
                     $row['start_time'] = date('H:i', strtotime($row['start']));
                     $row['end_time'] = date('H:i', strtotime($row['end']));

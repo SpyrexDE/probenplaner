@@ -70,12 +70,21 @@ $backUrl = '/' . $orchestraBase . '/rehearsals';
 
             <div class="form-section" id="groupsSection">
                 <h3 class="form-section-title">Gruppen</h3>
-                <div class="checkbox-group">
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="is_small_group" name="is_small_group" value="1" <?= !empty($formData['is_small_group']) ? 'checked' : '' ?>>
-                        <label for="is_small_group"><?= \App\Core\RehearsalTypeManager::LABEL_SMALL_GROUP ?></label>
-                    </div>
-                </div>
+
+                <?php
+                $tagSelectName = 'role_ids';
+                $tagSelectId = 'rehearsalEditRoleSelect';
+                $tagSelectLabel = 'Gilt für Rollen';
+                $tagSelectPlaceholder = 'Rolle hinzufügen…';
+                $tagSelectOptions = array_map(fn($r) => [
+                    'id' => $r['id'],
+                    'name' => $r['name'],
+                    'color' => $r['tag_color'] ?? '#478cf4',
+                    'is_default' => $r['is_default'] ?? 0,
+                ], $availableRoles ?? []);
+                $tagSelectSelected = $formData['role_ids'] ?? [];
+                include __DIR__ . '/../components/tag-select.php';
+                ?>
 
                 <?php
                 include __DIR__ . '/../components/dynamic-group-selector.php';
@@ -151,7 +160,6 @@ $backUrl = '/' . $orchestraBase . '/rehearsals';
             location: 'input[name="location"]',
             color: 'input[name="color"]',
             type: 'input[name="rehearsal_type"]',
-            is_small_group: 'input[name="is_small_group"]',
         };
 
         for (const [field, selector] of Object.entries(fieldMap)) {

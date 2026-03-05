@@ -114,6 +114,8 @@ class MemberController extends Controller
         }
 
         $roles = $this->roleModel->getByOrchestra($orchestraId);
+        $userRoles = $this->userOrchestraModel->getUserRoles($memberId, $orchestraId);
+        $userRoleIds = array_map(fn($r) => (int)$r['id'], $userRoles);
 
         header('Content-Type: application/json');
         echo json_encode([
@@ -121,13 +123,14 @@ class MemberController extends Controller
             'display_name' => $user['display_name'] ?? $user['email'] ?? '',
             'email' => $user['email'],
             'type' => $relation['type'] ?? '',
-            'is_small_group' => !empty($relation['is_small_group']),
-            'role_id' => $relation['role_id'] ?? null,
+            'role_ids' => $userRoleIds,
             'available_roles' => array_map(fn($r) => [
                 'id' => $r['id'],
                 'name' => $r['name'],
                 'tag_color' => $r['tag_color'],
                 'is_system' => $r['is_system'],
+                'is_default' => $r['is_default'] ?? 0,
+                'is_self_assignable' => $r['is_self_assignable'] ?? 0,
             ], $roles),
             'available_sections' => $sections,
             'display_names' => $displayNames,
@@ -136,7 +139,7 @@ class MemberController extends Controller
     }
 
     /**
-     * Update member (section, role, small_group) via AJAX.
+     * Update member (section, roles) via AJAX.
      */
     public function updateMember(array $params): void
     {
@@ -159,14 +162,15 @@ class MemberController extends Controller
         if (isset($_POST['type'])) {
             $data['type'] = $_POST['type'];
         }
-        if (isset($_POST['is_small_group'])) {
-            $data['is_small_group'] = (int)$_POST['is_small_group'];
-        }
 
-        // Role assignment (requires can_manage_permissions)
-        if (isset($_POST['role_id']) && $this->hasPermission('can_manage_permissions')) {
-            $roleId = (int)$_POST['role_id'];
-            $this->userOrchestraModel->setRole($memberId, $orchestraId, $roleId);
+        // Multi-role assignment (requires can_manage_permissions)
+        if (isset($_POST['role_ids']) && $this->hasPermission('can_manage_permissions')) {
+            $roleIds = $_POST['role_ids'];
+            if (is_string($roleIds)) {
+                $roleIds = json_decode($roleIds, true) ?: [];
+            }
+            $roleIds = array_map('intval', array_filter($roleIds));
+            $this->userOrchestraModel->setRoles($memberId, $orchestraId, $roleIds);
         }
 
         if (!empty($data)) {
@@ -257,6 +261,7 @@ class MemberController extends Controller
         if (is_string($permissions)) {
             $permissions = json_decode($permissions, true) ?: [];
         }
+        $isSelfAssignable = !empty($_POST['is_self_assignable']);
 
         if ($name === '') {
             http_response_code(400);
@@ -265,7 +270,7 @@ class MemberController extends Controller
         }
 
         try {
-            $id = $this->roleModel->createRole($context['orchestra_id'], $name, $tagColor, $permissions);
+            $id = $this->roleModel->createRole($context['orchestra_id'], $name, $tagColor, $permissions, $isSelfAssignable);
             $role = $this->roleModel->findByIdDecoded($id);
             header('Content-Type: application/json');
             echo json_encode(['success' => true, 'role' => $role]);
@@ -276,7 +281,7 @@ class MemberController extends Controller
     }
 
     /**
-     * Update an existing custom role (AJAX).
+     * Update an existing role (AJAX). Only Leitung (is_system=1) is immutable.
      */
     public function updateRole(array $params): void
     {
@@ -314,6 +319,18 @@ class MemberController extends Controller
             $perms = $_POST['permissions'];
             if (is_string($perms)) $perms = json_decode($perms, true) ?: [];
             $data['permissions'] = $perms;
+        }
+        if (isset($_POST['is_self_assignable'])) {
+            $data['is_self_assignable'] = !empty($_POST['is_self_assignable']);
+        }
+
+        if (isset($_POST['is_default'])) {
+            $toggled = $this->roleModel->toggleDefault($context['orchestra_id'], $roleId, !empty($_POST['is_default']));
+            if (!$toggled) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'error' => 'Es muss mindestens eine Standardrolle existieren.']);
+                return;
+            }
         }
 
         $success = $this->roleModel->updateRole($roleId, $data);
@@ -358,7 +375,7 @@ class MemberController extends Controller
 
         if (!$success) {
             http_response_code(400);
-            echo json_encode(['error' => 'Rolle hat noch zugewiesene Mitglieder.']);
+            echo json_encode(['error' => 'Rolle hat noch zugewiesene Mitglieder oder ist die letzte Rolle.']);
             return;
         }
 

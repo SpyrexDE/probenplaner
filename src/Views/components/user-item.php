@@ -16,7 +16,7 @@ $memberStatus = $status ?? $member['status'] ?? 'no_response';
 $additionalInfo = $additionalInfo ?? '';
 
 // Generate badges for the user
-$userBadges = Utilities::generateUserBadges($member);
+$userLabels = Utilities::generateUserLabels($member);
 
 // Determine icon and color based on status
 $iconClass = 'fas fa-question-circle';
@@ -38,7 +38,7 @@ switch ($memberStatus) {
     <i class="tree-user-item-icon fas fa-user"></i>
 
     <div class="tree-user-item-content">
-        <span class="tree-user-item-name"><?= $username ?><?= $userBadges ?></span>
+        <span class="tree-user-item-name"><?= $username ?><?= $userLabels ?></span>
         <?php if ($additionalInfo): ?>
             <span class="tree-user-item-info"><?= $additionalInfo ?></span>
         <?php endif; ?>

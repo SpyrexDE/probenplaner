@@ -6,7 +6,7 @@ include __DIR__ . '/../components/modern-checkbox.php';
 include __DIR__ . '/../components/theme-selector.php';
 ?>
 
-<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
+<div class="min-h-screen py-8">
     <div class="max-w-3xl mx-auto px-4">
         <!-- Header -->
         <div class="text-center mb-8">

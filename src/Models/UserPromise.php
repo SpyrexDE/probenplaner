@@ -146,10 +146,9 @@ class UserPromise extends Model
                 continue;
             }
 
-            // Determine relevance based on group membership
-            $isSmallGroup = isset($user['is_small_group']) && $user['is_small_group'];
-            $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal);
-            if ($rehearsalModel->isUserInRehearsalGroup($user['type'], $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
+            $memberRoleIds = isset($user['role_ids']) ? $user['role_ids'] : [];
+            $rehearsalRoleIds = $rehearsalModel->getRehearsalRoleIds($rehearsalId);
+            if ($rehearsalModel->isUserInRehearsalGroup($user['type'], $groups, $rehearsalRoleIds, $memberRoleIds)) {
                 $stats['total']++;
 
                 $promise = $this->findByUserAndRehearsal($user['id'], $rehearsalId);

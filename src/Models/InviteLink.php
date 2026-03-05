@@ -183,16 +183,14 @@ class InviteLink extends Model
 
     /**
      * Get the role ID to assign when a link is redeemed.
-     * Conductor links use their stored default_role_id, member links use the orchestra default.
+     * Conductor links use their stored default_role_id, member links return null (joinOrchestra assigns all defaults).
      */
     public function getJoinRoleId(array $link): ?int
     {
         if (!empty($link['default_role_id'])) {
             return (int)$link['default_role_id'];
         }
-        $roleModel = new Role();
-        $defaultRole = $roleModel->getDefaultRole((int)$link['orchestra_id']);
-        return $defaultRole ? (int)$defaultRole['id'] : null;
+        return null;
     }
 
     private function generateToken(): string

@@ -47,6 +47,7 @@ $renderComponent = true;
         margin-bottom: 0.25rem;
         display: flex;
         align-items: center;
+        gap: 6px;
     }
 
     .join-button {
@@ -122,16 +123,7 @@ $renderComponent = true;
                                     <?php if ($displayType): ?>
                                         <span><?= htmlspecialchars($displayType) ?></span>
                                     <?php endif; ?>
-                                    
-                                    <?php
-                                    // Generate badges for small group members, but skip the leader crown 
-                                    // since we don't load permissions here
-                                    $userData = [
-                                        'permissions' => [], 
-                                        'is_small_group' => !empty($orchestra['is_small_group'])
-                                    ];
-                                    echo \App\Core\Utilities::generateUserBadges($userData);
-                                    ?>
+                                    <?= \App\Core\Utilities::generateUserLabelsCondensed($orchestra['roles'] ?? []) ?>
                                 </div>
                             </div>
                             <div style="color: var(--color-primary);">

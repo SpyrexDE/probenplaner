@@ -197,7 +197,7 @@ try {
         $startDatetime = $rehearsalDate->format('Y-m-d') . ' 19:00:00';
         $endDatetime = $rehearsalDate->format('Y-m-d') . ' 20:00:00';
         $location = 'Proberaum ' . ($i + 1);
-        $stmt = $conn->prepare("INSERT INTO rehearsals (type, start, `end`, location, orchestra_id, is_small_group) VALUES (?, ?, ?, ?, ?, 0)");
+        $stmt = $conn->prepare("INSERT INTO rehearsals (type, start, `end`, location, orchestra_id) VALUES (?, ?, ?, ?, ?)");
         if (!$stmt) {
             throw new Exception("Failed to prepare rehearsal insert statement: " . $conn->error);
         }

@@ -6,7 +6,7 @@ include __DIR__ . '/../components/modern-checkbox.php';
 include __DIR__ . '/../components/theme-selector.php';
 ?>
 
-<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
+<div class="min-h-screen py-8">
     <div class="max-w-3xl mx-auto px-4">
         <!-- Header -->
         <div class="text-center mb-8">
@@ -128,18 +128,27 @@ include __DIR__ . '/../components/theme-selector.php';
                     </select>
                 <?php endif; ?>
 
-                <div class="mt-6 space-y-4">
-                    <div class="modern-checkbox-group">
-                        <div class="flex items-start">
-                            <input type="checkbox" id="small_group" name="small_group" class="modern-checkbox"
-                                <?= \App\Core\RehearsalTypeManager::isUserInSmallGroup($user) ? 'checked' : '' ?>>
-                            <div class="ml-3 flex-1">
-                                <label for="small_group" class="modern-checkbox-label"><?= \App\Core\RehearsalTypeManager::LABEL_SMALL_GROUP ?></label>
-                                <p class="modern-checkbox-description">Zusätzliche Proben für Stücke mit geringer Besetzung</p>
-                            </div>
-                        </div>
+                <?php if (!empty($allRoles)): ?>
+                    <div class="mt-6">
+                        <input type="hidden" name="role_ids_submitted" value="1">
+                        <?php
+                        $tagSelectName = 'role_ids';
+                        $tagSelectId = 'profileRoleSelect';
+                        $tagSelectLabel = 'Meine Rollen';
+                        $tagSelectPlaceholder = 'Rolle hinzufügen…';
+                        $tagSelectOptions = array_map(fn($r) => [
+                            'id' => $r['id'],
+                            'name' => $r['name'],
+                            'color' => $r['tag_color'] ?? '#478cf4',
+                            'is_default' => $r['is_default'] ?? 0,
+                            'removable' => in_array((int)$r['id'], $selfAssignableIds),
+                            'addable' => in_array((int)$r['id'], $selfAssignableIds),
+                        ], $allRoles);
+                        $tagSelectSelected = $userRoleIds ?? [];
+                        include __DIR__ . '/../components/tag-select.php';
+                        ?>
                     </div>
-                </div>
+                <?php endif; ?>
 
                 <div class="mt-8">
                     <div class="bg-gray-50 rounded-lg p-5 border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -243,7 +252,38 @@ include __DIR__ . '/../components/theme-selector.php';
         wireField('#email', 'email', 'text');
         wireField('#display_name', 'display_name', 'text');
         wireField('#group_type', 'group_type', 'select');
-        wireField('#small_group', 'small_group', 'toggle');
+
+        // Auto-save role tag changes
+        const roleSelect = document.getElementById('profileRoleSelect');
+        if (roleSelect) {
+            roleSelect.addEventListener('tag-select:change', (e) => {
+                const ids = e.detail.ids;
+                if (window.SettingsEngine) window.SettingsEngine.showSaveState('saving');
+                fetch('/' + orchestraSlug + '/api/settings/user/' + userId, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            field: 'role_ids',
+                            value: JSON.stringify(ids)
+                        }),
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (window.SettingsEngine) window.SettingsEngine.showSaveState('success');
+                        } else {
+                            if (window.SettingsEngine) window.SettingsEngine.showSaveState('error');
+                            if (window.notifyErrorWithDetails) window.notifyErrorWithDetails('Fehler beim Speichern', data.error || JSON.stringify(data));
+                        }
+                    })
+                    .catch(err => {
+                        if (window.SettingsEngine) window.SettingsEngine.showSaveState('error');
+                        if (window.notifyErrorWithDetails) window.notifyErrorWithDetails('Netzwerkfehler', err.message || String(err));
+                    });
+            });
+        }
 
         if (window.SettingsEngine) window.SettingsEngine.init();
 

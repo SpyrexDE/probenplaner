@@ -60,7 +60,7 @@ class SettingsApiController extends Controller
         }
 
         // Permission check per field
-        $userRelationFields = ['group_type', 'small_group'];
+        $userRelationFields = ['group_type', 'role_ids'];
         foreach ($fieldsToUpdate as $fieldName => $value) {
             // Fields stored in separate tables — handled specially
             if ($entity === 'rehearsal' && in_array($fieldName, ['groups', 'schedule_items', 'infos'])) {
@@ -230,10 +230,36 @@ class SettingsApiController extends Controller
                     $_SESSION['current_type'] = $data['group_type'];
                     unset($data['group_type']);
                 }
-                if (array_key_exists('small_group', $data)) {
-                    $val = filter_var($data['small_group'], FILTER_VALIDATE_BOOLEAN);
-                    $userOrchestraModel->updateUserSmallGroupStatus($entityId, $orchestraId, $val);
-                    unset($data['small_group']);
+
+                if (isset($data['role_ids'])) {
+                    $submittedIds = json_decode($data['role_ids'], true) ?: [];
+                    $submittedIds = array_map('intval', $submittedIds);
+
+                    // Preserve non-self-assignable roles, only replace self-assignable
+                    $roleModel = new \App\Models\Role();
+                    $selfAssignable = $roleModel->getSelfAssignableRoles($orchestraId);
+                    $selfAssignableIds = array_map(fn($r) => (int)$r['id'], $selfAssignable);
+
+                    $currentRoles = $userOrchestraModel->getUserRoles($entityId, $orchestraId);
+                    $currentRoleIds = array_map(fn($r) => (int)$r['id'], $currentRoles);
+
+                    $preserved = array_values(array_diff($currentRoleIds, $selfAssignableIds));
+                    $newSelfAssigned = array_values(array_intersect($submittedIds, $selfAssignableIds));
+                    $finalRoleIds = array_values(array_unique(array_merge($preserved, $newSelfAssigned)));
+
+                    $userOrchestraModel->setRoles($entityId, $orchestraId, $finalRoleIds);
+
+                    // Refresh session so sidebar reflects changes immediately
+                    $updatedRoles = $userOrchestraModel->getUserRoles($entityId, $orchestraId);
+                    $_SESSION['current_roles'] = array_map(fn($r) => [
+                        'id' => $r['id'],
+                        'name' => $r['name'],
+                        'tag_color' => $r['tag_color'] ?? '#478cf4',
+                        'is_default' => $r['is_default'] ?? 0,
+                        'is_system' => $r['is_system'] ?? 0,
+                    ], $updatedRoles);
+
+                    unset($data['role_ids']);
                 }
 
                 if (empty($data)) return true;

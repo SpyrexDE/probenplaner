@@ -331,6 +331,8 @@ $renderComponent = true;
     .role-row-meta {
         font-size: 10px;
         color: var(--color-text-muted);
+        line-height: 1;
+        align-self: center;
     }
 
     .role-row-actions {
@@ -361,6 +363,19 @@ $renderComponent = true;
     .role-row-actions button.role-delete-btn:hover {
         background: var(--color-error-50);
         color: var(--color-error);
+    }
+
+    .role-filter-tag {
+        transition: opacity 0.15s;
+    }
+
+    .role-filter-tag.active-filter .role-tag {
+        outline: 2px solid currentColor;
+        outline-offset: 1px;
+    }
+
+    .role-filter-tag:hover {
+        opacity: 0.8;
     }
 
     .admin-btn-new {
@@ -444,9 +459,15 @@ $renderComponent = true;
         display: flex;
         align-items: center;
         gap: var(--space-2);
-        padding: var(--space-1) 0;
+        padding: 6px 8px;
         font-size: var(--font-size-sm);
         color: var(--color-text-primary);
+        border-radius: var(--radius-base);
+        transition: background 0.1s;
+    }
+
+    .swal-perm-row:hover {
+        background: var(--color-bg-tertiary);
     }
 
     .swal-perm-row input[type="checkbox"] {
@@ -454,11 +475,112 @@ $renderComponent = true;
         height: 16px;
         accent-color: var(--color-primary);
         cursor: pointer;
+        flex-shrink: 0;
     }
 
     .swal-perm-row label {
         cursor: pointer;
         flex: 1;
+    }
+
+    /* Role form sections */
+    .swal-role-section {
+        background: var(--color-bg-secondary);
+        border-radius: var(--radius-base);
+        padding: var(--space-3) var(--space-3);
+        margin-bottom: var(--space-3);
+    }
+
+    .swal-role-color-row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+    }
+
+    .swal-role-hue-slider {
+        flex: 1;
+        -webkit-appearance: none;
+        appearance: none;
+        height: 14px;
+        border-radius: 7px;
+        background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+        outline: none;
+        cursor: pointer;
+    }
+
+    .swal-role-hue-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid var(--color-text-primary);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, .25);
+        cursor: pointer;
+    }
+
+    .swal-role-hue-slider::-moz-range-thumb {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid var(--color-text-primary);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, .25);
+        cursor: pointer;
+    }
+
+    .swal-role-preview {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+    }
+
+    .swal-role-preview-label {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-muted);
+    }
+
+    .swal-role-toggles {
+        display: flex;
+        gap: var(--space-2);
+        flex-wrap: wrap;
+    }
+
+    .swal-role-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: var(--radius-base);
+        border: 1.5px solid var(--color-border);
+        background: var(--color-bg-primary);
+        cursor: pointer;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        transition: all 0.15s;
+        user-select: none;
+    }
+
+    .swal-role-toggle:hover {
+        border-color: var(--color-primary-200);
+        background: var(--color-bg-tertiary);
+    }
+
+    .swal-role-toggle:has(input:checked) {
+        border-color: var(--color-primary);
+        background: color-mix(in srgb, var(--color-primary) 8%, white);
+        color: var(--color-primary);
+        font-weight: 600;
+    }
+
+    .swal-role-toggle input {
+        display: none;
+    }
+
+    .swal-role-toggle i {
+        font-size: 12px;
     }
 
     .swal-member-header {
@@ -507,7 +629,7 @@ $renderComponent = true;
         color: var(--color-text-primary);
         background: var(--color-bg-primary);
         transition: all var(--transition-base);
-        cursor: pointer;
+        cursor: text;
     }
 
     .swal-select-modern:focus {
@@ -655,10 +777,15 @@ $isAdmin = $canManage || !empty($canManagePermissions);
                                     $roleColor = $member['role_tag_color'] ?? '';
                                     $userLabels = \App\Core\Utilities::generateUserLabels($member);
                                     $instrumentName = (count($sectionMembers) > 1) ? $groupManager->getDisplayName($sectionName) : '';
+                                    $memberRoleIds = [];
+                                    if (!empty($member['roles'])) {
+                                        $memberRoleIds = array_map(fn($r) => (int)$r['id'], $member['roles']);
+                                    }
                                 ?>
                                     <div class="member-row"
                                         data-member-name="<?= htmlspecialchars(strtolower($displayName)) ?>"
                                         data-user-id="<?= (int)$member['user_id'] ?>"
+                                        data-role-ids="<?= htmlspecialchars(implode(',', $memberRoleIds)) ?>"
                                         style="--row-i: <?= $rowIndex ?>; --row-role-color: <?= $roleColor ?: 'transparent' ?>"
                                         onclick="openEditModal(<?= (int)$member['user_id'] ?>)">
                                         <div class="member-row-avatar"><?= $initial ?></div>
@@ -704,7 +831,9 @@ $isAdmin = $canManage || !empty($canManagePermissions);
                                 <?php foreach ($roles as $role): ?>
                                     <div class="role-row">
                                         <div class="role-row-info">
-                                            <?= \App\Core\Utilities::renderRoleTag($role) ?>
+                                            <span class="role-filter-tag" data-role-id="<?= (int)$role['id'] ?>" onclick="event.stopPropagation(); toggleRoleFilter(<?= (int)$role['id'] ?>)" title="Klicken zum Filtern" style="cursor:pointer">
+                                                <?= \App\Core\Utilities::renderRoleTag($role) ?>
+                                            </span>
                                             <span class="role-row-meta"><?= (int)$role['user_count'] ?></span>
                                         </div>
                                         <?php if (empty($role['is_system'])): ?>
@@ -713,7 +842,9 @@ $isAdmin = $canManage || !empty($canManagePermissions);
                                                 <button class="role-delete-btn" onclick="deleteRole(<?= (int)$role['id'] ?>, '<?= htmlspecialchars($role['name'], ENT_QUOTES) ?>', <?= (int)$role['user_count'] ?>)" title="Löschen"><i class="fas fa-trash"></i></button>
                                             </div>
                                         <?php else: ?>
-                                            <span style="font-size: 10px; color: var(--color-text-muted);"><i class="fas fa-lock"></i></span>
+                                            <div class="role-row-actions" style="width: 24px; justify-content: center;">
+                                                <span style="font-size: 10px; color: var(--color-text-muted);"><i class="fas fa-lock"></i></span>
+                                            </div>
                                         <?php endif; ?>
                                     </div>
                                 <?php endforeach; ?>
@@ -768,23 +899,39 @@ $isAdmin = $canManage || !empty($canManagePermissions);
     const orchestraBase = '<?= htmlspecialchars(($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '')) ?>';
     const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
 
-    // Search filter — dim non-matching rows
+    const activeRoleFilters = new Set();
+
     function filterMembers(query) {
         query = query.toLowerCase().trim();
         let visibleCount = 0;
 
         document.querySelectorAll('.member-row').forEach(row => {
-            const match = !query || row.dataset.memberName.includes(query);
-            row.classList.toggle('dimmed', !match);
+            const nameMatch = !query || row.dataset.memberName.includes(query);
+            const memberRoles = (row.dataset.roleIds || '').split(',');
+            const roleMatch = activeRoleFilters.size === 0 || [...activeRoleFilters].every(id => memberRoles.includes(String(id)));
+            const match = nameMatch && roleMatch;
+            row.style.display = match ? '' : 'none';
             if (match) visibleCount++;
         });
 
         document.querySelectorAll('.section-band[data-group]').forEach(band => {
-            const hasVisible = band.querySelectorAll('.member-row:not(.dimmed)').length > 0;
-            band.style.display = hasVisible || !query ? '' : 'none';
+            const hasVisible = [...band.querySelectorAll('.member-row')].some(r => r.style.display !== 'none');
+            band.style.display = hasVisible || (!query && activeRoleFilters.size === 0) ? '' : 'none';
         });
 
-        document.getElementById('noResults').style.display = visibleCount === 0 && query ? '' : 'none';
+        document.getElementById('noResults').style.display = visibleCount === 0 && (query || activeRoleFilters.size > 0) ? '' : 'none';
+    }
+
+    function toggleRoleFilter(roleId) {
+        if (activeRoleFilters.has(roleId)) {
+            activeRoleFilters.delete(roleId);
+        } else {
+            activeRoleFilters.add(roleId);
+        }
+        document.querySelectorAll('.role-filter-tag').forEach(el => {
+            el.classList.toggle('active-filter', activeRoleFilters.has(Number(el.dataset.roleId)));
+        });
+        filterMembers(document.querySelector('.members-search')?.value || '');
     }
 
     // Partial re-fetch: swap roster + sidebar without full reload
@@ -863,7 +1010,7 @@ $isAdmin = $canManage || !empty($canManagePermissions);
             const tagStyle = `--role-color: ${role.tag_color}`;
             const meta = `${role.user_count} Mitglieder${role.is_default ? ' · Standard' : ''}`;
             const actions = role.is_system ?
-                `<span style="font-size: var(--font-size-xs); color: var(--color-text-muted);"><i class="fas fa-lock"></i></span>` :
+                `<div class="role-row-actions" style="width: 24px; justify-content: center;"><span style="font-size: var(--font-size-xs); color: var(--color-text-muted);"><i class="fas fa-lock"></i></span></div>` :
                 `<div class="role-row-actions">
                     <button onclick="Swal.close(); editRole(${role.id}, ${JSON.stringify(role).replace(/"/g, '&quot;')})" title="Bearbeiten"><i class="fas fa-pen"></i></button>
                     <button class="role-delete-btn" onclick="Swal.close(); deleteRole(${role.id}, '${role.name.replace(/'/g, "\\'")}', ${role.user_count})" title="Löschen"><i class="fas fa-trash"></i></button>
@@ -1088,6 +1235,10 @@ $isAdmin = $canManage || !empty($canManagePermissions);
     }
 
     function showRoleForm(title, confirmText, defaults = {}) {
+        const isDefault = defaults.is_default ? 'checked' : '';
+        const isSelfAssignable = defaults.is_self_assignable ? 'checked' : '';
+        const previewName = defaults.name || 'Vorschau';
+        const previewColor = defaults.tag_color || '#478cf4';
         return Swal.fire({
             title,
             html: `
@@ -1096,11 +1247,29 @@ $isAdmin = $canManage || !empty($canManagePermissions);
                         <label class="swal-field-label">Name</label>
                         <input type="text" id="swalRoleName" class="swal-select-modern" value="${defaults.name || ''}" placeholder="z.B. Registerleitung">
                     </div>
-                    <div class="swal-field-group">
+                    <div class="swal-role-section">
                         <label class="swal-field-label">Farbe</label>
-                        <input type="color" id="swalRoleColor" value="${defaults.tag_color || '#478cf4'}" style="width: 100%; height: 36px; border: 2px solid var(--color-border); border-radius: var(--radius-base); cursor: pointer; padding: 2px;">
+                        <div class="swal-role-color-row">
+                            <input type="range" id="swalRoleHue" class="swal-role-hue-slider" min="0" max="360" value="0">
+                        </div>
+                        <div class="swal-role-preview" style="margin-top: var(--space-2);">
+                            <span id="swalRolePreviewTag" class="role-tag" style="--role-color: ${previewColor}">${previewName}</span>
+                        </div>
+                        <input type="hidden" id="swalRoleColor" value="${previewColor}">
                     </div>
-                    <div class="swal-perm-group" style="margin-top: var(--space-3);">
+                    <div class="swal-field-group">
+                        <div class="swal-role-toggles">
+                            <label class="swal-role-toggle">
+                                <input type="checkbox" id="swalRoleDefault" ${isDefault}>
+                                <i class="fas fa-star"></i> Standardrolle
+                            </label>
+                            <label class="swal-role-toggle">
+                                <input type="checkbox" id="swalRoleSelfAssignable" ${isSelfAssignable}>
+                                <i class="fas fa-user-plus"></i> Selbstzuweisung
+                            </label>
+                        </div>
+                    </div>
+                    <div class="swal-perm-group">
                         <div class="swal-perm-title">Berechtigungen</div>
                         ${buildPermissionCheckboxes(defaults.permissions || [])}
                     </div>
@@ -1113,7 +1282,54 @@ $isAdmin = $canManage || !empty($canManagePermissions);
             cancelButtonColor: '#6b7280',
             reverseButtons: true,
             focusConfirm: false,
-            didOpen: () => initPermissionHierarchy(),
+            width: 480,
+            didOpen: () => {
+                initPermissionHierarchy();
+                const hueSlider = document.getElementById('swalRoleHue');
+                const colorHidden = document.getElementById('swalRoleColor');
+                const nameInput = document.getElementById('swalRoleName');
+                const previewTag = document.getElementById('swalRolePreviewTag');
+
+                function hslToHex(h, s, l) {
+                    l /= 100;
+                    s /= 100;
+                    const a = s * Math.min(l, 1 - l);
+                    const f = n => {
+                        const k = (n + h / 30) % 12;
+                        return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))));
+                    };
+                    return '#' + [f(0), f(8), f(4)].map(x => x.toString(16).padStart(2, '0')).join('');
+                }
+
+                function hexToHue(hex) {
+                    const r = parseInt(hex.slice(1, 3), 16) / 255,
+                        g = parseInt(hex.slice(3, 5), 16) / 255,
+                        b = parseInt(hex.slice(5, 7), 16) / 255;
+                    const max = Math.max(r, g, b),
+                        min = Math.min(r, g, b),
+                        d = max - min;
+                    if (d === 0) return 0;
+                    let h = 0;
+                    if (max === r) h = ((g - b) / d + 6) % 6;
+                    else if (max === g) h = (b - r) / d + 2;
+                    else h = (r - g) / d + 4;
+                    return Math.round(h * 60);
+                }
+
+                hueSlider.value = hexToHue(colorHidden.value);
+
+                function updatePreview() {
+                    const hex = hslToHex(parseInt(hueSlider.value), 55, 55);
+                    colorHidden.value = hex;
+                    const n = nameInput.value.trim() || 'Vorschau';
+                    previewTag.style.setProperty('--role-color', hex);
+                    previewTag.textContent = n;
+                }
+                hueSlider.addEventListener('input', updatePreview);
+                nameInput.addEventListener('input', () => {
+                    previewTag.textContent = nameInput.value.trim() || 'Vorschau';
+                });
+            },
             preConfirm: () => {
                 const name = document.getElementById('swalRoleName').value.trim();
                 if (!name) {
@@ -1126,6 +1342,8 @@ $isAdmin = $canManage || !empty($canManagePermissions);
                     name,
                     tag_color: document.getElementById('swalRoleColor').value,
                     permissions: perms,
+                    is_default: document.getElementById('swalRoleDefault').checked,
+                    is_self_assignable: document.getElementById('swalRoleSelfAssignable').checked,
                 };
             },
         });
@@ -1146,6 +1364,7 @@ $isAdmin = $canManage || !empty($canManagePermissions);
                         name: d.name,
                         tag_color: d.tag_color,
                         permissions: JSON.stringify(d.permissions),
+                        is_self_assignable: d.is_self_assignable ? '1' : '0',
                     }),
                 })
                 .then(r => r.json())
@@ -1165,18 +1384,21 @@ $isAdmin = $canManage || !empty($canManagePermissions);
         showRoleForm('Rolle bearbeiten', '<i class="fas fa-save"></i> Speichern', role).then(result => {
             if (!result.isConfirmed) return;
             const d = result.value;
+            const params = new URLSearchParams({
+                csrf_token: csrfToken(),
+                name: d.name,
+                tag_color: d.tag_color,
+                permissions: JSON.stringify(d.permissions),
+                is_self_assignable: d.is_self_assignable ? '1' : '0',
+            });
+            params.set('is_default', d.is_default ? '1' : '0');
             fetch('/' + orchestraBase + '/roles/' + roleId + '/update', {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: new URLSearchParams({
-                        csrf_token: csrfToken(),
-                        name: d.name,
-                        tag_color: d.tag_color,
-                        permissions: JSON.stringify(d.permissions),
-                    }),
+                    body: params,
                 })
                 .then(r => r.json())
                 .then(data => {
@@ -1192,20 +1414,13 @@ $isAdmin = $canManage || !empty($canManagePermissions);
     }
 
     function deleteRole(roleId, roleName, userCount) {
-        if (userCount > 0) {
-            Swal.fire({
-                title: 'Nicht möglich',
-                html: `<p>Die Rolle <strong>${roleName}</strong> hat noch <strong>${userCount}</strong> zugewiesene Mitglieder. Weise diese Mitglieder zuerst einer anderen Rolle zu.</p>`,
-                icon: 'warning',
-                confirmButtonText: 'Verstanden',
-                confirmButtonColor: '#478cf4',
-            });
-            return;
-        }
+        const memberNote = userCount > 0 ?
+            `<p style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-top:var(--space-2);">${userCount} Mitglied${userCount > 1 ? 'er' : ''} werden zur Standardrolle verschoben.</p>` :
+            '';
 
         Swal.fire({
             title: 'Rolle löschen?',
-            html: `<p>Die Rolle <strong>${roleName}</strong> wird gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.</p>`,
+            html: `<p>Die Rolle <strong>${roleName}</strong> wird gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.</p>${memberNote}`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Ja, löschen',

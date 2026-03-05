@@ -299,13 +299,14 @@ class Controller
             $_SESSION['current_type'] = $relation['type'];
             $userOrchestraModel = new \App\Models\UserOrchestra();
             $_SESSION['current_permissions'] = $userOrchestraModel->getPermissions($_SESSION['user_id'], $orchestraId);
-            $role = $userOrchestraModel->getRole($_SESSION['user_id'], $orchestraId);
-            $_SESSION['current_role'] = $role ? [
-                'id' => $role['id'],
-                'name' => $role['name'],
-                'tag_color' => $role['tag_color'],
-                'is_system' => $role['is_system'] ?? 0,
-            ] : null;
+            $allRoles = $userOrchestraModel->getUserRoles((int)$_SESSION['user_id'], $orchestraId);
+            $_SESSION['current_roles'] = array_map(fn($r) => [
+                'id' => $r['id'],
+                'name' => $r['name'],
+                'tag_color' => $r['tag_color'] ?? '#478cf4',
+                'is_default' => $r['is_default'] ?? 0,
+                'is_system' => $r['is_system'] ?? 0,
+            ], $allRoles);
         }
         // Keep slugs in sync
         $_SESSION['current_orchestra_slug'] = $orchestra['slug'];

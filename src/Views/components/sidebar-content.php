@@ -19,9 +19,9 @@
             <div class="sidebar-name">
                 <?= htmlspecialchars($displayName) ?>
                 <?php
-                $currentRole = $_SESSION['current_role'] ?? null;
-                if ($currentRole && !empty($currentRole['name'])):
-                    echo \App\Core\Utilities::renderRoleTag($currentRole);
+                $currentRoles = $_SESSION['current_roles'] ?? [];
+                if (!empty($currentRoles)):
+                    echo \App\Core\Utilities::generateUserLabelsCondensed($currentRoles);
                 endif;
                 ?>
             </div>

@@ -67,7 +67,6 @@ class PromiseController extends Controller
 
         $userType = $_SESSION['current_type'];
 
-        $isSmallGroup = false;
         $userId = $_SESSION['user_id'] ?? null;
         $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
 
@@ -75,12 +74,13 @@ class PromiseController extends Controller
         $forceDeclineReason = !empty($orchestra['force_decline_reason']);
         $allowAttendanceReset = !isset($orchestra['allow_attendance_reset']) || !empty($orchestra['allow_attendance_reset']);
 
+        $userRoleIds = [];
         if ($userId && $orchestraId) {
             $userOrchestraModel = new \App\Models\UserOrchestra();
-            $isSmallGroup = $userOrchestraModel->isUserInSmallGroup((int)$userId, (int)$orchestraId);
+            $userRoles = $userOrchestraModel->getUserRoles((int)$userId, (int)$orchestraId);
+            $userRoleIds = array_map(fn($r) => (int)$r['id'], $userRoles);
         }
-        $user = ['is_small_group' => $isSmallGroup];
-        $rehearsals = $this->rehearsalModel->getForUser($userType, $_SESSION['current_orchestra_id'], $showOld, $isSmallGroup);
+        $rehearsals = $this->rehearsalModel->getForUser($userType, $_SESSION['current_orchestra_id'], $showOld, $userRoleIds);
 
         $promises = [];
         $user = $this->userModel->findById((int)$_SESSION['user_id']);
@@ -134,16 +134,16 @@ class PromiseController extends Controller
         // Clean up section name for database queries
         $sectionName = str_replace(' ', '_', $userType);
 
-        // Get small group status from user_orchestras table
-        $isSmallGroup = false;
+        // Get user role IDs for visibility filtering
+        $userRoleIds = [];
         $userId = $_SESSION['user_id'] ?? null;
         $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
         if ($userId && $orchestraId) {
             $userOrchestraModel = new \App\Models\UserOrchestra();
-            $isSmallGroup = $userOrchestraModel->isUserInSmallGroup((int)$userId, (int)$orchestraId);
+            $userRoles = $userOrchestraModel->getUserRoles((int)$userId, (int)$orchestraId);
+            $userRoleIds = array_map(fn($r) => (int)$r['id'], $userRoles);
         }
-        $user = ['is_small_group' => $isSmallGroup];
-        $rehearsals = $this->rehearsalModel->getForUser($sectionName, $_SESSION['current_orchestra_id'], $showOld, $isSmallGroup);
+        $rehearsals = $this->rehearsalModel->getForUser($sectionName, $_SESSION['current_orchestra_id'], $showOld, $userRoleIds);
 
         $orchestraModel = new \App\Models\Orchestra();
         $orchestra = $orchestraModel->findById($_SESSION['current_orchestra_id']);
@@ -234,13 +234,12 @@ class PromiseController extends Controller
             if (!empty($members)) {
                 // Determine which users apply to this rehearsal
                 $groups = $this->rehearsalModel->getGroupsAsAssoc($rehearsal['id']);
-                $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal);
+                $rehearsalRoleIds = $this->rehearsalModel->getRehearsalRoleIds($rehearsal['id']);
 
                 foreach ($members as $member) {
-                    // Get small-group membership from user_orchestras relation
-                    $isSmallGroup = isset($member['is_small_group']) && (int)$member['is_small_group'] === 1;
+                    $memberRoleIds = isset($member['role_ids']) ? $member['role_ids'] : [];
 
-                    if ($this->rehearsalModel->isUserInRehearsalGroup($member['type'], $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
+                    if ($this->rehearsalModel->isUserInRehearsalGroup($member['type'], $groups, $rehearsalRoleIds, $memberRoleIds)) {
                         // Use user_id from the user_orchestras relation
                         $userPromises = $this->userModel->getPromises((int)$member['user_id']);
                         $found = false;
@@ -285,8 +284,7 @@ class PromiseController extends Controller
                             'status' => $status,
                             'note' => $note,
                             'permissions' => $member['permissions'] ?? [],
-                            'is_small_group' => $isSmallGroup ? \App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED : \App\Core\RehearsalTypeManager::SMALL_GROUP_DISABLED,
-                            'id' => $member['user_id'] // Use 'id' not 'user_id' for badge lookup
+                            'id' => $member['user_id']
                         ];
 
                         $membersBySection[$rehearsalId]['all'][] = $memberInfo;
@@ -583,16 +581,16 @@ class PromiseController extends Controller
 
             // Determine which users apply to this rehearsal
             $groups = $this->rehearsalModel->getGroupsAsAssoc($rehearsal['id']);
-            $rehearsalIsSmallGroup = \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal);
+            $rehearsalRoleIds = $this->rehearsalModel->getRehearsalRoleIds($rehearsal['id']);
 
             foreach ($users as $user) {
                 if (empty($user['can_attend_rehearsals'])) {
                     continue;
                 }
 
-                $isSmallGroup = isset($user['is_small_group']) && (int)$user['is_small_group'] === 1;
+                $memberRoleIds = isset($user['role_ids']) ? $user['role_ids'] : [];
 
-                if ($this->rehearsalModel->isUserInRehearsalGroup($user['type'], $isSmallGroup, $groups, $rehearsalIsSmallGroup)) {
+                if ($this->rehearsalModel->isUserInRehearsalGroup($user['type'], $groups, $rehearsalRoleIds, $memberRoleIds)) {
                     // Use users.id (available as user_id in relation row)
                     $userPromises = $this->userModel->getPromises((int)$user['user_id']);
                     $found = false;
@@ -618,8 +616,7 @@ class PromiseController extends Controller
                         'status' => $status,
                         'note' => $note,
                         'permissions' => $user['permissions'] ?? [],
-                        'is_small_group' => $isSmallGroup ? \App\Core\RehearsalTypeManager::SMALL_GROUP_ENABLED : \App\Core\RehearsalTypeManager::SMALL_GROUP_DISABLED,
-                        'id' => $user['user_id'] // Use 'id' not 'user_id' for badge lookup
+                        'id' => $user['user_id']
                     ];
 
                     $membersBySection[$rehearsalId]['all'][] = $memberInfo;
@@ -654,8 +651,7 @@ class PromiseController extends Controller
                         'date' => $rehearsals[0]['date'],
                         'date_formatted' => $rehearsals[0]['date_formatted'],
                         'type' => $rehearsals[0]['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL,
-                        'location' => $rehearsals[0]['location'] ?? '',
-                        'is_small_group' => $rehearsals[0]['is_small_group'] ?? false
+                        'location' => $rehearsals[0]['location'] ?? ''
                     ]
                 ]
             ) : null
@@ -709,7 +705,7 @@ class PromiseController extends Controller
                 // Get group information
                 $groupArray = $rehearsal['groups'] ?? [];
 
-                // Generate smart display text with integrated Kleingruppe handling
+                // Generate smart display text
                 $smartDisplay = new \App\Core\SmartGroupDisplay();
                 $groupsText = $smartDisplay->generateDescription(
                     $groupArray,

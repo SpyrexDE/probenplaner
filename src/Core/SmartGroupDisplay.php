@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Core;
 
 /**
@@ -17,7 +18,7 @@ class SmartGroupDisplay
 {
     private GroupManager $groupManager;
     private array $language;
-    
+
     public function __construct(?array $language = null)
     {
         $this->groupManager = new GroupManager();
@@ -27,7 +28,7 @@ class SmartGroupDisplay
             'but' => 'aber'
         ];
     }
-    
+
     /**
      * Get all section names dynamically from GroupManager
      * Returns sections that are direct children of root group and subsections
@@ -35,32 +36,33 @@ class SmartGroupDisplay
     private function getSpecificSections(): array
     {
         $specificSections = [];
-        
+
         // Get all sections from GroupManager
         $allSections = $this->groupManager->getAllSections();
-        
+
         foreach ($allSections as $section) {
             $specificSections[] = $section['display_name'];
         }
-        
+
         return array_unique($specificSections);
     }
-    
+
     /**
      * Get the root group dynamically (the top-level group with special rules)
      */
     private function getRootGroup(): ?array
     {
         $allGroups = $this->groupManager->getAllGroups();
-        
+
         foreach ($allGroups as $group) {
-            if (($group['type'] ?? '') === 'special' && 
-                isset($group['special_rules']['affects_all']) && 
-                $group['special_rules']['affects_all'] === true) {
+            if (($group['type'] ?? '') === 'special' &&
+                isset($group['special_rules']['affects_all']) &&
+                $group['special_rules']['affects_all'] === true
+            ) {
                 return $group;
             }
         }
-        
+
         // Fallback: find the first group with no parent (top-level)
         foreach ($allGroups as $group) {
             $parent = $this->groupManager->getParent($group['id']);
@@ -68,10 +70,10 @@ class SmartGroupDisplay
                 return $group;
             }
         }
-        
+
         return null;
     }
-    
+
     /**
      * Get the dynamic root group ID (fallback for when root group is not found)
      */
@@ -80,7 +82,7 @@ class SmartGroupDisplay
         $rootGroup = $this->getRootGroup();
         return $rootGroup ? $rootGroup['id'] : 'tutti'; // Keep 'tutti' as ultimate fallback
     }
-    
+
     /**
      * Get main sections (direct children of root group)
      */
@@ -88,24 +90,24 @@ class SmartGroupDisplay
     {
         $mainSections = [];
         $rootGroup = $this->getRootGroup();
-        
+
         if (!$rootGroup) {
             return [];
         }
-        
+
         // Get all sections that are direct children of the root group
         $allSections = $this->groupManager->getAllSections();
-        
+
         foreach ($allSections as $section) {
             $parent = $this->groupManager->getParent($section['id']);
             if ($parent && $parent['id'] === $rootGroup['id']) {
                 $mainSections[] = $section['id'];
             }
         }
-        
+
         return $mainSections;
     }
-    
+
     /**
      * Try to generate a simple root-level exclusion (e.g., "Tutti ohne Klarinette und Fagott")
      * This has priority over complex nested patterns for small exclusion sets
@@ -115,41 +117,41 @@ class SmartGroupDisplay
         // Get all instruments in the root group and selected instruments
         $rootInstruments = $this->getAllInstrumentsInGroup($rootId);
         $selectedInstruments = [];
-        
+
         foreach ($selectedGroups as $groupId) {
             $selectedInstruments = array_merge($selectedInstruments, $this->getAllInstrumentsInGroup($groupId));
         }
         $selectedInstruments = array_unique($selectedInstruments);
-        
+
         // Check if most of the root is selected (high coverage)
         $coverage = count($selectedInstruments) / count($rootInstruments);
         if ($coverage < 0.5) {
             return null;
         }
-        
+
         // Find missing instruments
         $missingInstruments = array_diff($rootInstruments, $selectedInstruments);
-        
+
         if (count($missingInstruments) === 0) {
             // Perfect match - just return the root name
             return $this->groupManager->getDisplayName($rootId);
         }
-        
+
         // Find the most concise groups that represent the missing instruments
         $missingGroups = $this->findGroupsForInstruments($missingInstruments, $rootId);
-        
+
         // Only use simple root exclusion if the compressed groups are reasonable (≤ 8 groups)
         // This prevents verbose "Tutti ohne [many items]" descriptions
         if (count($missingGroups) <= 8) {
             $rootName = $this->groupManager->getDisplayName($rootId);
             $missingDescription = $this->generateSimpleList($missingGroups);
-            
+
             return $rootName . ' ' . $this->language['without'] . ' ' . $missingDescription;
         }
-        
+
         return null;
     }
-    
+
     /**
      * Count the number of items being excluded in a description
      * Used to determine if a single root exclusion is simple enough to prefer
@@ -159,51 +161,44 @@ class SmartGroupDisplay
         // Find all "ohne" (without) patterns
         $withoutWord = $this->language['without'];
         $withoutPos = strpos($description, $withoutWord);
-        
+
         if ($withoutPos === false) {
             return 0; // No exclusions
         }
-        
+
         // Extract the part after "ohne"
         $exclusionPart = substr($description, $withoutPos + strlen($withoutWord));
-        
+
         // Stop at "aber" (but) if present
         $butWord = $this->language['but'];
         $butPos = strpos($exclusionPart, $butWord);
         if ($butPos !== false) {
             $exclusionPart = substr($exclusionPart, 0, $butPos);
         }
-        
+
         // Count items by splitting on "und" and commas
         $excludedItems = preg_split('/[,]?\s+und\s+|[,\s]+/', trim($exclusionPart));
         $excludedItems = array_map('trim', $excludedItems);
-        $excludedItems = array_filter($excludedItems, function($item) {
+        $excludedItems = array_filter($excludedItems, function ($item) {
             return !empty($item) && $item !== $this->language['and'];
         });
-        
+
         return count($excludedItems);
     }
-    
+
     /**
      * Generate smart description for selected groups with rehearsal context
      * 
      * @param array $selectedGroups Array of selected group IDs
-     * @param array|null $rehearsal Optional rehearsal data for context (e.g., small group status)
+     * @param array|null $rehearsal Optional rehearsal data for context
      * @param bool $isAdminView Whether this is an admin view
      * @return string Natural language description
      */
     public function generateDescription(array $selectedGroups, ?array $rehearsal = null, bool $isAdminView = false): string
     {
-        $baseDescription = $this->generateBaseDescription($selectedGroups);
-        
-        // Apply Kleingruppe prefix if this is a small group rehearsal
-        if ($rehearsal && \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal)) {
-            return \App\Core\RehearsalTypeManager::LABEL_SMALL_GROUP . ': ' . $baseDescription;
-        }
-        
-        return $baseDescription;
+        return $this->generateBaseDescription($selectedGroups);
     }
-    
+
     /**
      * Generate base smart description for selected groups (without context)
      * 
@@ -215,30 +210,30 @@ class SmartGroupDisplay
         if (empty($selectedGroups)) {
             return '';
         }
-        
+
         // Normalize input - remove duplicates but preserve order
         $selectedGroups = array_unique($selectedGroups);
-        
+
         // Remove redundant selections (e.g., if "Streicher" is selected, remove individual string instruments)
         $selectedGroups = $this->removeRedundantSelections($selectedGroups);
-        
+
         // Handle single root group
         if (count($selectedGroups) === 1) {
             $singleGroup = $selectedGroups[0];
             $displayName = $this->groupManager->getDisplayName($singleGroup);
             return $displayName;
         }
-        
+
         // Find the most concise representation using tree compression
         $compressedDescription = $this->compressTreeRepresentation($selectedGroups);
         if ($compressedDescription) {
             return $compressedDescription;
         }
-        
+
         // Fallback to simple list if no compression was found
         return $this->generateSimpleList($selectedGroups);
     }
-    
+
     /**
      * Find possible roots that could be used to describe the selection
      */
@@ -246,28 +241,28 @@ class SmartGroupDisplay
     {
         $roots = [];
         $config = $this->groupManager->getConfig();
-        
+
         // Check all groups in config as potential roots
         $this->findRootsRecursive($config, $selectedGroups, $roots);
-        
+
         // Sort roots by hierarchy level (deeper first, then by coverage)
-        usort($roots, function($a, $b) use ($selectedGroups) {
+        usort($roots, function ($a, $b) use ($selectedGroups) {
             $coverageA = $this->calculateCoverage($selectedGroups, $a);
             $coverageB = $this->calculateCoverage($selectedGroups, $b);
-            
+
             // Prefer higher coverage, then prefer deeper in hierarchy
             if ($coverageA !== $coverageB) {
                 return $coverageB <=> $coverageA; // Higher coverage first
             }
-            
+
             $levelA = count($this->groupManager->getAncestors($a));
             $levelB = count($this->groupManager->getAncestors($b));
             return $levelB <=> $levelA; // Deeper level first
         });
-        
+
         return $roots;
     }
-    
+
     /**
      * Recursively find potential roots
      */
@@ -277,22 +272,22 @@ class SmartGroupDisplay
             if (!is_array($group) || !isset($group['id'])) {
                 continue;
             }
-            
+
             $groupId = $group['id'];
             $coverage = $this->calculateCoverage($selectedGroups, $groupId);
-            
+
             // Only consider groups with at least 50% coverage of selected groups
             if ($coverage >= 0.5) {
                 $roots[] = $groupId;
             }
-            
+
             // Recurse into children
             if (isset($group['children'])) {
                 $this->findRootsRecursive($group['children'], $selectedGroups, $roots);
             }
         }
     }
-    
+
     /**
      * Calculate how much of the selected groups are covered by this root
      */
@@ -300,21 +295,21 @@ class SmartGroupDisplay
     {
         $rootInstruments = $this->getAllInstrumentsInGroup($rootId);
         $selectedInstruments = [];
-        
+
         foreach ($selectedGroups as $groupId) {
             $selectedInstruments = array_merge($selectedInstruments, $this->getAllInstrumentsInGroup($groupId));
         }
-        
+
         $selectedInstruments = array_unique($selectedInstruments);
-        
+
         if (empty($selectedInstruments) || empty($rootInstruments)) {
             return 0.0;
         }
-        
+
         $covered = array_intersect($rootInstruments, $selectedInstruments);
         return count($covered) / count($rootInstruments); // Changed: coverage as fraction of root, not selection
     }
-    
+
     /**
      * Generate description from a specific root
      */
@@ -324,28 +319,30 @@ class SmartGroupDisplay
         if (!$rootGroup) {
             return $this->generateSimpleList($selectedGroups);
         }
-        
+
         $rootName = $rootGroup['display_name'] ?? $rootId;
-        
+
         // Get all descendants of the root
         $allDescendants = $this->groupManager->getDescendants($rootId);
         $descendantIds = array_map(fn($d) => $d['id'], $allDescendants);
         $descendantIds[] = $rootId; // Include root itself
-        
+
         // Check if all descendants are selected (full coverage)
         $selectedInRoot = array_intersect($selectedGroups, $descendantIds);
         $allInstrumentsInRoot = $this->getAllInstrumentsInGroup($rootId);
         $selectedInstruments = [];
-        
+
         foreach ($selectedInRoot as $groupId) {
             $selectedInstruments = array_merge($selectedInstruments, $this->getAllInstrumentsInGroup($groupId));
         }
         $selectedInstruments = array_unique($selectedInstruments);
-        
+
         // If we have full coverage of the root, check what's missing
-        if (count($selectedInstruments) === count($allInstrumentsInRoot) && 
-            array_diff($allInstrumentsInRoot, $selectedInstruments) === []) {
-            
+        if (
+            count($selectedInstruments) === count($allInstrumentsInRoot) &&
+            array_diff($allInstrumentsInRoot, $selectedInstruments) === []
+        ) {
+
             // Check if there are groups outside this root
             $groupsOutsideRoot = array_diff($selectedGroups, $descendantIds);
             if (empty($groupsOutsideRoot)) {
@@ -360,27 +357,27 @@ class SmartGroupDisplay
                 return $this->generateSimpleListFromNames($allItems);
             }
         }
-        
+
         // Check for "without" patterns
         $missingGroups = $this->findMissingGroups($rootId, $selectedGroups);
         $addedGroups = $this->findAddedGroups($rootId, $selectedGroups);
-        
+
         if (!empty($missingGroups)) {
             $description = $rootName . ' ' . $this->language['without'] . ' ';
             $description .= $this->generateSimpleList($missingGroups);
-            
+
             if (!empty($addedGroups)) {
                 $description .= ' ' . $this->language['but'] . ' ';
                 $description .= $this->generateSimpleList($addedGroups);
             }
-            
+
             return $description;
         }
-        
+
         // Fallback to simple list
         return $this->generateSimpleList($selectedGroups);
     }
-    
+
     /**
      * Find groups that are missing from the root coverage
      */
@@ -388,28 +385,28 @@ class SmartGroupDisplay
     {
         $allChildrenIds = array_map(fn($child) => $child['id'], $this->groupManager->getChildren($rootId));
         $missing = [];
-        
+
         foreach ($allChildrenIds as $childId) {
             $childInstruments = $this->getAllInstrumentsInGroup($childId);
             $selectedInstruments = [];
-            
+
             foreach ($selectedGroups as $groupId) {
                 if ($this->isGroupDescendantOf($groupId, $rootId)) {
                     $selectedInstruments = array_merge($selectedInstruments, $this->getAllInstrumentsInGroup($groupId));
                 }
             }
             $selectedInstruments = array_unique($selectedInstruments);
-            
+
             // If none of this child's instruments are selected, it's missing
             $intersection = array_intersect($childInstruments, $selectedInstruments);
             if (empty($intersection)) {
                 $missing[] = $childId;
             }
         }
-        
+
         return $missing;
     }
-    
+
     /**
      * Find groups that were added back despite being excluded by parent
      */
@@ -417,20 +414,20 @@ class SmartGroupDisplay
     {
         $added = [];
         $missingGroups = $this->findMissingGroups($rootId, $selectedGroups);
-        
+
         foreach ($missingGroups as $missingGroup) {
             $missingInstruments = $this->getAllInstrumentsInGroup($missingGroup);
-            
+
             foreach ($selectedGroups as $selectedGroup) {
                 if ($this->isGroupDescendantOf($selectedGroup, $missingGroup)) {
                     $added[] = $selectedGroup;
                 }
             }
         }
-        
+
         return array_unique($added);
     }
-    
+
     /**
      * Check if a group is descendant of another group
      */
@@ -444,7 +441,7 @@ class SmartGroupDisplay
         }
         return false;
     }
-    
+
     /**
      * Get all instruments (leaf nodes) within a group
      */
@@ -454,20 +451,20 @@ class SmartGroupDisplay
         if (!$group) {
             return [];
         }
-        
+
         // If it's an instrument itself, return it
         if (($group['type'] ?? '') === 'instrument') {
             return [$groupId];
         }
-        
+
         // If it's a section without children, it represents itself
         if (($group['type'] ?? '') === 'section' && !isset($group['children'])) {
             return [$groupId];
         }
-        
+
         // Get all instrument descendants and sections without children
         $instruments = $this->groupManager->getInstrumentsByGroup($groupId);
-        
+
         // Also include sections without children that are direct descendants
         $children = $this->groupManager->getChildren($groupId);
         foreach ($children as $child) {
@@ -475,10 +472,10 @@ class SmartGroupDisplay
                 $instruments[] = $child['id'];
             }
         }
-        
+
         return array_unique($instruments);
     }
-    
+
     /**
      * Generate simple list format: "Group1, Group2 und Group3"
      */
@@ -486,11 +483,11 @@ class SmartGroupDisplay
     {
         // Filter out null/empty values
         $groups = array_filter($groups, fn($g) => !empty($g));
-        
+
         if (empty($groups)) {
             return '';
         }
-        
+
         if (count($groups) === 1) {
             $groupId = reset($groups);
             // Handle special exclusion markers
@@ -500,11 +497,11 @@ class SmartGroupDisplay
             $group = $this->groupManager->getGroup($groupId);
             return $group['display_name'] ?? $groupId;
         }
-        
+
         $names = [];
         foreach ($groups as $groupId) {
             if (empty($groupId)) continue;
-            
+
             // Handle special exclusion markers
             if (strpos($groupId, '__EXCLUSION__') === 0) {
                 $names[] = substr($groupId, strlen('__EXCLUSION__'));
@@ -513,11 +510,11 @@ class SmartGroupDisplay
                 $names[] = $group['display_name'] ?? $groupId;
             }
         }
-        
+
         // Apply exception ordering at the final formatting step
         return $this->formatListWithExceptionOrdering($names);
     }
-    
+
     /**
      * Generate simple list format from already formatted names: "Name1, Name2 und Name3"
      * This is similar to generateSimpleList but works with display names rather than group IDs
@@ -526,19 +523,19 @@ class SmartGroupDisplay
     {
         // Filter out null/empty values
         $names = array_filter($names, fn($name) => !empty($name));
-        
+
         if (empty($names)) {
             return '';
         }
-        
+
         if (count($names) === 1) {
             return reset($names);
         }
-        
+
         // Apply exception ordering at the final formatting step
         return $this->formatListWithExceptionOrdering($names);
     }
-    
+
     /**
      * Format a list of names with exception labels placed at the end
      * This ensures "ohne" descriptions come last for clarity
@@ -548,15 +545,15 @@ class SmartGroupDisplay
         if (empty($names)) {
             return '';
         }
-        
+
         if (count($names) === 1) {
             return reset($names);
         }
-        
+
         // Separate exception labels (with "ohne") from regular items
         $regularItems = [];
         $exceptionItems = [];
-        
+
         foreach ($names as $name) {
             if (strpos($name, $this->language['without']) !== false) {
                 $exceptionItems[] = $name;
@@ -564,18 +561,18 @@ class SmartGroupDisplay
                 $regularItems[] = $name;
             }
         }
-        
+
         // Combine: regular items first, then exception items at the end
         $orderedNames = array_merge($regularItems, $exceptionItems);
-        
+
         if (count($orderedNames) === 2) {
             return $orderedNames[0] . ' ' . $this->language['and'] . ' ' . $orderedNames[1];
         }
-        
+
         $last = array_pop($orderedNames);
         return implode(', ', $orderedNames) . ' ' . $this->language['and'] . ' ' . $last;
     }
-    
+
     /**
      * Calculate a score for description quality (lower is better)
      * Considers length and complexity
@@ -584,7 +581,7 @@ class SmartGroupDisplay
     {
         // Base score is character length
         $score = strlen($description);
-        
+
         // Penalty for complex constructions
         if (strpos($description, $this->language['without']) !== false) {
             $score += 20; // "without" adds complexity but is often worth it
@@ -592,13 +589,13 @@ class SmartGroupDisplay
         if (strpos($description, $this->language['but']) !== false) {
             $score += 30; // "but" adds even more complexity
         }
-        
+
         // Count commas as complexity indicator
         $score += substr_count($description, ',') * 10;
-        
+
         return $score;
     }
-    
+
     /**
      * Set language constants
      */
@@ -606,7 +603,7 @@ class SmartGroupDisplay
     {
         $this->language = array_merge($this->language, $language);
     }
-    
+
     /**
      * Get current language settings
      */
@@ -614,7 +611,7 @@ class SmartGroupDisplay
     {
         return $this->language;
     }
-    
+
     /**
      * Find the most concise representation of the tree state
      * This is a generic tree compression algorithm that works with any hierarchy
@@ -630,10 +627,10 @@ class SmartGroupDisplay
                 return $simpleRootExclusion;
             }
         }
-        
+
         // Try different compression strategies and pick the best one
         $candidates = [];
-        
+
         // Strategy 1: Find single root with exclusions (e.g., "Tutti ohne Oboe")
         $singleRootCandidate = $this->findSingleRootWithExclusions($selectedGroups);
         if ($singleRootCandidate) {
@@ -643,7 +640,7 @@ class SmartGroupDisplay
                 'score' => $this->calculateCompressionScore($singleRootCandidate)
             ];
         }
-        
+
         // Strategy 2: Find composite expressions (e.g., "A und B ohne C")
         $compositeCandidate = $this->findCompositeExpression($selectedGroups);
         if ($compositeCandidate) {
@@ -653,7 +650,7 @@ class SmartGroupDisplay
                 'score' => $this->calculateCompressionScore($compositeCandidate)
             ];
         }
-        
+
         // Strategy 3: Find multiple exclusion patterns (e.g., "A ohne X und B ohne Y")
         $multipleExclusionsCandidate = $this->findMultipleExclusionPatterns($selectedGroups);
         if ($multipleExclusionsCandidate) {
@@ -663,7 +660,7 @@ class SmartGroupDisplay
                 'score' => $this->calculateCompressionScore($multipleExclusionsCandidate)
             ];
         }
-        
+
         // Strategy 4: Compress individual sections
         $compressedGroups = $this->compressSections($selectedGroups);
         if ($compressedGroups !== $selectedGroups) {
@@ -673,26 +670,26 @@ class SmartGroupDisplay
             if (strpos($description, $this->language['without']) !== false) {
                 $strategy = 'compressed_sections_with_exclusions';
             }
-            
+
             $candidates[] = [
                 'description' => $description,
                 'strategy' => $strategy,
                 'score' => $this->calculateCompressionScore($description)
             ];
         }
-        
+
         // Pick the best candidate using multi-criteria approach
         if (empty($candidates)) {
             return null;
         }
-        
+
         $originalScore = $this->calculateCompressionScore($this->generateSimpleList($selectedGroups));
-        
+
         // Sort candidates by multiple criteria:
         // 1. Strongly prefer single root exclusions over complex patterns
         // 2. Strategy preference (single root > compressed sections with exclusions > composite > multiple exclusions > compressed sections)
         // 3. Lower score (more concise)
-        usort($candidates, function($a, $b) use ($originalScore) {
+        usort($candidates, function ($a, $b) use ($originalScore) {
             // First check: strongly prefer single root exclusions over multiple exclusions
             // Single root exclusions are almost always clearer than multiple exclusion patterns
             if ($a['strategy'] === 'single_root' && $b['strategy'] === 'multiple_exclusions') {
@@ -701,7 +698,7 @@ class SmartGroupDisplay
             if ($b['strategy'] === 'single_root' && $a['strategy'] === 'multiple_exclusions') {
                 return 1; // Always prefer single root over multiple exclusions
             }
-            
+
             // Also prefer compressed sections with exclusions over multiple exclusions when simpler
             if ($a['strategy'] === 'compressed_sections_with_exclusions' && $b['strategy'] === 'multiple_exclusions') {
                 $aExclusionCount = $this->countExclusions($a['description']);
@@ -715,43 +712,43 @@ class SmartGroupDisplay
                     return 1; // Prefer compressed sections with simple exclusions
                 }
             }
-            
+
             // Strategy preference
             $strategyOrder = [
                 'single_root' => 10,  // Much higher priority for single root exclusions
                 'compressed_sections_with_exclusions' => 4,  // Higher priority for exclusions from compressed sections
-                'composite' => 3, 
+                'composite' => 3,
                 'multiple_exclusions' => 1,  // Much lower priority for multiple exclusions
                 'compressed_sections' => 2
             ];
             $aStrategy = $strategyOrder[$a['strategy']] ?? 0;
             $bStrategy = $strategyOrder[$b['strategy']] ?? 0;
-            
+
             if ($aStrategy !== $bStrategy) {
                 return $bStrategy <=> $aStrategy; // Higher strategy number first
             }
-            
+
             // Then by score (lower is better)
             return $a['score'] <=> $b['score'];
         });
-        
+
         // Return the best candidate that's better than the original
         foreach ($candidates as $candidate) {
             if ($candidate['score'] < $originalScore) {
                 return $candidate['description'];
             }
         }
-        
+
         // If no candidate is better, but we have compressed sections with exclusions, use that
         foreach ($candidates as $candidate) {
             if ($candidate['strategy'] === 'compressed_sections_with_exclusions') {
                 return $candidate['description'];
             }
         }
-        
+
         return null;
     }
-    
+
     /**
      * Find single root with exclusions (e.g., "Tutti ohne Oboe")
      */
@@ -759,14 +756,14 @@ class SmartGroupDisplay
     {
         $allGroups = $this->groupManager->getAllGroups();
         $candidates = [];
-        
+
         foreach ($allGroups as $rootId => $rootData) {
             $candidate = $this->tryDescribeAsRootWithExclusions($selectedGroups, $rootId);
             if ($candidate) {
                 $score = $this->calculateCompressionScore($candidate);
                 $coverage = $this->calculateRootCoverage($selectedGroups, $rootId);
                 $specificity = $this->calculateRootSpecificity($rootId);
-                
+
                 $candidates[] = [
                     'description' => $candidate,
                     'score' => $score,
@@ -776,25 +773,25 @@ class SmartGroupDisplay
                 ];
             }
         }
-        
+
         if (empty($candidates)) {
             return null;
         }
-        
+
         // Sort candidates by multiple criteria:
         // 1. Quality of description (prefer descriptions that mention missing instruments)
         // 2. Meaningful exclusion patterns (prefer specific section exclusions over general ones)
         // 3. Higher specificity (more specific roots preferred)
         // 4. Higher coverage (better match)
         // 5. Lower score (more concise)
-        usort($candidates, function($a, $b) {
+        usort($candidates, function ($a, $b) {
             // First priority: quality of description (prefer descriptions that mention missing instruments)
             $aHasExclusions = strpos($a['description'], $this->language['without']) !== false;
             $bHasExclusions = strpos($b['description'], $this->language['without']) !== false;
             if ($aHasExclusions !== $bHasExclusions) {
                 return $bHasExclusions <=> $aHasExclusions; // Prefer descriptions with exclusions
             }
-            
+
             // Second priority: meaningful exclusion patterns
             // Prefer specific section exclusions (like "Holzbläser ohne Flöte") over general ones
             $aIsSpecificSection = $this->isSpecificSectionExclusion($a['description']);
@@ -802,7 +799,7 @@ class SmartGroupDisplay
             if ($aIsSpecificSection !== $bIsSpecificSection) {
                 return $bIsSpecificSection <=> $aIsSpecificSection; // Prefer specific section exclusions
             }
-            
+
             // If both are specific section exclusions, prefer the one with fewer excluded items
             if ($aIsSpecificSection && $bIsSpecificSection) {
                 $aExclusionScore = $this->calculateSpecificSectionExclusionScore($a['description']);
@@ -811,24 +808,24 @@ class SmartGroupDisplay
                     return $aExclusionScore <=> $bExclusionScore; // Lower is better
                 }
             }
-            
+
             // Third priority: specificity (higher is better)
             if ($a['specificity'] !== $b['specificity']) {
                 return $b['specificity'] <=> $a['specificity'];
             }
-            
+
             // Fourth priority: coverage (higher is better)
             if (abs($a['coverage'] - $b['coverage']) > 0.1) {
                 return $b['coverage'] <=> $a['coverage'];
             }
-            
+
             // Fifth priority: score (lower is better)
             return $a['score'] <=> $b['score'];
         });
-        
+
         return $candidates[0]['description'];
     }
-    
+
     /**
      * Calculate how well a root covers the selected groups
      */
@@ -838,17 +835,17 @@ class SmartGroupDisplay
         if (empty($rootInstruments)) {
             return 0.0;
         }
-        
+
         $selectedInstruments = [];
         foreach ($selectedGroups as $groupId) {
             $selectedInstruments = array_merge($selectedInstruments, $this->getAllInstrumentsInGroup($groupId));
         }
         $selectedInstruments = array_unique($selectedInstruments);
-        
+
         $intersection = array_intersect($rootInstruments, $selectedInstruments);
         return count($intersection) / count($rootInstruments);
     }
-    
+
     /**
      * Check if a description represents a specific section exclusion (like "Holzbläser ohne Flöte")
      */
@@ -857,7 +854,7 @@ class SmartGroupDisplay
         // Look for patterns like "Holzbläser ohne X" or "Blechbläser ohne X"
         // These are more meaningful than general exclusions like "Streicher ohne X und Y"
         $specificSections = $this->getSpecificSections();
-        
+
         foreach ($specificSections as $section) {
             // Check for patterns that start with the section name
             if (strpos($description, $section . ' ' . $this->language['without']) === 0) {
@@ -867,7 +864,7 @@ class SmartGroupDisplay
                     return true; // This is a specific section exclusion
                 }
             }
-            
+
             // Check for patterns that contain the section name with exclusion in the middle
             // Like "Other groups und Holzbläser ohne Flöte"
             if (strpos($description, ' ' . $this->language['and'] . ' ' . $section . ' ' . $this->language['without']) !== false) {
@@ -878,10 +875,10 @@ class SmartGroupDisplay
                 }
             }
         }
-        
+
         return false;
     }
-    
+
     /**
      * Calculate the quality score for a specific section exclusion (lower = better)
      */
@@ -889,9 +886,9 @@ class SmartGroupDisplay
     {
         // Prefer single instrument exclusions over multiple instrument exclusions
         // "Holzbläser ohne Flöte" is better than "Streicher ohne Violine 1 und Kontrabass"
-        
+
         $specificSections = $this->getSpecificSections();
-        
+
         foreach ($specificSections as $section) {
             // Check for patterns that start with the section name
             if (strpos($description, $section . ' ' . $this->language['without']) === 0) {
@@ -900,13 +897,13 @@ class SmartGroupDisplay
                 // Split by comma and "und" to get individual items
                 $excludedItems = preg_split('/[,]?\s+und\s+|[,\s]+/', $exclusionPart);
                 $excludedItems = array_map('trim', $excludedItems);
-                $excludedItems = array_filter($excludedItems, function($item) {
+                $excludedItems = array_filter($excludedItems, function ($item) {
                     return !empty($item) && $item !== $this->language['and'];
                 });
-                
+
                 return count($excludedItems); // Lower is better
             }
-            
+
             // Check for patterns that contain the section name with exclusion in the middle
             if (strpos($description, ' ' . $this->language['and'] . ' ' . $section . ' ' . $this->language['without']) !== false) {
                 // Extract the exclusion part
@@ -917,18 +914,18 @@ class SmartGroupDisplay
                     // Split by comma and "und" to get individual items
                     $excludedItems = preg_split('/[,]?\s+und\s+|[,\s]+/', $exclusionPart);
                     $excludedItems = array_map('trim', $excludedItems);
-                    $excludedItems = array_filter($excludedItems, function($item) {
+                    $excludedItems = array_filter($excludedItems, function ($item) {
                         return !empty($item) && $item !== $this->language['and'];
                     });
-                    
+
                     return count($excludedItems); // Lower is better
                 }
             }
         }
-        
+
         return 999; // High penalty for non-specific exclusions
     }
-    
+
     /**
      * Calculate how specific a root is (higher = more specific)
      */
@@ -937,27 +934,27 @@ class SmartGroupDisplay
         // Get the depth of this root in the hierarchy
         $ancestors = $this->groupManager->getAncestors($rootId);
         $depth = count($ancestors);
-        
+
         // Special penalty for root group - it's very general
         $rootGroup = $this->getRootGroup();
         if ($rootGroup && $rootId === $rootGroup['id']) {
             $depth = -10; // Much larger penalty for root group
         }
-        
+
         // Bonus for section-level groups (like "Bläser", "Streicher")
         $group = $this->groupManager->getGroup($rootId);
         if ($group && ($group['type'] ?? '') === 'section') {
             $depth += 5; // Much larger bonus for section-level groups
         }
-        
+
         // Additional bonus for groups that are direct children of root group
         if (in_array($rootId, $this->getMainSections())) {
             $depth += 3; // Extra bonus for main sections
         }
-        
+
         return $depth;
     }
-    
+
     /**
      * Find multiple exclusion patterns (e.g., "A ohne X und B ohne Y")
      */
@@ -965,10 +962,10 @@ class SmartGroupDisplay
     {
         // Look for cases where we have multiple meaningful exclusion patterns
         // Like "Holzbläser ohne Flöte" AND "Blechbläser ohne Horn"
-        
+
         $specificSections = $this->getSpecificSections();
         $rawExclusionPatterns = [];
-        
+
         foreach ($specificSections as $section) {
             $result = $this->tryDescribeAsRootWithExclusions($selectedGroups, $section);
             if ($result && $this->isSpecificSectionExclusion($result)) {
@@ -982,42 +979,42 @@ class SmartGroupDisplay
                 }
             }
         }
-        
+
         // CRITICAL: Remove redundant exclusions at multiple hierarchy levels
         // E.g., if we have both "Bläser ohne Klarinette" and "Holzbläser ohne Klarinette",
         // keep only the higher-level one ("Bläser ohne Klarinette")
         $deduplicatedPatterns = $this->deduplicateHierarchyExclusions($rawExclusionPatterns);
-        
+
         // If we have multiple meaningful exclusion patterns, combine them
         if (count($deduplicatedPatterns) >= 2) {
             // Find the remaining groups that aren't covered by these exclusions
             $remainingGroups = $this->findRemainingGroupsForMultipleExclusions($selectedGroups, $deduplicatedPatterns);
-            
+
             if (!empty($remainingGroups)) {
 
                 $allItems = [];
-                
+
                 // Add remaining groups as display names
                 foreach ($remainingGroups as $groupId) {
                     $group = $this->groupManager->getGroup($groupId);
                     $allItems[] = $group['display_name'] ?? $groupId;
                 }
-                
+
                 // Add exclusion patterns
                 foreach ($deduplicatedPatterns as $pattern) {
                     $allItems[] = $pattern;
                 }
-                
+
                 // Use generateSimpleList to format the unified list properly
                 return $this->generateSimpleListFromNames($allItems);
             } else {
                 return implode(' und ', $deduplicatedPatterns);
             }
         }
-        
+
         return null;
     }
-    
+
     /**
      * Remove redundant exclusions at multiple hierarchy levels
      * E.g., if we have both "Bläser ohne Klarinette" and "Holzbläser ohne Klarinette",
@@ -1028,31 +1025,31 @@ class SmartGroupDisplay
         if (count($rawPatterns) <= 1) {
             return array_column($rawPatterns, 'pattern');
         }
-        
+
         $deduplicatedPatterns = [];
-        
+
         foreach ($rawPatterns as $patternA) {
             $isRedundant = false;
-            
+
             // Check if this pattern is made redundant by a higher-level pattern
             foreach ($rawPatterns as $patternB) {
                 if ($patternA === $patternB) continue;
-                
+
                 // Check if patternB covers the same exclusions at a higher hierarchy level
                 if ($this->isPatternMadeRedundantBy($patternA, $patternB)) {
                     $isRedundant = true;
                     break;
                 }
             }
-            
+
             if (!$isRedundant) {
                 $deduplicatedPatterns[] = $patternA['pattern'];
             }
         }
-        
+
         return array_unique($deduplicatedPatterns);
     }
-    
+
     /**
      * Check if patternA is made redundant by patternB (higher in hierarchy)
      */
@@ -1060,32 +1057,32 @@ class SmartGroupDisplay
     {
         $sectionA = $patternA['section'];
         $sectionB = $patternB['section'];
-        
+
         // Check if sectionB is an ancestor of sectionA in the hierarchy
         $sectionAGroup = $this->groupManager->getGroup($sectionA);
         $sectionBGroup = $this->groupManager->getGroup($sectionB);
-        
+
         if (!$sectionAGroup || !$sectionBGroup) {
             return false;
         }
-        
+
         // Check if B is an ancestor of A
         $ancestorsOfA = $this->groupManager->getAncestors($sectionA);
         $isBAncestorOfA = in_array($sectionB, array_column($ancestorsOfA, 'id'));
-        
+
         if (!$isBAncestorOfA) {
             return false;
         }
-        
+
         // Extract excluded instruments from both patterns
         $excludedInstrumentsA = $this->extractExcludedInstruments($patternA['pattern']);
         $excludedInstrumentsB = $this->extractExcludedInstruments($patternB['pattern']);
-        
+
         // Check if all instruments excluded in A are also excluded in B
         // If so, pattern A is redundant because B already covers it at a higher level
         return count(array_diff($excludedInstrumentsA, $excludedInstrumentsB)) === 0;
     }
-    
+
     /**
      * Extract the list of excluded instruments from a pattern like "Holzbläser ohne Klarinette und Fagott"
      */
@@ -1093,24 +1090,24 @@ class SmartGroupDisplay
     {
         $withoutWord = $this->language['without'];
         $withoutPos = strpos($pattern, $withoutWord);
-        
+
         if ($withoutPos === false) {
             return [];
         }
-        
+
         // Extract the part after "ohne"
         $exclusionPart = trim(substr($pattern, $withoutPos + strlen($withoutWord)));
-        
+
         // Split by "und" and commas to get individual instruments
         $excludedItems = preg_split('/[,]?\s+und\s+|[,\s]+/', $exclusionPart);
         $excludedItems = array_map('trim', $excludedItems);
-        $excludedItems = array_filter($excludedItems, function($item) {
+        $excludedItems = array_filter($excludedItems, function ($item) {
             return !empty($item) && $item !== $this->language['and'];
         });
-        
+
         return array_values($excludedItems);
     }
-    
+
     /**
      * Extract the exclusion part from a description (e.g., "Holzbläser ohne Flöte" from "Other groups und Holzbläser ohne Flöte")
      */
@@ -1120,7 +1117,7 @@ class SmartGroupDisplay
         if (strpos($description, $section . ' ' . $this->language['without']) === 0) {
             return $section . ' ' . $this->language['without'] . ' ' . substr($description, strlen($section . ' ' . $this->language['without']));
         }
-        
+
         // Look for patterns that contain the section name with exclusion in the middle
         $pattern = ' ' . $this->language['and'] . ' ' . $section . ' ' . $this->language['without'] . ' ';
         $pos = strpos($description, $pattern);
@@ -1133,20 +1130,20 @@ class SmartGroupDisplay
             }
             return $section . ' ' . $this->language['without'] . ' ' . $exclusionPart;
         }
-        
+
         return null;
     }
-    
+
     /**
      * Find remaining groups that aren't covered by the exclusion patterns
      */
     private function findRemainingGroupsForMultipleExclusions(array $selectedGroups, array $exclusionPatterns): array
     {
         $remainingGroups = [];
-        
+
         foreach ($selectedGroups as $groupId) {
             $isCovered = false;
-            
+
             foreach ($exclusionPatterns as $pattern) {
                 // Check if this group is covered by any of the exclusion patterns
                 if ($this->isGroupCoveredByExclusionPattern($groupId, $pattern)) {
@@ -1154,15 +1151,15 @@ class SmartGroupDisplay
                     break;
                 }
             }
-            
+
             if (!$isCovered) {
                 $remainingGroups[] = $groupId;
             }
         }
-        
+
         return $remainingGroups;
     }
-    
+
     /**
      * Check if a group is covered by an exclusion pattern
      */
@@ -1171,21 +1168,21 @@ class SmartGroupDisplay
         // Extract the section and excluded items from the pattern
         // Pattern format: "Section ohne item1, item2"
         $specificSections = $this->getSpecificSections();
-        
+
         foreach ($specificSections as $section) {
             if (strpos($pattern, $section . ' ' . $this->language['without']) === 0) {
                 // Check if the group is part of this section
                 $groupInstruments = $this->getAllInstrumentsInGroup($groupId);
                 $sectionInstruments = $this->getAllInstrumentsInGroup($section);
-                
+
                 $intersection = array_intersect($groupInstruments, $sectionInstruments);
                 return !empty($intersection);
             }
         }
-        
+
         return false;
     }
-    
+
     /**
      * Find composite expressions (e.g., "A und B ohne C")
      */
@@ -1194,7 +1191,7 @@ class SmartGroupDisplay
         // Try multiple strategies to find the best composite expression
         $bestCombination = null;
         $bestScore = PHP_INT_MAX;
-        
+
         // Strategy A: Greedy approach (current algorithm)
         $greedyResult = $this->findCompositeGreedy($selectedGroups);
         if ($greedyResult) {
@@ -1204,7 +1201,7 @@ class SmartGroupDisplay
                 $bestScore = $score;
             }
         }
-        
+
         // Strategy B: Try specific high-value combinations first
         $targetResult = $this->findCompositeTargeted($selectedGroups);
         if ($targetResult) {
@@ -1214,17 +1211,17 @@ class SmartGroupDisplay
                 $bestScore = $score;
             }
         }
-        
+
         return $bestCombination;
     }
-    
+
     /**
      * Greedy composite expression finding (original algorithm)
      */
     private function findCompositeGreedy(array $selectedGroups): ?string
     {
         $allGroups = $this->groupManager->getAllGroups();
-        
+
         // Sort groups by size (larger groups first)
         $sortedRoots = [];
         foreach ($allGroups as $rootId => $rootData) {
@@ -1233,38 +1230,38 @@ class SmartGroupDisplay
                 $sortedRoots[] = $rootId;
             }
         }
-        
-        usort($sortedRoots, function($a, $b) {
+
+        usort($sortedRoots, function ($a, $b) {
             $countA = count($this->getAllInstrumentsInGroup($a));
             $countB = count($this->getAllInstrumentsInGroup($b));
             return $countB <=> $countA;
         });
-        
+
         // Find units greedily
         $units = [];
         $remainingGroups = $selectedGroups;
-        
+
         foreach ($sortedRoots as $rootId) {
             if (empty($remainingGroups)) break;
-            
+
             $unit = $this->tryExtractUnitWithExclusions($remainingGroups, $rootId);
             if ($unit && count($unit['covered_groups']) >= 2) {
                 $units[] = $unit['description'];
                 $remainingGroups = array_diff($remainingGroups, $unit['covered_groups']);
             }
         }
-        
+
         foreach ($remainingGroups as $groupId) {
             $units[] = $this->groupManager->getDisplayName($groupId);
         }
-        
+
         if (count($units) < count($selectedGroups) && count($units) > 0) {
             return $this->combineUnits($units);
         }
-        
+
         return null;
     }
-    
+
     /**
      * Targeted composite expression finding (try specific patterns)
      */
@@ -1273,7 +1270,7 @@ class SmartGroupDisplay
         // Try all possible combinations and pick the best one
         $allGroups = $this->groupManager->getAllGroups();
         $allCandidates = [];
-        
+
         foreach ($allGroups as $rootId => $rootData) {
             $rootInstruments = $this->getAllInstrumentsInGroup($rootId);
             if (count($rootInstruments) >= 2) {
@@ -1283,15 +1280,15 @@ class SmartGroupDisplay
                 }
             }
         }
-        
+
         // Pick the candidate with the best score (lowest)
         if (empty($allCandidates)) {
             return null;
         }
-        
+
         $bestCandidate = null;
         $bestScore = PHP_INT_MAX;
-        
+
         foreach ($allCandidates as $candidate) {
             $score = $this->calculateCompressionScore($candidate);
             if ($score < $bestScore) {
@@ -1299,10 +1296,10 @@ class SmartGroupDisplay
                 $bestScore = $score;
             }
         }
-        
+
         return $bestCandidate;
     }
-    
+
     /**
      * Try to build a composite expression starting with a specific root
      */
@@ -1310,19 +1307,19 @@ class SmartGroupDisplay
     {
         $units = [];
         $remainingGroups = $selectedGroups;
-        
+
         // First, try the starting root
         $unit = $this->tryExtractUnitWithExclusions($remainingGroups, $startingRoot);
         if ($unit && count($unit['covered_groups']) >= 2) {
             $units[] = $unit['description'];
             $remainingGroups = array_diff($remainingGroups, $unit['covered_groups']);
         }
-        
+
         // Then try other groups for remaining
         $allGroups = $this->groupManager->getAllGroups();
         foreach ($allGroups as $rootId => $rootData) {
             if (empty($remainingGroups) || $rootId === $startingRoot) continue;
-            
+
             $rootInstruments = $this->getAllInstrumentsInGroup($rootId);
             if (count($rootInstruments) >= 2) {
                 $unit = $this->tryExtractUnitWithExclusions($remainingGroups, $rootId);
@@ -1332,19 +1329,19 @@ class SmartGroupDisplay
                 }
             }
         }
-        
+
         // Add remaining individual groups
         foreach ($remainingGroups as $groupId) {
             $units[] = $this->groupManager->getDisplayName($groupId);
         }
-        
+
         if (count($units) < count($selectedGroups) && count($units) > 0) {
             return $this->combineUnits($units);
         }
-        
+
         return null;
     }
-    
+
     /**
      * Try to describe selection as a single root with exclusions
      */
@@ -1354,7 +1351,7 @@ class SmartGroupDisplay
         if (empty($rootInstruments)) {
             return null;
         }
-        
+
         // Skip individual instruments and section-level groups that represent themselves
         // These should not be used as roots for exclusions
         $group = $this->groupManager->getGroup($rootId);
@@ -1371,27 +1368,27 @@ class SmartGroupDisplay
                 }
             }
         }
-        
+
         $selectedInstruments = [];
         foreach ($selectedGroups as $groupId) {
             $selectedInstruments = array_merge($selectedInstruments, $this->getAllInstrumentsInGroup($groupId));
         }
         $selectedInstruments = array_unique($selectedInstruments);
-        
+
         // Find missing instruments from the root
         $missingInstruments = array_diff($rootInstruments, $selectedInstruments);
-        
+
         // Find instruments outside the root
         $instrumentsOutsideRoot = array_diff($selectedInstruments, $rootInstruments);
-        
+
         // Calculate coverage - what percentage of the selection is within this root
         $rootCoverage = count(array_intersect($selectedInstruments, $rootInstruments)) / count($selectedInstruments);
-        
+
         // Only proceed if this root covers most of the selection (at least 70%)
         if ($rootCoverage < 0.7) {
             return null; // This root doesn't represent most of the selection
         }
-        
+
         // Only proceed if we're missing a reasonable number of instruments
         if (count($missingInstruments) === 0) {
             // Perfect match within root - just return the root name
@@ -1404,7 +1401,7 @@ class SmartGroupDisplay
                     $rootName = $this->groupManager->getDisplayName($rootId);
                     $rootGroupId = $this->getDynamicRootId();
                     $outsideGroups = $this->findGroupsForInstruments($instrumentsOutsideRoot, $rootGroupId);
-                    
+
                     $allItems = [$rootName];
                     foreach ($outsideGroups as $groupId) {
                         $group = $this->groupManager->getGroup($groupId);
@@ -1416,13 +1413,13 @@ class SmartGroupDisplay
                 }
             }
         }
-        
+
         // Find the most concise way to describe the missing instruments
         $missingGroups = $this->findGroupsForInstruments($missingInstruments, $rootId);
         if (empty($missingGroups)) {
             return null;
         }
-        
+
         // Validate that the exclusion doesn't exclude instruments that are actually selected
         foreach ($missingGroups as $missingGroup) {
             $missingGroupInstruments = $this->getAllInstrumentsInGroup($missingGroup);
@@ -1432,14 +1429,14 @@ class SmartGroupDisplay
                 return null;
             }
         }
-        
+
         $rootName = $this->groupManager->getDisplayName($rootId);
         $missingDescription = $this->generateSimpleList($missingGroups);
-        
+
         // Separate individual instruments from section groups in instrumentsOutsideRoot
         $individualInstrumentsOutside = [];
         $sectionGroupsOutside = [];
-        
+
         if (!empty($instrumentsOutsideRoot)) {
             foreach ($selectedGroups as $groupId) {
                 $groupInstruments = $this->getAllInstrumentsInGroup($groupId);
@@ -1461,7 +1458,7 @@ class SmartGroupDisplay
                 }
             }
         }
-        
+
         // Build description - only if we don't have too many outside instruments
         if (empty($individualInstrumentsOutside) && empty($sectionGroupsOutside)) {
             // Simple case: just exclusions within the root
@@ -1473,31 +1470,31 @@ class SmartGroupDisplay
             if ($totalOutside > count($rootInstruments)) {
                 return null; // Too many outside instruments for this to be a good root description
             }
-            
+
             // Continue with unified description only if reasonable
             $outsideGroups = [];
-            
+
             // Add individual instruments outside
             if (!empty($individualInstrumentsOutside)) {
                 $rootGroupId = $this->getDynamicRootId();
                 $individualGroups = $this->findGroupsForInstruments($individualInstrumentsOutside, $rootGroupId);
                 $outsideGroups = array_merge($outsideGroups, $individualGroups);
             }
-            
+
             // Add section groups outside
             if (!empty($sectionGroupsOutside)) {
                 // Sort section groups based on their position in selectedGroups
-                usort($sectionGroupsOutside, function($a, $b) use ($selectedGroups) {
+                usort($sectionGroupsOutside, function ($a, $b) use ($selectedGroups) {
                     $posA = array_search($a, $selectedGroups);
                     $posB = array_search($b, $selectedGroups);
                     return $posA <=> $posB;
                 });
                 $outsideGroups = array_merge($outsideGroups, $sectionGroupsOutside);
             }
-            
+
             // Remove duplicates and preserve order
             $outsideGroups = array_values(array_unique($outsideGroups));
-            
+
             if (!empty($outsideGroups)) {
                 // Add the root group to the list for proper comma formatting
                 $allGroups = array_merge($outsideGroups, [$rootId]);
@@ -1507,10 +1504,10 @@ class SmartGroupDisplay
                 $description = $rootName . ' ' . $this->language['without'] . ' ' . $missingDescription;
             }
         }
-        
+
         return $description;
     }
-    
+
     /**
      * Try to extract a unit with exclusions from the remaining groups
      */
@@ -1520,10 +1517,10 @@ class SmartGroupDisplay
         if (empty($rootInstruments) || count($rootInstruments) < 2) {
             return null; // Not worth considering small groups
         }
-        
+
         $selectedInstruments = [];
         $coveredGroups = [];
-        
+
         foreach ($remainingGroups as $groupId) {
             $groupInstruments = $this->getAllInstrumentsInGroup($groupId);
             $intersection = array_intersect($groupInstruments, $rootInstruments);
@@ -1532,12 +1529,12 @@ class SmartGroupDisplay
                 $coveredGroups[] = $groupId;
             }
         }
-        
+
         $selectedInstruments = array_unique($selectedInstruments);
-        
+
         // Check if this forms a meaningful "root minus exclusions" pattern
         $missingInstruments = array_diff($rootInstruments, $selectedInstruments);
-        
+
         if (empty($selectedInstruments)) {
             return null;
         }
@@ -1548,7 +1545,7 @@ class SmartGroupDisplay
                 $rootName = $this->groupManager->getDisplayName($rootId);
                 $missingDescription = $this->generateSimpleList($missingGroups);
                 $description = $rootName . ' ' . $this->language['without'] . ' ' . $missingDescription;
-                
+
                 return [
                     'description' => $description,
                     'covered_groups' => $coveredGroups
@@ -1560,10 +1557,10 @@ class SmartGroupDisplay
                 'covered_groups' => $coveredGroups
             ];
         }
-        
+
         return null;
     }
-    
+
     /**
      * Find the most concise groups that represent the given instruments within a root
      */
@@ -1572,52 +1569,52 @@ class SmartGroupDisplay
         if (empty($instruments)) {
             return [];
         }
-        
+
         $groups = [];
         $remainingInstruments = $instruments;
-        
+
         // Get all descendants of the root to work within that scope
         $descendants = $this->groupManager->getDescendants($withinRootId);
         $descendants[] = $this->groupManager->getGroup($withinRootId); // Include root itself
-        
+
         // Sort groups by completeness and specificity
         // Complete groups first, then partial groups by coverage, then by depth
-        usort($descendants, function($a, $b) use ($instruments) {
+        usort($descendants, function ($a, $b) use ($instruments) {
             $aInstruments = $this->getAllInstrumentsInGroup($a['id']);
             $bInstruments = $this->getAllInstrumentsInGroup($b['id']);
-            
+
             $aCovered = array_intersect($aInstruments, $instruments);
             $bCovered = array_intersect($bInstruments, $instruments);
-            
+
             $aComplete = count($aCovered) === count($aInstruments);
             $bComplete = count($bCovered) === count($bInstruments);
-            
+
             // Complete groups first
             if ($aComplete !== $bComplete) {
                 return $bComplete <=> $aComplete; // Complete groups first
             }
-            
+
             // Among complete groups, prefer larger groups
             if ($aComplete && $bComplete) {
                 return count($bInstruments) <=> count($aInstruments); // Larger groups first
             }
-            
+
             // Among partial groups, prefer higher coverage
             $aCoverage = count($aCovered) / count($aInstruments);
             $bCoverage = count($bCovered) / count($bInstruments);
             if (abs($aCoverage - $bCoverage) > 0.1) {
                 return $bCoverage <=> $aCoverage; // Higher coverage first
             }
-            
+
             // Finally, prefer deeper groups (more specific)
             $depthA = count($this->groupManager->getAncestors($a['id']));
             $depthB = count($this->groupManager->getAncestors($b['id']));
             return $depthB <=> $depthA; // Deeper groups first
         });
-        
+
         foreach ($descendants as $group) {
             if (empty($remainingInstruments)) break;
-            
+
             $groupInstruments = $this->getAllInstrumentsInGroup($group['id']);
             $covered = array_intersect($groupInstruments, $remainingInstruments);
             if (count($covered) === count($groupInstruments)) {
@@ -1630,10 +1627,10 @@ class SmartGroupDisplay
         foreach ($remainingInstruments as $instrument) {
             $groups[] = $instrument;
         }
-        
+
         return $groups;
     }
-    
+
     /**
      * Combine multiple units into a single description
      * Handles pre-formatted strings properly to avoid double "und" issues
@@ -1643,19 +1640,19 @@ class SmartGroupDisplay
         if (count($units) === 1) {
             return $units[0];
         }
-        
+
         // Parse each unit to extract individual items and avoid double "und"
         $allItems = [];
-        
+
         foreach ($units as $unit) {
             $items = $this->parseUnitIntoItems($unit);
             $allItems = array_merge($allItems, $items);
         }
-        
+
         // Use the proper list formatter for all items
         return $this->generateSimpleListFromNames($allItems);
     }
-    
+
     /**
      * Parse a unit string into individual items
      * E.g., "Streicher und Schlagwerk" -> ["Streicher", "Schlagwerk"]
@@ -1667,22 +1664,22 @@ class SmartGroupDisplay
         if (strpos($unit, $this->language['without']) !== false) {
             return [$unit];
         }
-        
+
         // If the unit contains "aber" (but), keep it as a single complex item  
         if (strpos($unit, $this->language['but']) !== false) {
             return [$unit];
         }
-        
+
         // Otherwise, split on "und" and commas to get individual items
         $items = preg_split('/[,]?\s+' . preg_quote($this->language['and']) . '\s+|[,\s]+/', $unit);
         $items = array_map('trim', $items);
-        $items = array_filter($items, function($item) {
+        $items = array_filter($items, function ($item) {
             return !empty($item) && $item !== $this->language['and'];
         });
-        
+
         return array_values($items);
     }
-    
+
     /**
      * Compress sections by replacing complete child sets with their parent
      * Also handle sections already in the list that have missing children
@@ -1692,16 +1689,16 @@ class SmartGroupDisplay
     {
         $compressed = $selectedGroups;
         $allSections = $this->groupManager->getAllSections();
-        
+
         foreach ($allSections as $sectionId => $sectionData) {
             // Get all children of this section
             $children = $this->groupManager->getChildren($sectionId);
             if (empty($children)) {
                 continue;
             }
-            
+
             $childIds = array_map(fn($child) => $child['id'], $children);
-            
+
             // If section is already in the list, check if it should be replaced with exclusion description
             if (in_array($sectionId, $compressed)) {
                 $selectedChildren = array_intersect($compressed, $childIds);
@@ -1759,7 +1756,7 @@ class SmartGroupDisplay
                 }
                 continue;
             }
-            
+
             // Check if ALL children are selected (original compression logic)
             if (count($selectedChildren) === count($childIds) && count($selectedChildren) > 1) {
                 // Replace all children with the parent section
@@ -1767,10 +1764,10 @@ class SmartGroupDisplay
                 $compressed[] = $sectionId;
             }
         }
-        
+
         return array_values($compressed);
     }
-    
+
     /**
      * Whether this section can be shown as "section ohne X" (compressed with exclusions).
      * Any parent section with children is compressible; the caller already enforces
@@ -1785,7 +1782,7 @@ class SmartGroupDisplay
         $children = $this->groupManager->getChildren($sectionId);
         return !empty($children);
     }
-    
+
     /**
      * Find possible roots for compression (nodes that have children)
      */
@@ -1793,7 +1790,7 @@ class SmartGroupDisplay
     {
         $roots = [];
         $allGroups = $this->groupManager->getAllGroups();
-        
+
         foreach ($allGroups as $groupId => $groupData) {
             // Only consider groups that have children (can be compressed)
             $children = $this->groupManager->getChildren($groupId);
@@ -1801,17 +1798,17 @@ class SmartGroupDisplay
                 $roots[] = $groupId;
             }
         }
-        
+
         // Sort by hierarchy depth (deeper first for more specific compression)
-        usort($roots, function($a, $b) {
+        usort($roots, function ($a, $b) {
             $depthA = count($this->groupManager->getAncestors($a));
             $depthB = count($this->groupManager->getAncestors($b));
             return $depthB <=> $depthA;
         });
-        
+
         return $roots;
     }
-    
+
     /**
      * Try to compress the selection using a specific root
      */
@@ -1821,21 +1818,21 @@ class SmartGroupDisplay
         $allDescendants = $this->groupManager->getDescendants($rootId);
         $descendantIds = array_map(fn($d) => $d['id'], $allDescendants);
         $descendantIds[] = $rootId; // Include root itself
-        
+
         // Check which descendants are selected and which are missing
         $selectedDescendants = array_intersect($selectedGroups, $descendantIds);
         $missingDescendants = array_diff($descendantIds, $selectedGroups);
-        
+
         // Only consider this root if some of its descendants are selected
         if (empty($selectedDescendants)) {
             return null;
         }
-        
+
         // Calculate coverage within this root's scope
         $totalDescendants = count($descendantIds);
         $selectedCount = count($selectedDescendants);
         $coverage = $selectedCount / $totalDescendants;
-        
+
         // Partial selection within this root: use "root without X" (any section, any number of missing)
         if (count($missingDescendants) > 0) {
             $groupsOutsideRoot = array_diff($selectedGroups, $descendantIds);
@@ -1846,7 +1843,7 @@ class SmartGroupDisplay
                 return $description;
             }
         }
-        
+
         // If we have complete coverage AND no missing descendants, use the root name
         if ($coverage === 1.0 && empty($missingDescendants)) {
             $groupsOutsideRoot = array_diff($selectedGroups, $descendantIds);
@@ -1854,10 +1851,10 @@ class SmartGroupDisplay
                 return $this->groupManager->getDisplayName($rootId);
             }
         }
-        
+
         return null;
     }
-    
+
     /**
      * Calculate a score for how concise a representation is (lower = better)
      */
@@ -1865,29 +1862,31 @@ class SmartGroupDisplay
     {
         // Base score is character length
         $score = strlen($description);
-        
+
         // Penalty for complexity
         if (strpos($description, $this->language['without']) !== false) {
             $score += 10; // "without" adds some complexity but can be worth it
         }
-        
+
         // Count commas as complexity
         $score += substr_count($description, ',') * 5;
-        
+
         // Bonus for compositional descriptions (instrument + section combinations)
-        if (strpos($description, $this->language['and']) !== false && 
-            strpos($description, $this->language['without']) !== false) {
+        if (
+            strpos($description, $this->language['and']) !== false &&
+            strpos($description, $this->language['without']) !== false
+        ) {
             // This is a "X und Y ohne Z" pattern - favor it slightly
             $score -= 3; // Small bonus for compositional expressions
         }
-        
+
         // Heavy penalty for very broad exclusions from large groups
         $rootGroup = $this->getRootGroup();
         $rootDisplayName = $rootGroup ? $rootGroup['display_name'] : $this->getDynamicRootId();
         if (strpos($description, $rootDisplayName) === 0 && strpos($description, $this->language['without']) !== false) {
             $score += 50; // Heavy penalty for starting with root group exclusions - prefer specific sections
         }
-        
+
         // Handle multiple exclusion patterns
         $ohneCount = substr_count($description, $this->language['without']);
         if ($ohneCount > 1) {
@@ -1899,7 +1898,7 @@ class SmartGroupDisplay
                 $score += 15; // Penalty for overly complex descriptions
             }
         }
-        
+
         // MAJOR bonus for compressed sections with clean exclusions
         // Prefer "Holzbläser ohne Klarinette" over "Flöte, Oboe, Fagott"
         $specificSections = $this->getSpecificSections();
@@ -1908,10 +1907,10 @@ class SmartGroupDisplay
                 $score -= 50; // Major bonus for section-level exclusions
             }
         }
-        
+
         return $score;
     }
-    
+
     /**
      * Debug method to show analysis of selected groups
      */
@@ -1923,7 +1922,7 @@ class SmartGroupDisplay
             'coverage_analysis' => [],
             'compression_check' => $this->compressTreeRepresentation($selectedGroups)
         ];
-        
+
         foreach ($analysis['possible_roots'] as $rootId) {
             $coverage = $this->calculateCoverage($selectedGroups, $rootId);
             $analysis['coverage_analysis'][$rootId] = [
@@ -1932,12 +1931,12 @@ class SmartGroupDisplay
                 'score' => $this->calculateScore($this->generateFromRoot($selectedGroups, $rootId))
             ];
         }
-        
+
         $analysis['final_description'] = $this->generateBaseDescription($selectedGroups);
-        
+
         return $analysis;
     }
-    
+
     /**
      * Check if a description contains meaningful multiple exclusions
      */
@@ -1945,10 +1944,10 @@ class SmartGroupDisplay
     {
         // Look for patterns like "Holzbläser ohne Flöte und Blechbläser ohne Horn"
         // These are meaningful because they represent specific missing instruments from different sections
-        
+
         $specificSections = $this->getSpecificSections();
         $exclusionPatterns = [];
-        
+
         foreach ($specificSections as $section) {
             // Count how many times this section appears with "ohne"
             $pattern = $section . ' ' . $this->language['without'];
@@ -1957,11 +1956,11 @@ class SmartGroupDisplay
                 $exclusionPatterns[] = $section;
             }
         }
-        
+
         // If we have multiple different sections with exclusions, it's meaningful
         return count($exclusionPatterns) >= 2;
     }
-    
+
     /**
      * Remove redundant parent-child selections
      * If both a parent section and its child instruments are selected, keep only the parent
@@ -1969,14 +1968,14 @@ class SmartGroupDisplay
     private function removeRedundantSelections(array $selectedGroups): array
     {
         $filtered = [];
-        
+
         foreach ($selectedGroups as $group) {
             $shouldInclude = true;
-            
+
             // Check if any other selected group is a parent of this group
             foreach ($selectedGroups as $otherGroup) {
                 if ($group === $otherGroup) continue;
-                
+
                 // Check if $group is a descendant of $otherGroup
                 $ancestors = $this->groupManager->getAncestors($group);
                 foreach ($ancestors as $ancestor) {
@@ -1987,12 +1986,12 @@ class SmartGroupDisplay
                     }
                 }
             }
-            
+
             if ($shouldInclude) {
                 $filtered[] = $group;
             }
         }
-        
+
         return $filtered;
     }
 }

@@ -37,7 +37,6 @@ class UserController extends Controller
     {
         $this->validateOrchestraContext($params);
 
-        // Conductors use their own profile page
         if (!empty($_SESSION['current_permissions']['can_manage_ensemble'])) {
             $this->redirect($this->orchestraUrl('/conductor/profile'));
             return;
@@ -58,25 +57,34 @@ class UserController extends Controller
             $user['permissions'] = $_SESSION['current_permissions'];
         }
 
-        // Get small group status from user_orchestras table
         $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
+        $allRoles = [];
+        $selfAssignableIds = [];
+        $userRoleIds = [];
         if ($orchestraId) {
+            $roleModel = new \App\Models\Role();
+            $allNonSystem = $roleModel->getByOrchestra((int)$orchestraId);
+            $allRoles = array_filter($allNonSystem, fn($r) => empty($r['is_system']));
+            $selfAssignableIds = array_map(
+                fn($r) => (int)$r['id'],
+                array_filter($allRoles, fn($r) => !empty($r['is_self_assignable']))
+            );
             $userOrchestraModel = new \App\Models\UserOrchestra();
-            $user['is_small_group'] = $userOrchestraModel->isUserInSmallGroup((int)$user['id'], (int)$orchestraId);
-        } else {
-            $user['is_small_group'] = false;
+            $userRoles = $userOrchestraModel->getUserRoles((int)$user['id'], (int)$orchestraId);
+            $userRoleIds = array_map(fn($r) => (int)$r['id'], $userRoles);
+
+            // Default roles are implicitly assigned to all members
+            $defaultRoleIds = array_map(
+                fn($r) => (int)$r['id'],
+                array_filter($allRoles, fn($r) => !empty($r['is_default']))
+            );
+            $userRoleIds = array_values(array_unique(array_merge($userRoleIds, $defaultRoleIds)));
         }
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->processProfileEdit($user);
             return;
         }
-
-        error_log("User data for profile: " . json_encode([
-            'type' => $user['type'] ?? null,
-            'is_small_group' => $user['is_small_group'] ?? null,
-            'permissions' => $user['permissions'] ?? null
-        ]));
 
         $this->render('user/profile', [
             'currentPage' => 'profile',
@@ -85,7 +93,10 @@ class UserController extends Controller
             'availableThemes' => \App\Core\ThemeManager::getThemesForPreview(),
             'csrf_token' => $this->getCSRFToken(),
             'orchestraId' => $_SESSION['current_orchestra_id'],
-            'hasPassword' => !empty($user['password'])
+            'hasPassword' => !empty($user['password']),
+            'allRoles' => array_values($allRoles),
+            'selfAssignableIds' => $selfAssignableIds,
+            'userRoleIds' => $userRoleIds,
         ]);
     }
 
@@ -237,7 +248,6 @@ class UserController extends Controller
         $newPassword = $_POST['new_password'] ?? '';
         $confirmPassword = $_POST['confirm_password'] ?? '';
         $groupType = Validator::sanitizeUtf8($_POST['group_type'] ?? '');
-        $smallGroup = isset($_POST['small_group']) ? true : false;
 
         $updateData = [];
         $relationChangesMade = false;
@@ -288,7 +298,6 @@ class UserController extends Controller
             $updateData['password'] = $newPassword;
         }
 
-        // Sync user_orchestras relation
         $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
         if ($orchestraId) {
             $userOrchestraModel = new \App\Models\UserOrchestra();
@@ -300,12 +309,31 @@ class UserController extends Controller
                 }
             }
 
-            $smallGroupUpdated = $userOrchestraModel->updateUserSmallGroupStatus((int)$user['id'], (int)$orchestraId, $smallGroup);
-            if ($smallGroupUpdated) {
+            // Handle self-assignable roles
+            if (!empty($_POST['role_ids_submitted'])) {
+                $submittedRoleIds = $_POST['role_ids'] ?? [];
+                if (is_string($submittedRoleIds)) {
+                    $submittedRoleIds = json_decode($submittedRoleIds, true) ?: [];
+                }
+                $submittedRoleIds = array_map('intval', array_filter($submittedRoleIds));
+
+                // Only allow toggling self-assignable roles
+                $roleModel = new \App\Models\Role();
+                $selfAssignable = $roleModel->getSelfAssignableRoles((int)$orchestraId);
+                $selfAssignableIds = array_map(fn($r) => (int)$r['id'], $selfAssignable);
+
+                $currentRoles = $userOrchestraModel->getUserRoles((int)$user['id'], (int)$orchestraId);
+                $currentRoleIds = array_map(fn($r) => (int)$r['id'], $currentRoles);
+
+                // Keep non-self-assignable roles, replace self-assignable with submitted
+                $preservedRoleIds = array_values(array_diff($currentRoleIds, $selfAssignableIds));
+                $newSelfAssigned = array_values(array_intersect($submittedRoleIds, $selfAssignableIds));
+                $finalRoleIds = array_values(array_unique(array_merge($preservedRoleIds, $newSelfAssigned)));
+
+                $userOrchestraModel->setRoles((int)$user['id'], (int)$orchestraId, $finalRoleIds);
                 $relationChangesMade = true;
             }
         }
-
 
         if (empty($updateData) && !$relationChangesMade) {
             $this->addAlert('Info', 'Keine Änderungen vorgenommen.', 'info');

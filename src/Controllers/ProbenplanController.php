@@ -48,20 +48,20 @@ class ProbenplanController extends Controller
             // Get only rehearsals relevant to the user
             $userType = $_SESSION['current_type'] ?? '';
 
-            // Get small group status from user_orchestras table
-            $isSmallGroup = false;
+            $userRoleIds = [];
             $userId = $_SESSION['user_id'] ?? null;
             $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
             if ($userId && $orchestraId) {
                 $userOrchestraModel = new \App\Models\UserOrchestra();
-                $isSmallGroup = $userOrchestraModel->isUserInSmallGroup((int)$userId, (int)$orchestraId);
+                $userRoles = $userOrchestraModel->getUserRoles((int)$userId, (int)$orchestraId);
+                $userRoleIds = array_map(fn($r) => (int)$r['id'], $userRoles);
             }
 
             $rehearsals = $this->rehearsalModel->getRelevantForUser(
                 $_SESSION['current_orchestra_id'],
                 $userType,
                 $showOld,
-                $isSmallGroup
+                $userRoleIds
             );
         } else {
             // Get all rehearsals

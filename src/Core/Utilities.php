@@ -9,46 +9,56 @@ namespace App\Core;
 class Utilities
 {
     /**
-     * Generate user badges for small group indicator.
+     * Generate all inline labels for a user (role tags).
      *
-     * @param array $user User data array
-     * @return string HTML string with badge spans
-     */
-    public static function generateUserBadges($user)
-    {
-        if (!is_array($user)) {
-            return '';
-        }
-
-        $badges = [];
-
-        if (RehearsalTypeManager::isUserInSmallGroup($user)) {
-            $badges[] = '<span class="user-badge" title="' . RehearsalTypeManager::LABEL_SMALL_GROUP . '"><i class="fas fa-user-friends"></i></span>';
-        }
-
-        return implode('', $badges);
-    }
-
-    /**
-     * Generate all inline labels for a user (badges + role tag).
-     *
-     * @param array $user User data with is_small_group, role_tag_label, role_tag_color keys
-     * @return string Combined HTML: user-badge icons followed by role-tag pill
+     * @param array $user User data with roles array or role_tag_label/role_tag_color keys
+     * @return string HTML: role-tag pills for non-default roles
      */
     public static function generateUserLabels(array $user): string
     {
-        $html = self::generateUserBadges($user);
+        $html = '';
 
-        // Only show non-default roles to avoid visual noise
+        // Multi-role mode: user has a 'roles' array
+        if (!empty($user['roles']) && is_array($user['roles'])) {
+            foreach ($user['roles'] as $role) {
+                if (!empty($role['is_default'])) continue;
+                $html .= self::renderRoleTag([
+                    'name'      => $role['name'] ?? '',
+                    'tag_color' => $role['tag_color'] ?? '#478cf4',
+                ]);
+            }
+            return $html;
+        }
+
+        // Legacy single-role fallback
         $isDefault = !empty($user['role_is_default']);
         $roleLabel = $user['role_tag_label'] ?? $user['role_name'] ?? '';
         if ($roleLabel && !$isDefault) {
             $html .= self::renderRoleTag([
-                'name' => $roleLabel,
+                'name'      => $roleLabel,
                 'tag_color' => $user['role_tag_color'] ?? '#478cf4',
             ]);
         }
 
+        return $html;
+    }
+
+    /**
+     * Like generateUserLabels but shows only the first tag + a gray "+N" overflow badge.
+     *
+     * @param array $roles Array of role arrays with name, tag_color, is_default keys
+     * @return string Condensed role tag HTML
+     */
+    public static function generateUserLabelsCondensed(array $roles): string
+    {
+        $nonDefault = array_values(array_filter($roles, fn($r) => empty($r['is_default'])));
+        if (empty($nonDefault)) return '';
+
+        $html = self::renderRoleTag($nonDefault[0]);
+        $extra = count($nonDefault) - 1;
+        if ($extra > 0) {
+            $html .= '<span class="role-tag role-tag-overflow">+' . $extra . '</span>';
+        }
         return $html;
     }
 
@@ -73,7 +83,7 @@ class Utilities
     /**
      * Render a role tag pill.
      *
-     * @param array|null $role Role data with name and tag_color
+     * @param array|null $role Role data with name, tag_color, and optionally is_default
      * @return string HTML for the role tag
      */
     public static function renderRoleTag(?array $role): string
@@ -84,8 +94,9 @@ class Utilities
 
         $label = htmlspecialchars($role['name']);
         $color = htmlspecialchars($role['tag_color'] ?? '#478cf4');
+        $star = !empty($role['is_default']) ? '<i class="fas fa-star" style="font-size:10px;"></i>' : '';
 
-        return '<span class="role-tag" style="--role-color: ' . $color . '">' . $label . '</span>';
+        return '<span class="role-tag" style="--role-color: ' . $color . '">' . $star . $label . '</span>';
     }
 
     /**

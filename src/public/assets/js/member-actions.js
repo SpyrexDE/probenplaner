@@ -25,11 +25,21 @@ function buildSectionOptions(availableSections, displayNames) {
     return html;
 }
 
-function buildRoleOptions(roles) {
-    return roles.map(r => {
-        const dot = `<span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${r.tag_color}; margin-right: 6px; vertical-align: middle;"></span>`;
-        return `<option value="${r.id}" data-color="${r.tag_color}">${r.name}</option>`;
-    }).join('');
+function buildRoleTagsHtml(roles, selectedIds) {
+    const selected = selectedIds || [];
+    let tagsHtml = '';
+    for (const r of roles) {
+        if (r.is_system || !selected.includes(r.id)) continue;
+        const star = r.is_default ? '<i class="fas fa-star swal-role-default-star"></i>' : '';
+        tagsHtml += `<span class="role-tag swal-role-tag" data-id="${r.id}" data-default="${r.is_default ? '1' : ''}" style="--role-color:${r.tag_color}">${star}${escHtml(r.name)} <span class="swal-role-tag-remove" data-id="${r.id}">&times;</span></span>`;
+    }
+    return tagsHtml;
+}
+
+function escHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
 }
 
 function openEditModal(userId) {
@@ -49,9 +59,28 @@ function openEditModal(userId) {
 
             const initial = (data.display_name || 'U').charAt(0).toUpperCase();
             const roles = data.available_roles || [];
+            const selectedRoleIds = data.role_ids || [];
 
             Swal.fire({
                 html: `
+            <style>
+            .swal-role-tags-container { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:8px 12px; min-height:44px; border:2px solid var(--color-border); border-radius:var(--radius-base); background:var(--color-bg-primary); cursor:text; transition:border-color .2s; }
+            .swal-role-tags-container:focus-within { border-color:var(--color-primary); }
+            .swal-role-tag { font-size:13px; padding:5px 10px; text-transform:none; animation:swalTagIn .15s ease-out; }
+            .swal-role-default-star { font-size:10px; }
+            @keyframes swalTagIn { from { transform:scale(.8); opacity:0; } to { transform:scale(1); opacity:1; } }
+            .swal-role-tag-remove { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%; background:transparent; cursor:pointer; font-size:14px; -webkit-text-fill-color:#9ca3af; opacity:0.6; transition:opacity .15s; }
+            .swal-role-tag-remove:hover { opacity:1; }
+            .swal-role-input { border:none; outline:none; background:transparent; flex:1; min-width:80px; font-size:var(--font-size-sm); color:var(--color-text-primary); padding:2px 0; }
+            .swal-role-input::placeholder { color:var(--color-text-tertiary); }
+            .swal-role-dropdown { position:absolute; left:0; right:0; z-index:999; max-height:180px; overflow-y:auto; background:var(--color-bg-primary); border:2px solid var(--color-primary); border-top:none; border-radius:0 0 var(--radius-base) var(--radius-base); box-shadow:0 4px 12px rgba(0,0,0,.1); display:none; }
+            .swal-role-dropdown.show { display:block; }
+            .swal-role-opt { display:flex; align-items:center; gap:8px; padding:8px 12px; cursor:pointer; font-size:var(--font-size-sm); color:var(--color-text-primary); transition:background .1s; }
+            .swal-role-opt:hover,.swal-role-opt.hl { background:var(--color-bg-tertiary); }
+            .swal-role-opt.sel { opacity:.4; pointer-events:none; }
+            .swal-role-opt .swal-role-default-star { font-size:10px; }
+            .swal-role-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+            </style>
             <div class="swal-members-permissions">
                 <div class="swal-member-header">
                     <div class="swal-member-avatar">${initial}</div>
@@ -68,17 +97,18 @@ function openEditModal(userId) {
                     </select>
                 </div>
 
-                <div class="swal-perm-row" style="margin-bottom: var(--space-3);">
-                    <input type="checkbox" id="swalSmallGroup" ${data.is_small_group ? 'checked' : ''}>
-                    <label for="swalSmallGroup">Kleingruppe</label>
-                </div>
-
                 ${data.current_user_can_manage_permissions && roles.length ? `
                 <div class="swal-field-group">
-                    <label class="swal-field-label">Rolle</label>
-                    <select id="swalRole" class="swal-select-modern">
-                        ${buildRoleOptions(roles)}
-                    </select>
+                    <label class="swal-field-label">Rollen</label>
+                    <div style="position:relative">
+                        <div class="swal-role-tags-container" id="swalRoleTags">
+                            ${buildRoleTagsHtml(roles, selectedRoleIds)}
+                            <input type="text" class="swal-role-input" id="swalRoleInput" placeholder="Rolle hinzufügen…" autocomplete="off">
+                        </div>
+                        <div class="swal-role-dropdown" id="swalRoleDropdown">
+                            ${roles.filter(r => !r.is_system).map(r => `<div class="swal-role-opt ${selectedRoleIds.includes(r.id) ? 'sel' : ''}" data-id="${r.id}" data-name="${escHtml(r.name)}" data-color="${r.tag_color}" data-default="${r.is_default ? '1' : ''}"><span class="swal-role-dot" style="background:${r.tag_color}"></span>${r.is_default ? '<i class="fas fa-star swal-role-default-star"></i>' : ''}${escHtml(r.name)}</div>`).join('')}
+                        </div>
+                    </div>
                 </div>
                 ` : ''}
 
@@ -104,8 +134,7 @@ function openEditModal(userId) {
                     const sel = document.getElementById('swalType');
                     if (sel && data.type) sel.value = data.type;
 
-                    const roleSel = document.getElementById('swalRole');
-                    if (roleSel && data.role_id) roleSel.value = data.role_id;
+                    initSwalRoleTagSelect(roles, selectedRoleIds);
 
                     const resetBtn = document.getElementById('swalResetPasswordBtn');
                     if (resetBtn) {
@@ -128,20 +157,123 @@ function openEditModal(userId) {
         });
 }
 
+function initSwalRoleTagSelect(allRoles, selectedIds) {
+    const container = document.getElementById('swalRoleTags');
+    const input = document.getElementById('swalRoleInput');
+    const dropdown = document.getElementById('swalRoleDropdown');
+    if (!container || !input || !dropdown) return;
+
+    // Store initial default role IDs for save-time comparison
+    window._swalInitialDefaultRoleIds = allRoles
+        .filter(r => r.is_default && selectedIds.includes(r.id))
+        .map(r => String(r.id));
+
+    let hlIdx = -1;
+
+    function getOpts() { return [...dropdown.querySelectorAll('.swal-role-opt')]; }
+    function getVisible() { return getOpts().filter(o => o.style.display !== 'none' && !o.classList.contains('sel')); }
+
+    function addTag(id, name, color) {
+        const opt = dropdown.querySelector(`.swal-role-opt[data-id="${id}"]`);
+        const isDefault = opt?.dataset.default === '1';
+        if (opt) opt.classList.add('sel');
+        const tag = document.createElement('span');
+        tag.className = 'role-tag swal-role-tag';
+        tag.dataset.id = id;
+        tag.dataset.default = isDefault ? '1' : '';
+        tag.style.setProperty('--role-color', color);
+        const star = isDefault ? '<i class="fas fa-star swal-role-default-star"></i>' : '';
+        tag.innerHTML = `${star}${escHtml(name)} <span class="swal-role-tag-remove" data-id="${id}">&times;</span>`;
+        tag.querySelector('.swal-role-tag-remove').addEventListener('click', e => { e.stopPropagation(); removeTag(id); });
+        container.insertBefore(tag, input);
+        input.value = '';
+        filterOpts('');
+    }
+
+    function removeTag(id) {
+        doRemoveTag(id);
+    }
+
+    function doRemoveTag(id) {
+        const t = container.querySelector(`.swal-role-tag[data-id="${id}"]`);
+        if (t) t.remove();
+        const opt = dropdown.querySelector(`.swal-role-opt[data-id="${id}"]`);
+        if (opt) opt.classList.remove('sel');
+    }
+
+    function filterOpts(q) {
+        q = q.toLowerCase().trim();
+        getOpts().forEach(o => { o.style.display = (!q || o.dataset.name.toLowerCase().includes(q)) ? '' : 'none'; });
+        hlIdx = -1;
+        updateHl();
+    }
+
+    function updateHl() {
+        getVisible().forEach((o, i) => o.classList.toggle('hl', i === hlIdx));
+    }
+
+    // Wire up existing remove buttons
+    container.querySelectorAll('.swal-role-tag-remove').forEach(btn => {
+        btn.addEventListener('click', e => { e.stopPropagation(); removeTag(btn.dataset.id); });
+    });
+
+    container.addEventListener('click', () => { input.focus(); dropdown.classList.add('show'); });
+    input.addEventListener('focus', () => { dropdown.classList.add('show'); filterOpts(input.value); });
+    input.addEventListener('input', () => { filterOpts(input.value); dropdown.classList.add('show'); });
+    input.addEventListener('keydown', e => {
+        const vis = getVisible();
+        if (e.key === 'ArrowDown') { e.preventDefault(); hlIdx = Math.min(hlIdx + 1, vis.length - 1); updateHl(); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); hlIdx = Math.max(hlIdx - 1, 0); updateHl(); }
+        else if (e.key === 'Enter') { e.preventDefault(); if (hlIdx >= 0 && vis[hlIdx]) addTag(vis[hlIdx].dataset.id, vis[hlIdx].dataset.name, vis[hlIdx].dataset.color); }
+        else if (e.key === 'Escape') dropdown.classList.remove('show');
+        else if (e.key === 'Backspace' && input.value === '') { const tags = container.querySelectorAll('.swal-role-tag'); if (tags.length) removeTag(tags[tags.length - 1].dataset.id); }
+    });
+    dropdown.addEventListener('mousedown', e => {
+        const opt = e.target.closest('.swal-role-opt');
+        if (opt && !opt.classList.contains('sel')) { e.preventDefault(); addTag(opt.dataset.id, opt.dataset.name, opt.dataset.color); }
+    });
+    document.addEventListener('click', e => { if (!container.closest('.swal-field-group')?.contains(e.target)) dropdown.classList.remove('show'); });
+}
+
 function saveEditModal(userId) {
+    const roleContainer = document.getElementById('swalRoleTags');
+
+    if (roleContainer && window._swalInitialDefaultRoleIds) {
+        const currentIds = [...roleContainer.querySelectorAll('.swal-role-tag')].map(t => t.dataset.id);
+        const removedDefaults = window._swalInitialDefaultRoleIds.filter(id => !currentIds.includes(id));
+        if (removedDefaults.length > 0) {
+            Swal.fire({
+                title: 'Standardrolle entfernt',
+                html: '<p style="color:var(--color-text-secondary)">Dieses Mitglied hat keine Standardrolle mehr zugewiesen. Trotzdem speichern?</p>',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ja, speichern',
+                cancelButtonText: 'Abbrechen',
+                confirmButtonColor: '#478cf4',
+                cancelButtonColor: '#6b7280',
+                reverseButtons: true,
+            }).then(result => {
+                if (result.isConfirmed) doSaveEditModal(userId);
+            });
+            return;
+        }
+    }
+    doSaveEditModal(userId);
+}
+
+function doSaveEditModal(userId) {
     const orchestraBase = getOrchestraBase();
     const typeEl = document.getElementById('swalType');
-    const smallGrpEl = document.getElementById('swalSmallGroup');
-    const roleEl = document.getElementById('swalRole');
 
     const params = new URLSearchParams({
         csrf_token: getCsrfToken(),
         type: typeEl ? typeEl.value : '',
-        is_small_group: (smallGrpEl && smallGrpEl.checked) ? '1' : '0',
     });
 
-    if (roleEl) {
-        params.set('role_id', roleEl.value);
+    const roleContainer = document.getElementById('swalRoleTags');
+    if (roleContainer) {
+        const roleIds = [...roleContainer.querySelectorAll('.swal-role-tag')].map(t => t.dataset.id);
+        params.set('role_ids', JSON.stringify(roleIds));
     }
 
     fetch('/' + orchestraBase + '/members/' + userId + '/update', {

@@ -216,10 +216,12 @@ class FieldRegistry
                 'permission' => 'member',
             ],
             [
-                'name'       => 'small_group',
-                'type'       => 'toggle',
-                'label'      => 'Kleine Besetzung',
+                'name'       => 'role_ids',
+                'type'       => 'json',
+                'label'      => 'Rollen',
+                'icon'       => 'shield-alt',
                 'group'      => 'orchestra',
+                'validation' => [],
                 'save'       => 'auto',
                 'permission' => 'member',
             ],
@@ -276,16 +278,7 @@ class FieldRegistry
                 'save'       => 'auto',
                 'permission' => 'conductor',
             ],
-            [
-                'name'       => 'is_small_group',
-                'type'       => 'toggle',
-                'label'      => 'Kleingruppe',
-                'description' => 'Ist dies eine Kleingruppen-Probe?',
-                'group'      => 'details',
-                'default'    => false,
-                'save'       => 'auto',
-                'permission' => 'conductor',
-            ],
+
             [
                 'name'       => 'infos',
                 'type'       => 'json',

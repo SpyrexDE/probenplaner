@@ -90,7 +90,7 @@ function sortGroups($groups)
                     // Get group information
                     $groupArray = $rehearsal['groups'] ?? [];
 
-                    // Generate smart display text with integrated Kleingruppe handling
+                    // Generate smart display text
                     $smartDisplay = new \App\Core\SmartGroupDisplay();
                     $groupsText = $smartDisplay->generateDescription(
                         $groupArray,
@@ -131,7 +131,7 @@ function sortGroups($groups)
             // Get group information
             $groupArray = $rehearsal['groups'] ?? [];
 
-            // Generate smart display text with integrated Kleingruppe handling
+            // Generate smart display text
             $smartDisplay = new \App\Core\SmartGroupDisplay();
             $groupsText = $smartDisplay->generateDescription(
                 $groupArray,

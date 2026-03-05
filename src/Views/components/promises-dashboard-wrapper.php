@@ -356,9 +356,6 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                     <div class="date-text"><?= date('d.m.Y', strtotime($rehearsalDate)) ?></div>
                                     <div class="date-subtitle">
                                         <?= htmlspecialchars($rehearsal['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL) ?>
-                                        <?php if ($rehearsal['is_small_group'] ?? false): ?>
-                                            <span style="color: #6b7280;"> (Kleingruppe)</span>
-                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>

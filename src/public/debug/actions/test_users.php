@@ -88,22 +88,30 @@ if ($_POST['action'] === 'generate_users') {
 
                     $joinedAt = date('Y-m-d H:i:s');
 
-                    // Find or create default member role for this orchestra
-                    $roleStmt = $conn->prepare("SELECT id FROM roles WHERE orchestra_id = ? AND is_default = 1 LIMIT 1");
+                    // Find all default roles for this orchestra
+                    $roleStmt = $conn->prepare("SELECT id FROM roles WHERE orchestra_id = ? AND is_default = 1");
                     $roleStmt->bind_param('i', $orchestraId);
                     $roleStmt->execute();
                     $roleResult = $roleStmt->get_result();
-                    $defaultRoleId = null;
-                    if ($roleRow = $roleResult->fetch_assoc()) {
-                        $defaultRoleId = (int)$roleRow['id'];
+                    $defaultRoleIds = [];
+                    while ($roleRow = $roleResult->fetch_assoc()) {
+                        $defaultRoleIds[] = (int)$roleRow['id'];
                     }
                     $roleStmt->close();
 
-                    $userOrchestraStmt = $conn->prepare("INSERT INTO user_orchestras (user_id, orchestra_id, type, is_active, role_id, joined_at) VALUES (?, ?, ?, 1, ?, ?)");
-                    $userOrchestraStmt->bind_param('iisis', $userId, $orchestraId, $section, $defaultRoleId, $joinedAt);
+                    $userOrchestraStmt = $conn->prepare("INSERT INTO user_orchestras (user_id, orchestra_id, type, is_active, joined_at) VALUES (?, ?, ?, 1, ?)");
+                    $userOrchestraStmt->bind_param('iiss', $userId, $orchestraId, $section, $joinedAt);
 
                     if ($userOrchestraStmt->execute()) {
+                        $uoId = $conn->insert_id;
                         $userOrchestraStmt->close();
+
+                        foreach ($defaultRoleIds as $defRoleId) {
+                            $roleStmt2 = $conn->prepare("INSERT INTO user_orchestra_roles (user_orchestra_id, role_id) VALUES (?, ?)");
+                            $roleStmt2->bind_param('ii', $uoId, $defRoleId);
+                            $roleStmt2->execute();
+                            $roleStmt2->close();
+                        }
                         $generatedUsers[] = [
                             'email' => $email,
                             'password' => $displayName,
@@ -151,12 +159,26 @@ if ($_POST['action'] === 'generate_full_setup') {
         $existingOrg = $conn->query("SELECT id FROM organizations WHERE slug = 'harmonia'")->fetch_assoc();
         if ($existingOrg) {
             $eOrgId = (int)$existingOrg['id'];
-            $conn->query("DELETE FROM roles WHERE orchestra_id IN (SELECT id FROM orchestras WHERE organization_id = {$eOrgId})");
+            $orchIds = "SELECT id FROM orchestras WHERE organization_id = {$eOrgId}";
+            $rehIds = "SELECT id FROM rehearsals WHERE orchestra_id IN ({$orchIds})";
+
+            // Rehearsal-related data
+            $conn->query("DELETE FROM user_promises WHERE rehearsal_id IN ({$rehIds})");
+            $conn->query("DELETE FROM rehearsal_schedule_items WHERE rehearsal_id IN ({$rehIds})");
+            $conn->query("DELETE FROM rehearsal_infos WHERE rehearsal_id IN ({$rehIds})");
+            $conn->query("DELETE FROM rehearsal_groups WHERE rehearsal_id IN ({$rehIds})");
+            $conn->query("DELETE FROM rehearsal_roles WHERE rehearsal_id IN ({$rehIds})");
+            $conn->query("DELETE FROM rehearsals WHERE orchestra_id IN ({$orchIds})");
+
+            // Roles, memberships, orchestras, org
+            $conn->query("DELETE FROM user_orchestra_roles WHERE user_orchestra_id IN (SELECT uo.id FROM user_orchestras uo JOIN orchestras o ON uo.orchestra_id = o.id WHERE o.organization_id = {$eOrgId})");
+            $conn->query("DELETE FROM roles WHERE orchestra_id IN ({$orchIds})");
             $conn->query("DELETE uo FROM user_orchestras uo JOIN orchestras o ON uo.orchestra_id = o.id WHERE o.organization_id = {$eOrgId}");
             $conn->query("DELETE FROM orchestras WHERE organization_id = {$eOrgId}");
             $conn->query("DELETE FROM users WHERE organization_id = {$eOrgId}");
             $conn->query("DELETE FROM organizations WHERE id = {$eOrgId}");
-            // Remove test users created by this function (by email domain)
+
+            // Test users by email domain
             $conn->query("DELETE FROM user_orchestras WHERE user_id IN (SELECT id FROM users WHERE email LIKE '%@test.local')");
             $conn->query("DELETE FROM users WHERE email LIKE '%@test.local'");
             $conn->query("DELETE FROM users WHERE email = 'harmonia-admin@probenplaner.local'");
@@ -179,45 +201,7 @@ if ($_POST['action'] === 'generate_full_setup') {
         $kammerId = $conn->insert_id;
         $counts['orchestras'] = 2;
 
-        // ── 3. Users ─────────────────────────────────────────────────
-        // Roster: [email, display_name, section, orchestra_id, preset, is_active, is_small_group]
-        $roster = [
-            // Sinfonie — Conductor (empty type = no instrument section)
-            ['dirigent@test.local',        'Thomas Müller',        '',             $sinfonieId, 'conductor',      1, 0],
-            ['stimmfuehrer@test.local',    'Sabine Becker',        'Violine_1',    $sinfonieId, 'section_leader', 1, 0],
-            ['anna.mueller@test.local',    'Anna Müller',          'Violine_1',    $sinfonieId, 'member', 1, 0],
-            ['jan.schmidt@test.local',     'Jan Schmidt',          'Violine_1',    $sinfonieId, 'member', 1, 0],
-            ['anna.weber@test.local',      'Anna Weber',           'Violine_2',    $sinfonieId, 'member', 1, 0],
-            ['peter.fischer@test.local',   'Peter Fischer',        'Violine_2',    $sinfonieId, 'member', 1, 0],
-            ['marie.koch@test.local',      'Marie Koch',           'Violine_2',    $sinfonieId, 'member', 1, 0],
-            ['sarah.mueller@test.local',   'Sarah Müller',         'Bratsche',     $sinfonieId, 'member', 1, 0],
-            ['felix.wolf@test.local',      'Felix Wolf',           'Bratsche',     $sinfonieId, 'member', 1, 0],
-            ['julia.richter@test.local',   'Julia Richter',        'Cello',        $sinfonieId, 'member', 1, 0],
-            ['noah.klein@test.local',      'Noah Klein',           'Cello',        $sinfonieId, 'member', 1, 0],
-            ['emma.schroeder@test.local',  'Emma Schröder',        'Kontrabass',   $sinfonieId, 'member', 1, 0],
-            ['lukas.neumann@test.local',   'Lukas Neumann',        'Flöte',        $sinfonieId, 'member', 1, 0],
-            ['hannah.schwarz@test.local',  'Hannah Schwarz',       'Oboe',         $sinfonieId, 'member', 1, 0],
-            ['max.zimmermann@test.local',  'Max Zimmermann',       'Klarinette',   $sinfonieId, 'member', 1, 0],
-            ['lena.hoffmann@test.local',   'Lena Hoffmann',        'Fagott',       $sinfonieId, 'member', 1, 0],
-            ['david.wagner@test.local',    'David Wagner',         'Trompete',     $sinfonieId, 'member', 1, 0],
-            ['sophie.bauer@test.local',    'Sophie Bauer',         'Trompete',     $sinfonieId, 'member', 1, 0],
-            ['tim.schulz@test.local',      'Tim Schulz',           'Posaune',      $sinfonieId, 'member', 1, 0],
-            ['laura.hartmann@test.local',  'Laura Hartmann',       'Tuba',         $sinfonieId, 'member', 1, 0],
-            ['paul.krueger@test.local',    'Paul Krüger',          'Horn',         $sinfonieId, 'member', 1, 0],
-            ['mia.lang@test.local',        'Mia Lang',             'Horn',         $sinfonieId, 'member', 1, 0],
-            ['leon.frank@test.local',      'Leon Frank',           'Schlagwerk',   $sinfonieId, 'member', 1, 0],
-            ['clara.roth@test.local',      'Clara Roth',           'Andere',       $sinfonieId, 'member', 1, 0],
-            ['nina.berg@test.local',       'Nina Berg',            'Violine_1',    $sinfonieId, 'member', 1, 1],
-            ['oldinactive1@test.local',    'Karl Ehemalig',        'Cello',        $sinfonieId, 'member', 0, 0],
-            ['oldinactive2@test.local',    'Ute Vergangen',        'Flöte',        $sinfonieId, 'member', 0, 0],
-            ['kammer.dirigent@test.local', 'Eva Schneider',        '',             $kammerId,   'conductor',      1, 0],
-            ['kammer.geige@test.local',    'Moritz Stein',         'Violine_1',    $kammerId,   'member', 1, 0],
-            ['kammer.bratsche@test.local', 'Klara Weiß',           'Bratsche',     $kammerId,   'member', 1, 0],
-            ['kammer.cello@test.local',    'Anton Frei',           'Cello',        $kammerId,   'member', 1, 0],
-            ['kammer.bass@test.local',     'Greta Haus',           'Kontrabass',   $kammerId,   'member', 1, 0],
-        ];
-
-        // ── 3a. Create system roles per orchestra ──────────────────────
+        // ── 3. Roles ─────────────────────────────────────────────────
         $rolePresets = [
             'conductor' => [
                 'name' => 'Leitung',
@@ -225,49 +209,105 @@ if ($_POST['action'] === 'generate_full_setup') {
                 'permissions' => json_encode(['can_view_own_section_stats', 'can_view_all_section_stats', 'can_view_members', 'can_manage_rehearsals', 'can_manage_members', 'can_manage_permissions', 'can_manage_ensemble']),
                 'is_system' => 1,
                 'is_default' => 0,
+                'is_self_assignable' => 0,
                 'sort_order' => 0,
-            ],
-            'section_leader' => [
-                'name' => 'Stimmführer',
-                'tag_color' => '#f59e0b',
-                'permissions' => json_encode(['can_attend_rehearsals', 'can_view_own_section_stats', 'can_view_all_section_stats', 'can_manage_rehearsals', 'can_view_members']),
-                'is_system' => 0,
-                'is_default' => 0,
-                'sort_order' => 10,
             ],
             'member' => [
                 'name' => 'Mitglied',
                 'tag_color' => '#10b981',
                 'permissions' => json_encode(['can_attend_rehearsals']),
-                'is_system' => 1,
+                'is_system' => 0,
                 'is_default' => 1,
+                'is_self_assignable' => 0,
                 'sort_order' => 100,
+            ],
+            'section_leader' => [
+                'name' => 'Stimmführer',
+                'tag_color' => '#f59e0b',
+                'permissions' => json_encode(['can_attend_rehearsals', 'can_view_own_section_stats', 'can_view_members']),
+                'is_system' => 0,
+                'is_default' => 0,
+                'is_self_assignable' => 0,
+                'sort_order' => 10,
+            ],
+            'project' => [
+                'name' => 'IYSO 2026',
+                'tag_color' => '#8b5cf6',
+                'permissions' => json_encode(['can_attend_rehearsals']),
+                'is_system' => 0,
+                'is_default' => 0,
+                'is_self_assignable' => 1,
+                'sort_order' => 90,
             ],
         ];
 
-        // role_id cache: orchestraId → preset → role_id
         $roleIdMap = [];
         foreach ([$sinfonieId, $kammerId] as $oId) {
             foreach ($rolePresets as $preset => $rp) {
-                $stmt = $conn->prepare("INSERT INTO roles (orchestra_id, name, tag_color, permissions, is_system, is_default, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                if (!$stmt) {
-                    throw new \Exception("Role INSERT prepare failed: " . $conn->error);
-                }
-                $stmt->bind_param('isssiii', $oId, $rp['name'], $rp['tag_color'], $rp['permissions'], $rp['is_system'], $rp['is_default'], $rp['sort_order']);
-                if (!$stmt->execute()) {
-                    throw new \Exception("Role INSERT execute failed: " . $stmt->error);
-                }
+                $stmt = $conn->prepare("INSERT INTO roles (orchestra_id, name, tag_color, permissions, is_system, is_default, is_self_assignable, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                if (!$stmt) throw new \Exception("Role INSERT prepare failed: " . $conn->error);
+                $stmt->bind_param('isssiiii', $oId, $rp['name'], $rp['tag_color'], $rp['permissions'], $rp['is_system'], $rp['is_default'], $rp['is_self_assignable'], $rp['sort_order']);
+                if (!$stmt->execute()) throw new \Exception("Role INSERT execute failed: " . $stmt->error);
                 $roleIdMap[$oId][$preset] = $conn->insert_id;
                 $stmt->close();
             }
         }
+
+        // ── 4. Users ─────────────────────────────────────────────────
+        // [email, display_name, section, orchestra_id, role_presets[], is_active]
+        $roster = [
+            // ── Sinfonie ──
+            ['dirigent@test.local',        'Thomas Müller',   '',           $sinfonieId, ['conductor'],                             1],
+            // Violine 1: 2× Stimmführer
+            ['stimmfuehrer@test.local',    'Sabine Becker',   'Violine_1',  $sinfonieId, ['member', 'project', 'section_leader'],   1],
+            ['anna.mueller@test.local',    'Anna Müller',     'Violine_1',  $sinfonieId, ['member', 'project', 'section_leader'],   1],
+            ['jan.schmidt@test.local',     'Jan Schmidt',     'Violine_1',  $sinfonieId, ['member'],                                 1],
+            ['nina.berg@test.local',       'Nina Berg',       'Violine_1',  $sinfonieId, ['member', 'project'],                     1],
+            // Violine 2: 1× Stimmführer
+            ['anna.weber@test.local',      'Anna Weber',      'Violine_2',  $sinfonieId, ['member', 'project', 'section_leader'],   1],
+            ['peter.fischer@test.local',   'Peter Fischer',   'Violine_2',  $sinfonieId, ['member'],                                 1],
+            ['marie.koch@test.local',      'Marie Koch',      'Violine_2',  $sinfonieId, ['member', 'project'],                     1],
+            // Bratsche: 1× Stimmführer
+            ['sarah.mueller@test.local',   'Sarah Müller',    'Bratsche',   $sinfonieId, ['member', 'project', 'section_leader'],   1],
+            ['felix.wolf@test.local',      'Felix Wolf',      'Bratsche',   $sinfonieId, ['member'],                                 1],
+            // Cello: 1× Stimmführer
+            ['julia.richter@test.local',   'Julia Richter',   'Cello',      $sinfonieId, ['member', 'project', 'section_leader'],   1],
+            ['noah.klein@test.local',      'Noah Klein',      'Cello',      $sinfonieId, ['member'],                                 1],
+            // Kontrabass
+            ['emma.schroeder@test.local',  'Emma Schröder',   'Kontrabass', $sinfonieId, ['member', 'project', 'section_leader'],   1],
+            // Holzbläser
+            ['lukas.neumann@test.local',   'Lukas Neumann',   'Flöte',      $sinfonieId, ['member', 'project', 'section_leader'],   1],
+            ['hannah.schwarz@test.local',  'Hannah Schwarz',  'Oboe',       $sinfonieId, ['member', 'project', 'section_leader'],   1],
+            ['max.zimmermann@test.local',  'Max Zimmermann',  'Klarinette', $sinfonieId, ['member', 'project', 'section_leader'],   1],
+            ['lena.hoffmann@test.local',   'Lena Hoffmann',   'Fagott',     $sinfonieId, ['member', 'project', 'section_leader'],   1],
+            // Blechbläser
+            ['david.wagner@test.local',    'David Wagner',    'Trompete',   $sinfonieId, ['member', 'project', 'section_leader'],   1],
+            ['sophie.bauer@test.local',    'Sophie Bauer',    'Trompete',   $sinfonieId, ['member'],                                 1],
+            ['tim.schulz@test.local',      'Tim Schulz',      'Posaune',    $sinfonieId, ['member', 'project', 'section_leader'],   1],
+            ['laura.hartmann@test.local',  'Laura Hartmann',  'Tuba',       $sinfonieId, ['member'],                                 1],
+            ['paul.krueger@test.local',    'Paul Krüger',     'Horn',       $sinfonieId, ['member', 'project', 'section_leader'],   1],
+            ['mia.lang@test.local',        'Mia Lang',        'Horn',       $sinfonieId, ['member'],                                 1],
+            // Schlagwerk
+            ['leon.frank@test.local',      'Leon Frank',      'Schlagwerk', $sinfonieId, ['member', 'project', 'section_leader'],   1],
+            // Not in project (only Mitglied default)
+            ['clara.roth@test.local',      'Clara Roth',      'Andere',     $sinfonieId, ['member'],                                 1],
+            // Inactive
+            ['oldinactive1@test.local',    'Karl Ehemalig',   'Cello',      $sinfonieId, ['member', 'project'],                     0],
+            ['oldinactive2@test.local',    'Ute Vergangen',   'Flöte',      $sinfonieId, ['member'],                                 0],
+            // ── Kammer ──
+            ['kammer.dirigent@test.local', 'Eva Schneider',   '',           $kammerId,   ['conductor'],                             1],
+            ['kammer.geige@test.local',    'Moritz Stein',    'Violine_1',  $kammerId,   ['member', 'project', 'section_leader'],   1],
+            ['kammer.bratsche@test.local', 'Klara Weiß',      'Bratsche',   $kammerId,   ['member', 'project'],                     1],
+            ['kammer.cello@test.local',    'Anton Frei',      'Cello',      $kammerId,   ['member', 'project'],                     1],
+            ['kammer.bass@test.local',     'Greta Haus',      'Kontrabass', $kammerId,   ['member', 'project'],                     1],
+        ];
 
         $userIdMap = [];
         $sinfonieUserIds = [];
         $kammerUserIds = [];
 
         foreach ($roster as $entry) {
-            [$email, $displayName, $section, $orchId, $preset, $isActive, $isSmallGroup] = $entry;
+            [$email, $displayName, $section, $orchId, $presets, $isActive] = $entry;
 
             $pw = password_hash($email, PASSWORD_DEFAULT);
             $stmt = $conn->prepare("INSERT INTO users (email, password, display_name) VALUES (?, ?, ?)");
@@ -276,61 +316,81 @@ if ($_POST['action'] === 'generate_full_setup') {
             $userId = $conn->insert_id;
             $stmt->close();
 
-            $roleId = $roleIdMap[$orchId][$preset];
-            $stmt = $conn->prepare("INSERT INTO user_orchestras (user_id, orchestra_id, type, is_active, is_small_group, role_id, joined_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param('iisiiis', $userId, $orchId, $section, $isActive, $isSmallGroup, $roleId, $now);
+            $stmt = $conn->prepare("INSERT INTO user_orchestras (user_id, orchestra_id, type, is_active, joined_at) VALUES (?, ?, ?, ?, ?)");
+            $stmt->bind_param('iisis', $userId, $orchId, $section, $isActive, $now);
             $stmt->execute();
+            $uoId = $conn->insert_id;
             $stmt->close();
 
+            foreach ($presets as $preset) {
+                if (!isset($roleIdMap[$orchId][$preset])) continue;
+                $presetRoleId = $roleIdMap[$orchId][$preset];
+                $stmt = $conn->prepare("INSERT INTO user_orchestra_roles (user_orchestra_id, role_id) VALUES (?, ?)");
+                $stmt->bind_param('ii', $uoId, $presetRoleId);
+                $stmt->execute();
+                $stmt->close();
+            }
+
             $userIdMap[$email] = $userId;
-            if ($isActive && $orchId === $sinfonieId) {
-                $sinfonieUserIds[] = $userId;
-            }
-            if ($isActive && $orchId === $kammerId) {
-                $kammerUserIds[] = $userId;
-            }
+            if ($isActive && $orchId === $sinfonieId) $sinfonieUserIds[] = $userId;
+            if ($isActive && $orchId === $kammerId) $kammerUserIds[] = $userId;
             $counts['users']++;
         }
 
         // ── 4. Rehearsals ────────────────────────────────────────────
         $today = new DateTime();
+        // [type, orchestra_id, day_offset, start, end, location, _unused, groups, role_presets]
+        // role_presets: [] = all roles (no scoping), ['project'] = IYSO only
         $rehearsalDefs = [
             // Sinfonie — past rehearsals
-            ['Probe',           $sinfonieId, -42, '19:00:00', '21:00:00', 'Aula Musikschule',       0, ['tutti']],
-            ['Probe',           $sinfonieId, -35, '19:00:00', '21:00:00', 'Aula Musikschule',       0, ['tutti']],
-            ['Registerprobe',   $sinfonieId, -28, '18:30:00', '20:00:00', 'Raum 201',               0, ['Streicher']],
-            ['Probe',           $sinfonieId, -21, '19:00:00', '21:00:00', 'Gemeindesaal St. Peter',  0, ['tutti']],
-            ['Generalprobe',    $sinfonieId, -14, '18:00:00', '21:30:00', 'Stadthalle',             0, ['tutti']],
-            ['Konzert',         $sinfonieId,  -7, '19:30:00', '21:30:00', 'Stadthalle',             0, ['tutti']],
+            ['Probe',           $sinfonieId, -42, '19:00:00', '21:00:00', 'Aula Musikschule',       0, ['tutti'],       []],
+            ['Probe',           $sinfonieId, -35, '19:00:00', '21:00:00', 'Aula Musikschule',       0, ['tutti'],       []],
+            ['Registerprobe',   $sinfonieId, -28, '18:30:00', '20:00:00', 'Raum 201',               0, ['Streicher'],   []],
+            ['Probe',           $sinfonieId, -21, '19:00:00', '21:00:00', 'Gemeindesaal St. Peter',  0, ['tutti'],       []],
+            ['Generalprobe',    $sinfonieId, -14, '18:00:00', '21:30:00', 'Stadthalle',             0, ['tutti'],       []],
+            ['Konzert',         $sinfonieId,  -7, '19:30:00', '21:30:00', 'Stadthalle',             0, ['tutti'],       []],
             // Sinfonie — future rehearsals
-            ['Probe',           $sinfonieId,   7, '19:00:00', '21:00:00', 'Aula Musikschule',       0, ['tutti']],
-            ['Probe',           $sinfonieId,  14, '19:00:00', '21:00:00', 'Aula Musikschule',       1, ['tutti']], // small-group
-            ['Registerprobe',   $sinfonieId,  21, '18:30:00', '20:00:00', 'Raum 201',               0, ['Holzbläser']],
-            ['Konzertreise',    $sinfonieId,  35, '09:00:00', '22:00:00', 'Partnerstadt Lucca 🇮🇹', 0, ['tutti']],
+            ['Probe',           $sinfonieId,   7, '19:00:00', '21:00:00', 'Aula Musikschule',       0, ['tutti'],       []],
+            ['Probe',           $sinfonieId,  14, '19:00:00', '21:00:00', 'Aula Musikschule',       1, ['tutti'],       []],
+            ['Registerprobe',   $sinfonieId,  21, '18:30:00', '20:00:00', 'Raum 201',               0, ['Holzbläser'],  []],
+            ['Konzertreise',    $sinfonieId,  35, '09:00:00', '22:00:00', 'Partnerstadt Lucca 🇮🇹', 0, ['tutti'],       []],
+            // IYSO 2026 project rehearsals (scoped to project role)
+            ['Probe',           $sinfonieId, -30, '17:00:00', '19:00:00', 'Aula Musikschule',       0, ['tutti'],       ['project']],
+            ['Probe',           $sinfonieId,  10, '17:00:00', '19:00:00', 'Aula Musikschule',       0, ['tutti'],       ['project']],
+            ['Generalprobe',    $sinfonieId,  28, '14:00:00', '18:00:00', 'Konzerthaus',            0, ['tutti'],       ['project']],
             // Kammer
-            ['Probe',           $kammerId,   -10, '20:00:00', '21:30:00', 'Proberaum Kammer',       0, ['tutti']],
-            ['Konzert',         $kammerId,    20, '19:00:00', '21:00:00', 'Schlosskapelle',         0, ['tutti']],
+            ['Probe',           $kammerId,   -10, '20:00:00', '21:30:00', 'Proberaum Kammer',       0, ['tutti'],       []],
+            ['Konzert',         $kammerId,    20, '19:00:00', '21:00:00', 'Schlosskapelle',         0, ['tutti'],       []],
         ];
 
-        $rehearsalIdMap = []; // index → rehearsal_id
+        $rehearsalIdMap = [];
 
         foreach ($rehearsalDefs as $idx => $def) {
-            [$type, $orchId, $dayOffset, $startTime, $endTime, $location, $isSmallGroup, $groups] = $def;
+            [$type, $orchId, $dayOffset, $startTime, $endTime, $location, $_unused, $groups, $rolePresets] = $def;
 
             $date = (clone $today)->modify("{$dayOffset} days");
             $startDatetime = $date->format('Y-m-d') . ' ' . $startTime;
             $endDatetime   = $date->format('Y-m-d') . ' ' . $endTime;
 
-            $stmt = $conn->prepare("INSERT INTO rehearsals (type, start, `end`, location, orchestra_id, is_small_group, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param('ssssiiss', $type, $startDatetime, $endDatetime, $location, $orchId, $isSmallGroup, $now, $now);
+            $stmt = $conn->prepare("INSERT INTO rehearsals (type, start, `end`, location, orchestra_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param('ssssiss', $type, $startDatetime, $endDatetime, $location, $orchId, $now, $now);
             $stmt->execute();
             $rehearsalId = $conn->insert_id;
             $stmt->close();
 
-            // Rehearsal groups
             foreach ($groups as $group) {
                 $stmt = $conn->prepare("INSERT INTO rehearsal_groups (rehearsal_id, name) VALUES (?, ?)");
                 $stmt->bind_param('is', $rehearsalId, $group);
+                $stmt->execute();
+                $stmt->close();
+            }
+
+            // Scope rehearsal to specific roles
+            foreach ($rolePresets as $preset) {
+                if (!isset($roleIdMap[$orchId][$preset])) continue;
+                $scopeRoleId = $roleIdMap[$orchId][$preset];
+                $stmt = $conn->prepare("INSERT INTO rehearsal_roles (rehearsal_id, role_id) VALUES (?, ?)");
+                $stmt->bind_param('ii', $rehearsalId, $scopeRoleId);
                 $stmt->execute();
                 $stmt->close();
             }
@@ -512,7 +572,8 @@ if ($_POST['action'] === 'generate_full_setup') {
         $summary = [];
         $summary[] = "🏛️ 1 Organization (Testverein Harmonia e.V.)";
         $summary[] = "🎻 {$counts['orchestras']} Orchestras";
-        $summary[] = "👥 {$counts['users']} Users (incl. 2 inactive, 1 small-group, conductors, section leaders)";
+        $summary[] = "🎭 4 Roles: Leitung, Mitglied★, Stimmführer, IYSO 2026";
+        $summary[] = "👥 {$counts['users']} Users (multi-role combos, 2 inactive)";
         $summary[] = "📅 {$counts['rehearsals']} Rehearsals (past + future, 5 different types)";
         $summary[] = "📋 {$counts['schedules']} Schedule items";
         $summary[] = "📝 {$counts['infos']} Info items (with emojis)";
@@ -526,12 +587,12 @@ if ($_POST['action'] === 'generate_full_setup') {
                 'summary' => $summary,
                 'counts' => $counts,
                 'credentials' => [
-                    ['email' => 'harmonia-admin@probenplaner.local', 'password' => 'testadmin',           'role' => 'Org-Admin'],
-                    ['email' => 'dirigent@test.local',               'password' => 'dirigent@test.local',  'role' => 'Dirigent (Sinfonie)'],
-                    ['email' => 'stimmfuehrer@test.local',           'password' => 'stimmfuehrer@test.local', 'role' => 'Stimmführer (Sinfonie)'],
-                    ['email' => 'anna.mueller@test.local',           'password' => 'anna.mueller@test.local', 'role' => 'Mitglied (Violine 1)'],
-                    ['email' => 'kammer.dirigent@test.local',        'password' => 'kammer.dirigent@test.local', 'role' => 'Dirigent (Kammer)'],
-                    ['email' => 'nina.berg@test.local',              'password' => 'nina.berg@test.local',  'role' => 'Kleingruppe (Violine 1)'],
+                    ['email' => 'harmonia-admin@probenplaner.local', 'password' => 'testadmin',                'role' => 'Org-Admin'],
+                    ['email' => 'dirigent@test.local',               'password' => 'dirigent@test.local',       'role' => 'Leitung (Sinfonie)'],
+                    ['email' => 'stimmfuehrer@test.local',           'password' => 'stimmfuehrer@test.local',   'role' => 'Stimmführer (V1)'],
+                    ['email' => 'jan.schmidt@test.local',            'password' => 'jan.schmidt@test.local',    'role' => 'Mitglied + IYSO 2026'],
+                    ['email' => 'clara.roth@test.local',             'password' => 'clara.roth@test.local',     'role' => 'Mitglied only'],
+                    ['email' => 'kammer.dirigent@test.local',        'password' => 'kammer.dirigent@test.local', 'role' => 'Leitung (Kammer)'],
                 ],
             ]
         ];

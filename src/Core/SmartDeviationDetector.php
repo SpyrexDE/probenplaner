@@ -1,42 +1,45 @@
 <?php
 
-class SmartDeviationDetector {
+class SmartDeviationDetector
+{
     private $db;
     private $groupManager;
     private $minDataPoints;
     private $significanceThreshold;
     private $zScoreThreshold;
-    
-    public function __construct($db) {
+
+    public function __construct($db)
+    {
         $this->db = $db;
         $this->groupManager = new \App\Core\GroupManager();
         $this->minDataPoints = \App\Core\DashboardConstants::MIN_DATA_POINTS_FOR_ANALYSIS;
         $this->significanceThreshold = \App\Core\DashboardConstants::SIGNIFICANCE_THRESHOLD;
         $this->zScoreThreshold = \App\Core\DashboardConstants::Z_SCORE_THRESHOLD;
     }
-    
+
     /**
      * Analyze a rehearsal for deviations across all sections
      */
-    public function analyzeRehearsal($rehearsalId) {
+    public function analyzeRehearsal($rehearsalId)
+    {
         $results = [
             'deviations' => [],
             'insufficient_data' => [],
             'summary' => []
         ];
-        
+
         // Analyze parent group patterns first (general overall info)
         $parentGroupAnalysis = $this->analyzeParentGroupPatterns($rehearsalId);
         if (!empty($parentGroupAnalysis['deviations'])) {
             $results['deviations'] = array_merge($results['deviations'], $parentGroupAnalysis['deviations']);
         }
-        
+
         // Get all sections for this rehearsal
         $sections = $this->getRehearsalSections($rehearsalId);
-        
+
         foreach ($sections as $section) {
             $analysis = $this->analyzeSection($section['id'], $rehearsalId);
-            
+
             if ($analysis['has_sufficient_data']) {
                 if (!empty($analysis['deviations'])) {
                     $results['deviations'] = array_merge($results['deviations'], $analysis['deviations']);
@@ -50,37 +53,38 @@ class SmartDeviationDetector {
                 ];
             }
         }
-        
+
         return $results;
     }
-    
+
     /**
      * Analyze a specific section for deviations
      */
-    private function analyzeSection($sectionId, $currentRehearsalId) {
+    private function analyzeSection($sectionId, $currentRehearsalId)
+    {
         // Get historical attendance data for this section
         $historicalData = $this->getHistoricalAttendanceData($sectionId, $currentRehearsalId);
-        
+
         if (count($historicalData) < $this->minDataPoints) {
             return [
                 'has_sufficient_data' => false,
                 'data_points' => count($historicalData)
             ];
         }
-        
+
         $currentData = $this->getCurrentAttendanceData($sectionId, $currentRehearsalId);
         $deviations = [];
-        
+
         // Calculate statistical measures
         $stats = $this->calculateStatistics($historicalData);
-        
+
         // Test for various types of deviations
         $deviations = array_merge($deviations, $this->detectAttendanceDeviations($currentData, $stats, $sectionId));
         $deviations = array_merge($deviations, $this->detectResponseRateDeviations($currentData, $stats, $sectionId));
         $deviations = array_merge($deviations, $this->detectPatternDeviations($currentData, $historicalData, $sectionId));
-        
 
-        
+
+
         return [
             'has_sufficient_data' => true,
             'deviations' => $deviations,
@@ -92,34 +96,31 @@ class SmartDeviationDetector {
             ]
         ];
     }
-    
+
     /**
      * Analyze patterns across parent groups (e.g., "Streicher", "Bläser")
      */
-    private function analyzeParentGroupPatterns($rehearsalId) {
+    private function analyzeParentGroupPatterns($rehearsalId)
+    {
         $deviations = [];
-        
+
         // Calculate overall tutti attendance and response rates
         $overallData = $this->calculateOverallAttendance($rehearsalId);
-        
+
         if ($overallData['total_people'] > 0) {
-            // Get rehearsal details to determine context for messages
             $rehearsalModel = new \App\Models\Rehearsal();
             $rehearsal = $rehearsalModel->findById($rehearsalId);
-            $isSmallGroup = $rehearsal && \App\Core\RehearsalTypeManager::isSmallGroupRehearsal($rehearsal);
-            
-            // Determine appropriate context text
-            $contextText = $isSmallGroup ? "in der Kleingruppe" : "in allen Registern";
-            
+            $contextText = "in allen Registern";
+
             $rehearsalDate = new \DateTime($rehearsal['start']);
             $today = new \DateTime();
             $daysDifference = $today->diff($rehearsalDate)->days;
             $isFutureRehearsal = $rehearsalDate > $today;
-            
+
             // Skip response rate analysis for rehearsals more than 14 days in the future
             // as people typically haven't been notified or expected to respond yet
             $skipResponseRateAnalysis = $isFutureRehearsal && $daysDifference > 14;
-            
+
             // Check overall attendance rate
             if ($overallData['attendance_rate'] < \App\Core\DashboardConstants::GROUP_PERFORMANCE_THRESHOLD) {
                 $deviations[] = [
@@ -129,7 +130,7 @@ class SmartDeviationDetector {
                     'message' => "Nur " . number_format($overallData['attendance_rate'], 0) . "% Teilnahme " . $contextText
                 ];
             }
-            
+
             // Check overall response rate (but skip for distant future rehearsals)
             if (!$skipResponseRateAnalysis && $overallData['response_rate'] < \App\Core\DashboardConstants::LOW_RESPONSE_RATE_THRESHOLD) {
                 $severity = $overallData['response_rate'] < \App\Core\DashboardConstants::CRITICAL_RESPONSE_RATE_THRESHOLD ? 'critical' : 'warning';
@@ -141,19 +142,20 @@ class SmartDeviationDetector {
                 ];
             }
         }
-        
+
         return ['deviations' => $deviations];
     }
-    
+
     /**
      * Calculate overall attendance and response rates across all sections in a rehearsal
      * Now considers small group restrictions properly
      */
-    private function calculateOverallAttendance($rehearsalId) {
+    private function calculateOverallAttendance($rehearsalId)
+    {
         // Get rehearsal details to check if it's a small group rehearsal
         $rehearsalModel = new \App\Models\Rehearsal();
         $rehearsal = $rehearsalModel->findById($rehearsalId);
-        
+
         if (!$rehearsal) {
             return [
                 'total_people' => 0,
@@ -163,11 +165,11 @@ class SmartDeviationDetector {
                 'response_rate' => 0
             ];
         }
-        
+
         // Use the UserPromise model's getPromiseStats which properly handles small group logic
         $userPromiseModel = new \App\Models\UserPromise();
         $stats = $userPromiseModel->getPromiseStats($rehearsalId, $rehearsal['orchestra_id']);
-        
+
         return [
             'total_people' => $stats['total'],
             'total_attending' => $stats['attending'],
@@ -176,11 +178,12 @@ class SmartDeviationDetector {
             'response_rate' => $stats['total'] > 0 ? (($stats['attending'] + $stats['not_attending']) / $stats['total']) * 100 : 0
         ];
     }
-    
+
     /**
      * Get historical attendance data for a section
      */
-    private function getHistoricalAttendanceData($sectionId, $excludeRehearsalId) {
+    private function getHistoricalAttendanceData($sectionId, $excludeRehearsalId)
+    {
         $stmt = $this->db->prepare("
             SELECT 
                 r.id as rehearsal_id,
@@ -208,11 +211,12 @@ class SmartDeviationDetector {
         $result = $stmt->get_result();
         return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     }
-    
+
     /**
      * Get current attendance data for a section
      */
-    private function getCurrentAttendanceData($sectionId, $rehearsalId) {
+    private function getCurrentAttendanceData($sectionId, $rehearsalId)
+    {
         $stmt = $this->db->prepare("
             SELECT 
                 COUNT(up.id) as total_players,
@@ -251,12 +255,12 @@ class SmartDeviationDetector {
         }
         $total = (int) $data['total_players'];
         $totalResponded = (int) $data['attending'] + (int) $data['not_attending'];
-        
+
         // Attendance rate should only consider people who actually responded (yes/no)
         // People with no response or "maybe" are not counted in attendance rate
         $attendanceRate = $totalResponded > 0 ? ($data['attending'] / $totalResponded) * 100 : 0;
         $responseRate = $total > 0 ? ($totalResponded / $total) * 100 : 0;
-        
+
         return [
             'total' => $total,
             'attending' => $data['attending'],
@@ -266,35 +270,36 @@ class SmartDeviationDetector {
             'response_rate' => $responseRate
         ];
     }
-    
+
     /**
      * Calculate statistical measures from historical data
      */
-    private function calculateStatistics($historicalData) {
-        $attendanceRates = array_map(function($row) {
+    private function calculateStatistics($historicalData)
+    {
+        $attendanceRates = array_map(function ($row) {
             $totalResponded = $row['attending'] + $row['not_attending'];
             return $totalResponded > 0 ? ($row['attending'] / $totalResponded) * 100 : 0;
         }, $historicalData);
-        
-        $responseRates = array_map(function($row) {
+
+        $responseRates = array_map(function ($row) {
             $totalResponded = $row['attending'] + $row['not_attending'];
             return $row['total_players'] > 0 ? ($totalResponded / $row['total_players']) * 100 : 0;
         }, $historicalData);
-        
+
         // Calculate attendance statistics
         $attendanceMean = array_sum($attendanceRates) / count($attendanceRates);
-        $attendanceVariance = array_sum(array_map(function($x) use ($attendanceMean) {
+        $attendanceVariance = array_sum(array_map(function ($x) use ($attendanceMean) {
             return pow($x - $attendanceMean, 2);
         }, $attendanceRates)) / count($attendanceRates);
         $attendanceStd = sqrt($attendanceVariance);
-        
+
         // Calculate response rate statistics
         $responseMean = array_sum($responseRates) / count($responseRates);
-        $responseVariance = array_sum(array_map(function($x) use ($responseMean) {
+        $responseVariance = array_sum(array_map(function ($x) use ($responseMean) {
             return pow($x - $responseMean, 2);
         }, $responseRates)) / count($responseRates);
         $responseStd = sqrt($responseVariance);
-        
+
         return [
             'mean' => $attendanceMean,
             'std' => $attendanceStd,
@@ -309,16 +314,17 @@ class SmartDeviationDetector {
             'response_max' => max($responseRates)
         ];
     }
-    
+
     /**
      * Detect attendance rate deviations using statistical tests
      */
-    private function detectAttendanceDeviations($currentData, $stats, $sectionId) {
+    private function detectAttendanceDeviations($currentData, $stats, $sectionId)
+    {
         $deviations = [];
-        
+
         if ($stats['std'] > 0) {
             $zScore = abs(($currentData['attendance_rate'] - $stats['mean']) / $stats['std']);
-            
+
             if ($zScore > $this->zScoreThreshold) {
                 $isPositive = $currentData['attendance_rate'] > $stats['mean'];
                 $direction = $isPositive ? 'higher' : 'lower';
@@ -338,7 +344,7 @@ class SmartDeviationDetector {
                 }
             }
         }
-        
+
         if ($currentData['attendance_rate'] < $stats['min']) {
             $percentageDiff = $stats['min'] - $currentData['attendance_rate'];
             $deviations[] = [
@@ -351,7 +357,7 @@ class SmartDeviationDetector {
                 'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($percentageDiff, 0) . "% weniger Teilnahme als je zuvor"
             ];
         }
-        
+
         // Detect if attendance is above historical maximum
         if ($currentData['attendance_rate'] > $stats['max']) {
             $percentageDiff = $currentData['attendance_rate'] - $stats['max'];
@@ -365,19 +371,20 @@ class SmartDeviationDetector {
                 'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($percentageDiff, 0) . "% mehr Teilnahme als je zuvor"
             ];
         }
-        
+
         return $deviations;
     }
-    
+
     /**
      * Detect response rate deviations using statistical tests
      */
-    private function detectResponseRateDeviations($currentData, $stats, $sectionId) {
+    private function detectResponseRateDeviations($currentData, $stats, $sectionId)
+    {
         $deviations = [];
-        
+
         if ($stats['response_std'] > 0) {
             $zScore = abs(($currentData['response_rate'] - $stats['response_mean']) / $stats['response_std']);
-            
+
             if ($zScore > $this->zScoreThreshold) {
                 $isPositive = $currentData['response_rate'] > $stats['response_mean'];
                 $direction = $isPositive ? 'higher' : 'lower';
@@ -397,7 +404,7 @@ class SmartDeviationDetector {
                 }
             }
         }
-        
+
         // Detect if response rate is below historical minimum
         if ($currentData['response_rate'] < $stats['response_min']) {
             $percentageDiff = $stats['response_min'] - $currentData['response_rate'];
@@ -411,7 +418,7 @@ class SmartDeviationDetector {
                 'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($percentageDiff, 0) . "% weniger Rückmeldungen als je zuvor"
             ];
         }
-        
+
         // Detect if response rate is above historical maximum
         if ($currentData['response_rate'] > $stats['response_max']) {
             $percentageDiff = $currentData['response_rate'] - $stats['response_max'];
@@ -425,36 +432,37 @@ class SmartDeviationDetector {
                 'message' => $this->groupManager->getDisplayName($sectionId) . ": " . number_format($percentageDiff, 0) . "% mehr Rückmeldungen als je zuvor"
             ];
         }
-        
+
         return $deviations;
     }
-    
+
     /**
      * Detect pattern deviations (trends, seasonality, etc.)
      */
-    private function detectPatternDeviations($currentData, $historicalData, $sectionId) {
+    private function detectPatternDeviations($currentData, $historicalData, $sectionId)
+    {
         $deviations = [];
-        
+
         // Detect trend changes - now properly including current rehearsal in the analysis
         if (count($historicalData) >= 7) { // Need at least 7 historical + 1 current = 8 total
             // Include current rehearsal in recent data for accurate trend analysis
             $recentData = array_slice($historicalData, 0, 3); // Take 3 most recent historical
             $olderData = array_slice($historicalData, 3, 4);  // Take next 4 older historical
-            
+
             // Calculate recent average including current rehearsal
-            $recentRates = array_map(function($row) {
+            $recentRates = array_map(function ($row) {
                 $totalResponded = $row['attending'] + $row['not_attending'];
                 return $totalResponded > 0 ? ($row['attending'] / $totalResponded) * 100 : 0;
             }, $recentData);
             $recentRates[] = $currentData['attendance_rate']; // Add current rehearsal
             $recentAvg = array_sum($recentRates) / count($recentRates);
-            
+
             // Calculate older average
-            $olderAvg = array_sum(array_map(function($row) {
+            $olderAvg = array_sum(array_map(function ($row) {
                 $totalResponded = $row['attending'] + $row['not_attending'];
                 return $totalResponded > 0 ? ($row['attending'] / $totalResponded) * 100 : 0;
             }, $olderData)) / count($olderData);
-            
+
             $trendChange = abs($recentAvg - $olderAvg);
             if ($trendChange > \App\Core\DashboardConstants::TREND_CHANGE_THRESHOLD) {
                 $isPositive = $recentAvg > $olderAvg;
@@ -480,19 +488,20 @@ class SmartDeviationDetector {
                 }
             }
         }
-        
+
         return $deviations;
     }
-    
+
     /**
      * Get all sections for a rehearsal (only sections that are supposed to participate AND have users in this rehearsal)
      */
-    private function getRehearsalSections($rehearsalId) {
+    private function getRehearsalSections($rehearsalId)
+    {
         // First, get the groups that are supposed to participate in this rehearsal
         $rehearsalModel = new \App\Models\Rehearsal();
         $rehearsalGroups = $rehearsalModel->getGroupsAsAssoc($rehearsalId);
         $groupManager = new \App\Core\GroupManager();
-        
+
         // Get all sections that have users in this rehearsal
         $stmt = $this->db->prepare("
             SELECT DISTINCT uo.type as id, uo.type as name, COUNT(up.id) as user_count
@@ -512,12 +521,12 @@ class SmartDeviationDetector {
         $stmt->execute();
         $result = $stmt->get_result();
         $allSections = $result->fetch_all(MYSQLI_ASSOC);
-        
+
         // Filter to only include sections that are supposed to participate in this rehearsal
         $relevantSections = [];
         foreach ($allSections as $section) {
             $sectionId = $section['id'];
-            
+
             // Check if this section is supposed to participate in the rehearsal
             $shouldParticipate = false;
             foreach (array_keys($rehearsalGroups) as $rehearsalGroup) {
@@ -526,13 +535,12 @@ class SmartDeviationDetector {
                     break;
                 }
             }
-            
+
             if ($shouldParticipate) {
                 $relevantSections[] = $section;
             }
         }
-        
+
         return $relevantSections;
     }
-    
 }
