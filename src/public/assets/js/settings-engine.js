@@ -92,15 +92,15 @@
                     const msg = data.errors?.[field]?.[0] || data.error || 'Fehler beim Speichern';
                     showFieldError(el, msg);
                     showSaveState('error');
-                    if (window.notifyErrorWithDetails) {
-                        window.notifyErrorWithDetails('Fehler beim Speichern', data.debug_message || data.error || JSON.stringify(data));
+                    if (window.notifyError) {
+                        window.notifyError(data.error || 'Fehler beim Speichern');
                     }
                 }
             })
             .catch(err => {
                 showSaveState('error');
-                if (window.notifyErrorWithDetails) {
-                    window.notifyErrorWithDetails('Netzwerkfehler', err.message || String(err));
+                if (window.notifyError) {
+                    window.notifyError('Netzwerkfehler: ' + (err.message || 'Verbindung fehlgeschlagen'));
                 }
             });
     }

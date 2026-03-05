@@ -136,13 +136,11 @@
                             // Cache clearing failed, show error and reload anyway
                             console.error('Cache clearing failed:', event.data.error);
 
-                            if (window.notifyErrorWithDetails) {
-                                window.notifyErrorWithDetails(
-                                    'Update-Fehler',
-                                    'Cache konnte nicht vollständig gelöscht werden.\n' + (event.data.error || '')
-                                ).then(() => {
-                                    window.location.reload(true);
-                                });
+                            if (window.notifyError) {
+                                window.notifyError('Cache konnte nicht vollständig gelöscht werden.' + (event.data.error ? ' ' + event.data.error : ''))
+                                    .then(() => {
+                                        window.location.reload(true);
+                                    });
                             } else {
                                 Swal.fire({
                                     title: 'Update-Fehler',

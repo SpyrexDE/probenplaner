@@ -25,34 +25,44 @@ $renderComponent = true;
         include __DIR__ . '/../components/settings-renderer.php';
         ?>
 
-        <!-- Danger Zone -->
-        <div class="modern-card modern-card-danger">
-            <div class="modern-card-header">
-                <div class="flex items-center">
-                    <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center mr-3">
-                        <?= icon('trash', 'text-red-600 text-sm') ?>
-                    </div>
-                    <div>
-                        <h2 class="text-xl font-semibold text-gray-900">Gefährliche Aktionen</h2>
+        <?php
+        $isConductor = false;
+        foreach ($_SESSION['current_roles'] ?? [] as $role) {
+            if (!empty($role['is_system']) && ($role['name'] ?? '') === 'Leitung') {
+                $isConductor = true;
+                break;
+            }
+        }
+        if ($isConductor): ?>
+            <!-- Danger Zone -->
+            <div class="modern-card modern-card-danger">
+                <div class="modern-card-header">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center mr-3">
+                            <?= icon('trash', 'text-red-600 text-sm') ?>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-900">Gefährliche Aktionen</h2>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="modern-card-body">
-                <div class="danger-zone-content">
-                    <div class="danger-zone-info">
-                        <h3 class="text-lg font-medium text-red-900 mb-2">Orchester dauerhaft löschen</h3>
-                        <p class="text-red-700 mb-4">
-                            Alle Daten (Mitglieder, Proben, Zusagen) werden unwiderruflich gelöscht.
-                        </p>
+                <div class="modern-card-body">
+                    <div class="danger-zone-content">
+                        <div class="danger-zone-info">
+                            <h3 class="text-lg font-medium text-red-900 mb-2">Orchester dauerhaft löschen</h3>
+                            <p class="text-red-700 mb-4">
+                                Alle Daten (Mitglieder, Proben, Zusagen) werden unwiderruflich gelöscht.
+                            </p>
+                        </div>
+                        <button type="button" onclick="confirmDelete(event)" class="btn-modern btn-danger">
+                            <?= icon('trash', 'btn-icon') ?>
+                            Orchester löschen
+                        </button>
                     </div>
-                    <button type="button" onclick="confirmDelete(event)" class="btn-modern btn-danger">
-                        <?= icon('trash', 'btn-icon') ?>
-                        Orchester löschen
-                    </button>
                 </div>
             </div>
-        </div>
+        <?php endif; ?>
     </div>
 </div>
 

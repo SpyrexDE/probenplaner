@@ -1128,14 +1128,14 @@ $isAdmin = $canManage || !empty($canManagePermissions);
                 .then(r => r.json())
                 .then(data => {
                     if (data.success === false) {
-                        window.notifyErrorWithDetails('Link-Generierung fehlgeschlagen', data.debug_message || data.error || JSON.stringify(data));
+                        window.notifyError(data.error || 'Link-Generierung fehlgeschlagen');
                     } else {
                         window.notifySuccess('Neuer Link generiert');
                         refreshMembersPage();
                     }
                 })
                 .catch(err => {
-                    window.notifyErrorWithDetails('Link-Generierung fehlgeschlagen', err.message || String(err));
+                    window.notifyError('Link-Generierung fehlgeschlagen: ' + (err.message || 'Verbindung fehlgeschlagen'));
                 });
         });
     }
@@ -1154,11 +1154,11 @@ $isAdmin = $canManage || !empty($canManagePermissions);
             .then(r => r.json())
             .then(data => {
                 if (data.success === false) {
-                    window.notifyErrorWithDetails('Einstellung fehlgeschlagen', data.debug_message || data.error || JSON.stringify(data));
+                    window.notifyError(data.error || 'Einstellung fehlgeschlagen');
                 }
             })
             .catch(err => {
-                window.notifyErrorWithDetails('Einstellung fehlgeschlagen', err.message || String(err));
+                window.notifyError('Einstellung fehlgeschlagen: ' + (err.message || 'Verbindung fehlgeschlagen'));
             });
     }
 
@@ -1373,10 +1373,10 @@ $isAdmin = $canManage || !empty($canManagePermissions);
                         window.notifySuccess('Rolle erstellt');
                         refreshMembersPage();
                     } else {
-                        window.notifyErrorWithDetails('Fehler', data.error || 'Unbekannter Fehler');
+                        window.notifyError(data.error || 'Rolle konnte nicht erstellt werden');
                     }
                 })
-                .catch(err => window.notifyErrorWithDetails('Fehler', err.message));
+                .catch(err => window.notifyError('Fehler: ' + (err.message || 'Verbindung fehlgeschlagen')));
         });
     }
 
@@ -1406,10 +1406,10 @@ $isAdmin = $canManage || !empty($canManagePermissions);
                         window.notifySuccess('Rolle aktualisiert');
                         refreshMembersPage();
                     } else {
-                        window.notifyErrorWithDetails('Fehler', data.error || 'Unbekannter Fehler');
+                        window.notifyError(data.error || 'Rolle konnte nicht aktualisiert werden');
                     }
                 })
-                .catch(err => window.notifyErrorWithDetails('Fehler', err.message));
+                .catch(err => window.notifyError('Fehler: ' + (err.message || 'Verbindung fehlgeschlagen')));
         });
     }
 
@@ -1446,10 +1446,10 @@ $isAdmin = $canManage || !empty($canManagePermissions);
                         window.notifySuccess('Rolle gelöscht');
                         refreshMembersPage();
                     } else {
-                        window.notifyErrorWithDetails('Fehler', data.error || 'Unbekannter Fehler');
+                        window.notifyError(data.error || 'Rolle konnte nicht gelöscht werden');
                     }
                 })
-                .catch(err => window.notifyErrorWithDetails('Fehler', err.message));
+                .catch(err => window.notifyError('Fehler: ' + (err.message || 'Verbindung fehlgeschlagen')));
         });
     }
 </script>

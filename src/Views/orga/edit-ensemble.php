@@ -309,10 +309,10 @@ include __DIR__ . '/../components/panel-shell.php';
             })
             .then(function(data) {
                 if (data.success) location.reload();
-                else if (window.notifyErrorWithDetails) window.notifyErrorWithDetails('Fehler', data.error);
+                else if (window.notifyError) window.notifyError(data.error || 'Link konnte nicht generiert werden');
             })
             .catch(function(e) {
-                if (window.notifyErrorWithDetails) window.notifyErrorWithDetails('Fehler', e.message);
+                if (window.notifyError) window.notifyError('Netzwerkfehler: ' + (e.message || 'Verbindung fehlgeschlagen'));
             })
             .finally(function() {
                 btn.disabled = false;
@@ -336,10 +336,10 @@ include __DIR__ . '/../components/panel-shell.php';
             })
             .then(function(data) {
                 if (data.success) location.reload();
-                else if (window.notifyErrorWithDetails) window.notifyErrorWithDetails('Fehler', data.error);
+                else if (window.notifyError) window.notifyError(data.error || 'Link konnte nicht neu generiert werden');
             })
             .catch(function(e) {
-                if (window.notifyErrorWithDetails) window.notifyErrorWithDetails('Fehler', e.message);
+                if (window.notifyError) window.notifyError('Netzwerkfehler: ' + (e.message || 'Verbindung fehlgeschlagen'));
             })
             .finally(function() {
                 btn.disabled = false;
@@ -369,12 +369,12 @@ include __DIR__ . '/../components/panel-shell.php';
                             '<div class="text-subtle" style="font-size: var(--font-size-sm);">Noch keine Leitung zugewiesen.</div>';
                     }
                     if (window.notifySuccess) window.notifySuccess('Leitung entfernt');
-                } else if (window.notifyErrorWithDetails) {
-                    window.notifyErrorWithDetails('Fehler', data.error);
+                } else {
+                    window.notifyError(data.error || 'Leitung konnte nicht entfernt werden');
                 }
             })
             .catch(function(e) {
-                if (window.notifyErrorWithDetails) window.notifyErrorWithDetails('Fehler', e.message);
+                if (window.notifyError) window.notifyError('Netzwerkfehler: ' + (e.message || 'Verbindung fehlgeschlagen'));
             })
             .finally(function() {
                 btn.disabled = false;
@@ -415,11 +415,11 @@ include __DIR__ . '/../components/panel-shell.php';
                                 if (preview) preview.textContent = '→ /<?= $orgSlug ?>/' + value;
                             }
                         } else if (data.error) {
-                            window.notifyErrorWithDetails('Speichern fehlgeschlagen', data.debug_message || data.error);
+                            window.notifyError(data.error || 'Speichern fehlgeschlagen');
                         }
                     })
                     .catch(function(err) {
-                        window.notifyErrorWithDetails('Speichern fehlgeschlagen', err.message || String(err));
+                        window.notifyError('Speichern fehlgeschlagen: ' + (err.message || 'Verbindung fehlgeschlagen'));
                     });
             }, 500);
         });

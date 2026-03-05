@@ -205,7 +205,7 @@ include __DIR__ . '/../components/theme-selector.php';
                         if (typeof Storage !== 'undefined') sessionStorage.setItem('current-theme', themeKey);
                         window.notifySuccess('Theme "' + themeName + '" aktiviert');
                     } else {
-                        window.notifyErrorWithDetails('Fehler beim Wechseln des Themes', response.message || response.error || JSON.stringify(response));
+                        window.notifyError(response.message || response.error || 'Fehler beim Wechseln des Themes');
                         const cur = $('body').data('current-theme') || 'default';
                         $('input[data-theme-key="' + cur + '"]').prop('checked', true);
                     }

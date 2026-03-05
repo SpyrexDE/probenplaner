@@ -138,11 +138,8 @@
                             } else {
                                 // Use custom error with details
                                 const technicalDetails = data.debug_message || data.error || JSON.stringify(data, null, 2);
-                                if (window.notifyErrorWithDetails) {
-                                    window.notifyErrorWithDetails(
-                                        'Der Termin konnte nicht gelöscht werden.',
-                                        technicalDetails
-                                    );
+                                if (window.notifyError) {
+                                    window.notifyError(data.error || 'Der Termin konnte nicht gelöscht werden.');
                                 } else {
                                     // Fallback if helper not available (should not happen)
                                     Swal.fire({
@@ -156,11 +153,8 @@
                         })
                         .catch(error => {
                             console.error('Error:', error);
-                            if (window.notifyErrorWithDetails) {
-                                window.notifyErrorWithDetails(
-                                    'Es ist ein Fehler aufgetreten.',
-                                    error.message || error.toString()
-                                );
+                            if (window.notifyError) {
+                                window.notifyError('Verbindungsfehler beim Löschen des Termins: ' + (error.message || 'Unbekannter Fehler'));
                             } else {
                                 Swal.fire({
                                     title: 'Fehler',

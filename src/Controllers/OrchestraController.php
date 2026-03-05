@@ -310,7 +310,7 @@ class OrchestraController extends Controller
         $context = $this->validateOrchestraContext($params);
         if (!$context) return;
 
-        if (!$this->requirePermission('can_manage_ensemble')) return;
+        if (!$this->requireConductorRole()) return;
 
         // Display confirmation form
         $this->render('orchestras/delete', [
@@ -331,7 +331,7 @@ class OrchestraController extends Controller
         $context = $this->validateOrchestraContext($params);
         if (!$context) return;
 
-        if (!$this->requirePermission('can_manage_ensemble')) return;
+        if (!$this->requireConductorRole()) return;
 
         // Check if form submitted with confirmation
         if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['confirm_delete']) || $_POST['confirm_delete'] !== 'yes') {

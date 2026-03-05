@@ -351,6 +351,39 @@ class Controller
         return true;
     }
 
+    /**
+     * Check if the current user has the Leitung (conductor) system role.
+     */
+    protected function isConductor(): bool
+    {
+        foreach ($_SESSION['current_roles'] ?? [] as $role) {
+            if (!empty($role['is_system']) && ($role['name'] ?? '') === 'Leitung') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Require the Leitung (conductor) system role in the current orchestra.
+     */
+    protected function requireConductorRole(): bool
+    {
+        if (!$this->isConductor()) {
+            if ($this->isJsonRequest()) {
+                http_response_code(403);
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'error' => 'Nur die Leitung darf diese Aktion ausführen']);
+                exit;
+            }
+            $this->addAlert('Fehler!', 'Nur die Leitung darf diese Aktion ausführen.', 'error');
+            $slug = $_SESSION['current_orchestra_slug'] ?? null;
+            $this->redirect($slug ? $this->orchestraUrl('/orchestras/settings') : '/orchestras/select');
+            return false;
+        }
+        return true;
+    }
+
     /** Require at least one of the given permissions. */
     protected function requireAnyPermission(string ...$permissions): bool
     {

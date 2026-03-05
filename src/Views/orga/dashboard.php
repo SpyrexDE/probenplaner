@@ -257,10 +257,10 @@ $orgSlug = htmlspecialchars($org['slug'] ?? '');
             })
             .then(function(data) {
                 if (data.success) location.reload();
-                else if (window.notifyErrorWithDetails) window.notifyErrorWithDetails('Fehler', data.error);
+                else if (window.notifyError) window.notifyError(data.error || 'Link konnte nicht generiert werden');
             })
             .catch(function(e) {
-                if (window.notifyErrorWithDetails) window.notifyErrorWithDetails('Fehler', e.message);
+                if (window.notifyError) window.notifyError('Netzwerkfehler: ' + (e.message || 'Verbindung fehlgeschlagen'));
             })
             .finally(function() {
                 btn.disabled = false;
@@ -284,10 +284,10 @@ $orgSlug = htmlspecialchars($org['slug'] ?? '');
             })
             .then(function(data) {
                 if (data.success) location.reload();
-                else if (window.notifyErrorWithDetails) window.notifyErrorWithDetails('Fehler', data.error);
+                else if (window.notifyError) window.notifyError(data.error || 'Link konnte nicht neu generiert werden');
             })
             .catch(function(e) {
-                if (window.notifyErrorWithDetails) window.notifyErrorWithDetails('Fehler', e.message);
+                if (window.notifyError) window.notifyError('Netzwerkfehler: ' + (e.message || 'Verbindung fehlgeschlagen'));
             })
             .finally(function() {
                 btn.disabled = false;

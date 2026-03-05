@@ -99,11 +99,11 @@ include __DIR__ . '/../components/panel-shell.php';
                         if (data.success) {
                             if (window.notifySuccess) window.notifySuccess('Gespeichert');
                         } else if (data.error) {
-                            window.notifyErrorWithDetails('Speichern fehlgeschlagen', data.debug_message || data.error);
+                            window.notifyError(data.error || 'Speichern fehlgeschlagen');
                         }
                     })
                     .catch(function(err) {
-                        window.notifyErrorWithDetails('Speichern fehlgeschlagen', err.message || String(err));
+                        window.notifyError('Speichern fehlgeschlagen: ' + (err.message || 'Verbindung fehlgeschlagen'));
                     });
             }, 500);
         });

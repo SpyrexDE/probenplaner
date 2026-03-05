@@ -231,12 +231,12 @@ include __DIR__ . '/../components/panel-shell.php';
                     result.classList.add('visible');
                     if (window.notifySuccess) window.notifySuccess('Passwort generiert');
                 } else if (data.error) {
-                    window.notifyErrorWithDetails('Fehler', data.debug_message || data.error);
+                    window.notifyError(data.error || 'Passwort konnte nicht generiert werden');
                 }
             })
             .catch(function(err) {
                 btn.disabled = false;
-                window.notifyErrorWithDetails('Fehler beim Generieren', err.message || String(err));
+                window.notifyError('Fehler beim Generieren: ' + (err.message || 'Verbindung fehlgeschlagen'));
             });
     }
 

@@ -53,7 +53,7 @@ function openEditModal(userId) {
         .then(r => r.json())
         .then(data => {
             if (data.error) {
-                window.notifyErrorWithDetails('Fehler beim Laden', data.error);
+                window.notifyError(data.error || 'Fehler beim Laden');
                 return;
             }
 
@@ -153,7 +153,7 @@ function openEditModal(userId) {
             });
         })
         .catch(err => {
-            window.notifyErrorWithDetails('Fehler beim Laden der Mitgliederdaten', err.message || String(err));
+            window.notifyError('Fehler beim Laden der Mitgliederdaten: ' + (err.message || 'Verbindung fehlgeschlagen'));
         });
 }
 
@@ -291,11 +291,11 @@ function doSaveEditModal(userId) {
                 if (typeof refreshMembersPage === 'function') refreshMembersPage();
                 else setTimeout(() => location.reload(), 600);
             } else {
-                window.notifyErrorWithDetails('Speichern fehlgeschlagen', data.debug_message || data.error || JSON.stringify(data));
+                window.notifyError(data.error || 'Speichern fehlgeschlagen');
             }
         })
         .catch(err => {
-            window.notifyErrorWithDetails('Speichern fehlgeschlagen', err.message || String(err));
+            window.notifyError('Speichern fehlgeschlagen: ' + (err.message || 'Verbindung fehlgeschlagen'));
         });
 }
 
@@ -332,11 +332,11 @@ function confirmRemoveMember(userId, displayName) {
                         if (typeof refreshMembersPage === 'function') refreshMembersPage();
                         else setTimeout(() => location.reload(), 600);
                     } else {
-                        window.notifyErrorWithDetails('Entfernen fehlgeschlagen', data.error || JSON.stringify(data));
+                        window.notifyError(data.error || 'Entfernen fehlgeschlagen');
                     }
                 })
                 .catch(err => {
-                    window.notifyErrorWithDetails('Fehler beim Entfernen', err.message || String(err));
+                    window.notifyError('Entfernen fehlgeschlagen: ' + (err.message || 'Verbindung fehlgeschlagen'));
                 });
         }
     });
@@ -416,7 +416,7 @@ function resetPassword(username) {
                     });
                 })
                 .catch(error => {
-                    window.notifyErrorWithDetails("Fehler beim Zurücksetzen.", error.message);
+                    window.notifyError(error.message || 'Fehler beim Zurücksetzen');
                 });
         }
     });

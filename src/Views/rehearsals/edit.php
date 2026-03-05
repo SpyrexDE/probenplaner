@@ -213,14 +213,14 @@ $backUrl = '/' . $orchestraBase . '/rehearsals';
                             if (window.SettingsEngine && window.SettingsEngine.showSaveState) {
                                 window.SettingsEngine.showSaveState('error');
                             }
-                            window.notifyErrorWithDetails('Fehler beim Speichern der Gruppen', data.debug_message || data.error || JSON.stringify(data));
+                            window.notifyError(data.error || 'Fehler beim Speichern der Gruppen');
                         }
                     })
                     .catch(err => {
                         if (window.SettingsEngine && window.SettingsEngine.showSaveState) {
                             window.SettingsEngine.showSaveState('error');
                         }
-                        window.notifyErrorWithDetails('Netzwerkfehler', err.message || String(err));
+                        window.notifyError('Netzwerkfehler: ' + (err.message || 'Verbindung fehlgeschlagen'));
                     });
             });
         }

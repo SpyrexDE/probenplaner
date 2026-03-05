@@ -275,12 +275,12 @@ include __DIR__ . '/../components/theme-selector.php';
                             if (window.SettingsEngine) window.SettingsEngine.showSaveState('success');
                         } else {
                             if (window.SettingsEngine) window.SettingsEngine.showSaveState('error');
-                            if (window.notifyErrorWithDetails) window.notifyErrorWithDetails('Fehler beim Speichern', data.error || JSON.stringify(data));
+                            if (window.notifyError) window.notifyError(data.error || 'Fehler beim Speichern');
                         }
                     })
                     .catch(err => {
                         if (window.SettingsEngine) window.SettingsEngine.showSaveState('error');
-                        if (window.notifyErrorWithDetails) window.notifyErrorWithDetails('Netzwerkfehler', err.message || String(err));
+                        if (window.notifyError) window.notifyError('Netzwerkfehler: ' + (err.message || 'Verbindung fehlgeschlagen'));
                     });
             });
         }
@@ -318,7 +318,7 @@ include __DIR__ . '/../components/theme-selector.php';
                         if (typeof Storage !== 'undefined') sessionStorage.setItem('current-theme', themeKey);
                         window.notifySuccess('Theme "' + themeName + '" aktiviert');
                     } else {
-                        window.notifyErrorWithDetails('Fehler beim Wechseln des Themes', response.message || response.error || JSON.stringify(response));
+                        window.notifyError(response.message || response.error || 'Fehler beim Wechseln des Themes');
                         const cur = $('body').data('current-theme') || 'default';
                         $('input[data-theme-key="' + cur + '"]').prop('checked', true);
                     }

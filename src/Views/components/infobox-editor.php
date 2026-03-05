@@ -284,8 +284,8 @@ $editorId = 'infobox-editor-' . uniqid();
                     if (window.SettingsEngine && window.SettingsEngine.showSaveState) {
                         window.SettingsEngine.showSaveState(data.success ? 'success' : 'error');
                     }
-                    if (!data.success && window.notifyErrorWithDetails) {
-                        window.notifyErrorWithDetails('Fehler beim Speichern der Hinweise', data.debug_message || data.error || '');
+                    if (!data.success && window.notifyError) {
+                        window.notifyError(data.error || 'Fehler beim Speichern der Hinweise');
                     }
                 })
                 .catch(err => {

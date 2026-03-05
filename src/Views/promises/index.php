@@ -530,8 +530,7 @@ include __DIR__ . '/../components/save-indicator.php';
                         }
                     } else {
                         console.error('Server returned error:', response.message);
-                        const technicalDetails = response.debug_message || response.error || JSON.stringify(response, null, 2);
-                        window.notifyErrorWithDetails('Fehler beim Speichern', technicalDetails);
+                        window.notifyError(response.error || 'Fehler beim Speichern der Zusage');
                     }
 
                     // Re-enable buttons
@@ -548,8 +547,7 @@ include __DIR__ . '/../components/save-indicator.php';
                 },
                 error: function(xhr, status, error) {
                     console.error('AJAX Error:', error);
-                    const technicalDetails = 'Status: ' + status + '\nError: ' + error + '\nResponse: ' + xhr.responseText;
-                    window.notifyErrorWithDetails('Verbindungsfehler beim Speichern der Zusage', technicalDetails);
+                    window.notifyError('Verbindungsfehler beim Speichern der Zusage');
 
                     // Re-enable buttons
                     enableRehearsalButtons(id);
