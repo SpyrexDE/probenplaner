@@ -103,7 +103,7 @@ class AuthController extends Controller
             return;
         }
         // Validate input
-        $email = Validator::sanitizeUtf8($_POST['username'] ?? $_POST['email'] ?? '');
+        $email = Validator::sanitizeUtf8($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
 
         $validation = Validator::validateRequired(['email' => $email, 'password' => $password], ['email', 'password']);
@@ -367,7 +367,7 @@ class AuthController extends Controller
             'httponly' => true,
             'samesite' => 'Strict'
         ];
-        setcookie("username", "", $cookieOptions);
+        setcookie("email", "", $cookieOptions);
 
         $this->redirect('/login');
     }

@@ -706,7 +706,7 @@
     color: var(--color-text-primary);
 }
 
-.swal-member-username {
+.swal-member-email {
     font-size: var(--font-size-sm);
     color: var(--color-text-secondary);
 }

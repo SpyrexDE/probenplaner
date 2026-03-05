@@ -85,8 +85,8 @@ function openEditModal(userId) {
                 <div class="swal-member-header">
                     <div class="swal-member-avatar">${initial}</div>
                     <div class="swal-member-info">
-                        <div class="swal-member-name">${data.display_name || data.username}</div>
-                        <div class="swal-member-username">@${data.username}</div>
+                        <div class="swal-member-name">${data.display_name || data.email}</div>
+                        <div class="swal-member-email">${data.email}</div>
                     </div>
                 </div>
 
@@ -140,7 +140,7 @@ function openEditModal(userId) {
                     if (resetBtn) {
                         resetBtn.addEventListener('click', () => {
                             Swal.close();
-                            resetPassword(data.username);
+                            resetPassword(data.user_id, data.email);
                         });
                     }
                 }
@@ -148,7 +148,7 @@ function openEditModal(userId) {
                 if (result.isConfirmed) {
                     saveEditModal(userId);
                 } else if (result.isDenied) {
-                    confirmRemoveMember(userId, data.display_name || data.username);
+                    confirmRemoveMember(userId, data.display_name || data.email);
                 }
             });
         })
@@ -342,11 +342,11 @@ function confirmRemoveMember(userId, displayName) {
     });
 }
 
-function resetPassword(username) {
+function resetPassword(userId, email) {
     const orchestraBase = getOrchestraBase();
     Swal.fire({
         title: "Passwort zurücksetzen",
-        html: "Willst du das Passwort von <strong>" + username + "</strong> wirklich zurücksetzen?",
+        html: "Willst du das Passwort von <strong>" + escHtml(email) + "</strong> wirklich zurücksetzen?",
         showCancelButton: true,
         confirmButtonText: "Zurücksetzen",
         confirmButtonColor: '#3085d6',
@@ -354,7 +354,7 @@ function resetPassword(username) {
         icon: 'question'
     }).then((result) => {
         if (result.isConfirmed) {
-            fetch('/' + orchestraBase + '/user/resetPassword?username=' + encodeURIComponent(username), {
+            fetch('/' + orchestraBase + '/user/resetPassword?user_id=' + encodeURIComponent(userId), {
                 headers: {
                     'Accept': 'application/json'
                 }

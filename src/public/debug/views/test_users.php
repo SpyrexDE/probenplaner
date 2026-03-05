@@ -114,7 +114,7 @@ $userTypes = [
 
                 <div class="form-group">
                     <label>Email Prefix (will be appended with number @test.local):</label>
-                    <input type="text" name="username_prefix" class="form-input" value="tester" required>
+                    <input type="text" name="email_prefix" class="form-input" value="tester" required>
                     <small class="form-text text-muted">Password will be set to the display name.</small>
                 </div>
 

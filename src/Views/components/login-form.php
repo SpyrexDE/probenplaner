@@ -61,7 +61,7 @@ include __DIR__ . '/form-input.php';
 
 <?php
 $action = $action ?? '/login';
-$usernameLabel = $usernameLabel ?? 'E-Mail';
+$emailLabel = $emailLabel ?? 'E-Mail';
 $passwordLabel = $passwordLabel ?? 'Passwort';
 $submitText = $submitText ?? 'Einloggen';
 $registerText = $registerText ?? 'Noch keinen Account?';
@@ -78,8 +78,8 @@ ob_start();
 
     <input class="login-input"
         type="text"
-        name="username"
-        placeholder="<?= htmlspecialchars($usernameLabel) ?>"
+        name="email"
+        placeholder="<?= htmlspecialchars($emailLabel) ?>"
         required
         minlength="2"
         maxlength="100"

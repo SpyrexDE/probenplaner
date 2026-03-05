@@ -3,14 +3,14 @@
 /**
  * User item component for promise views
  * 
- * @param array $member - Member data with keys: username, note, status (or determine from context)
+ * @param array $member - Member data with keys: display_name, email, note, status
  * @param string $status - Member status: 'attending', 'not_attending', 'no_response' (optional if in $member)
- * @param string $additionalInfo - Additional info to display after username (optional)
+ * @param string $additionalInfo - Additional info to display after name (optional)
  */
 
 use App\Core\Utilities;
 
-$username = htmlspecialchars($member['display_name'] ?? $member['email'] ?? '');
+$displayName = htmlspecialchars($member['display_name'] ?? $member['email'] ?? '');
 $note = !empty($member['note']) ? htmlspecialchars($member['note']) : '';
 $memberStatus = $status ?? $member['status'] ?? 'no_response';
 $additionalInfo = $additionalInfo ?? '';
@@ -38,7 +38,7 @@ switch ($memberStatus) {
     <i class="tree-user-item-icon fas fa-user"></i>
 
     <div class="tree-user-item-content">
-        <span class="tree-user-item-name"><?= $username ?><?= $userLabels ?></span>
+        <span class="tree-user-item-name"><?= $displayName ?><?= $userLabels ?></span>
         <?php if ($additionalInfo): ?>
             <span class="tree-user-item-info"><?= $additionalInfo ?></span>
         <?php endif; ?>

@@ -14,7 +14,7 @@ if ($_POST['action'] === 'generate_users') {
     if (empty($_POST['orchestra_id']) || !is_numeric($_POST['orchestra_id'])) {
         return ['message' => 'Please select a valid orchestra', 'messageType' => 'error'];
     }
-    if (empty($_POST['username_prefix'])) {
+    if (empty($_POST['email_prefix'])) {
         return ['message' => 'Email prefix is required', 'messageType' => 'error'];
     }
     if (empty($_POST['max_users']) || !is_numeric($_POST['max_users']) || $_POST['max_users'] < 1) {
@@ -22,7 +22,7 @@ if ($_POST['action'] === 'generate_users') {
     }
 
     $orchestraId = (int)$_POST['orchestra_id'];
-    $emailPrefix = $_POST['username_prefix'];
+    $emailPrefix = $_POST['email_prefix'];
     $maxUsers = min((int)$_POST['max_users'], 20);
 
     $stmt = $conn->prepare("SELECT id, name FROM orchestras WHERE id = ?");

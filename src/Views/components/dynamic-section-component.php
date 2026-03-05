@@ -175,7 +175,7 @@ $sectionElementId = $sectionId . $rehearsalId;
                                                             $aOrder = $statusOrder[$a['status']] ?? 3;
                                                             $bOrder = $statusOrder[$b['status']] ?? 3;
                                                             if ($aOrder === $bOrder) {
-                                                                return strcasecmp($a['display_name'] ?? '', $b['display_name'] ?? ''); // Secondary sort by username
+                                                                return strcasecmp($a['display_name'] ?? '', $b['display_name'] ?? ''); // Secondary sort by display_name
                                                             }
                                                             return $aOrder - $bOrder;
                                                         });
@@ -247,7 +247,7 @@ $sectionElementId = $sectionId . $rehearsalId;
                                             $aOrder = $statusOrder[$a['status']] ?? 3;
                                             $bOrder = $statusOrder[$b['status']] ?? 3;
                                             if ($aOrder === $bOrder) {
-                                                return strcasecmp($a['display_name'] ?? '', $b['display_name'] ?? ''); // Secondary sort by username
+                                                return strcasecmp($a['display_name'] ?? '', $b['display_name'] ?? ''); // Secondary sort by display_name
                                             }
                                             return $aOrder - $bOrder;
                                         });
@@ -274,7 +274,7 @@ $sectionElementId = $sectionId . $rehearsalId;
                     $aOrder = $statusOrder[$a['status']] ?? 3;
                     $bOrder = $statusOrder[$b['status']] ?? 3;
                     if ($aOrder === $bOrder) {
-                        return strcasecmp($a['display_name'] ?? '', $b['display_name'] ?? ''); // Secondary sort by username
+                        return strcasecmp($a['display_name'] ?? '', $b['display_name'] ?? ''); // Secondary sort by display_name
                     }
                     return $aOrder - $bOrder;
                 });
