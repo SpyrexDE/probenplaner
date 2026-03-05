@@ -156,7 +156,8 @@ function saveEditModal(userId) {
         .then(data => {
             if (data.success) {
                 window.notifySuccess('Gespeichert');
-                setTimeout(() => location.reload(), 600);
+                if (typeof refreshMembersPage === 'function') refreshMembersPage();
+                else setTimeout(() => location.reload(), 600);
             } else {
                 window.notifyErrorWithDetails('Speichern fehlgeschlagen', data.debug_message || data.error || JSON.stringify(data));
             }
@@ -196,7 +197,8 @@ function confirmRemoveMember(userId, displayName) {
                 .then(data => {
                     if (data.success) {
                         window.notifySuccess('Mitglied entfernt');
-                        setTimeout(() => location.reload(), 600);
+                        if (typeof refreshMembersPage === 'function') refreshMembersPage();
+                        else setTimeout(() => location.reload(), 600);
                     } else {
                         window.notifyErrorWithDetails('Entfernen fehlgeschlagen', data.error || JSON.stringify(data));
                     }

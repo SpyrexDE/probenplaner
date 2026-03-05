@@ -8,34 +8,39 @@ $renderComponent = true;
 ?>
 
 <style>
-    /* === MEMBERS PAGE === */
+    /* === MEMBERS DIRECTORY === */
 
     .members-toolbar {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: var(--space-3);
-        margin-bottom: var(--space-6);
+        margin-bottom: var(--space-5);
         flex-wrap: wrap;
     }
 
     .members-count {
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
-        font-weight: var(--font-weight-medium);
-    }
-
-    .members-count strong {
+        font-size: var(--font-size-2xl);
         color: var(--color-text-primary);
         font-weight: var(--font-weight-bold);
+        letter-spacing: -0.01em;
+    }
+
+    .members-count span {
+        color: var(--color-text-muted);
+        font-weight: var(--font-weight-normal);
+        font-size: var(--font-size-lg);
+    }
+
+    .toolbar-actions {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
     }
 
     /* Search */
     .members-search-wrapper {
         position: relative;
-        flex: 1;
-        max-width: 320px;
-        min-width: 200px;
     }
 
     .members-search-icon {
@@ -44,317 +49,363 @@ $renderComponent = true;
         top: 50%;
         transform: translateY(-50%);
         color: var(--color-text-muted);
-        font-size: var(--font-size-sm);
+        font-size: var(--font-size-xs);
         pointer-events: none;
         transition: color var(--transition-base);
     }
 
     .members-search {
         width: 100%;
-        padding: var(--space-2) var(--space-3) var(--space-2) var(--space-8);
+        padding: var(--space-2) var(--space-3) var(--space-2) calc(var(--space-8) + 2px);
         border: 2px solid var(--color-border);
-        border-radius: var(--radius-lg);
+        border-radius: var(--radius-full);
         font-size: var(--font-size-sm);
         color: var(--color-text-primary);
         background: var(--color-bg-primary);
         transition: all var(--transition-base);
     }
 
-    .members-search:hover {
-        border-color: var(--color-primary-200);
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-    }
-
     .members-search:focus {
         outline: none;
         border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(71, 140, 244, 0.1), 0 2px 6px rgba(0, 0, 0, 0.06);
-        transform: translateY(-1px);
+        box-shadow: 0 0 0 3px rgba(71, 140, 244, 0.1);
     }
 
     .members-search:focus~.members-search-icon {
         color: var(--color-primary);
     }
 
-    /* Section cards */
-    .section-card {
+    /* === LAYOUT: Roster + Sidebar === */
+    .members-layout {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: var(--space-5);
+    }
+
+    .members-layout.has-sidebar {
+        grid-template-columns: 1fr 280px;
+    }
+
+    /* Desktop: hide mobile toolbar items, show sidebar search */
+    .toolbar-btn-mobile {
+        display: none !important;
+    }
+
+    .search-mobile {
+        display: none !important;
+    }
+
+    @media (max-width: 900px) {
+        .members-layout.has-sidebar {
+            grid-template-columns: 1fr;
+        }
+
+        .members-admin-panel {
+            display: none !important;
+        }
+
+        .toolbar-btn-mobile {
+            display: inline-flex !important;
+        }
+
+        .search-mobile {
+            display: block !important;
+        }
+    }
+
+    /* === SECTION BANDS === */
+    .section-band {
+        background: var(--color-white);
+        border: 1px solid var(--color-border-light);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-sm);
+        padding: var(--space-4);
         margin-bottom: var(--space-4);
+        transition: box-shadow var(--transition-base);
     }
 
-    .section-card .modern-card-header {
-        cursor: pointer;
-        user-select: none;
-        transition: background var(--transition-base);
+    .section-band:hover {
+        box-shadow: var(--shadow-md);
     }
 
-    .section-card .modern-card-header:hover {
-        background: linear-gradient(135deg, var(--color-gray-100) 0%, var(--color-gray-50) 100%);
-    }
-
-    .section-header-content {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        width: 100%;
-    }
-
-    .section-header-left {
+    .section-band-header {
         display: flex;
         align-items: center;
         gap: var(--space-3);
+        margin-bottom: var(--space-3);
+        padding-bottom: var(--space-3);
+        border-bottom: 1px solid color-mix(in srgb, var(--section-accent, var(--color-primary)) 15%, transparent);
     }
 
-    .section-icon {
-        width: 32px;
-        height: 32px;
-        border-radius: var(--radius-md);
+    .section-band-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-lg);
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
+        font-size: 18px;
+        line-height: 1;
+        background: linear-gradient(135deg, var(--color-bg-tertiary), var(--color-bg-secondary)) !important;
+        box-shadow: 0 4px 12px color-mix(in srgb, var(--color-bg-tertiary) 50%, transparent);
     }
 
-    .section-title {
+    .section-band-name {
         font-size: var(--font-size-base);
-        font-weight: var(--font-weight-semibold);
+        font-weight: var(--font-weight-bold);
         color: var(--color-text-primary);
+        letter-spacing: 0.02em;
+        flex: 1;
     }
 
-    .section-count {
+    .section-band-count {
         font-size: var(--font-size-xs);
-        color: var(--color-text-secondary);
-        font-weight: var(--font-weight-medium);
-        background: var(--color-bg-tertiary);
-        padding: 2px 8px;
-        border-radius: var(--radius-full);
-    }
-
-    .section-chevron {
         color: var(--color-text-muted);
-        font-size: var(--font-size-sm);
-        transition: transform var(--transition-base);
+        font-weight: var(--font-weight-semibold);
+        background: var(--color-bg-tertiary);
+        padding: 3px 10px;
+        border-radius: var(--radius-full);
+        min-width: 28px;
+        text-align: center;
     }
 
-    .section-card.expanded .section-chevron {
-        transform: rotate(90deg);
+    /* === MEMBER ROWS === */
+    .member-list {
+        display: flex;
+        flex-direction: column;
     }
 
-    /* Subsection headers */
-    .subsection-header {
+    .member-row {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        padding: var(--space-2) var(--space-5);
-        background: var(--color-bg-secondary);
-        border-bottom: 1px solid var(--color-border-light);
+        gap: var(--space-3);
+        padding: var(--space-2) var(--space-1);
+        border-radius: var(--radius-base);
+        transition: background 0.15s ease;
+        animation: rowReveal 0.3s ease-out both;
+        animation-delay: calc(var(--row-i, 0) * 20ms);
+        cursor: pointer;
     }
 
-    .subsection-title {
+    @keyframes rowReveal {
+        from {
+            opacity: 0;
+            transform: translateY(4px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .member-row:hover {
+        background: var(--color-bg-secondary);
+    }
+
+    .member-row.dimmed {
+        opacity: 0.12;
+        pointer-events: none;
+        filter: grayscale(1);
+    }
+
+    .member-row-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: var(--radius-full);
+        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: var(--font-weight-bold);
+        font-size: 11px;
+        flex-shrink: 0;
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--row-role-color, transparent) 35%, transparent);
+    }
+
+    .member-row-info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        flex-wrap: wrap;
+    }
+
+    .member-row-name {
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-primary);
+        white-space: nowrap;
+    }
+
+    .member-row-instrument {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-muted);
+        white-space: nowrap;
+    }
+
+    .member-row-labels {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: auto;
+    }
+
+    .member-row-labels .role-tag {
+        font-size: 10px;
+        padding: 1px 6px;
+        line-height: 16px;
+    }
+
+    .member-row-labels .user-badge {
+        width: 18px;
+        height: 16px;
+        font-size: 9px;
+        margin-left: 0;
+    }
+
+
+    .popover-edit:hover {
+        border-color: var(--color-primary);
+        color: var(--color-primary);
+        background: var(--color-primary-50);
+    }
+
+    /* === ADMIN SIDEBAR === */
+    .members-admin-panel {
+        position: sticky;
+        top: calc(var(--navbar-height) + var(--space-4));
+        align-self: start;
+        max-height: calc(100vh - var(--navbar-height) - var(--space-8));
+        overflow-y: auto;
+    }
+
+    .admin-section {
+        background: var(--color-white);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        margin-bottom: var(--space-4);
+    }
+
+    .admin-section-header {
+        padding: var(--space-3) var(--space-4);
+        background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg-primary) 100%);
+        border-bottom: 1px solid var(--color-border-light);
         font-size: var(--font-size-xs);
         font-weight: var(--font-weight-bold);
         color: var(--color-text-secondary);
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.06em;
     }
 
-    .subsection-count {
-        font-size: var(--font-size-xs);
-        color: var(--color-text-muted);
+    .admin-section-body {
+        padding: var(--space-3);
     }
 
-    /* Member items */
-    .member-item {
+    /* Role rows in sidebar */
+    .role-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: var(--space-3) var(--space-5);
+        padding: var(--space-2) 0;
         border-bottom: 1px solid var(--color-border-light);
-        transition: all var(--transition-base);
     }
 
-    .member-item:last-child {
+    .role-row:last-child {
         border-bottom: none;
     }
 
-    .member-item:hover {
-        background: linear-gradient(135deg, var(--color-bg-secondary), var(--color-bg-tertiary));
-        transform: translateX(2px);
-    }
-
-    .member-info {
+    .role-row-info {
         display: flex;
         align-items: center;
-        gap: var(--space-3);
+        gap: var(--space-2);
         min-width: 0;
         flex: 1;
     }
 
-    .member-avatar {
-        width: 36px;
-        height: 36px;
-        border-radius: var(--radius-md);
-        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
-        color: var(--color-white);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: var(--font-weight-bold);
-        font-size: var(--font-size-sm);
-        flex-shrink: 0;
-        box-shadow: 0 2px 6px rgba(71, 140, 244, 0.15);
-    }
-
-    .member-details {
-        min-width: 0;
-    }
-
-    .member-name {
-        font-weight: var(--font-weight-semibold);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-primary);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        line-height: 1.3;
-    }
-
-    .member-meta {
-        display: flex;
-        align-items: center;
-        gap: var(--space-1);
-        margin-top: 1px;
-    }
-
-    .member-badge {
+    .role-row-meta {
         font-size: 10px;
-        font-weight: var(--font-weight-semibold);
-        padding: 1px 6px;
-        border-radius: var(--radius-sm);
-        letter-spacing: 0.02em;
-        text-transform: uppercase;
-    }
-
-    .member-badge-small-group {
-        background: var(--color-warning-100);
-        color: var(--color-warning-dark);
-    }
-
-    /* Role tag pills */
-    .role-tag {
-        display: inline-flex;
-        align-items: center;
-        font-size: 10px;
-        font-weight: var(--font-weight-bold);
-        padding: 2px 8px;
-        border-radius: var(--radius-full);
-        letter-spacing: 0.02em;
-        text-transform: uppercase;
-        background: color-mix(in srgb, var(--role-color) 15%, transparent);
-        color: var(--role-color);
-        border: 1px solid color-mix(in srgb, var(--role-color) 30%, transparent);
-        line-height: 1.4;
-    }
-
-    /* Role management panel */
-    .role-manager {
-        margin-top: var(--space-6);
-    }
-
-    .role-list-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: var(--space-3) var(--space-5);
-        border-bottom: 1px solid var(--color-border-light);
-        transition: background var(--transition-base);
-    }
-
-    .role-list-item:last-child {
-        border-bottom: none;
-    }
-
-    .role-list-item:hover {
-        background: var(--color-bg-secondary);
-    }
-
-    .role-list-info {
-        display: flex;
-        align-items: center;
-        gap: var(--space-3);
-        min-width: 0;
-    }
-
-    .role-list-meta {
-        font-size: var(--font-size-xs);
         color: var(--color-text-muted);
     }
 
-    .role-list-actions {
+    .role-row-actions {
         display: flex;
-        gap: var(--space-1);
+        gap: 2px;
     }
 
-    .role-list-actions button {
-        width: 28px;
-        height: 28px;
+    .role-row-actions button {
+        width: 24px;
+        height: 24px;
         border: none;
         background: none;
         cursor: pointer;
-        border-radius: var(--radius-base);
+        border-radius: var(--radius-full);
         color: var(--color-text-muted);
         transition: all var(--transition-base);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: var(--font-size-xs);
+        font-size: 10px;
     }
 
-    .role-list-actions button:hover {
+    .role-row-actions button:hover {
         background: var(--color-bg-tertiary);
         color: var(--color-text-primary);
     }
 
-    .role-list-actions button.role-delete-btn:hover {
+    .role-row-actions button.role-delete-btn:hover {
         background: var(--color-error-50);
         color: var(--color-error);
     }
 
-    .member-edit-btn {
-        width: 32px;
-        height: 32px;
-        background: none;
-        border: 1px solid transparent;
-        cursor: pointer;
-        color: var(--color-text-muted);
+    .admin-btn-new {
+        width: 100%;
+        padding: var(--space-2);
+        border: 1px dashed var(--color-border);
         border-radius: var(--radius-base);
+        background: none;
+        color: var(--color-text-muted);
+        font-size: var(--font-size-xs);
+        cursor: pointer;
         transition: all var(--transition-base);
         display: flex;
         align-items: center;
         justify-content: center;
-        flex-shrink: 0;
+        gap: var(--space-1);
+        margin-top: var(--space-2);
     }
 
-    .member-edit-btn:hover {
+    .admin-btn-new:hover {
+        border-color: var(--color-primary);
         color: var(--color-primary);
         background: var(--color-primary-50);
-        border-color: var(--color-primary-200);
-        transform: scale(1.05);
     }
 
-    .member-edit-btn:active {
-        transform: scale(0.95);
+    /* Invite section */
+    .invite-link-box {
+        background: var(--color-bg-tertiary);
+        border-radius: var(--radius-base);
+        padding: var(--space-2);
+        font-family: var(--font-family-mono);
+        font-size: 10px;
+        word-break: break-all;
+        color: var(--color-text-primary);
+        border: 1px solid var(--color-border-light);
+        line-height: 1.4;
+        margin-bottom: var(--space-2);
     }
 
-    /* Section body collapse */
-    .section-body {
-        max-height: 2000px;
-        overflow: hidden;
-        transition: max-height var(--transition-slow);
+    .invite-meta {
+        font-size: 10px;
+        color: var(--color-text-muted);
+        margin-bottom: var(--space-2);
     }
 
-    .section-card:not(.expanded) .section-body {
-        max-height: 0;
-    }
 
     /* No results state */
     .members-no-results {
@@ -369,7 +420,7 @@ $renderComponent = true;
         display: block;
     }
 
-    /* SweetAlert2 members modal overrides */
+    /* SweetAlert overrides (kept for edit/role modals) */
     .swal-members-permissions {
         text-align: left;
     }
@@ -420,7 +471,7 @@ $renderComponent = true;
     .swal-member-avatar {
         width: 48px;
         height: 48px;
-        border-radius: var(--radius-lg);
+        border-radius: var(--radius-full);
         background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
         color: white;
         display: flex;
@@ -442,7 +493,7 @@ $renderComponent = true;
         color: var(--color-text-primary);
     }
 
-    .swal-member-name {
+    .swal-member-username {
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
     }
@@ -477,23 +528,6 @@ $renderComponent = true;
         color: var(--color-text-primary);
         margin-bottom: var(--space-1);
     }
-
-    .swal-invite-link {
-        background: var(--color-bg-tertiary);
-        border-radius: var(--radius-base);
-        padding: var(--space-3);
-        font-family: var(--font-family-mono);
-        font-size: var(--font-size-sm);
-        word-break: break-all;
-        color: var(--color-text-primary);
-        border: 1px solid var(--color-border);
-    }
-
-    .swal-invite-stat {
-        font-size: var(--font-size-xs);
-        color: var(--color-text-muted);
-        margin-top: var(--space-2);
-    }
 </style>
 
 <?php
@@ -503,7 +537,7 @@ foreach ($grouped as $members) {
     $totalMembers += count($members);
 }
 
-// Map instrument → top-level section using config
+// Map instrument → top-level section
 $sectionOrder = [];
 foreach ($sections as $groupName => $groupSections) {
     foreach ($groupSections as $s) {
@@ -513,13 +547,12 @@ foreach ($sections as $groupName => $groupSections) {
 
 $ungrouped = [];
 foreach ($grouped as $sectionName => $members) {
-    // Skip types that aren't part of any configured instrument section
     if (!isset($sectionOrder[$sectionName]) && !isset($sections[$sectionName])) continue;
     $groupName = $sectionOrder[$sectionName] ?? $sectionName;
     $ungrouped[$groupName][$sectionName] = $members;
 }
 
-// Order sections to match orchestra_groups.php config hierarchy
+// Order sections per config
 $configOrder = array_keys($sections);
 $displayGroups = [];
 foreach ($configOrder as $groupName) {
@@ -528,45 +561,57 @@ foreach ($configOrder as $groupName) {
         unset($ungrouped[$groupName]);
     }
 }
-// Append any remaining groups not in config
 foreach ($ungrouped as $groupName => $sectionMembers) {
     $displayGroups[$groupName] = $sectionMembers;
 }
 
-// Build section visual metadata dynamically from config
-$defaultMeta = ['icon' => 'fas fa-users', 'bg' => 'background: var(--color-bg-tertiary);', 'tc' => 'color: var(--color-text-secondary);'];
+// Section visual metadata
+$defaultMeta = ['emoji' => '🎶', 'bg' => 'background: var(--color-bg-tertiary);', 'tc' => 'color: var(--color-text-secondary);', 'accent' => 'var(--color-primary)'];
 $sectionMeta = [];
 foreach ($sections as $sectionId => $_instruments) {
     $group = $groupManager->getGroup($sectionId);
     if ($group) {
+        $tc = $group['tc'] ?? $defaultMeta['tc'];
+        preg_match('/color:\s*([^;]+)/', $tc, $m);
+        $accent = trim($m[1] ?? 'var(--color-primary)');
+        $bg = $group['bg'] ?? $defaultMeta['bg'];
+        // Extract raw bg color for gradient icon
+        preg_match('/background:\s*([^;]+)/', $bg, $bm);
         $sectionMeta[$sectionId] = [
-            'icon' => $group['icon'] ?? $defaultMeta['icon'],
-            'bg'   => $group['bg']   ?? $defaultMeta['bg'],
-            'tc'   => $group['tc']   ?? $defaultMeta['tc'],
+            'emoji'  => $group['emoji'] ?? $defaultMeta['emoji'],
+            'bg'     => $bg,
+            'tc'     => $tc,
+            'accent' => $accent,
         ];
     }
 }
+
+$isAdmin = $canManage || !empty($canManagePermissions);
 ?>
 
 <div class="container-app">
     <!-- Toolbar -->
     <div class="members-toolbar">
         <div class="members-count">
-            <strong><?= $totalMembers ?></strong> Mitglieder
+            <?= $totalMembers ?> <span>Mitglieder</span>
         </div>
 
-        <div class="flex items-center gap-3">
-            <div class="members-search-wrapper">
+        <div class="toolbar-actions">
+            <div class="members-search-wrapper search-mobile">
                 <i class="fas fa-search members-search-icon"></i>
                 <input type="text"
                     class="members-search"
                     placeholder="Mitglied suchen..."
-                    id="memberSearch"
                     oninput="filterMembers(this.value)">
             </div>
 
+            <?php if (!empty($canManagePermissions)): ?>
+                <button class="btn-modern btn-secondary toolbar-btn-mobile" onclick="openRolesModal()" style="white-space: nowrap; padding: var(--space-2) var(--space-4); font-size: var(--font-size-sm);">
+                    <i class="fas fa-shield-alt" style="margin-right: var(--space-1);"></i> Rollen
+                </button>
+            <?php endif; ?>
             <?php if ($canManage): ?>
-                <button class="btn-modern btn-primary" onclick="openInviteModal()" style="white-space: nowrap; padding: var(--space-2) var(--space-4); font-size: var(--font-size-sm);">
+                <button class="btn-modern btn-primary toolbar-btn-mobile" onclick="openInviteModal()" style="white-space: nowrap; padding: var(--space-2) var(--space-4); font-size: var(--font-size-sm);">
                     <i class="fas fa-link" style="margin-right: var(--space-1);"></i> Einladen
                 </button>
             <?php endif; ?>
@@ -580,167 +625,278 @@ foreach ($sections as $sectionId => $_instruments) {
         include __DIR__ . '/../components/empty-state.php';
         ?>
     <?php else: ?>
-        <!-- Section Cards -->
-        <?php foreach ($displayGroups as $groupName => $sectionMembers): ?>
-            <?php
-            $meta = $sectionMeta[$groupName] ?? $defaultMeta;
-            $groupMemberCount = 0;
-            foreach ($sectionMembers as $members) {
-                $groupMemberCount += count($members);
-            }
-            ?>
-            <div class="modern-card section-card expanded mb-4" data-group>
-                <div class="modern-card-header" onclick="toggleSection(this)">
-                    <div class="section-header-content">
-                        <div class="section-header-left">
-                            <div class="section-icon" style="<?= $meta['bg'] ?>">
-                                <i class="<?= $meta['icon'] ?>" style="<?= $meta['tc'] ?> font-size: var(--font-size-sm);"></i>
+        <div class="members-layout<?= $isAdmin ? ' has-sidebar' : '' ?>">
+            <!-- ═══ ROSTER ═══ -->
+            <div class="members-roster">
+                <?php $chipIndex = 0; ?>
+                <?php foreach ($displayGroups as $groupName => $sectionMembers): ?>
+                    <?php
+                    $meta = $sectionMeta[$groupName] ?? $defaultMeta;
+                    $groupMemberCount = 0;
+                    foreach ($sectionMembers as $members) {
+                        $groupMemberCount += count($members);
+                    }
+                    ?>
+                    <div class="section-band" data-group style="--section-accent: <?= $meta['accent'] ?>">
+                        <div class="section-band-header">
+                            <div class="section-band-icon" style="background: linear-gradient(135deg, <?= $meta['accent'] ?>, color-mix(in srgb, <?= $meta['accent'] ?> 70%, #000));">
+                                <span><?= $meta['emoji'] ?></span>
                             </div>
-                            <div>
-                                <div class="section-title"><?= htmlspecialchars($groupManager->getDisplayName($groupName)) ?></div>
-                            </div>
-                            <span class="section-count"><?= $groupMemberCount ?></span>
+                            <span class="section-band-name"><?= htmlspecialchars($groupManager->getDisplayName($groupName)) ?></span>
+                            <span class="section-band-count"><?= $groupMemberCount ?></span>
                         </div>
-                        <i class="fas fa-chevron-right section-chevron"></i>
-                    </div>
-                </div>
 
-                <div class="section-body">
-                    <?php foreach ($sectionMembers as $sectionName => $members): ?>
-                        <?php if (count($sectionMembers) > 1): ?>
-                            <div class="subsection-header">
-                                <span class="subsection-title"><?= htmlspecialchars($groupManager->getDisplayName($sectionName)) ?></span>
-                                <span class="subsection-count"><?= count($members) ?></span>
-                            </div>
-                        <?php endif; ?>
-
-                        <?php foreach ($members as $member):
-                            $displayName = $member['display_name'] ?? $member['email'];
-                            $initial = strtoupper(substr($displayName, 0, 1));
-                            $isSmallGroup = !empty($member['is_small_group']);
-                            $roleLabel = $member['role_tag_label'] ?? $member['role_name'] ?? '';
-                            $roleColor = $member['role_tag_color'] ?? '#478cf4';
-                        ?>
-                            <div class="member-item" data-member-name="<?= htmlspecialchars(strtolower($displayName)) ?>">
-                                <div class="member-info">
-                                    <div class="member-avatar"><?= $initial ?></div>
-                                    <div class="member-details">
-                                        <div class="member-name">
-                                            <?= htmlspecialchars($displayName) ?>
-                                            <?php if ($roleLabel): ?>
-                                                <span class="role-tag" style="--role-color: <?= htmlspecialchars($roleColor) ?>"><?= htmlspecialchars($roleLabel) ?></span>
+                        <div class="member-list">
+                            <?php $rowIndex = 0; ?>
+                            <?php foreach ($sectionMembers as $sectionName => $members): ?>
+                                <?php foreach ($members as $member):
+                                    $displayName = $member['display_name'] ?? $member['email'];
+                                    $initial = strtoupper(substr($displayName, 0, 1));
+                                    $roleColor = $member['role_tag_color'] ?? '';
+                                    $userLabels = \App\Core\Utilities::generateUserLabels($member);
+                                    $instrumentName = (count($sectionMembers) > 1) ? $groupManager->getDisplayName($sectionName) : '';
+                                ?>
+                                    <div class="member-row"
+                                        data-member-name="<?= htmlspecialchars(strtolower($displayName)) ?>"
+                                        data-user-id="<?= (int)$member['user_id'] ?>"
+                                        style="--row-i: <?= $rowIndex ?>; --row-role-color: <?= $roleColor ?: 'transparent' ?>"
+                                        onclick="openEditModal(<?= (int)$member['user_id'] ?>)">
+                                        <div class="member-row-avatar"><?= $initial ?></div>
+                                        <div class="member-row-info">
+                                            <span class="member-row-name"><?= htmlspecialchars($displayName) ?></span>
+                                            <?php if ($instrumentName): ?>
+                                                <span class="member-row-instrument"><?= htmlspecialchars($instrumentName) ?></span>
                                             <?php endif; ?>
                                         </div>
-                                        <div class="member-meta">
-                                            <?php if ($isSmallGroup): ?>
-                                                <span class="member-badge member-badge-small-group">KG</span>
-                                            <?php endif; ?>
-                                        </div>
+                                        <?php if ($userLabels): ?>
+                                            <span class="member-row-labels"><?= $userLabels ?></span>
+                                        <?php endif; ?>
                                     </div>
-                                </div>
-                                <?php if ($canManage): ?>
-                                    <button class="member-edit-btn" onclick="openEditModal(<?= (int)$member['user_id'] ?>)" title="Bearbeiten">
-                                        <i class="fas fa-cog"></i>
-                                    </button>
-                                <?php endif; ?>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-        <?php endforeach; ?>
-    <?php endif; ?>
-
-    <!-- No search results message -->
-    <div class="members-no-results" id="noResults" style="display:none;">
-        <i class="fas fa-search"></i>
-        <div>Kein Mitglied gefunden</div>
-    </div>
-
-    <?php if (!empty($canManagePermissions)): ?>
-        <!-- Role Management Panel -->
-        <div class="role-manager">
-            <div class="modern-card">
-                <div class="modern-card-header">
-                    <div class="section-header-content">
-                        <div class="section-header-left">
-                            <div class="section-icon" style="background: var(--color-primary-50);">
-                                <i class="fas fa-shield-alt" style="color: var(--color-primary); font-size: var(--font-size-sm);"></i>
-                            </div>
-                            <div>
-                                <div class="section-title">Rollen</div>
-                            </div>
-                            <span class="section-count"><?= count($roles) ?></span>
+                                    <?php $rowIndex++; ?>
+                                <?php endforeach; ?>
+                            <?php endforeach; ?>
                         </div>
                     </div>
+                <?php endforeach; ?>
+
+                <!-- No search results -->
+                <div class="members-no-results" id="noResults" style="display:none;">
+                    <i class="fas fa-search"></i>
+                    <div>Kein Mitglied gefunden</div>
                 </div>
-                <div class="modern-card-body" style="padding: 0;">
-                    <?php foreach ($roles as $role): ?>
-                        <div class="role-list-item">
-                            <div class="role-list-info">
-                                <span class="role-tag" style="--role-color: <?= htmlspecialchars($role['tag_color']) ?>"><?= htmlspecialchars($role['name']) ?></span>
-                                <span class="role-list-meta">
-                                    <?= (int)$role['user_count'] ?> Mitglieder
-                                    <?php if (!empty($role['is_default'])): ?>
-                                        &middot; Standard
-                                    <?php endif; ?>
-                                </span>
+            </div>
+
+            <!-- ═══ ADMIN SIDEBAR ═══ -->
+            <?php if ($isAdmin): ?>
+                <div class="members-admin-panel">
+                    <!-- Search -->
+                    <div class="members-search-wrapper" style="margin-bottom: var(--space-4);">
+                        <i class="fas fa-search members-search-icon"></i>
+                        <input type="text"
+                            class="members-search"
+                            placeholder="Mitglied suchen..."
+                            oninput="filterMembers(this.value)">
+                    </div>
+                    <?php if (!empty($canManagePermissions)): ?>
+                        <div class="admin-section">
+                            <div class="admin-section-header"><i class="fas fa-shield-alt" style="margin-right: var(--space-1);"></i> Rollen</div>
+                            <div class="admin-section-body">
+                                <?php foreach ($roles as $role): ?>
+                                    <div class="role-row">
+                                        <div class="role-row-info">
+                                            <?= \App\Core\Utilities::renderRoleTag($role) ?>
+                                            <span class="role-row-meta"><?= (int)$role['user_count'] ?></span>
+                                        </div>
+                                        <?php if (empty($role['is_system'])): ?>
+                                            <div class="role-row-actions">
+                                                <button onclick="editRole(<?= (int)$role['id'] ?>, <?= htmlspecialchars(json_encode($role), ENT_QUOTES) ?>)" title="Bearbeiten"><i class="fas fa-pen"></i></button>
+                                                <button class="role-delete-btn" onclick="deleteRole(<?= (int)$role['id'] ?>, '<?= htmlspecialchars($role['name'], ENT_QUOTES) ?>', <?= (int)$role['user_count'] ?>)" title="Löschen"><i class="fas fa-trash"></i></button>
+                                            </div>
+                                        <?php else: ?>
+                                            <span style="font-size: 10px; color: var(--color-text-muted);"><i class="fas fa-lock"></i></span>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endforeach; ?>
+                                <button class="admin-btn-new" onclick="createRole()"><i class="fas fa-plus"></i> Neue Rolle</button>
                             </div>
-                            <div class="role-list-actions">
-                                <?php if (empty($role['is_system'])): ?>
-                                    <button onclick="editRole(<?= (int)$role['id'] ?>, <?= htmlspecialchars(json_encode($role), ENT_QUOTES) ?>)" title="Bearbeiten"><i class="fas fa-pen"></i></button>
-                                    <button class="role-delete-btn" onclick="deleteRole(<?= (int)$role['id'] ?>, '<?= htmlspecialchars($role['name']) ?>', <?= (int)$role['user_count'] ?>)" title="Löschen"><i class="fas fa-trash"></i></button>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($canManage): ?>
+                        <div class="admin-section">
+                            <div class="admin-section-header"><i class="fas fa-link" style="margin-right: var(--space-1);"></i> Einladen</div>
+                            <div class="admin-section-body">
+                                <?php if ($inviteLink): ?>
+                                    <?php $linkUrl = rtrim($_SERVER['HTTP_HOST'] ?? '', '/') . '/invite/' . $inviteLink['token']; ?>
+                                    <div class="invite-link-box"><?= htmlspecialchars($linkUrl) ?></div>
+                                    <div class="invite-meta"><?= (int)($inviteLink['used_count'] ?? 0) ?>× verwendet</div>
+                                    <button class="btn-base btn-sm btn-primary" style="width: 100%;" onclick="copyInviteLink()"><i class="fas fa-copy" style="margin-right: var(--space-1);"></i> Link kopieren</button>
+                                    <div class="swal-perm-row" style="margin-top: var(--space-2);">
+                                        <input type="checkbox" id="sidebarKeycloak" <?= !empty($inviteLink['keycloak_only']) ? 'checked' : '' ?> onchange="toggleKeycloak()">
+                                        <label for="sidebarKeycloak" style="font-size: var(--font-size-xs);">Nur JMD-Accounts</label>
+                                    </div>
                                 <?php else: ?>
-                                    <span style="font-size: var(--font-size-xs); color: var(--color-text-muted); padding: 0 var(--space-2);"><i class="fas fa-lock"></i></span>
+                                    <p style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin-bottom: var(--space-2);">Noch kein Link vorhanden.</p>
+                                    <button class="admin-btn-new" onclick="regenerateLink()"><i class="fas fa-plus"></i> Link erstellen</button>
                                 <?php endif; ?>
                             </div>
                         </div>
-                    <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
-                <div class="modern-card-footer" style="padding: var(--space-3) var(--space-5);">
-                    <button class="btn-modern btn-primary" onclick="createRole()" style="width: 100%; padding: var(--space-2); font-size: var(--font-size-sm);">
-                        <i class="fas fa-plus" style="margin-right: var(--space-1);"></i> Neue Rolle
-                    </button>
-                </div>
-            </div>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 </div>
+
+<?php if (!empty($canManagePermissions)): ?>
+    <script>
+        let rolesData = <?= json_encode(array_map(function ($r) {
+                            return [
+                                'id' => (int)$r['id'],
+                                'name' => $r['name'],
+                                'tag_color' => $r['tag_color'],
+                                'user_count' => (int)$r['user_count'],
+                                'is_default' => !empty($r['is_default']),
+                                'is_system' => !empty($r['is_system']),
+                                'permissions' => $r['permissions'] ?? [],
+                            ];
+                        }, $roles)) ?>;
+    </script>
+<?php endif; ?>
 
 <script>
     const orchestraBase = '<?= htmlspecialchars(($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '')) ?>';
     const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
 
-    // Section collapse
-    function toggleSection(header) {
-        const card = header.closest('.section-card');
-        card.classList.toggle('expanded');
-    }
-
-    // Search filter
+    // Search filter — dim non-matching rows
     function filterMembers(query) {
         query = query.toLowerCase().trim();
         let visibleCount = 0;
 
-        document.querySelectorAll('[data-member-name]').forEach(el => {
-            const match = !query || el.dataset.memberName.includes(query);
-            el.style.display = match ? '' : 'none';
+        document.querySelectorAll('.member-row').forEach(row => {
+            const match = !query || row.dataset.memberName.includes(query);
+            row.classList.toggle('dimmed', !match);
             if (match) visibleCount++;
         });
 
-        // Hide empty section cards
-        document.querySelectorAll('.section-card[data-group]').forEach(card => {
-            const visibleItems = card.querySelectorAll('.member-item:not([style*="display: none"])');
-            card.style.display = visibleItems.length === 0 ? 'none' : '';
+        document.querySelectorAll('.section-band[data-group]').forEach(band => {
+            const hasVisible = band.querySelectorAll('.member-row:not(.dimmed)').length > 0;
+            band.style.display = hasVisible || !query ? '' : 'none';
         });
 
-        // Toggle no-results
         document.getElementById('noResults').style.display = visibleCount === 0 && query ? '' : 'none';
     }
 
+    // Partial re-fetch: swap roster + sidebar without full reload
+    function refreshMembersPage() {
+        fetch(location.href, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(r => r.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
 
+                const newRoster = doc.querySelector('.members-roster');
+                const oldRoster = document.querySelector('.members-roster');
+                if (newRoster && oldRoster) oldRoster.innerHTML = newRoster.innerHTML;
 
-    // Invite modal
+                const newPanel = doc.querySelector('.members-admin-panel');
+                const oldPanel = document.querySelector('.members-admin-panel');
+                if (newPanel && oldPanel) oldPanel.innerHTML = newPanel.innerHTML;
+
+                const newCount = doc.querySelector('.members-count');
+                const oldCount = document.querySelector('.members-count');
+                if (newCount && oldCount) oldCount.innerHTML = newCount.innerHTML;
+
+                // Re-apply rolesData from the new page
+                const scriptTag = doc.querySelector('script:not([src])');
+                if (scriptTag && scriptTag.textContent.includes('rolesData')) {
+                    const match = scriptTag.textContent.match(/const rolesData = (\[[\s\S]*?\]);/);
+                    if (match) {
+                        try {
+                            rolesData = JSON.parse(match[1]);
+                        } catch (e) {}
+                    }
+                }
+            })
+            .catch(err => {
+                console.error('Refresh failed, falling back to reload', err);
+                location.reload();
+            });
+    }
+
+    // Copy invite link
+    function copyInviteLink() {
+        <?php if ($inviteLink ?? null): ?>
+            const linkUrl = 'https://<?= htmlspecialchars(rtrim($_SERVER['HTTP_HOST'] ?? '', '/') . '/invite/' . $inviteLink['token']) ?>';
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(linkUrl)
+                    .then(() => window.notifySuccess('Link kopiert'))
+                    .catch(() => fallbackCopy(linkUrl));
+            } else {
+                fallbackCopy(linkUrl);
+            }
+        <?php endif; ?>
+    }
+
+    function fallbackCopy(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        window.notifySuccess('Link kopiert');
+    }
+
+    // Roles modal (mobile fallback)
+    function openRolesModal() {
+        if (typeof rolesData === 'undefined') return;
+
+        let html = '<div style="text-align: left;">';
+        rolesData.forEach(role => {
+            const tagStyle = `--role-color: ${role.tag_color}`;
+            const meta = `${role.user_count} Mitglieder${role.is_default ? ' · Standard' : ''}`;
+            const actions = role.is_system ?
+                `<span style="font-size: var(--font-size-xs); color: var(--color-text-muted);"><i class="fas fa-lock"></i></span>` :
+                `<div class="role-row-actions">
+                    <button onclick="Swal.close(); editRole(${role.id}, ${JSON.stringify(role).replace(/"/g, '&quot;')})" title="Bearbeiten"><i class="fas fa-pen"></i></button>
+                    <button class="role-delete-btn" onclick="Swal.close(); deleteRole(${role.id}, '${role.name.replace(/'/g, "\\'")}', ${role.user_count})" title="Löschen"><i class="fas fa-trash"></i></button>
+                   </div>`;
+
+            html += `<div class="role-row">
+                <div class="role-row-info">
+                    <span class="role-tag" style="${tagStyle}">${role.name}</span>
+                    <span class="role-row-meta">${meta}</span>
+                </div>
+                ${actions}
+            </div>`;
+        });
+        html += '</div>';
+
+        Swal.fire({
+            title: 'Rollen verwalten',
+            html,
+            showCancelButton: true,
+            showConfirmButton: true,
+            confirmButtonText: '<i class="fas fa-plus"></i> Neue Rolle',
+            cancelButtonText: 'Schließen',
+            confirmButtonColor: '#478cf4',
+            cancelButtonColor: '#6b7280',
+            reverseButtons: true,
+            focusConfirm: false,
+            width: 480,
+        }).then(result => {
+            if (result.isConfirmed) createRole();
+        });
+    }
+
+    // Invite modal (mobile fallback)
     function openInviteModal() {
         <?php if ($inviteLink): ?>
             const linkUrl = '<?= htmlspecialchars(rtrim($_SERVER['HTTP_HOST'] ?? '', '/') . '/invite/' . $inviteLink['token']) ?>';
@@ -754,8 +910,8 @@ foreach ($sections as $sectionId => $_instruments) {
                         <p style="font-size: var(--font-size-sm); color: var(--color-text-secondary); margin-bottom: var(--space-3);">
                             Teile diesen Link mit neuen Mitgliedern.
                         </p>
-                        <div class="swal-invite-link" id="swalInviteLink">${linkUrl}</div>
-                        <div class="swal-invite-stat">${usedCount}× genutzt</div>
+                        <div class="invite-link-box" id="swalInviteLink">${linkUrl}</div>
+                        <div class="invite-meta">${usedCount}× genutzt</div>
                         <div class="swal-perm-row" style="margin-top: var(--space-3);">
                             <input type="checkbox" id="swalKeycloak" ${keycloakOnly ? 'checked' : ''} onchange="toggleKeycloak()">
                             <label for="swalKeycloak">Nur JMD-Accounts erlauben</label>
@@ -828,7 +984,7 @@ foreach ($sections as $sectionId => $_instruments) {
                         window.notifyErrorWithDetails('Link-Generierung fehlgeschlagen', data.debug_message || data.error || JSON.stringify(data));
                     } else {
                         window.notifySuccess('Neuer Link generiert');
-                        setTimeout(() => location.reload(), 600);
+                        refreshMembersPage();
                     }
                 })
                 .catch(err => {
@@ -884,7 +1040,6 @@ foreach ($sections as $sectionId => $_instruments) {
         return permissionHierarchy.map(node => renderNode(node)).join('');
     }
 
-    /** Wire up parent↔child auto-check after SweetAlert renders. */
     function initPermissionHierarchy() {
         function getParentMap(nodes, parent) {
             const map = {};
@@ -915,7 +1070,6 @@ foreach ($sections as $sectionId => $_instruments) {
             cb.addEventListener('change', () => {
                 const id = cb.value;
                 if (cb.checked) {
-                    // Auto-check ancestors
                     let pid = parentMap[id];
                     while (pid) {
                         const pel = document.getElementById('rp_' + pid);
@@ -923,7 +1077,6 @@ foreach ($sections as $sectionId => $_instruments) {
                         pid = parentMap[pid];
                     }
                 } else {
-                    // Auto-uncheck descendants
                     const kids = getChildIds(permissionHierarchy, id) || [];
                     kids.forEach(kid => {
                         const el = document.getElementById('rp_' + kid);
@@ -999,7 +1152,7 @@ foreach ($sections as $sectionId => $_instruments) {
                 .then(data => {
                     if (data.success) {
                         window.notifySuccess('Rolle erstellt');
-                        setTimeout(() => location.reload(), 600);
+                        refreshMembersPage();
                     } else {
                         window.notifyErrorWithDetails('Fehler', data.error || 'Unbekannter Fehler');
                     }
@@ -1029,7 +1182,7 @@ foreach ($sections as $sectionId => $_instruments) {
                 .then(data => {
                     if (data.success) {
                         window.notifySuccess('Rolle aktualisiert');
-                        setTimeout(() => location.reload(), 600);
+                        refreshMembersPage();
                     } else {
                         window.notifyErrorWithDetails('Fehler', data.error || 'Unbekannter Fehler');
                     }
@@ -1076,7 +1229,7 @@ foreach ($sections as $sectionId => $_instruments) {
                 .then(data => {
                     if (data.success) {
                         window.notifySuccess('Rolle gelöscht');
-                        setTimeout(() => location.reload(), 600);
+                        refreshMembersPage();
                     } else {
                         window.notifyErrorWithDetails('Fehler', data.error || 'Unbekannter Fehler');
                     }

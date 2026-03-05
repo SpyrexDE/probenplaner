@@ -25,9 +25,9 @@
   border-radius: 9999px;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  background: color-mix(in srgb, var(--role-color) 15%, transparent);
-  color: var(--role-color);
-  border: 1px solid color-mix(in srgb, var(--role-color) 30%, transparent);
+  background: color-mix(in srgb, var(--role-color) 12%, white);
+  color: color-mix(in srgb, var(--role-color) 65%, #6b7280);
+  border: 1px solid color-mix(in srgb, var(--role-color) 18%, transparent);
   line-height: 1.4;
   vertical-align: middle;
 }

@@ -21,11 +21,9 @@
                 <?php
                 $currentRole = $_SESSION['current_role'] ?? null;
                 if ($currentRole && !empty($currentRole['name'])):
-                    $roleColor = htmlspecialchars($currentRole['tag_color'] ?? '#478cf4');
-                    $roleLabel = htmlspecialchars($currentRole['name']);
+                    echo \App\Core\Utilities::renderRoleTag($currentRole);
+                endif;
                 ?>
-                    <span class="role-tag" style="--role-color: <?= $roleColor ?>"><?= $roleLabel ?></span>
-                <?php endif; ?>
             </div>
             <div class="sidebar-details">
                 <?php

@@ -50,7 +50,7 @@ class UserOrchestra extends Model
 
         $sql = "SELECT uo.*, u.email, u.display_name, uo.display_name as orchestra_display_name, u.created_at as user_created_at,
                 r.id as role_id, r.name as role_name, r.name as role_tag_label,
-                r.tag_color as role_tag_color, r.permissions as role_permissions
+                r.tag_color as role_tag_color, r.is_default as role_is_default, r.permissions as role_permissions
                 FROM {$this->table} uo
                 JOIN users u ON uo.user_id = u.id
                 LEFT JOIN roles r ON uo.role_id = r.id
@@ -251,7 +251,7 @@ class UserOrchestra extends Model
     {
         $sql = "SELECT uo.*, u.email, u.display_name, uo.display_name as orchestra_display_name, u.created_at as user_created_at,
                 r.id as role_id, r.name as role_name, r.name as role_tag_label,
-                r.tag_color as role_tag_color, r.permissions as role_permissions
+                r.tag_color as role_tag_color, r.is_default as role_is_default, r.permissions as role_permissions
                 FROM {$this->table} uo
                 JOIN users u ON uo.user_id = u.id
                 LEFT JOIN roles r ON uo.role_id = r.id

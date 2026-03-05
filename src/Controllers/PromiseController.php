@@ -73,6 +73,7 @@ class PromiseController extends Controller
 
         $orchestra = $this->orchestraModel->findById($_SESSION['current_orchestra_id']);
         $forceDeclineReason = !empty($orchestra['force_decline_reason']);
+        $allowAttendanceReset = !isset($orchestra['allow_attendance_reset']) || !empty($orchestra['allow_attendance_reset']);
 
         if ($userId && $orchestraId) {
             $userOrchestraModel = new \App\Models\UserOrchestra();
@@ -109,6 +110,7 @@ class PromiseController extends Controller
             'showOld' => $showOld,
             'orchestra' => $orchestra,
             'forceDeclineReason' => $forceDeclineReason,
+            'allowAttendanceReset' => $allowAttendanceReset,
             'hasPastRehearsals' => $hasPastRehearsals
         ]);
     }

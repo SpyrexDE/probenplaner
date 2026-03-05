@@ -167,6 +167,7 @@ include __DIR__ . '/../components/save-indicator.php';
     $(document).ready(function() {
         // Configuration
         const FORCE_DECLINE_REASON = <?= json_encode($forceDeclineReason ?? false) ?>;
+        const ALLOW_ATTENDANCE_RESET = <?= json_encode($allowAttendanceReset ?? true) ?>;
 
         // Store pending updates to prevent async issues
         window.updateQueue = [];
@@ -200,6 +201,7 @@ include __DIR__ . '/../components/save-indicator.php';
         const longPressDuration = 500; // ms
 
         function handleLongPressStart(element) {
+            if (!ALLOW_ATTENDANCE_RESET) return;
             if ($(element).hasClass('disabled')) return;
 
             longPressTimer = setTimeout(function() {

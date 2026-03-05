@@ -152,6 +152,16 @@ class FieldRegistry
                 'permission' => 'conductor',
             ],
             [
+                'name'        => 'allow_attendance_reset',
+                'type'        => 'toggle',
+                'label'       => 'Rückmeldung zurücknehmen erlauben',
+                'description' => 'Wenn aktiviert, können Mitglieder ihre Zu-/Absage per Gedrückthalten zurücksetzen.',
+                'group'       => 'permissions',
+                'default'     => true,
+                'save'        => 'auto',
+                'permission'  => 'conductor',
+            ],
+            [
                 'name'       => 'show_rehearsal_insights',
                 'type'       => 'toggle',
                 'label'      => 'Proben-Insights anzeigen (Beta)',

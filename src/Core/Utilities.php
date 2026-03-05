@@ -30,21 +30,26 @@ class Utilities
     }
 
     /**
-     * Display a user's name with badges.
+     * Generate all inline labels for a user (badges + role tag).
      *
-     * @param array $user User data array
-     * @return string Formatted display name with badges
+     * @param array $user User data with is_small_group, role_tag_label, role_tag_color keys
+     * @return string Combined HTML: user-badge icons followed by role-tag pill
      */
-    public static function displayUserNameWithBadges($user)
+    public static function generateUserLabels(array $user): string
     {
-        if (!is_array($user)) {
-            return '';
+        $html = self::generateUserBadges($user);
+
+        // Only show non-default roles to avoid visual noise
+        $isDefault = !empty($user['role_is_default']);
+        $roleLabel = $user['role_tag_label'] ?? $user['role_name'] ?? '';
+        if ($roleLabel && !$isDefault) {
+            $html .= self::renderRoleTag([
+                'name' => $roleLabel,
+                'tag_color' => $user['role_tag_color'] ?? '#478cf4',
+            ]);
         }
 
-        $displayName = htmlspecialchars($user['display_name'] ?? $user['email'] ?? '');
-        $badges = self::generateUserBadges($user);
-
-        return $displayName . $badges;
+        return $html;
     }
 
     /**
