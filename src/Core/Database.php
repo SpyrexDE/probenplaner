@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Core;
 
 /**
@@ -11,30 +12,23 @@ class Database
     private $connection;
     private $lastStmtErrno = 0;
     private $lastStmtError = '';
-    
+
     /**
      * Constructor is private to prevent direct instantiation
      */
     private function __construct()
     {
         try {
-            // Check if mysqli extension is loaded
             if (!extension_loaded('mysqli')) {
                 throw new \Exception("MySQLi extension is not loaded. Please enable it in your PHP configuration.");
             }
-            
-            @error_log("Attempting to connect to database: " . DB_HOST . ", User: " . DB_USER . ", DB: " . DB_NAME);
-            
-            // Create connection - with connection timeout handling
+
             $this->connection = @mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
-            
-            // Check connection
+
             if (!$this->connection) {
                 $error = mysqli_connect_error();
-                
-                // Check for specific error types
                 $errorMsg = "Database connection failed: " . $error;
-                
+
                 if (strpos($error, 'Access denied') !== false) {
                     $errorMsg .= " - Please check the username and password.";
                 } elseif (strpos($error, 'Unknown database') !== false) {
@@ -44,45 +38,21 @@ class Database
                 } elseif (strpos($error, 'Connection timed out') !== false) {
                     $errorMsg .= " - Connection timeout. Check the host address and port.";
                 }
-                
-                @error_log($errorMsg);
+
                 throw new \Exception($errorMsg);
             }
-            
-            // Set charset
+
             $charsets = DB_CHARSET_FALLBACK;
-            $charset_success = false;
             foreach ($charsets as $charset) {
-                try {
-                    if ($this->connection->set_charset($charset)) {
-                        @error_log("Successfully set charset to $charset");
-                        $charset_success = true;
-                        break;
-                    }
-                } catch (\Exception $e) {
-                    @error_log("Error setting charset $charset: " . $e->getMessage());
+                if ($this->connection->set_charset($charset)) {
+                    break;
                 }
             }
-            
-            if (!$charset_success) {
-                @error_log("Warning: Could not set any of the preferred charsets. This may cause encoding issues.");
-            }
-            
-            // Test connection with a simple query
-            $testResult = $this->connection->query("SELECT 1");
-            if (!$testResult) {
-                @error_log("Database connection test failed: " . $this->connection->error);
-                throw new \Exception("Database connection test failed: " . $this->connection->error);
-            }
-            $testResult->close();
-            
-            @error_log("Database connection successful");
         } catch (\Exception $e) {
-            @error_log("Database Error: " . $e->getMessage());
             throw new \Exception("Database connection failed: " . $e->getMessage());
         }
     }
-    
+
     /**
      * Get singleton instance
      * 
@@ -93,10 +63,10 @@ class Database
         if (self::$instance == null) {
             self::$instance = new Database();
         }
-        
+
         return self::$instance;
     }
-    
+
     /**
      * Get database connection
      * 
@@ -106,7 +76,7 @@ class Database
     {
         return $this->connection;
     }
-    
+
     /**
      * Execute a query
      * 
@@ -117,7 +87,7 @@ class Database
     {
         return $this->connection->query($sql);
     }
-    
+
     /**
      * Prepare a statement
      * 
@@ -128,7 +98,7 @@ class Database
     {
         return $this->connection->prepare($sql);
     }
-    
+
     /**
      * Escape a string for safe database usage
      * 
@@ -139,7 +109,7 @@ class Database
     {
         return mysqli_real_escape_string($this->connection, $string);
     }
-    
+
     /**
      * Get last insert ID
      * 
@@ -149,7 +119,7 @@ class Database
     {
         return $this->connection->insert_id;
     }
-    
+
     /**
      * Close the database connection
      * 
@@ -159,7 +129,7 @@ class Database
     {
         return mysqli_close($this->connection);
     }
-    
+
     /**
      * Get the last error message
      * 
@@ -191,4 +161,4 @@ class Database
         $this->lastStmtErrno = (int)$errno;
         $this->lastStmtError = (string)$error;
     }
-} 
+}

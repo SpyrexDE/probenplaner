@@ -74,6 +74,35 @@ class UserPromise extends Model
     }
 
     /**
+     * Load all promises for an orchestra in one query.
+     *
+     * @return array<int, array<int, array{status: string, note: string}>> [user_id][rehearsal_id]
+     */
+    public function getAllForOrchestra(int $orchestraId): array
+    {
+        $sql = "SELECT up.user_id, up.rehearsal_id, up.status, up.note
+                FROM {$this->table} up
+                JOIN rehearsals r ON up.rehearsal_id = r.id
+                WHERE r.orchestra_id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param('i', $orchestraId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $map = [];
+        while ($row = $result->fetch_assoc()) {
+            $uid = (int)$row['user_id'];
+            $rid = (int)$row['rehearsal_id'];
+            $map[$uid][$rid] = [
+                'status' => $row['status'],
+                'note' => $row['note'] ?? '',
+            ];
+        }
+        $stmt->close();
+        return $map;
+    }
+
+    /**
      * Get all promises for a specific rehearsal
      * 
      * @param int $rehearsalId Rehearsal ID

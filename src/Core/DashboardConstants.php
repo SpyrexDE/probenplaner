@@ -31,7 +31,7 @@ class DashboardConstants
     const GROUP_DEVIATION_MIN_RATE = 30; // Minimum rate for group deviation analysis
 
     // Chart configuration
-    const CHART_HEIGHT = 90; // Height for sparkline charts (background layer)
+    const CHART_HEIGHT = 200;
     const CHART_STROKE_WIDTH = 2; // Stroke width for chart lines
     const CHART_MARKER_SIZE = 3; // Size of chart markers
     const CHART_HOVER_MARKER_SIZE = 5; // Size of markers on hover

@@ -8,6 +8,54 @@
  */
 
 use App\Core\DashboardConstants;
+use App\Core\Utilities;
+
+/**
+ * Render a single user item inline (avoids ~1800 include calls per page).
+ */
+function renderUserItem(array $member, string $status, string $additionalInfo = ''): void
+{
+    $displayName = htmlspecialchars($member['display_name'] ?? $member['email'] ?? '');
+    $note = !empty($member['note']) ? htmlspecialchars($member['note']) : '';
+    $memberStatus = $status ?: ($member['status'] ?? 'no_response');
+    $userLabels = Utilities::generateUserLabels($member);
+
+    $iconClass = 'fas fa-question-circle';
+    switch ($memberStatus) {
+        case 'attending':
+            $iconClass = 'fas fa-check-circle';
+            break;
+        case 'not_attending':
+            $iconClass = 'fas fa-times-circle';
+            break;
+    }
+    $userId = $member['user_id'] ?? $member['id'] ?? '';
+    echo '<li class="tree-user-item userSpan" data-user-id="' . $userId . '">';
+    echo '<i class="tree-user-item-icon fas fa-user"></i>';
+    echo '<div class="tree-user-item-content">';
+    echo '<span class="tree-user-item-name">' . $displayName . $userLabels . '</span>';
+    if ($additionalInfo) {
+        echo '<span class="tree-user-item-info">' . $additionalInfo . '</span>';
+    }
+    if ($note) {
+        echo '<span class="tree-user-item-note">' . icon('quote-left', 'tree-user-note-icon') . ' ' . $note . '</span>';
+    }
+    echo '</div>';
+    echo '<div class="tree-user-item-status"><i class="tree-user-item-status-icon ' . $iconClass . ' status-' . $memberStatus . '"></i></div>';
+    echo '</li>';
+}
+
+/**
+ * Standard sort: not_attending first, then attending, then no_response, then by name.
+ */
+function sortPlayersByStatus(array &$players): void
+{
+    usort($players, function ($a, $b) {
+        static $order = ['not_attending' => 0, 'attending' => 1, 'no_response' => 2];
+        $d = ($order[$a['status']] ?? 3) - ($order[$b['status']] ?? 3);
+        return $d !== 0 ? $d : strcasecmp($a['display_name'] ?? '', $b['display_name'] ?? '');
+    });
+}
 
 // Statistics calculation
 $showOld = $showOld ?? false;
@@ -221,7 +269,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                         </div>
                     </div>
                     <div class="analytics-chart" id="attendance-chart"></div>
-                    <div class="analytics-subtitle">Durchschnittliche Teilnahme für die anstehenden 10 Proben</div>
+
                     <div class="analytics-trend">
                         <?php if ($attendanceTrend !== 'neutral'): ?>
                             <i class="fas fa-arrow-<?= $attendanceTrend === 'positive' ? 'up' : 'down' ?>"></i>
@@ -247,7 +295,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                         </div>
                     </div>
                     <div class="analytics-chart" id="response-chart"></div>
-                    <div class="analytics-subtitle">Durchschnittliche Rückmeldungsquote für die anstehenden 10 Proben</div>
+
                     <div class="analytics-trend">
                         <?php if ($responseTrend !== 'neutral'): ?>
                             <i class="fas fa-arrow-<?= $responseTrend === 'positive' ? 'up' : 'down' ?>"></i>
@@ -293,6 +341,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
             include __DIR__ . '/empty-state.php';
             ?>
         <?php else: ?>
+            <?php $smartDisplay = new \App\Core\SmartGroupDisplay(); ?>
             <?php foreach ($rehearsals as $rehearsal): ?>
                 <?php
                 $rehearsalId = $rehearsal['id'];
@@ -370,7 +419,6 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                 <span>
                                     <i class="fas fa-users"></i>
                                     <?php
-                                    $smartDisplay = new \App\Core\SmartGroupDisplay();
                                     echo htmlspecialchars($smartDisplay->generateDescription($rehearsal['groups'] ?? [], $rehearsal, false));
                                     ?>
                                 </span>
@@ -403,59 +451,34 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                     </div>
 
                     <?php
-                    // Smart deviation detection
-                    require_once __DIR__ . '/../../Core/SmartDeviationDetector.php';
-                    $deviationDetector = new SmartDeviationDetector(\App\Core\Database::getInstance());
-                    $deviationAnalysis = $deviationDetector->analyzeRehearsal($rehearsal['id']);
-
-                    // Rehearsal groups
-                    $rehearsalModel = new \App\Models\Rehearsal();
-                    $rehearsalGroups = $rehearsalModel->getGroupsAsAssoc($rehearsalId);
-
-                    // Critical section identification
+                    $rehearsalSmartDeviations = [];
+                    $insufficientData = [];
                     $rehearsalCriticalSections = [];
 
-                    // Instrument check
-                    $individualInstruments = [];
-                    foreach ($membersBySection[$rehearsalId]['all'] ?? [] as $member) {
-                        $instrumentId = $member['type'];
-                        if (!isset($individualInstruments[$instrumentId])) {
-                            $individualInstruments[$instrumentId] = [];
-                        }
-                        $individualInstruments[$instrumentId][] = $member;
-                    }
+                    if (!($isLeader ?? false) && ($showRehearsalInsights ?? false)) {
+                        require_once __DIR__ . '/../../Core/SmartDeviationDetector.php';
+                        $deviationDetector = new SmartDeviationDetector(\App\Core\Database::getInstance());
+                        $deviationAnalysis = $deviationDetector->analyzeRehearsal($rehearsal['id']);
 
-                    // Instrument attendance
-                    foreach ($individualInstruments as $instrumentId => $players) {
-                        $attending = count(array_filter($players, function ($m) {
-                            return $m['status'] === 'attending';
-                        }));
-                        $total = count($players);
-                        if ($total > 0) {
-                            $attendanceRate = ($attending / $total) * 100;
-                            if ($attendanceRate < DashboardConstants::CRITICAL_ATTENDANCE_THRESHOLD) { // Only show if attendance is low
-                                $rehearsalCriticalSections[] = [
-                                    'name' => $groupManager->getDisplayName($instrumentId),
-                                    'rate' => $attendanceRate,
-                                    'total' => $total,
-                                    'attending' => $attending
-                                ];
+                        $individualInstruments = [];
+                        foreach ($membersBySection[$rehearsalId]['all'] ?? [] as $member) {
+                            $instrumentId = $member['type'];
+                            if (!isset($individualInstruments[$instrumentId])) {
+                                $individualInstruments[$instrumentId] = [];
                             }
+                            $individualInstruments[$instrumentId][] = $member;
                         }
-                    }
 
-                    // Top-level section check
-                    if (empty($rehearsalCriticalSections)) {
-                        foreach ($sectionPlayers as $sectionId => $players) {
+                        foreach ($individualInstruments as $instrumentId => $players) {
                             $attending = count(array_filter($players, function ($m) {
                                 return $m['status'] === 'attending';
                             }));
                             $total = count($players);
                             if ($total > 0) {
                                 $attendanceRate = ($attending / $total) * 100;
-                                if ($attendanceRate < DashboardConstants::CRITICAL_ATTENDANCE_THRESHOLD) { // Only show if attendance is low
+                                if ($attendanceRate < DashboardConstants::CRITICAL_ATTENDANCE_THRESHOLD) {
                                     $rehearsalCriticalSections[] = [
-                                        'name' => $groupManager->getDisplayName($sectionId),
+                                        'name' => $groupManager->getDisplayName($instrumentId),
                                         'rate' => $attendanceRate,
                                         'total' => $total,
                                         'attending' => $attending
@@ -463,85 +486,89 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                 }
                             }
                         }
-                    }
 
-
-
-                    // Sort and limit
-                    usort($rehearsalCriticalSections, function ($a, $b) {
-                        return $a['rate'] - $b['rate'];
-                    });
-                    $rehearsalCriticalSections = array_slice($rehearsalCriticalSections, 0, DashboardConstants::MAX_CRITICAL_SECTIONS_DISPLAY);
-
-                    // Filter low attendance
-                    $rehearsalCriticalSections = array_filter($rehearsalCriticalSections, function ($critical) {
-                        return $critical['rate'] < DashboardConstants::CRITICAL_ATTENDANCE_THRESHOLD;
-                    });
-
-                    // Critical section names
-                    $criticalSectionNames = array_map(function ($critical) {
-                        return $critical['name'];
-                    }, $rehearsalCriticalSections);
-
-                    // Deviation filtering
-                    $rehearsalSmartDeviations = array_filter($deviationAnalysis['deviations'], function ($deviation) use ($criticalSectionNames) {
-                        // Only show warning and critical severity (skip info)
-                        if (($deviation['severity'] ?? 'info') === 'info') {
-                            return false;
+                        if (empty($rehearsalCriticalSections)) {
+                            foreach ($sectionPlayers as $sectionId => $players) {
+                                $attending = count(array_filter($players, function ($m) {
+                                    return $m['status'] === 'attending';
+                                }));
+                                $total = count($players);
+                                if ($total > 0) {
+                                    $attendanceRate = ($attending / $total) * 100;
+                                    if ($attendanceRate < DashboardConstants::CRITICAL_ATTENDANCE_THRESHOLD) {
+                                        $rehearsalCriticalSections[] = [
+                                            'name' => $groupManager->getDisplayName($sectionId),
+                                            'rate' => $attendanceRate,
+                                            'total' => $total,
+                                            'attending' => $attending
+                                        ];
+                                    }
+                                }
+                            }
                         }
-                        // Keep deviations that don't have a specific section
-                        if (!isset($deviation['section'])) {
-                            return true;
-                        }
-                        // Filter out deviations for sections already in critical list
-                        return !in_array($deviation['section'], $criticalSectionNames);
-                    });
 
-                    // Deduplicate messages
-                    $uniqueDeviations = [];
-                    $seenMessages = [];
-                    $groupedMessages = [];
-
-                    // Group performance messages
-                    $groupPerformanceMessages = [];
-                    $otherMessages = [];
-
-                    foreach ($rehearsalSmartDeviations as $deviation) {
-                        if ($deviation['type'] === 'group_performance') {
-                            $groupPerformanceMessages[] = $deviation;
-                        } else {
-                            $otherMessages[] = $deviation;
-                        }
-                    }
-
-                    // Most critical message
-                    if (!empty($groupPerformanceMessages)) {
-                        usort($groupPerformanceMessages, function ($a, $b) {
-                            return $a['mean_rate'] - $b['mean_rate']; // Lowest rate first (most critical)
+                        usort($rehearsalCriticalSections, function ($a, $b) {
+                            return $a['rate'] - $b['rate'];
                         });
-                        $uniqueDeviations[] = $groupPerformanceMessages[0]; // Only the most critical one
-                    }
+                        $rehearsalCriticalSections = array_slice($rehearsalCriticalSections, 0, DashboardConstants::MAX_CRITICAL_SECTIONS_DISPLAY);
 
-                    // Merge messages
-                    $mergedMessages = mergeParticipationMessages($otherMessages);
+                        $rehearsalCriticalSections = array_filter($rehearsalCriticalSections, function ($critical) {
+                            return $critical['rate'] < DashboardConstants::CRITICAL_ATTENDANCE_THRESHOLD;
+                        });
 
-                    foreach ($mergedMessages as $deviation) {
-                        $messageKey = $deviation['message'];
-                        if (!in_array($messageKey, $seenMessages)) {
-                            $uniqueDeviations[] = $deviation;
-                            $seenMessages[] = $messageKey;
+                        $criticalSectionNames = array_map(function ($critical) {
+                            return $critical['name'];
+                        }, $rehearsalCriticalSections);
+
+                        $rehearsalSmartDeviations = array_filter($deviationAnalysis['deviations'], function ($deviation) use ($criticalSectionNames) {
+                            if (($deviation['severity'] ?? 'info') === 'info') {
+                                return false;
+                            }
+                            if (!isset($deviation['section'])) {
+                                return true;
+                            }
+                            return !in_array($deviation['section'], $criticalSectionNames);
+                        });
+
+                        $uniqueDeviations = [];
+                        $seenMessages = [];
+                        $groupPerformanceMessages = [];
+                        $otherMessages = [];
+
+                        foreach ($rehearsalSmartDeviations as $deviation) {
+                            if ($deviation['type'] === 'group_performance') {
+                                $groupPerformanceMessages[] = $deviation;
+                            } else {
+                                $otherMessages[] = $deviation;
+                            }
                         }
-                    }
-                    $rehearsalSmartDeviations = $uniqueDeviations;
 
-                    // Sort by severity
-                    usort($rehearsalSmartDeviations, function ($a, $b) {
-                        $severityOrder = ['critical' => 3, 'warning' => 2, 'info' => 1];
-                        $aSeverity = $severityOrder[$a['severity'] ?? 'info'] ?? 1;
-                        $bSeverity = $severityOrder[$b['severity'] ?? 'info'] ?? 1;
-                        return $bSeverity - $aSeverity; // Critical first
-                    });
-                    $insufficientData = $deviationAnalysis['insufficient_data'];
+                        if (!empty($groupPerformanceMessages)) {
+                            usort($groupPerformanceMessages, function ($a, $b) {
+                                return $a['mean_rate'] - $b['mean_rate'];
+                            });
+                            $uniqueDeviations[] = $groupPerformanceMessages[0];
+                        }
+
+                        $mergedMessages = mergeParticipationMessages($otherMessages);
+
+                        foreach ($mergedMessages as $deviation) {
+                            $messageKey = $deviation['message'];
+                            if (!in_array($messageKey, $seenMessages)) {
+                                $uniqueDeviations[] = $deviation;
+                                $seenMessages[] = $messageKey;
+                            }
+                        }
+                        $rehearsalSmartDeviations = $uniqueDeviations;
+
+                        usort($rehearsalSmartDeviations, function ($a, $b) {
+                            $severityOrder = ['critical' => 3, 'warning' => 2, 'info' => 1];
+                            $aSeverity = $severityOrder[$a['severity'] ?? 'info'] ?? 1;
+                            $bSeverity = $severityOrder[$b['severity'] ?? 'info'] ?? 1;
+                            return $bSeverity - $aSeverity;
+                        });
+                        $insufficientData = $deviationAnalysis['insufficient_data'];
+                    }
                     ?>
 
                     <!-- Critical Sections & Smart Insights - Hidden for leaders and when disabled -->
@@ -711,29 +738,11 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                             <div id="leader-root-<?= $rehearsalId ?>" class="tree-node-content collapse">
                                                 <ul class="tree-list">
                                                     <?php
-                                                    // Direct player list
                                                     if (!empty($players)) {
-                                                        // Sort players
-                                                        usort($players, function ($a, $b) {
-                                                            $statusOrder = ['not_attending' => 0, 'attending' => 1, 'no_response' => 2];
-                                                            $aOrder = $statusOrder[$a['status']] ?? 3;
-                                                            $bOrder = $statusOrder[$b['status']] ?? 3;
-                                                            if ($aOrder === $bOrder) {
-                                                                return strcasecmp($a['display_name'] ?? '', $b['display_name'] ?? '');
-                                                            }
-                                                            return $aOrder - $bOrder;
-                                                        });
+                                                        sortPlayersByStatus($players);
 
                                                         foreach ($players as $player): ?>
-                                                            <?php
-                                                            $member = $player;
-                                                            $status = $player['status'];
-                                                            $additionalInfo = '';
-                                                            if (!isset($member['note']) && isset($player['note'])) {
-                                                                $member['note'] = $player['note'];
-                                                            }
-                                                            include __DIR__ . '/user-item.php';
-                                                            ?>
+                                                            <?php renderUserItem($player, $player['status']); ?>
                                                     <?php endforeach;
                                                     } else {
                                                         echo '<li class="tree-user-item">Keine Mitglieder gefunden</li>';

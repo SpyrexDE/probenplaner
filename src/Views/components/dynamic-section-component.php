@@ -169,23 +169,10 @@ $sectionElementId = $sectionId . $rehearsalId;
                                                 <div id="<?= $instrumentElementId ?>" class="tree-node-content collapse">
                                                     <ul class="tree-list">
                                                         <?php
-                                                        // Sort users by status: not_attending first, then attending, then no_response
-                                                        usort($instrumentPlayers, function ($a, $b) {
-                                                            $statusOrder = ['not_attending' => 0, 'attending' => 1, 'no_response' => 2];
-                                                            $aOrder = $statusOrder[$a['status']] ?? 3;
-                                                            $bOrder = $statusOrder[$b['status']] ?? 3;
-                                                            if ($aOrder === $bOrder) {
-                                                                return strcasecmp($a['display_name'] ?? '', $b['display_name'] ?? ''); // Secondary sort by display_name
-                                                            }
-                                                            return $aOrder - $bOrder;
-                                                        });
+                                                        sortPlayersByStatus($instrumentPlayers);
 
                                                         foreach ($instrumentPlayers as $player): ?>
-                                                            <?php
-                                                            $member = $player;
-                                                            $status = $player['status'];
-                                                            include __DIR__ . '/user-item.php';
-                                                            ?>
+                                                            <?php renderUserItem($player, $player['status']); ?>
                                                         <?php endforeach; ?>
                                                     </ul>
                                                 </div>
@@ -241,24 +228,10 @@ $sectionElementId = $sectionId . $rehearsalId;
                                 <div id="<?= $instrumentElementId ?>" class="tree-node-content collapse">
                                     <ul class="tree-list">
                                         <?php
-                                        // Sort users by status: not_attending first, then attending, then no_response
-                                        usort($instrumentPlayers, function ($a, $b) {
-                                            $statusOrder = ['not_attending' => 0, 'attending' => 1, 'no_response' => 2];
-                                            $aOrder = $statusOrder[$a['status']] ?? 3;
-                                            $bOrder = $statusOrder[$b['status']] ?? 3;
-                                            if ($aOrder === $bOrder) {
-                                                return strcasecmp($a['display_name'] ?? '', $b['display_name'] ?? ''); // Secondary sort by display_name
-                                            }
-                                            return $aOrder - $bOrder;
-                                        });
+                                        sortPlayersByStatus($instrumentPlayers);
 
                                         foreach ($instrumentPlayers as $player): ?>
-                                            <?php
-                                            $member = $player;
-                                            $status = $player['status'];
-                                            $additionalInfo = ''; // Clear any previous additionalInfo
-                                            include __DIR__ . '/user-item.php';
-                                            ?>
+                                            <?php renderUserItem($player, $player['status']); ?>
                                         <?php endforeach; ?>
                                     </ul>
                                 </div>
@@ -269,22 +242,10 @@ $sectionElementId = $sectionId . $rehearsalId;
             } else {
                 // Simple section with direct instruments (like Schlagwerk, Andere)
                 // Sort users by status: not_attending first, then attending, then no_response
-                usort($players, function ($a, $b) {
-                    $statusOrder = ['not_attending' => 0, 'attending' => 1, 'no_response' => 2];
-                    $aOrder = $statusOrder[$a['status']] ?? 3;
-                    $bOrder = $statusOrder[$b['status']] ?? 3;
-                    if ($aOrder === $bOrder) {
-                        return strcasecmp($a['display_name'] ?? '', $b['display_name'] ?? ''); // Secondary sort by display_name
-                    }
-                    return $aOrder - $bOrder;
-                });
+                sortPlayersByStatus($players);
 
-                // Simple section - show users directly
                 foreach ($players as $player):
-                    $member = $player;
-                    $status = $player['status'];
-                    $additionalInfo = '';
-                    include __DIR__ . '/user-item.php';
+                    renderUserItem($player, $player['status']);
                 endforeach;
             }
             ?>

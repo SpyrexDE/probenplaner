@@ -59,41 +59,11 @@ class UserOrchestra extends Model
 
         $users = [];
         while ($row = $result->fetch_assoc()) {
-            // Load all roles for this membership
-            $roles = $this->getRolesForRelation((int)$row['id']);
-            $row['roles'] = $roles;
-            $row['role_ids'] = array_map(fn($r) => (int)$r['id'], $roles);
-
-            // Merge permissions from all roles
-            $allPerms = [];
-            foreach ($roles as $role) {
-                $rolePerms = json_decode($role['permissions'] ?? '[]', true) ?: [];
-                $allPerms = array_merge($allPerms, $rolePerms);
-            }
-            $allPerms = array_unique($allPerms);
-            $row['permissions'] = $allPerms;
-            $row['can_attend_rehearsals'] = in_array('can_attend_rehearsals', $allPerms);
-
-            // Primary role for display (first non-default, or first role)
-            $primaryRole = null;
-            foreach ($roles as $r) {
-                if (empty($r['is_default'])) {
-                    $primaryRole = $r;
-                    break;
-                }
-            }
-            $primaryRole = $primaryRole ?? ($roles[0] ?? null);
-
-            $row['role_id'] = $primaryRole['id'] ?? null;
-            $row['role_name'] = $primaryRole['name'] ?? '';
-            $row['role_tag_label'] = $primaryRole['name'] ?? '';
-            $row['role_tag_color'] = $primaryRole['tag_color'] ?? '';
-            $row['role_is_default'] = !empty($primaryRole['is_default']);
-
             $users[] = $row;
         }
         $stmt->close();
-        return $users;
+
+        return $this->applyRolesToUsers($users);
     }
 
     /**
@@ -206,7 +176,7 @@ class UserOrchestra extends Model
                 ORDER BY r.sort_order, r.name";
         $stmt = $this->db->prepare($sql);
         if (!$stmt) {
-            throw new \RuntimeException("Failed to query user_orchestra_roles — run migration 20260305_110500_role_system_refactor.sql: " . $this->db->error);
+            throw new \RuntimeException("Failed to query user_orchestra_roles — run migration 20260305_110500_role_system_refactor.sql: " . $this->db->getLastError());
         }
         $stmt->bind_param('i', $userOrchestraId);
         $stmt->execute();
@@ -376,17 +346,62 @@ class UserOrchestra extends Model
 
         $users = [];
         while ($row = $result->fetch_assoc()) {
-            $roles = $this->getRolesForRelation((int)$row['id']);
-            $row['roles'] = $roles;
-            $row['role_ids'] = array_map(fn($r) => (int)$r['id'], $roles);
+            $users[] = $row;
+        }
+        $stmt->close();
+
+        return $this->applyRolesToUsers($users);
+    }
+
+    /**
+     * Batch-load roles for multiple user_orchestras rows and enrich each user row.
+     *
+     * @param array $users Raw user rows (must have 'id' = user_orchestras.id)
+     * @return array Users with roles, permissions, and primary role fields
+     */
+    private function applyRolesToUsers(array $users): array
+    {
+        if (empty($users)) return [];
+
+        // Batch-load all roles in one query
+        $uoIds = array_column($users, 'id');
+        $placeholders = implode(',', array_fill(0, count($uoIds), '?'));
+        $types = str_repeat('i', count($uoIds));
+
+        $sql = "SELECT uor.user_orchestra_id, r.*
+                FROM roles r
+                JOIN user_orchestra_roles uor ON uor.role_id = r.id
+                WHERE uor.user_orchestra_id IN ({$placeholders})
+                ORDER BY r.sort_order, r.name";
+        $stmt = $this->db->prepare($sql);
+        if (!$stmt) {
+            throw new \RuntimeException("Failed to query user_orchestra_roles — run migration 20260305_110500_role_system_refactor.sql: " . $this->db->getLastError());
+        }
+        $stmt->bind_param($types, ...array_values($uoIds));
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $roleMap = [];
+        while ($row = $result->fetch_assoc()) {
+            $uoId = (int)$row['user_orchestra_id'];
+            unset($row['user_orchestra_id']);
+            $roleMap[$uoId][] = $row;
+        }
+        $stmt->close();
+
+        foreach ($users as &$user) {
+            $roles = $roleMap[(int)$user['id']] ?? [];
+            $user['roles'] = $roles;
+            $user['role_ids'] = array_map(fn($r) => (int)$r['id'], $roles);
 
             $allPerms = [];
             foreach ($roles as $role) {
                 $rolePerms = json_decode($role['permissions'] ?? '[]', true) ?: [];
                 $allPerms = array_merge($allPerms, $rolePerms);
             }
-            $row['permissions'] = array_unique($allPerms);
-            $row['can_attend_rehearsals'] = in_array('can_attend_rehearsals', $allPerms);
+            $allPerms = array_unique($allPerms);
+            $user['permissions'] = $allPerms;
+            $user['can_attend_rehearsals'] = in_array('can_attend_rehearsals', $allPerms);
 
             $primaryRole = null;
             foreach ($roles as $r) {
@@ -396,15 +411,14 @@ class UserOrchestra extends Model
                 }
             }
             $primaryRole = $primaryRole ?? ($roles[0] ?? null);
-            $row['role_id'] = $primaryRole['id'] ?? null;
-            $row['role_name'] = $primaryRole['name'] ?? '';
-            $row['role_tag_label'] = $primaryRole['name'] ?? '';
-            $row['role_tag_color'] = $primaryRole['tag_color'] ?? '';
-            $row['role_is_default'] = !empty($primaryRole['is_default']);
-
-            $users[] = $row;
+            $user['role_id'] = $primaryRole['id'] ?? null;
+            $user['role_name'] = $primaryRole['name'] ?? '';
+            $user['role_tag_label'] = $primaryRole['name'] ?? '';
+            $user['role_tag_color'] = $primaryRole['tag_color'] ?? '';
+            $user['role_is_default'] = !empty($primaryRole['is_default']);
         }
-        $stmt->close();
+        unset($user);
+
         return $users;
     }
 

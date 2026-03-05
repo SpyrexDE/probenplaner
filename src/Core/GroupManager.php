@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Core;
 
 /**
@@ -6,20 +7,46 @@ namespace App\Core;
  * 
  * Handles all group/section/instrument related operations dynamically
  * based on the configuration file. Supports any hierarchical tree structure.
+ * Uses singleton pattern to avoid redundant config loading.
  */
 class GroupManager
 {
+    private static ?GroupManager $instance = null;
+
     private array $config;
     private array $flatMapping = [];
     private array $parentMapping = [];
     private array $childMapping = [];
-    
+    private array $instrumentsCache = [];
+    private array $aliasMap = [];
+    private array $membershipCache = [];
+
+    public static function getInstance(): self
+    {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+
     public function __construct()
     {
+        if (self::$instance !== null) {
+            $this->config = self::$instance->config;
+            $this->flatMapping = self::$instance->flatMapping;
+            $this->parentMapping = self::$instance->parentMapping;
+            $this->childMapping = self::$instance->childMapping;
+            $this->instrumentsCache = self::$instance->instrumentsCache;
+            $this->aliasMap = self::$instance->aliasMap;
+            $this->membershipCache = self::$instance->membershipCache;
+            return;
+        }
         $this->loadConfig();
         $this->buildMappings();
+        $this->buildAliasMap();
+        self::$instance = $this;
     }
-    
+
     /**
      * Load group configuration from file
      */
@@ -29,16 +56,16 @@ class GroupManager
         if (!file_exists($configPath)) {
             throw new \Exception("Group configuration file not found: " . $configPath);
         }
-        
+
         $config = require $configPath;
-        
+
         if (!is_array($config)) {
             throw new \Exception("Group configuration file must return an array. Got: " . gettype($config));
         }
-        
+
         $this->config = $config;
     }
-    
+
     /**
      * Build flat mappings for quick lookups
      */
@@ -47,10 +74,25 @@ class GroupManager
         $this->flatMapping = [];
         $this->parentMapping = [];
         $this->childMapping = [];
-        
+
         $this->buildMappingsRecursive($this->config, null);
     }
-    
+
+    /**
+     * Pre-build reverse alias lookup map
+     */
+    private function buildAliasMap(): void
+    {
+        $this->aliasMap = [];
+        foreach ($this->flatMapping as $groupId => $group) {
+            if (isset($group['aliases'])) {
+                foreach ($group['aliases'] as $alias) {
+                    $this->aliasMap[$alias] = $groupId;
+                }
+            }
+        }
+    }
+
     /**
      * Recursively build mappings from the configuration tree
      */
@@ -60,30 +102,26 @@ class GroupManager
             if (!is_array($node) || !isset($node['id'])) {
                 continue;
             }
-            
+
             $id = $node['id'];
-            
-            // Store flat mapping
+
             $this->flatMapping[$id] = $node;
-            
-            // Store parent mapping
+
             if ($parentId) {
                 $this->parentMapping[$id] = $parentId;
-                
-                // Store child mapping
+
                 if (!isset($this->childMapping[$parentId])) {
                     $this->childMapping[$parentId] = [];
                 }
                 $this->childMapping[$parentId][] = $id;
             }
-            
-            // Process children
+
             if (isset($node['children']) && is_array($node['children'])) {
                 $this->buildMappingsRecursive($node['children'], $id);
             }
         }
     }
-    
+
     /**
      * Get the complete configuration
      */
@@ -91,7 +129,7 @@ class GroupManager
     {
         return $this->config;
     }
-    
+
     /**
      * Get a specific group by ID
      */
@@ -99,7 +137,7 @@ class GroupManager
     {
         return $this->flatMapping[$id] ?? null;
     }
-    
+
     /**
      * Get all groups as a flat array
      */
@@ -107,27 +145,27 @@ class GroupManager
     {
         return $this->flatMapping;
     }
-    
+
     /**
      * Get all instruments (leaf nodes)
      */
     public function getAllInstruments(): array
     {
-        return array_filter($this->flatMapping, function($group) {
+        return array_filter($this->flatMapping, function ($group) {
             return ($group['type'] ?? '') === 'instrument';
         });
     }
-    
+
     /**
      * Get all sections (non-leaf nodes, excluding special groups)
      */
     public function getAllSections(): array
     {
-        return array_filter($this->flatMapping, function($group) {
+        return array_filter($this->flatMapping, function ($group) {
             return ($group['type'] ?? '') === 'section';
         });
     }
-    
+
     /**
      * Get children of a specific group
      */
@@ -136,7 +174,7 @@ class GroupManager
         $children = $this->childMapping[$groupId] ?? [];
         return array_map(fn($id) => $this->flatMapping[$id], $children);
     }
-    
+
     /**
      * Get all descendants of a group (recursive)
      */
@@ -144,38 +182,41 @@ class GroupManager
     {
         $descendants = [];
         $directChildren = $this->childMapping[$groupId] ?? [];
-        
+
         foreach ($directChildren as $childId) {
             $descendants[] = $this->flatMapping[$childId];
             $descendants = array_merge($descendants, $this->getDescendants($childId));
         }
-        
+
         return $descendants;
     }
-    
+
     /**
-     * Get all instrument IDs that belong to a specific group (recursive)
+     * Get all instrument IDs that belong to a specific group (cached)
      */
     public function getInstrumentsByGroup(string $groupId): array
     {
-        $instruments = [];
-        
-        // If this group itself is an instrument, return it
+        if (isset($this->instrumentsCache[$groupId])) {
+            return $this->instrumentsCache[$groupId];
+        }
+
         if (($this->flatMapping[$groupId]['type'] ?? '') === 'instrument') {
+            $this->instrumentsCache[$groupId] = [$groupId];
             return [$groupId];
         }
-        
-        // Get all descendants and filter instruments
+
+        $instruments = [];
         $descendants = $this->getDescendants($groupId);
         foreach ($descendants as $desc) {
             if (($desc['type'] ?? '') === 'instrument') {
                 $instruments[] = $desc['id'];
             }
         }
-        
+
+        $this->instrumentsCache[$groupId] = $instruments;
         return $instruments;
     }
-    
+
     /**
      * Get parent group of a specific group
      */
@@ -184,7 +225,7 @@ class GroupManager
         $parentId = $this->parentMapping[$groupId] ?? null;
         return $parentId ? $this->flatMapping[$parentId] : null;
     }
-    
+
     /**
      * Get all ancestors of a group (up to root)
      */
@@ -192,37 +233,43 @@ class GroupManager
     {
         $ancestors = [];
         $currentId = $groupId;
-        
+
         while (isset($this->parentMapping[$currentId])) {
             $parentId = $this->parentMapping[$currentId];
             $ancestors[] = $this->flatMapping[$parentId];
             $currentId = $parentId;
         }
-        
-        return array_reverse($ancestors); // Root first
+
+        return array_reverse($ancestors);
     }
-    
+
     /**
-     * Check if a user type belongs to a specific rehearsal group
+     * Check if a user type belongs to a specific rehearsal group (cached)
      */
     public function isUserInGroup(string $userType, string $groupId): bool
     {
-        // Handle special groups that affect all users
-        $group = $this->getGroup($groupId);
+        $cacheKey = "$userType|$groupId";
+        if (isset($this->membershipCache[$cacheKey])) {
+            return $this->membershipCache[$cacheKey];
+        }
+
+        $group = $this->flatMapping[$groupId] ?? null;
         if ($group && isset($group['special_rules']['affects_all']) && $group['special_rules']['affects_all']) {
+            $this->membershipCache[$cacheKey] = true;
             return true;
         }
-        
-        // Direct match
+
         if ($userType === $groupId) {
+            $this->membershipCache[$cacheKey] = true;
             return true;
         }
-        
-        // Check if user type is a descendant of the group
+
         $instruments = $this->getInstrumentsByGroup($groupId);
-        return in_array($userType, $instruments);
+        $result = in_array($userType, $instruments);
+        $this->membershipCache[$cacheKey] = $result;
+        return $result;
     }
-    
+
     /**
      * Check if a user belongs to any of the specified groups
      */
@@ -235,26 +282,25 @@ class GroupManager
         }
         return false;
     }
-    
+
     /**
      * Get section name for a user type (for display purposes)
      */
     public function getSectionForInstrument(string $instrumentId): ?string
     {
         $ancestors = $this->getAncestors($instrumentId);
-        
-        // Find the first section-type ancestor
+
         foreach ($ancestors as $ancestor) {
             if (($ancestor['type'] ?? '') === 'section') {
                 return $ancestor['id'];
             }
         }
-        
+
         return null;
     }
-    
 
-    
+
+
     /**
      * Get display name for a group, with fallback to ID
      */
@@ -263,7 +309,7 @@ class GroupManager
         $group = $this->getGroup($groupId);
         return $group['display_name'] ?? $groupId;
     }
-    
+
     /**
      * Get plural form if available
      */
@@ -272,20 +318,15 @@ class GroupManager
         $group = $this->getGroup($groupId);
         return $group['plural'] ?? $this->getDisplayName($groupId);
     }
-    
+
     /**
-     * Check if a group ID matches any aliases
+     * Resolve alias to canonical group ID (O(1) lookup)
      */
     public function resolveAlias(string $id): string
     {
-        foreach ($this->flatMapping as $groupId => $group) {
-            if (isset($group['aliases']) && in_array($id, $group['aliases'])) {
-                return $groupId;
-            }
-        }
-        return $id;
+        return $this->aliasMap[$id] ?? $id;
     }
-    
+
     /**
      * Get the tree structure for a specific branch (for component rendering)
      */
@@ -295,15 +336,15 @@ class GroupManager
         if (!$root) {
             return [];
         }
-        
+
         $tree = $root;
         if (isset($tree['children'])) {
             $tree['children'] = $this->buildTreeChildren($tree['children']);
         }
-        
+
         return $tree;
     }
-    
+
     /**
      * Helper method to build tree children recursively
      */
@@ -321,5 +362,4 @@ class GroupManager
         }
         return $result;
     }
-
 }

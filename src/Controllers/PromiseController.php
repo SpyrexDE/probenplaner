@@ -130,8 +130,6 @@ class PromiseController extends Controller
         $showOld = isset($_GET['showOld']);
 
         $userType = $_SESSION['current_type'];
-
-        // Clean up section name for database queries
         $sectionName = str_replace(' ', '_', $userType);
 
         // Get user role IDs for visibility filtering
@@ -150,7 +148,6 @@ class PromiseController extends Controller
         $canViewAllSections = !empty($_SESSION['current_permissions']['can_view_all_section_stats']);
         $viewAllSections = $canViewAllSections && isset($_GET['viewAll']) && $_GET['viewAll'] === '1';
 
-
         $userOrchestraModel = new \App\Models\UserOrchestra();
         if ($viewAllSections) {
             $members = $userOrchestraModel->getOrchestraUsers($_SESSION['current_orchestra_id']);
@@ -166,7 +163,6 @@ class PromiseController extends Controller
                 $resolvedType = $groupManager->resolveAlias($userType);
                 $allMembers = $userOrchestraModel->getOrchestraUsers($_SESSION['current_orchestra_id']);
 
-                // Filter members that belong to the leader's section/group
                 $members = array_filter($allMembers, function ($member) use ($groupManager, $resolvedType, $userType) {
                     $memberType = $groupManager->resolveAlias($member['type']);
                     $leaderSectionInfo = $groupManager->getSectionForInstrument($resolvedType);
@@ -175,16 +171,8 @@ class PromiseController extends Controller
                     if ($leaderSectionInfo && $memberSectionInfo) {
                         return $leaderSectionInfo === $memberSectionInfo;
                     }
-
-                    // Fallback: check if the member type matches the leader type
                     return $memberType === $resolvedType || $member['type'] === $userType;
                 });
-
-                if (!empty($members)) {
-                    $memberTypes = array_map(function ($m) {
-                        return $m['type'];
-                    }, $members);
-                }
             }
         }
 
@@ -196,19 +184,36 @@ class PromiseController extends Controller
             return !empty($m['can_attend_rehearsals']);
         }));
 
-        // Initialize GroupManager for dynamic section handling
         $groupManager = new \App\Core\GroupManager();
         $allSections = $groupManager->getAllSections();
 
+        // Batch-load all promises for this orchestra
+        $promiseModel = new \App\Models\UserPromise();
+        $allPromises = $promiseModel->getAllForOrchestra($_SESSION['current_orchestra_id']);
+
         $stats = [];
         $membersBySection = [];
+        $memberPromises = [];
 
-        // Get leader's section information for data processing
         $leaderResolvedType = $groupManager->resolveAlias($userType);
         $leaderSectionInfo = $groupManager->getSectionForInstrument($leaderResolvedType);
         $leaderSectionId = $leaderSectionInfo ?? $leaderResolvedType;
 
-        // For leaders viewing only their section, structure data differently
+        // Batch-load groups/roles for visibility filtering
+        $rehearsalIds = array_column($rehearsals, 'id');
+        $groupsMap = [];
+        $rolesMap = [];
+        if (!empty($rehearsalIds)) {
+            foreach ($rehearsals as $r) {
+                $assoc = [];
+                foreach ($r['groups'] ?? [] as $name) {
+                    $assoc[$name] = 0;
+                }
+                $groupsMap[$r['id']] = $assoc;
+            }
+            $rolesMap = $this->rehearsalModel->getBatchRehearsalRoleIds($rehearsalIds);
+        }
+
         foreach ($rehearsals as $rehearsal) {
             $rehearsalId = $rehearsal['id'];
             $stats[$rehearsalId] = [
@@ -217,138 +222,96 @@ class PromiseController extends Controller
                 'no_response' => 0
             ];
 
-            // For leaders viewing only their section, structure data differently
             if (!$viewAllSections) {
-                // Only include the leader's section in the data structure
                 $membersBySection[$rehearsalId] = ['all' => []];
                 $membersBySection[$rehearsalId][$leaderSectionId] = [];
             } else {
-                // Initialize all sections for full view
                 $membersBySection[$rehearsalId] = ['all' => []];
                 foreach ($allSections as $sectionId => $sectionData) {
                     $membersBySection[$rehearsalId][$sectionId] = [];
                 }
             }
 
-            // Only process members if we found any
-            if (!empty($members)) {
-                // Determine which users apply to this rehearsal
-                $groups = $this->rehearsalModel->getGroupsAsAssoc($rehearsal['id']);
-                $rehearsalRoleIds = $this->rehearsalModel->getRehearsalRoleIds($rehearsal['id']);
-
-                foreach ($members as $member) {
-                    $memberRoleIds = isset($member['role_ids']) ? $member['role_ids'] : [];
-
-                    if ($this->rehearsalModel->isUserInRehearsalGroup($member['type'], $groups, $rehearsalRoleIds, $memberRoleIds)) {
-                        // Use user_id from the user_orchestras relation
-                        $userPromises = $this->userModel->getPromises((int)$member['user_id']);
-                        $found = false;
-                        $status = 'no_response';
-                        $note = '';
-
-                        foreach ($userPromises as $promise) {
-                            if ($promise['rehearsal_id'] == $rehearsalId) {
-                                $status = ($promise['status'] === 'yes') ? 'attending' : 'not_attending';
-                                $note = $promise['note'];
-                                $found = true;
-                                break;
-                            }
-                        }
-
-                        // For leader view (not viewing all), only count members from leader's section
-                        if (!$viewAllSections) {
-                            // Verify this member belongs to leader's section
-                            $memberResolvedType = $groupManager->resolveAlias($member['type']);
-                            $memberSectionInfo = $groupManager->getSectionForInstrument($memberResolvedType);
-                            $leaderSectionInfo = $groupManager->getSectionForInstrument($leaderResolvedType);
-
-                            $belongsToLeaderSection = false;
-                            if ($leaderSectionInfo && $memberSectionInfo) {
-                                $belongsToLeaderSection = $leaderSectionInfo === $memberSectionInfo;
-                            } else {
-                                $belongsToLeaderSection = $memberResolvedType === $leaderResolvedType || $member['type'] === $userType;
-                            }
-
-                            if (!$belongsToLeaderSection) {
-                                continue; // Skip members not in leader's section
-                            }
-                        }
-
-                        // Update statistics (now only counts relevant members)
-                        $stats[$rehearsalId][$status]++;
-
-                        // Add user to the appropriate section
-                        $memberInfo = [
-                            'display_name' => $member['display_name'] ?? $member['email'] ?? '',
-                            'type' => $member['type'],
-                            'status' => $status,
-                            'note' => $note,
-                            'permissions' => $member['permissions'] ?? [],
-                            'id' => $member['user_id'],
-                            'roles' => $member['roles'] ?? []
-                        ];
-
-                        $membersBySection[$rehearsalId]['all'][] = $memberInfo;
-
-                        // Add to sections based on view mode
-                        if (!$viewAllSections) {
-                            // For leader view, add to their specific section
-                            $membersBySection[$rehearsalId][$leaderSectionId][] = $memberInfo;
-                        } else {
-                            // For full view, add to all applicable sections
-                            $memberType = $groupManager->resolveAlias($member['type']);
-                            foreach ($allSections as $sectionId => $sectionData) {
-                                if ($groupManager->isUserInGroup($memberType, $sectionId)) {
-                                    $membersBySection[$rehearsalId][$sectionId][] = $memberInfo;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Group promises by rehearsal
-        $memberPromises = [];
-
-        foreach ($rehearsals as $rehearsal) {
-            $rehearsalId = $rehearsal['id'];
             $memberPromises[$rehearsalId] = [
                 'attending' => [],
                 'not_attending' => [],
                 'no_response' => []
             ];
 
-            // Only process if we have members
             if (!empty($members)) {
-                foreach ($members as $member) {
-                    $promises = $this->userModel->getPromises($member['id']);
-                    $found = false;
+                $groups = $groupsMap[$rehearsalId] ?? [];
+                $rehearsalRoleIds = $rolesMap[$rehearsalId] ?? [];
 
-                    foreach ($promises as $promise) {
-                        if ($promise['rehearsal_id'] == $rehearsalId) {
-                            $category = ($promise['status'] === 'yes') ? 'attending' : 'not_attending';
-                            $memberPromises[$rehearsalId][$category][] = [
-                                'display_name' => $member['display_name'] ?? $member['email'] ?? '',
-                                'type' => $member['type'],
-                                'note' => $promise['note']
-                            ];
-                            $found = true;
-                            break;
-                        }
+                foreach ($members as $member) {
+                    $memberRoleIds = $member['role_ids'] ?? [];
+
+                    if (!$this->rehearsalModel->isUserInRehearsalGroup($member['type'], $groups, $rehearsalRoleIds, $memberRoleIds)) {
+                        continue;
                     }
 
-                    if (!$found) {
-                        $memberPromises[$rehearsalId]['no_response'][] = [
-                            'display_name' => $member['display_name'] ?? $member['email'] ?? '',
-                            'type' => $member['type']
-                        ];
+                    $promise = $allPromises[(int)$member['user_id']][$rehearsalId] ?? null;
+                    $status = 'no_response';
+                    $note = '';
+                    if ($promise) {
+                        $status = ($promise['status'] === 'yes') ? 'attending' : 'not_attending';
+                        $note = $promise['note'];
+                    }
+
+                    // Section filtering for leader-only view
+                    if (!$viewAllSections) {
+                        $memberResolvedType = $groupManager->resolveAlias($member['type']);
+                        $memberSectionInfo = $groupManager->getSectionForInstrument($memberResolvedType);
+                        $leaderSInfo = $groupManager->getSectionForInstrument($leaderResolvedType);
+
+                        $belongsToLeaderSection = false;
+                        if ($leaderSInfo && $memberSectionInfo) {
+                            $belongsToLeaderSection = $leaderSInfo === $memberSectionInfo;
+                        } else {
+                            $belongsToLeaderSection = $memberResolvedType === $leaderResolvedType || $member['type'] === $userType;
+                        }
+
+                        if (!$belongsToLeaderSection) continue;
+                    }
+
+                    $stats[$rehearsalId][$status]++;
+
+                    $memberInfo = [
+                        'display_name' => $member['display_name'] ?? $member['email'] ?? '',
+                        'type' => $member['type'],
+                        'status' => $status,
+                        'note' => $note,
+                        'permissions' => $member['permissions'] ?? [],
+                        'id' => $member['user_id'],
+                        'roles' => $member['roles'] ?? []
+                    ];
+
+                    $membersBySection[$rehearsalId]['all'][] = $memberInfo;
+
+                    // Populate memberPromises (replacing the old duplicate loop)
+                    $category = $status === 'attending' ? 'attending' : ($status === 'not_attending' ? 'not_attending' : 'no_response');
+                    $promiseEntry = [
+                        'display_name' => $memberInfo['display_name'],
+                        'type' => $memberInfo['type'],
+                    ];
+                    if ($status !== 'no_response') {
+                        $promiseEntry['note'] = $note;
+                    }
+                    $memberPromises[$rehearsalId][$category][] = $promiseEntry;
+
+                    if (!$viewAllSections) {
+                        $membersBySection[$rehearsalId][$leaderSectionId][] = $memberInfo;
+                    } else {
+                        $memberType = $groupManager->resolveAlias($member['type']);
+                        foreach ($allSections as $sectionId => $sectionData) {
+                            if ($groupManager->isUserInGroup($memberType, $sectionId)) {
+                                $membersBySection[$rehearsalId][$sectionId][] = $memberInfo;
+                            }
+                        }
                     }
                 }
             }
         }
 
-        // Get all possible section names for better matching (already defined above)
         $leaderSectionNames = [];
         if ($leaderSectionId) {
             $leaderSectionNames[] = $leaderSectionId;
@@ -357,11 +320,6 @@ class PromiseController extends Controller
         if ($leaderResolvedType !== $leaderSectionId) {
             $leaderSectionNames[] = $leaderResolvedType;
             $leaderSectionNames[] = $groupManager->getDisplayName($leaderResolvedType);
-        }
-
-        if (!empty($rehearsals)) {
-            $firstRehearsal = $rehearsals[0];
-            $firstRehearsalId = $firstRehearsal['id'];
         }
 
         $hasPastRehearsals = $this->rehearsalModel->hasPastRehearsals($_SESSION['current_orchestra_id']);
@@ -375,11 +333,11 @@ class PromiseController extends Controller
             'showOld' => $showOld,
             'canViewAllSections' => $canViewAllSections,
             'currentlyViewingAll' => $viewAllSections,
-            'leaderSection' => $leaderSectionId, // Pass the leader's section ID for filtering
-            'leaderSectionDisplayName' => $groupManager->getDisplayName($leaderSectionId), // Pass display name for better matching
-            'leaderSectionNames' => $leaderSectionNames, // Pass all possible names for matching
-            'isLeaderOnlyView' => !$viewAllSections, // Flag to indicate leader-only view (when toggle is OFF)
-            'leaderResolvedType' => $leaderResolvedType // Pass resolved type for frontend use
+            'leaderSection' => $leaderSectionId,
+            'leaderSectionDisplayName' => $groupManager->getDisplayName($leaderSectionId),
+            'leaderSectionNames' => $leaderSectionNames,
+            'isLeaderOnlyView' => !$viewAllSections,
+            'leaderResolvedType' => $leaderResolvedType
         ]);
     }
 
@@ -545,23 +503,42 @@ class PromiseController extends Controller
 
         $this->requirePermission('can_manage_rehearsals');
 
+
         $showOld = isset($_GET['showOld']);
 
-        // Get all rehearsals
         $rehearsals = $this->rehearsalModel->getUpcoming($_SESSION['current_orchestra_id'], $showOld);
 
-        // Get all users in the current orchestra
         $userOrchestraModel = new \App\Models\UserOrchestra();
         $users = $userOrchestraModel->getOrchestraUsers($_SESSION['current_orchestra_id']);
 
-        // Get orchestra settings
         $orchestraModel = new \App\Models\Orchestra();
         $orchestra = $orchestraModel->findById($_SESSION['current_orchestra_id']);
         $showRehearsalInsights = !empty($orchestra['show_rehearsal_insights']);
 
-        // Initialize GroupManager for dynamic section handling
         $groupManager = new \App\Core\GroupManager();
         $allSections = $groupManager->getAllSections();
+
+        // Batch-load all promises for this orchestra
+        $promiseModel = new \App\Models\UserPromise();
+        $allPromises = $promiseModel->getAllForOrchestra($_SESSION['current_orchestra_id']);
+
+        // Batch-load groups and roles for visibility filtering
+        $rehearsalIds = array_column($rehearsals, 'id');
+        $groupsMap = [];
+        $rolesMap = [];
+        if (!empty($rehearsalIds)) {
+            // Groups are already in each rehearsal row from enrichRows().
+            // Build assoc map from the existing data.
+            foreach ($rehearsals as $r) {
+                $assoc = [];
+                foreach ($r['groups'] ?? [] as $name) {
+                    $assoc[$name] = 0;
+                }
+                $groupsMap[$r['id']] = $assoc;
+            }
+            // Role IDs need a batch load
+            $rolesMap = $this->rehearsalModel->getBatchRehearsalRoleIds($rehearsalIds);
+        }
 
         $stats = [];
         $membersBySection = [];
@@ -574,43 +551,30 @@ class PromiseController extends Controller
                 'no_response' => 0
             ];
 
-            // Initialize sections dynamically from configuration
             $membersBySection[$rehearsalId] = ['all' => []];
             foreach ($allSections as $sectionId => $sectionData) {
                 $membersBySection[$rehearsalId][$sectionId] = [];
             }
 
-            // Determine which users apply to this rehearsal
-            $groups = $this->rehearsalModel->getGroupsAsAssoc($rehearsal['id']);
-            $rehearsalRoleIds = $this->rehearsalModel->getRehearsalRoleIds($rehearsal['id']);
+            $groups = $groupsMap[$rehearsalId] ?? [];
+            $rehearsalRoleIds = $rolesMap[$rehearsalId] ?? [];
 
             foreach ($users as $user) {
-                if (empty($user['can_attend_rehearsals'])) {
-                    continue;
-                }
+                if (empty($user['can_attend_rehearsals'])) continue;
 
-                $memberRoleIds = isset($user['role_ids']) ? $user['role_ids'] : [];
+                $memberRoleIds = $user['role_ids'] ?? [];
 
                 if ($this->rehearsalModel->isUserInRehearsalGroup($user['type'], $groups, $rehearsalRoleIds, $memberRoleIds)) {
-                    // Use users.id (available as user_id in relation row)
-                    $userPromises = $this->userModel->getPromises((int)$user['user_id']);
-                    $found = false;
+                    $promise = $allPromises[(int)$user['user_id']][$rehearsalId] ?? null;
                     $status = 'no_response';
                     $note = '';
-
-                    foreach ($userPromises as $promise) {
-                        if ($promise['rehearsal_id'] == $rehearsalId) {
-                            $status = ($promise['status'] === 'yes') ? 'attending' : 'not_attending';
-                            $note = $promise['note'];
-                            $found = true;
-                            break;
-                        }
+                    if ($promise) {
+                        $status = ($promise['status'] === 'yes') ? 'attending' : 'not_attending';
+                        $note = $promise['note'];
                     }
 
-                    // Update statistics
                     $stats[$rehearsalId][$status]++;
 
-                    // Add user to the appropriate section
                     $memberInfo = [
                         'display_name' => $user['display_name'] ?? $user['email'] ?? '',
                         'type' => $user['type'],
@@ -623,9 +587,7 @@ class PromiseController extends Controller
 
                     $membersBySection[$rehearsalId]['all'][] = $memberInfo;
 
-                    // Dynamically determine which sections this user belongs to
                     $userType = $groupManager->resolveAlias($user['type']);
-
                     foreach ($allSections as $sectionId => $sectionData) {
                         if ($groupManager->isUserInGroup($userType, $sectionId)) {
                             $membersBySection[$rehearsalId][$sectionId][] = $memberInfo;
@@ -636,6 +598,7 @@ class PromiseController extends Controller
         }
 
         $hasPastRehearsals = $this->rehearsalModel->hasPastRehearsals($_SESSION['current_orchestra_id']);
+
 
         $this->render('promises/admin', [
             'currentPage' => 'admin',
@@ -671,22 +634,15 @@ class PromiseController extends Controller
             $offset = (int)($_GET['offset'] ?? 0);
             $limit = (int)($_GET['limit'] ?? 10);
 
-            $allPastRehearsals = $this->rehearsalModel->getUpcoming($_SESSION['current_orchestra_id'], true);
-
-            $today = date('Y-m-d');
-            $pastRehearsals = array_filter($allPastRehearsals, function ($rehearsal) use ($today) {
-                return $rehearsal['date'] < $today;
-            });
-
-            usort($pastRehearsals, function ($a, $b) {
-                return strtotime($b['date']) - strtotime($a['date']);
-            });
-
-            $totalPastRehearsals = count($pastRehearsals);
-            $paginatedRehearsals = array_slice($pastRehearsals, $offset, $limit);
+            $pageData = $this->rehearsalModel->getPastPaginated(
+                $_SESSION['current_orchestra_id'],
+                $offset,
+                $limit
+            );
+            $paginatedRehearsals = $pageData['rows'];
+            $totalPastRehearsals = $pageData['total'];
             $hasMore = ($offset + $limit) < $totalPastRehearsals;
 
-            // Get promises for these rehearsals
             $rehearsalIds = array_column($paginatedRehearsals, 'id');
             $promises = [];
             if (!empty($rehearsalIds)) {
@@ -704,15 +660,13 @@ class PromiseController extends Controller
                     $note = $promises[$rehearsal['id']]['note'];
                 }
 
-                // Get group information
                 $groupArray = $rehearsal['groups'] ?? [];
 
-                // Generate smart display text
                 $smartDisplay = new \App\Core\SmartGroupDisplay();
                 $groupsText = $smartDisplay->generateDescription(
                     $groupArray,
                     $rehearsal,
-                    false // Not admin view
+                    false
                 );
 
                 $context = 'promises';
@@ -722,13 +676,11 @@ class PromiseController extends Controller
                     'showButtons' => true
                 ];
 
-                // Capture output
                 ob_start();
                 include __DIR__ . '/../Views/components/rehearsal-card.php';
                 $html .= ob_get_clean();
             }
 
-            // Return JSON response
             header('Content-Type: application/json');
             echo json_encode([
                 'success' => true,

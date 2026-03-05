@@ -18,9 +18,7 @@ class Rehearsal extends Model
     protected $table = 'rehearsals';
 
     /**
-     * Get upcoming rehearsals for an orchestra
-     * 
-     * @param int $orchestraId Orchestra ID
+     * @param int $orchestraId
      * @param bool $includeOld Include past rehearsals
      * @return array
      */
@@ -29,35 +27,20 @@ class Rehearsal extends Model
         $orchestraId = (int)$orchestraId;
 
         $sql = "SELECT * FROM {$this->table} WHERE orchestra_id = {$orchestraId}";
-
         if (!$includeOld) {
             $sql .= " AND end >= NOW()";
         }
-
         $sql .= " ORDER BY start ASC";
 
         $result = $this->db->query($sql);
-
-        // If no rehearsals, return empty array
-        if (!$result) {
-            return [];
-        }
+        if (!$result) return [];
 
         $rehearsals = [];
         while ($row = $result->fetch_assoc()) {
-            $row['date'] = date('Y-m-d', strtotime($row['start']));
-            $row['start_time'] = date('H:i', strtotime($row['start']));
-            $row['end_time'] = date('H:i', strtotime($row['end']));
-            $row['date_formatted'] = \App\Core\Utilities::formatDate($row['date']);
-            $row['start_formatted'] = $row['start_time'];
-            $row['end_formatted'] = $row['end_time'];
-            $row['groups'] = $this->getGroups($row['id']);
-            $row['schedule_items'] = $this->getScheduleItems($row['id']);
-            $row['infos'] = $this->getInfos($row['id']);
             $rehearsals[] = $row;
         }
 
-        return $rehearsals;
+        return $this->enrichRows($rehearsals);
     }
 
     /**
@@ -147,7 +130,7 @@ class Rehearsal extends Model
      * Get rehearsals visible to a specific user based on groups and roles.
      *
      * @param string $userType User instrument/section type
-     * @param int $orchestraId Orchestra ID
+     * @param int $orchestraId
      * @param bool $includeOld Include past rehearsals
      * @param array $userRoleIds User's role IDs for role-scoped visibility
      * @return array
@@ -157,37 +140,36 @@ class Rehearsal extends Model
         $orchestraId = (int)$orchestraId;
 
         $sql = "SELECT * FROM {$this->table} WHERE orchestra_id = {$orchestraId} ";
-
         if (!$includeOld) {
             $sql .= "AND end >= NOW() ";
         }
-
         $sql .= "ORDER BY start ASC";
 
         $result = $this->db->query($sql);
+        if (!$result) return [];
 
-        $rehearsals = [];
-        if ($result) {
-            while ($row = $result->fetch_assoc()) {
-                $groups = $this->getGroupsAsAssoc($row['id']);
-                $rehearsalRoleIds = $this->getRehearsalRoleIds($row['id']);
+        // Collect all rows and batch-load groups + roles for visibility filtering
+        $allRows = [];
+        while ($row = $result->fetch_assoc()) {
+            $allRows[] = $row;
+        }
+        if (empty($allRows)) return [];
 
-                if ($this->isUserInRehearsalGroup($userType, $groups, $rehearsalRoleIds, $userRoleIds)) {
-                    $row['date'] = date('Y-m-d', strtotime($row['start']));
-                    $row['start_time'] = date('H:i', strtotime($row['start']));
-                    $row['end_time'] = date('H:i', strtotime($row['end']));
-                    $row['date_formatted'] = \App\Core\Utilities::formatDate($row['date']);
-                    $row['start_formatted'] = $row['start_time'];
-                    $row['end_formatted'] = $row['end_time'];
-                    $row['groups'] = $this->getGroups($row['id']);
-                    $row['schedule_items'] = $this->getScheduleItems($row['id']);
-                    $row['infos'] = $this->getInfos($row['id']);
-                    $rehearsals[] = $row;
-                }
+        $ids = array_column($allRows, 'id');
+        $allGroupsMap = $this->batchLoadGroupsAssoc($ids);
+        $allRolesMap = $this->batchLoadRehearsalRoleIds($ids);
+
+        // Filter by visibility
+        $visibleRows = [];
+        foreach ($allRows as $row) {
+            $groups = $allGroupsMap[$row['id']] ?? [];
+            $rehearsalRoleIds = $allRolesMap[$row['id']] ?? [];
+            if ($this->isUserInRehearsalGroup($userType, $groups, $rehearsalRoleIds, $userRoleIds)) {
+                $visibleRows[] = $row;
             }
         }
 
-        return $rehearsals;
+        return $this->enrichRows($visibleRows);
     }
 
     /**
@@ -440,51 +422,36 @@ class Rehearsal extends Model
         return $rehearsal;
     }
 
-    /**
-     * Get rehearsals relevant for a specific user based on groups and roles.
-     *
-     * @param int $orchestraId Orchestra ID
-     * @param string $userType User instrument/section type
-     * @param bool $includeOld Include past rehearsals
-     * @param array $userRoleIds User's role IDs for role-scoped visibility
-     * @return array
-     */
+    /** @deprecated Use getForUser() directly — kept for backwards compatibility. */
     public function getRelevantForUser($orchestraId, $userType, $includeOld = false, array $userRoleIds = [])
+    {
+        return $this->getForUser($userType, (int)$orchestraId, $includeOld, $userRoleIds);
+    }
+
+    /**
+     * Paginated past rehearsals using SQL LIMIT/OFFSET.
+     *
+     * @return array{rows: array, total: int}
+     */
+    public function getPastPaginated(int $orchestraId, int $offset, int $limit): array
     {
         $orchestraId = (int)$orchestraId;
 
-        $sql = "SELECT * FROM {$this->table} WHERE orchestra_id = {$orchestraId} ";
+        $countResult = $this->db->query(
+            "SELECT COUNT(*) AS cnt FROM {$this->table} WHERE orchestra_id = {$orchestraId} AND end < NOW()"
+        );
+        $total = $countResult ? (int)$countResult->fetch_assoc()['cnt'] : 0;
 
-        if (!$includeOld) {
-            $sql .= "AND end >= NOW() ";
-        }
-
-        $sql .= "ORDER BY start ASC";
-
+        $sql = "SELECT * FROM {$this->table} WHERE orchestra_id = {$orchestraId} AND end < NOW() ORDER BY start DESC LIMIT {$limit} OFFSET {$offset}";
         $result = $this->db->query($sql);
-
-        $rehearsals = [];
+        $rows = [];
         if ($result) {
             while ($row = $result->fetch_assoc()) {
-                $groups = $this->getGroupsAsAssoc($row['id']);
-                $rehearsalRoleIds = $this->getRehearsalRoleIds($row['id']);
-
-                if ($this->isUserInRehearsalGroup($userType, $groups, $rehearsalRoleIds, $userRoleIds)) {
-                    $row['date'] = date('Y-m-d', strtotime($row['start']));
-                    $row['start_time'] = date('H:i', strtotime($row['start']));
-                    $row['end_time'] = date('H:i', strtotime($row['end']));
-                    $row['date_formatted'] = \App\Core\Utilities::formatDate($row['date']);
-                    $row['start_formatted'] = $row['start_time'];
-                    $row['end_formatted'] = $row['end_time'];
-                    $row['groups'] = $this->getGroups($row['id']);
-                    $row['schedule_items'] = $this->getScheduleItems($row['id']);
-                    $row['infos'] = $this->getInfos($row['id']);
-                    $rehearsals[] = $row;
-                }
+                $rows[] = $row;
             }
         }
 
-        return $rehearsals;
+        return ['rows' => $this->enrichRows($rows), 'total' => $total];
     }
 
     /**
@@ -505,6 +472,150 @@ class Rehearsal extends Model
             $items[] = $row;
         }
         return $items;
+    }
+
+    // ── Batch loading helpers ──────────────────────────────────────────
+
+    /**
+     * Enrich raw rehearsal rows with computed date fields and batch-loaded relations.
+     *
+     * @param array $rows Raw rehearsal rows from DB
+     * @return array Enriched rows
+     */
+    private function enrichRows(array $rows): array
+    {
+        if (empty($rows)) return [];
+
+        $ids = array_column($rows, 'id');
+        $groupsMap = $this->batchLoadGroups($ids);
+        $scheduleMap = $this->batchLoadScheduleItems($ids);
+        $infosMap = $this->batchLoadInfos($ids);
+
+        foreach ($rows as &$row) {
+            $row['date'] = date('Y-m-d', strtotime($row['start']));
+            $row['start_time'] = date('H:i', strtotime($row['start']));
+            $row['end_time'] = date('H:i', strtotime($row['end']));
+            $row['date_formatted'] = \App\Core\Utilities::formatDate($row['date']);
+            $row['start_formatted'] = $row['start_time'];
+            $row['end_formatted'] = $row['end_time'];
+            $row['groups'] = $groupsMap[$row['id']] ?? [];
+            $row['schedule_items'] = $scheduleMap[$row['id']] ?? [];
+            $row['infos'] = $infosMap[$row['id']] ?? [];
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    /**
+     * @return array<int, string[]> rehearsal_id => group names
+     */
+    private function batchLoadGroups(array $ids): array
+    {
+        return $this->batchQuery(
+            "SELECT rehearsal_id, name FROM rehearsal_groups WHERE rehearsal_id IN (%s)",
+            $ids,
+            fn($row) => $row['name']
+        );
+    }
+
+    /**
+     * @return array<int, array<string, int>> rehearsal_id => [group_name => 0]
+     */
+    private function batchLoadGroupsAssoc(array $ids): array
+    {
+        if (empty($ids)) return [];
+        $groups = $this->batchLoadGroups($ids);
+        $result = [];
+        foreach ($ids as $id) {
+            $assoc = [];
+            foreach ($groups[$id] ?? [] as $name) {
+                $assoc[$name] = 0;
+            }
+            $result[$id] = $assoc;
+        }
+        return $result;
+    }
+
+    /**
+     * @return array<int, int[]> rehearsal_id => role IDs
+     */
+    private function batchLoadRehearsalRoleIds(array $ids): array
+    {
+        return $this->batchQuery(
+            "SELECT rehearsal_id, role_id FROM rehearsal_roles WHERE rehearsal_id IN (%s)",
+            $ids,
+            fn($row) => (int)$row['role_id']
+        );
+    }
+
+    /**
+     * @param int[] $ids Rehearsal IDs
+     * @return array<int, int[]> rehearsal_id => role IDs
+     */
+    public function getBatchRehearsalRoleIds(array $ids): array
+    {
+        return $this->batchLoadRehearsalRoleIds($ids);
+    }
+
+    /**
+     * @return array<int, array[]> rehearsal_id => schedule item rows
+     */
+    private function batchLoadScheduleItems(array $ids): array
+    {
+        return $this->batchQuery(
+            "SELECT rehearsal_id, id, time, label, sort_order FROM rehearsal_schedule_items WHERE rehearsal_id IN (%s) ORDER BY sort_order ASC",
+            $ids,
+            function ($row) {
+                $row['time_formatted'] = substr($row['time'], 0, 5);
+                unset($row['rehearsal_id']);
+                return $row;
+            }
+        );
+    }
+
+    /**
+     * @return array<int, array[]> rehearsal_id => info item rows
+     */
+    private function batchLoadInfos(array $ids): array
+    {
+        return $this->batchQuery(
+            "SELECT rehearsal_id, id, emoji, text, sort_order FROM rehearsal_infos WHERE rehearsal_id IN (%s) ORDER BY sort_order ASC",
+            $ids,
+            function ($row) {
+                unset($row['rehearsal_id']);
+                return $row;
+            }
+        );
+    }
+
+    /**
+     * Generic batch query grouped by rehearsal_id.
+     *
+     * @param string $sqlTemplate SQL with a single %s placeholder for IN(…)
+     * @param int[] $ids
+     * @param callable $rowMapper Transforms a fetched row into the value stored per rehearsal
+     * @return array<int, array>
+     */
+    private function batchQuery(string $sqlTemplate, array $ids, callable $rowMapper): array
+    {
+        if (empty($ids)) return [];
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $sql = sprintf($sqlTemplate, $placeholders);
+        $stmt = $this->db->prepare($sql);
+        $types = str_repeat('i', count($ids));
+        $stmt->bind_param($types, ...array_values($ids));
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $map = [];
+        while ($row = $result->fetch_assoc()) {
+            $rId = (int)$row['rehearsal_id'];
+            $map[$rId][] = $rowMapper($row);
+        }
+        $stmt->close();
+        return $map;
     }
 
     /**
