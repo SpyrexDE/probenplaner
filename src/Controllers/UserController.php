@@ -359,8 +359,11 @@ class UserController extends Controller
             error_log("Profile update failed: " . json_encode($updateData));
 
             if (is_array($result) && isset($result['error']) && isset($result['message'])) {
-                $errorDetails = isset($result['details']) ? $result['details'] : '';
-                $this->addAlert('Fehler!', $result['message'], 'error', $errorDetails);
+                $msg = $result['message'];
+                if (!empty($result['details']) && is_string($result['details'])) {
+                    $msg .= ' ' . $result['details'];
+                }
+                $this->addAlert('Fehler!', $msg, 'error');
             } else {
                 $db = new \App\Core\Database();
                 $errorMsg = $db->getLastError();

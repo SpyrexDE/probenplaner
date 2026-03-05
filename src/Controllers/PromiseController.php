@@ -284,7 +284,8 @@ class PromiseController extends Controller
                             'status' => $status,
                             'note' => $note,
                             'permissions' => $member['permissions'] ?? [],
-                            'id' => $member['user_id']
+                            'id' => $member['user_id'],
+                            'roles' => $member['roles'] ?? []
                         ];
 
                         $membersBySection[$rehearsalId]['all'][] = $memberInfo;
@@ -616,7 +617,8 @@ class PromiseController extends Controller
                         'status' => $status,
                         'note' => $note,
                         'permissions' => $user['permissions'] ?? [],
-                        'id' => $user['user_id']
+                        'id' => $user['user_id'],
+                        'roles' => $user['roles'] ?? []
                     ];
 
                     $membersBySection[$rehearsalId]['all'][] = $memberInfo;

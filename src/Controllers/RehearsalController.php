@@ -159,10 +159,7 @@ class RehearsalController extends Controller
                     if (is_array($errorDetails)) {
                         $errorDetails = json_encode($errorDetails, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
                     }
-                    if (empty($errorDetails)) {
-                        $errorDetails = $errorMessage;
-                    }
-                    $this->addAlert('Fehler!', $errorMessage, 'error', $errorDetails);
+                    $this->addAlert('Fehler!', $errorMessage, 'error', $errorDetails ?: null);
                 }
             }
 
@@ -297,10 +294,7 @@ class RehearsalController extends Controller
                     if (is_array($errorDetails)) {
                         $errorDetails = json_encode($errorDetails, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
                     }
-                    if (empty($errorDetails)) {
-                        $errorDetails = $errorMessage;
-                    }
-                    $this->addAlert('Fehler!', $errorMessage, 'error', $errorDetails);
+                    $this->addAlert('Fehler!', $errorMessage, 'error', $errorDetails ?: null);
                 }
             }
 
@@ -408,7 +402,7 @@ class RehearsalController extends Controller
                     ]);
                     exit;
                 }
-                $this->setFlash('error', 'Probe konnte nicht gelöscht werden', 'Database delete returned false');
+                $this->setFlash('error', 'Probe konnte nicht gelöscht werden');
             }
         } catch (\Exception $e) {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {

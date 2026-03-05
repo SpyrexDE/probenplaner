@@ -62,6 +62,7 @@ class UserOrchestra extends Model
             // Load all roles for this membership
             $roles = $this->getRolesForRelation((int)$row['id']);
             $row['roles'] = $roles;
+            $row['role_ids'] = array_map(fn($r) => (int)$r['id'], $roles);
 
             // Merge permissions from all roles
             $allPerms = [];
@@ -377,6 +378,7 @@ class UserOrchestra extends Model
         while ($row = $result->fetch_assoc()) {
             $roles = $this->getRolesForRelation((int)$row['id']);
             $row['roles'] = $roles;
+            $row['role_ids'] = array_map(fn($r) => (int)$r['id'], $roles);
 
             $allPerms = [];
             foreach ($roles as $role) {

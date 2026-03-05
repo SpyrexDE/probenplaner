@@ -88,7 +88,7 @@ class AdminController extends Controller
                 throw new \Exception('insert() returned false');
             }
         } catch (\Exception $e) {
-            $this->setFlash('error', 'Organisation konnte nicht erstellt werden.', $e->getMessage());
+            $this->setFlash('error', 'Organisation konnte nicht erstellt werden: ' . $e->getMessage());
             $this->redirect('/admin/orgs/create');
             return;
         }
@@ -189,7 +189,7 @@ class AdminController extends Controller
         try {
             $this->orgModel->delete($orgId);
         } catch (\Exception $e) {
-            $this->setFlash('error', 'Organisation konnte nicht gelöscht werden.', $e->getMessage());
+            $this->setFlash('error', 'Organisation konnte nicht gelöscht werden: ' . $e->getMessage());
             $this->redirect('/admin/dashboard');
             return;
         }

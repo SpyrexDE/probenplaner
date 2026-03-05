@@ -116,7 +116,7 @@ class OrgaPanelController extends Controller
                 'organization_id' => $orgId,
             ]);
         } catch (\Exception $e) {
-            $this->setFlash('error', 'Ensemble konnte nicht erstellt werden.', $e->getMessage());
+            $this->setFlash('error', 'Ensemble konnte nicht erstellt werden: ' . $e->getMessage());
             $this->redirect('/orga/ensembles/create');
             return;
         }
@@ -286,7 +286,7 @@ class OrgaPanelController extends Controller
         try {
             $this->orchestraModel->delete((int)$ensemble['id']);
         } catch (\Exception $e) {
-            $this->setFlash('error', 'Ensemble konnte nicht gelöscht werden.', $e->getMessage());
+            $this->setFlash('error', 'Ensemble konnte nicht gelöscht werden: ' . $e->getMessage());
             $this->redirect('/orga/dashboard');
             return;
         }

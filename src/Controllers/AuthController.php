@@ -145,17 +145,15 @@ class AuthController extends Controller
         if ($userExists) {
             $this->addAlert(
                 'Fehler!',
-                'Das eingegebene Passwort ist falsch.',
-                'error',
-                'Bitte überprüfen Sie Ihr Passwort. Falls Sie Ihr Passwort vergessen haben, kontaktieren Sie bitte Ihren Dirigenten.'
+                'Das eingegebene Passwort ist falsch. Bitte überprüfen Sie Ihr Passwort. Falls Sie Ihr Passwort vergessen haben, kontaktieren Sie bitte Ihren Dirigenten.',
+                'error'
             );
             error_log("Login failed - Wrong password attempt");
         } else {
             $this->addAlert(
                 'Fehler!',
-                'Diese E-Mail-Adresse wurde nicht gefunden.',
-                'error',
-                'Bitte überprüfen Sie Ihre E-Mail-Adresse oder registrieren Sie sich, falls Sie noch kein Konto haben.'
+                'Diese E-Mail-Adresse wurde nicht gefunden. Bitte überprüfen Sie Ihre E-Mail-Adresse oder registrieren Sie sich, falls Sie noch kein Konto haben.',
+                'error'
             );
             error_log("Login failed - Email not found: $email");
         }
@@ -328,9 +326,8 @@ class AuthController extends Controller
             // Handle unexpected non-array, non-integer results
             $this->addAlert(
                 'Fehler!',
-                'Bei der Registrierung ist ein Fehler aufgetreten.',
-                'error',
-                'Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.'
+                'Bei der Registrierung ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.',
+                'error'
             );
             $this->redirect('/register');
         }
