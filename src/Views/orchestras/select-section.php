@@ -19,20 +19,14 @@ ob_start();
 
     <div class="form-text" style="margin-bottom: 2rem;">Wählen Sie Ihr Instrument</div>
 
-    <select class="login-input" id="type" name="type" required>
-        <option value="" disabled selected>Instrument auswählen</option>
-        <?php foreach ($typeStructure as $sectionName => $instruments): ?>
-            <optgroup label="<?= htmlspecialchars($sectionName) ?>">
-                <?php foreach ($instruments as $instrument): ?>
-                    <option
-                        value="<?= htmlspecialchars($instrument) ?>"
-                        <?= (isset($_SESSION['form_data']['type']) && $_SESSION['form_data']['type'] === $instrument) ? 'selected' : '' ?>>
-                        <?php $gm = $gm ?? new \App\Core\GroupManager(); ?><?= htmlspecialchars($gm->getDisplayName($instrument)) ?>
-                    </option>
-                <?php endforeach; ?>
-            </optgroup>
-        <?php endforeach; ?>
-    </select>
+    <?php
+    $selectedType = $_SESSION['form_data']['type'] ?? '';
+    $selectName   = 'type';
+    $selectId     = 'type';
+    $selectClass  = 'login-input';
+    $orchestraId  = (int) $orchestra['id'];
+    include __DIR__ . '/../components/instrument-select.php';
+    ?>
 
     <button class="login-button" type="submit">
         Beitreten

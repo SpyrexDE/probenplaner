@@ -107,7 +107,9 @@ class MemberController extends Controller
         $groupManager = new \App\Core\GroupManager();
         $displayNames = [];
         foreach ($sections as $key => $items) {
-            $displayNames[$key] = $groupManager->getDisplayName($key);
+            if ($key !== '') {
+                $displayNames[$key] = $groupManager->getDisplayName($key);
+            }
             foreach ($items as $item) {
                 $displayNames[$item] = $groupManager->getDisplayName($item);
             }

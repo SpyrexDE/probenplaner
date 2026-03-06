@@ -52,6 +52,7 @@ class FieldRegistry
                 'security'    => ['label' => 'Zugang & Sicherheit', 'icon' => 'shield', 'iconBg' => 'yellow'],
                 'permissions' => ['label' => 'Berechtigungen', 'icon' => 'users-cog', 'iconBg' => 'green'],
                 'features'    => ['label' => 'Features', 'icon' => 'flask', 'iconBg' => 'purple'],
+                'structure'   => ['label' => 'Registerstruktur', 'icon' => 'sitemap', 'iconBg' => 'indigo'],
             ],
             'user' => [
                 'theme'    => ['label' => 'Design-Theme', 'icon' => 'palette', 'iconBg' => 'purple'],
@@ -96,44 +97,13 @@ class FieldRegistry
     }
 
     /**
-     * Get section→instruments map from GroupManager config.
+     * Get immediate-parent → instrument IDs map via GroupManager.
      *
-     * @return array<string, string[]> Group name → list of instrument IDs
+     * @return array<string, string[]> Ordered parent ID → leaf instrument IDs
      */
     public static function getSections(): array
     {
-        $groupManager = new \App\Core\GroupManager();
-        $config = $groupManager->getConfig();
-        $structure = [];
-
-        if (!isset($config['tutti']['children'])) {
-            return $structure;
-        }
-
-        foreach ($config['tutti']['children'] as $section) {
-            if (($section['type'] ?? '') !== 'section') continue;
-            $instruments = [];
-            if (isset($section['children'])) {
-                foreach ($section['children'] as $child) {
-                    if (($child['type'] ?? '') === 'instrument') {
-                        $instruments[] = $child['id'];
-                    } elseif (($child['type'] ?? '') === 'section' && isset($child['children'])) {
-                        foreach ($child['children'] as $inst) {
-                            if (($inst['type'] ?? '') === 'instrument') {
-                                $instruments[] = $inst['id'];
-                            }
-                        }
-                    }
-                }
-            } else {
-                $instruments[] = $section['id'];
-            }
-            if (!empty($instruments)) {
-                $structure[$section['id']] = $instruments;
-            }
-        }
-
-        return $structure;
+        return (new \App\Core\GroupManager())->getFlattenedSections();
     }
 
     // ── Field Definitions ──────────────────────────────────────────
@@ -169,6 +139,15 @@ class FieldRegistry
                 'group'      => 'features',
                 'default'    => false,
                 'save'       => 'auto',
+                'permission' => 'conductor',
+            ],
+            [
+                'name'       => 'section_config',
+                'type'       => 'section_config',
+                'label'      => 'Registerstruktur anpassen',
+                'description' => 'Passe die Sektionen, Untergruppen und Instrumente deines Ensembles an.',
+                'group'      => 'structure',
+                'save'       => 'manual',
                 'permission' => 'conductor',
             ],
         ];

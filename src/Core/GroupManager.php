@@ -11,7 +11,8 @@ namespace App\Core;
  */
 class GroupManager
 {
-    private static ?GroupManager $instance = null;
+    /** @var array<int|string, GroupManager> Orchestra-keyed instance cache */
+    private static array $instances = [];
 
     private array $config;
     private array $flatMapping = [];
@@ -21,44 +22,85 @@ class GroupManager
     private array $aliasMap = [];
     private array $membershipCache = [];
 
-    public static function getInstance(): self
+    /**
+     * Create a GroupManager from an arbitrary config (for per-orchestra overrides).
+     */
+    public static function fromConfig(array $config): self
     {
-        if (self::$instance === null) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
-
-    public function __construct()
-    {
-        if (self::$instance !== null) {
-            $this->config = self::$instance->config;
-            $this->flatMapping = self::$instance->flatMapping;
-            $this->parentMapping = self::$instance->parentMapping;
-            $this->childMapping = self::$instance->childMapping;
-            $this->instrumentsCache = self::$instance->instrumentsCache;
-            $this->aliasMap = self::$instance->aliasMap;
-            $this->membershipCache = self::$instance->membershipCache;
-            return;
-        }
-        $this->loadConfig();
-        $this->buildMappings();
-        $this->buildAliasMap();
-        self::$instance = $this;
+        $gm = new self(skipLoad: true);
+        $gm->config = $config;
+        $gm->buildMappings();
+        $gm->buildAliasMap();
+        return $gm;
     }
 
     /**
-     * Load group configuration from file
+     * @return array The global default config from orchestra_groups.php
+     */
+    public static function getDefaultConfig(): array
+    {
+        $path = __DIR__ . '/../config/orchestra_groups.php';
+        return require $path;
+    }
+
+    /**
+     * Get the singleton for the current orchestra context.
+     * Uses custom section_config from DB if available, otherwise global default.
+     */
+    public static function getInstance(): self
+    {
+        $orchestraId = $_SESSION['current_orchestra_id'] ?? 'default';
+
+        if (!isset(self::$instances[$orchestraId])) {
+            self::$instances[$orchestraId] = new self();
+        }
+        return self::$instances[$orchestraId];
+    }
+
+    /**
+     * Reset cached instance for an orchestra (call after saving new section_config).
+     */
+    public static function resetInstance(?int $orchestraId = null): void
+    {
+        $key = $orchestraId ?? ($_SESSION['current_orchestra_id'] ?? 'default');
+        unset(self::$instances[$key]);
+    }
+
+    public function __construct(bool $skipLoad = false)
+    {
+        if ($skipLoad) return;
+        $this->loadConfig();
+        $this->buildMappings();
+        $this->buildAliasMap();
+    }
+
+    /**
+     * Load config: prefer orchestra-specific section_config from DB, fall back to global default.
      */
     private function loadConfig(): void
     {
+        $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
+
+        if ($orchestraId) {
+            $orchestra = (new \App\Models\Orchestra())->findById((int) $orchestraId);
+            if ($orchestra && !empty($orchestra['section_config'])) {
+                $custom = is_string($orchestra['section_config'])
+                    ? json_decode($orchestra['section_config'], true)
+                    : $orchestra['section_config'];
+
+                if (is_array($custom) && !empty($custom)) {
+                    $this->config = $custom;
+                    return;
+                }
+            }
+        }
+
         $configPath = __DIR__ . '/../config/orchestra_groups.php';
         if (!file_exists($configPath)) {
             throw new \Exception("Group configuration file not found: " . $configPath);
         }
 
         $config = require $configPath;
-
         if (!is_array($config)) {
             throw new \Exception("Group configuration file must return an array. Got: " . gettype($config));
         }
@@ -361,5 +403,69 @@ class GroupManager
             }
         }
         return $result;
+    }
+
+    /**
+     * Flatten the config tree into ordered [parentId => [leafId, ...]] groups.
+     * Only the immediate parent of leaf nodes becomes a group key.
+     * Ungrouped root-level leaves use '' as key.
+     *
+     * @return array<string, string[]> Ordered parent ID → leaf IDs
+     */
+    public function getFlattenedSections(): array
+    {
+        $config = $this->config;
+
+        // Peel single root node (e.g. "tutti")
+        if (count($config) === 1) {
+            $first = reset($config);
+            if (!empty($first['children'])) {
+                $config = $first['children'];
+            }
+        }
+
+        return self::flattenRecursive($config);
+    }
+
+    /**
+     * Recursively flatten tree nodes into ordered [parentId => [leafId, ...]] groups.
+     */
+    private static function flattenRecursive(array $nodes, ?string $parentId = null): array
+    {
+        $groups = [];
+        foreach ($nodes as $node) {
+            if (!is_array($node) || !isset($node['id'])) continue;
+
+            if (empty($node['children'])) {
+                $key = $parentId ?? '';
+                $groups[$key][] = $node['id'];
+                continue;
+            }
+
+            $allLeaves = true;
+            foreach ($node['children'] as $child) {
+                if (!empty($child['children'])) {
+                    $allLeaves = false;
+                    break;
+                }
+            }
+
+            if ($allLeaves) {
+                foreach ($node['children'] as $child) {
+                    if (!is_array($child) || !isset($child['id'])) continue;
+                    $groups[$node['id']][] = $child['id'];
+                }
+            } else {
+                $sub = self::flattenRecursive($node['children'], null);
+                foreach ($sub as $k => $v) {
+                    if (isset($groups[$k])) {
+                        $groups[$k] = array_merge($groups[$k], $v);
+                    } else {
+                        $groups[$k] = $v;
+                    }
+                }
+            }
+        }
+        return $groups;
     }
 }

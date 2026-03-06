@@ -163,7 +163,6 @@ class OrchestraSelectionController extends Controller
         // Display join form with type structure
         $this->render('orchestras/join', [
             'currentPage' => 'join_orchestra',
-            'typeStructure' => $this->getTypeStructure(),
             'csrf_token' => $this->getCSRFToken()
         ]);
     }
@@ -273,7 +272,6 @@ class OrchestraSelectionController extends Controller
         $this->render('orchestras/select-section', [
             'currentPage' => 'select_section',
             'orchestra' => $orchestra,
-            'typeStructure' => $this->getTypeStructure(),
             'csrf_token' => $this->getCSRFToken()
         ]);
     }
@@ -448,53 +446,5 @@ class OrchestraSelectionController extends Controller
         } else {
             $this->redirect('/' . $orgSlug . '/' . $slug . '/promises');
         }
-    }
-
-    /**
-     * Get instrument/section type structure dynamically
-     * 
-     * @return array
-     */
-    private function getTypeStructure()
-    {
-        $groupManager = new \App\Core\GroupManager();
-        $config = $groupManager->getConfig();
-
-        if (isset($config['tutti']['children'])) {
-            $structure = [];
-
-            foreach ($config['tutti']['children'] as $sectionKey => $section) {
-                if ($section['type'] === 'section') {
-                    $sectionInstruments = [];
-
-                    if (isset($section['children'])) {
-                        foreach ($section['children'] as $childKey => $child) {
-                            if ($child['type'] === 'instrument') {
-                                $sectionInstruments[] = $child['id'];
-                            } elseif ($child['type'] === 'section' && isset($child['children'])) {
-                                // Flatten nested sections for the form
-                                foreach ($child['children'] as $instrumentKey => $instrument) {
-                                    if ($instrument['type'] === 'instrument') {
-                                        $sectionInstruments[] = $instrument['id'];
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        // Simple sections like Schlagwerk - add the section ID as an instrument
-                        $sectionInstruments[] = $section['id'];
-                    }
-
-                    if (!empty($sectionInstruments)) {
-                        $structure[$section['id']] = $sectionInstruments;
-                    }
-                }
-            }
-
-            return $structure;
-        }
-
-        // Configuration is malformed
-        throw new \Exception("Orchestra groups configuration is malformed or missing 'tutti' section. Please check src/config/orchestra_groups.php.");
     }
 }

@@ -105,27 +105,12 @@ include __DIR__ . '/../components/theme-selector.php';
                 if ($isConductor): ?>
                     <div class="form-input-modern" style="background: var(--color-bg-tertiary); cursor: default;">Leitung</div>
                 <?php else: ?>
-                    <?php $currentType = $user['type'] ?? ''; ?>
-                    <select class="form-input-modern" id="group_type" name="group_type" required>
-                        <option value="">Bitte Instrument / Stimmgruppe wählen</option>
-                        <?php
-                        function renderTypeOptions($structure, $level = 0, $currentType = '')
-                        {
-                            static $gm = null;
-                            $gm ??= new \App\Core\GroupManager();
-                            foreach ($structure as $key => $value) {
-                                if (is_array($value)) {
-                                    echo '<option value="" disabled class="font-bold text-gray-600">' . htmlspecialchars($gm->getDisplayName($key)) . '</option>';
-                                    renderTypeOptions($value, $level + 1, $currentType);
-                                } else {
-                                    $selected = ($value === $currentType) ? ' selected' : '';
-                                    echo '<option value="' . $value . '"' . $selected . '>' . str_repeat('&nbsp;&nbsp;', $level) . htmlspecialchars($gm->getDisplayName($value)) . '</option>';
-                                }
-                            }
-                        }
-                        renderTypeOptions($typeStructure, 0, $currentType);
-                        ?>
-                    </select>
+                    <?php
+                    $selectedType = $user['type'] ?? '';
+                    $selectName  = 'group_type';
+                    $selectId    = 'group_type';
+                    include __DIR__ . '/../components/instrument-select.php';
+                    ?>
                 <?php endif; ?>
 
                 <?php if (!empty($allRoles)): ?>

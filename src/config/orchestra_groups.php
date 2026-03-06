@@ -71,6 +71,7 @@ return [
                         'id' => 'Holzbläser',
                         'display_name' => 'Holzbläser',
                         'type' => 'section',
+                        'emoji' => '🪈',
                         'children' => [
                             'flute' => [
                                 'id' => 'Flöte',
@@ -102,6 +103,7 @@ return [
                         'id' => 'Blechbläser',
                         'display_name' => 'Blechbläser',
                         'type' => 'section',
+                        'emoji' => '🎺',
                         'children' => [
                             'horn' => [
                                 'id' => 'Horn',
@@ -147,14 +149,6 @@ return [
                 'emoji' => '🎵',
                 'bg' => 'background: var(--color-success-100);',
                 'tc' => 'color: var(--color-success);',
-            ],
-            'other' => [
-                'id' => 'Andere',
-                'display_name' => 'Andere',
-                'type' => 'section',
-                'emoji' => '🎼',
-                'bg' => 'background: var(--color-error-100);',
-                'tc' => 'color: var(--color-error);',
             ]
         ]
     ],

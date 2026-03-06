@@ -7,7 +7,6 @@ use App\Models\InviteLink;
 use App\Models\Orchestra;
 use App\Models\User;
 use App\Models\UserOrchestra;
-use App\Core\FieldRegistry;
 
 /**
  * Invite Controller
@@ -113,12 +112,10 @@ class InviteController extends Controller
             }
 
             // Member links: show section picker
-            $sections = FieldRegistry::getSections();
             $this->render('invite/section-picker', [
                 'currentPage' => 'invite_section_picker',
                 'orchestra' => $orchestra,
                 'orgName' => $orgName,
-                'sections' => $sections,
                 'token' => $token,
                 'linkType' => $linkType,
                 'csrf_token' => $this->getCSRFToken(),

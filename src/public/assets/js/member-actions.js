@@ -16,11 +16,11 @@ function getCsrfToken() {
 function buildSectionOptions(availableSections, displayNames) {
     let html = '';
     for (const [group, items] of Object.entries(availableSections)) {
-        html += `<optgroup label="${displayNames[group] || group}">`;
+        if (group) html += `<optgroup label="${displayNames[group] || group}">`;
         for (const item of items) {
             html += `<option value="${item}">${displayNames[item] || item}</option>`;
         }
-        html += '</optgroup>';
+        if (group) html += '</optgroup>';
     }
     return html;
 }

@@ -254,6 +254,30 @@ class OrchestraController extends Controller
         ]);
     }
 
+    public function sectionConfig($params = [])
+    {
+        $context = $this->validateOrchestraContext($params);
+        if (!$context) return;
+
+        if (!$this->requirePermission('can_manage_ensemble')) return;
+
+        $orchestra = $context['orchestra'];
+
+        $currentConfig = null;
+        if (!empty($orchestra['section_config'])) {
+            $currentConfig = is_string($orchestra['section_config'])
+                ? json_decode($orchestra['section_config'], true)
+                : $orchestra['section_config'];
+        }
+
+        $this->render('orchestras/section-config', [
+            'currentPage'   => 'orchestra_settings',
+            'orchestra'     => $orchestra,
+            'currentConfig' => $currentConfig,
+            'defaultConfig' => \App\Core\GroupManager::getDefaultConfig(),
+        ]);
+    }
+
     /**
      * Update orchestra settings
      * 

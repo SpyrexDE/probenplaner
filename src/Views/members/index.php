@@ -443,18 +443,27 @@ foreach ($grouped as $members) {
     $totalMembers += count($members);
 }
 
-// Map instrument → top-level section
+// Map instrument → parent section
 $sectionOrder = [];
 foreach ($sections as $groupName => $groupSections) {
     foreach ($groupSections as $s) {
         $sectionOrder[$s] = $groupName;
     }
+    // Section ID itself maps to its own group
+    if ($groupName !== '') {
+        $sectionOrder[$groupName] = $groupName;
+    }
 }
 
 $ungrouped = [];
 foreach ($grouped as $sectionName => $members) {
-    if (!isset($sectionOrder[$sectionName]) && !isset($sections[$sectionName])) continue;
-    $groupName = $sectionOrder[$sectionName] ?? $sectionName;
+    if (isset($sectionOrder[$sectionName])) {
+        $groupName = $sectionOrder[$sectionName];
+    } elseif (isset($sections[$sectionName])) {
+        $groupName = $sectionName;
+    } else {
+        $groupName = 'Sonstige';
+    }
     $ungrouped[$groupName][$sectionName] = $members;
 }
 

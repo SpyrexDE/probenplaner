@@ -160,10 +160,7 @@ $hideNavbar = $isAuthPage || $isStandalone;
     <link rel="shortcut icon" href="/assets/icons/branding/Probenplaner Icon.svg" type="image/x-icon">
     <link rel="manifest" href="/manifest.json">
 
-    <!-- JavaScript Libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="/assets/js/jquery.min.js"></script>
-    <script src="/assets/js/notifications.js?v=<?= time() + 2 ?>"></script>
+    <!-- JavaScript Libraries (loaded at end of body) -->
 
     <!-- Tippy.js for tooltips -->
     <script src="https://unpkg.com/@popperjs/core@2"></script>
@@ -349,9 +346,9 @@ $hideNavbar = $isAuthPage || $isStandalone;
         </div>
     <?php endif; ?>
 
-    <!-- Add scripts at the end of the body -->
     <script src="/assets/js/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/assets/js/notifications.js?v=<?= time() + 2 ?>"></script>
     <script src="/assets/js/collapse.js"></script>
     <script src="/assets/js/dropdown.js"></script>
     <script src="/assets/js/tooltip.js"></script>

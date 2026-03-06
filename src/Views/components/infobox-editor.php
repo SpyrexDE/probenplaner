@@ -19,7 +19,13 @@ $editorId = 'infobox-editor-' . uniqid();
 ?>
 
 <!-- Picmo Emoji Picker Assets -->
-<script src="https://cdn.jsdelivr.net/npm/picmo@5.8.5/dist/umd/index.min.js"></script>
+<script>
+    if (!window.picmo) {
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/picmo@5.8.5/dist/umd/index.min.js';
+        document.head.appendChild(s);
+    }
+</script>
 <style>
     .infobox-editor {
         display: flex;

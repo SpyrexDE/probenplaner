@@ -39,7 +39,6 @@ foreach ($allFields as $field) {
 ?>
 
 <style>
-    /* SETTINGS RENDERER */
     .settings-save-indicator {
         position: fixed;
         bottom: var(--space-4);
@@ -95,6 +94,7 @@ foreach ($allFields as $field) {
                     'green'  => 'bg-green-100',
                     'purple' => 'bg-purple-100',
                     'red'    => 'bg-red-100',
+                    'indigo' => 'bg-purple-100',
                 ];
                 $textColors = [
                     'blue'   => 'text-blue-600',
@@ -102,6 +102,7 @@ foreach ($allFields as $field) {
                     'green'  => 'text-green-600',
                     'purple' => 'text-purple-600',
                     'red'    => 'text-red-600',
+                    'indigo' => 'text-purple-600',
                 ];
                 $bg = $bgColors[$groupMeta['iconBg'] ?? 'blue'] ?? 'bg-blue-100';
                 $tc = $textColors[$groupMeta['iconBg'] ?? 'blue'] ?? 'text-blue-600';
@@ -190,6 +191,18 @@ foreach ($allFields as $field) {
                             <?php if ($desc): ?>
                                 <div class="form-help-text"><?= htmlspecialchars($desc) ?></div>
                             <?php endif; ?>
+                        </div>
+
+                    <?php elseif ($type === 'section_config'): ?>
+                        <?php $sectionConfigUrl = '/' . htmlspecialchars($orchestraSlug) . '/orchestras/section-config'; ?>
+                        <div class="form-group-modern">
+                            <p class="text-sm" style="color: var(--color-text-secondary); margin-bottom: var(--space-3);">
+                                <?= htmlspecialchars($desc) ?>
+                            </p>
+                            <a href="<?= $sectionConfigUrl ?>" class="btn-modern btn-outline" style="display: inline-flex;">
+                                <?= icon('edit', 'btn-icon') ?>
+                                Registerstruktur bearbeiten
+                            </a>
                         </div>
 
                     <?php elseif ($type === 'text'): ?>

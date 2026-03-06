@@ -71,6 +71,14 @@ class SettingsApiController extends Controller
                 continue;
             }
 
+            if ($entity === 'orchestra' && $fieldName === 'section_config') {
+                if (empty($_SESSION['current_permissions']['can_manage_ensemble'])) {
+                    $this->json(['success' => false, 'error' => 'Keine Berechtigung'], 403);
+                    return;
+                }
+                continue;
+            }
+
             if ($entity === 'user' && in_array($fieldName, $userRelationFields)) {
                 continue;
             }
@@ -104,6 +112,8 @@ class SettingsApiController extends Controller
         $allErrors = [];
         foreach ($fieldsToUpdate as $fieldName => $value) {
             if ($entity === 'rehearsal' && in_array($fieldName, ['groups', 'schedule_items', 'infos'])) continue;
+
+            if ($entity === 'orchestra' && $fieldName === 'section_config') continue;
 
             if ($entity === 'user' && in_array($fieldName, $userRelationFields)) continue;
             $result = Validator::validateField($entity, $fieldName, $value);
@@ -217,7 +227,26 @@ class SettingsApiController extends Controller
         switch ($entity) {
             case 'orchestra':
                 $model = new \App\Models\Orchestra();
-                return $model->update($entityId, $data);
+
+                if (isset($data['section_config'])) {
+                    $config = $data['section_config'];
+                    if ($config === '' || $config === 'null') {
+                        $data['section_config'] = null;
+                    } else {
+                        $decoded = is_string($config) ? json_decode($config, true) : $config;
+                        if (!is_array($decoded)) {
+                            $this->json(['success' => false, 'error' => 'Ungültige Registerstruktur'], 422);
+                            return false;
+                        }
+                        $data['section_config'] = json_encode($decoded);
+                    }
+                }
+
+                $result = $model->update($entityId, $data);
+                if ($result && isset($data['section_config'])) {
+                    \App\Core\GroupManager::resetInstance($entityId);
+                }
+                return $result;
 
             case 'user':
                 $model = new \App\Models\User();
@@ -298,6 +327,86 @@ class SettingsApiController extends Controller
             default:
                 return false;
         }
+    }
+
+    /**
+     * Return members whose type matches any of the given group IDs.
+     * POST body: { "types": ["Violine_1", "Flöte"] }
+     */
+    public function sectionMembers(array $params = []): void
+    {
+        $context = $this->validateOrchestraContext($params);
+        if (!$context) {
+            $this->json(['success' => false, 'error' => 'Kein Orchesterkontext'], 403);
+            return;
+        }
+        if (empty($_SESSION['current_permissions']['can_manage_ensemble'])) {
+            $this->json(['success' => false, 'error' => 'Keine Berechtigung'], 403);
+            return;
+        }
+
+        $body = json_decode(file_get_contents('php://input'), true) ?: [];
+        $types = $body['types'] ?? [];
+        if (empty($types) || !is_array($types)) {
+            $this->json(['success' => true, 'members' => []]);
+            return;
+        }
+
+        $orchestraId = (int) $context['orchestra_id'];
+        $uoModel = new \App\Models\UserOrchestra();
+        $members = [];
+        foreach ($types as $type) {
+            foreach ($uoModel->getUsersByType($type, $orchestraId) as $m) {
+                $members[] = [
+                    'user_id'      => (int) $m['user_id'],
+                    'display_name' => $m['orchestra_display_name'] ?? $m['display_name'] ?? $m['email'],
+                    'type'         => $m['type'],
+                ];
+            }
+        }
+
+        $this->json(['success' => true, 'members' => $members]);
+    }
+
+    /**
+     * Bulk-reassign member types.
+     * POST body: { "moves": [ { "user_id": 1, "new_type": "Bratsche" }, ... ] }
+     */
+    public function reassignMembers(array $params = []): void
+    {
+        $context = $this->validateOrchestraContext($params);
+        if (!$context) {
+            $this->json(['success' => false, 'error' => 'Kein Orchesterkontext'], 403);
+            return;
+        }
+        if (empty($_SESSION['current_permissions']['can_manage_ensemble'])) {
+            $this->json(['success' => false, 'error' => 'Keine Berechtigung'], 403);
+            return;
+        }
+
+        $body = json_decode(file_get_contents('php://input'), true) ?: [];
+        $moves = $body['moves'] ?? [];
+        if (empty($moves) || !is_array($moves)) {
+            $this->json(['success' => false, 'error' => 'Keine Zuweisungen angegeben'], 400);
+            return;
+        }
+
+        $orchestraId = (int) $context['orchestra_id'];
+        $uoModel = new \App\Models\UserOrchestra();
+        $errors = 0;
+        foreach ($moves as $move) {
+            $userId  = (int) ($move['user_id'] ?? 0);
+            $newType = $move['new_type'] ?? '';
+            if (!$userId || !$newType) {
+                $errors++;
+                continue;
+            }
+            if (!$uoModel->updateUserType($userId, $orchestraId, $newType)) {
+                $errors++;
+            }
+        }
+
+        $this->json(['success' => $errors === 0, 'errors' => $errors]);
     }
 
     private function json(array $data, int $status = 200): void

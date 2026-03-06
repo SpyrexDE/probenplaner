@@ -89,7 +89,6 @@ class UserController extends Controller
         $this->render('user/profile', [
             'currentPage' => 'profile',
             'user' => $user,
-            'typeStructure' => $this->getTypeStructure(),
             'availableThemes' => \App\Core\ThemeManager::getThemesForPreview(),
             'csrf_token' => $this->getCSRFToken(),
             'orchestraId' => $_SESSION['current_orchestra_id'],
@@ -507,54 +506,6 @@ class UserController extends Controller
         $this->redirect('/login');
     }
 
-    /**
-     * Get instrument/section type structure dynamically
-     * 
-     * @return array
-     */
-    private function getTypeStructure()
-    {
-        $groupManager = new \App\Core\GroupManager();
-
-        // Convert the hierarchical config to a format compatible with the existing code
-        $config = $groupManager->getConfig();
-
-        // Extract the main structure under 'tutti'
-        if (isset($config['tutti']['children'])) {
-            $structure = [];
-
-            foreach ($config['tutti']['children'] as $sectionKey => $section) {
-                if ($section['type'] === 'section' && isset($section['children'])) {
-                    $sectionChildren = [];
-
-                    foreach ($section['children'] as $childKey => $child) {
-                        if ($child['type'] === 'instrument') {
-                            $sectionChildren[] = $child['id'];
-                        } elseif ($child['type'] === 'section' && isset($child['children'])) {
-                            // Handle nested sections from dynamic configuration
-                            $subSection = [];
-                            foreach ($child['children'] as $instrumentKey => $instrument) {
-                                if ($instrument['type'] === 'instrument') {
-                                    $subSection[] = $instrument['id'];
-                                }
-                            }
-                            $sectionChildren[$child['id']] = $subSection;
-                        }
-                    }
-
-                    $structure[$section['id']] = $sectionChildren;
-                } elseif ($section['type'] === 'section' && !isset($section['children'])) {
-                    // Simple sections like Schlagwerk, Andere
-                    $structure[] = $section['id'];
-                }
-            }
-
-            return ["Tutti" => $structure];
-        }
-
-        // Configuration is malformed - this should not happen with proper setup
-        throw new \Exception("Orchestra groups configuration is malformed or missing 'tutti' section. Please check src/config/orchestra_groups.php.");
-    }
 
     /**
      * Get user account details - API endpoint to fetch user information

@@ -187,6 +187,7 @@ $router->addRoute('/{org_slug}/{orchestra_id}/invite/toggle-keycloak', 'InviteCo
 
 // Orchestra settings routes (conductor only)
 $router->addRoute('/{org_slug}/{orchestra_id}/orchestras/settings', 'OrchestraController', 'settings');
+$router->addRoute('/{org_slug}/{orchestra_id}/orchestras/section-config', 'OrchestraController', 'sectionConfig');
 $router->addRoute('/{org_slug}/{orchestra_id}/orchestras/update', 'OrchestraController', 'update');
 $router->addRoute('/{org_slug}/{orchestra_id}/orchestras/delete-confirm', 'OrchestraController', 'confirmDelete');
 $router->addRoute('/{org_slug}/{orchestra_id}/orchestras/delete', 'OrchestraController', 'delete');
@@ -201,6 +202,8 @@ $router->addRoute('/{org_slug}/{orchestra_id}/api/test', 'ApiController', 'test'
 $router->addRoute('/{org_slug}/{orchestra_id}/api/minimal-stats', 'ApiController', 'minimalStats');
 $router->addRoute('/{org_slug}/{orchestra_id}/api/user-stats', 'ApiController', 'getUserStats');
 $router->addRoute('/{org_slug}/{orchestra_id}/api/settings/{entity}/{entity_id}', 'SettingsApiController', 'update', 'POST');
+$router->addRoute('/{org_slug}/{orchestra_id}/api/section-members', 'SettingsApiController', 'sectionMembers', 'POST');
+$router->addRoute('/{org_slug}/{orchestra_id}/api/reassign-members', 'SettingsApiController', 'reassignMembers', 'POST');
 
 
 
