@@ -15,7 +15,7 @@ include __DIR__ . '/../components/table.php';
                     <?php if ($personalized): ?>
                         <?php
                         $isConductor = !empty($_SESSION['current_permissions']['can_manage_ensemble']);
-                        $gm = new \App\Core\GroupManager();
+                        $gm = \App\Core\GroupManager::getInstance();
                         $typeLabel = $isConductor ? 'Leitung' : $gm->getDisplayName($_SESSION['current_type'] ?? '');
                         ?>
                         · Personalisierte Ansicht (<?= $typeLabel ?>)

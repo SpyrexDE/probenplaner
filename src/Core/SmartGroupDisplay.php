@@ -21,7 +21,7 @@ class SmartGroupDisplay
 
     public function __construct(?array $language = null)
     {
-        $this->groupManager = new GroupManager();
+        $this->groupManager = GroupManager::getInstance();
         $this->language = $language ?? [
             'and' => 'und',
             'without' => 'ohne',

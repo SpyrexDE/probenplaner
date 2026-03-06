@@ -103,7 +103,7 @@ class FieldRegistry
      */
     public static function getSections(): array
     {
-        return (new \App\Core\GroupManager())->getFlattenedSections();
+        return \App\Core\GroupManager::getInstance()->getFlattenedSections();
     }
 
     // ── Field Definitions ──────────────────────────────────────────

@@ -437,7 +437,7 @@ $renderComponent = true;
 </style>
 
 <?php
-$groupManager = new \App\Core\GroupManager();
+$groupManager = \App\Core\GroupManager::getInstance();
 $totalMembers = 0;
 foreach ($grouped as $members) {
     $totalMembers += count($members);

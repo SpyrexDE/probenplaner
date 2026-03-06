@@ -115,7 +115,7 @@ $renderComponent = true;
                                         if ($orchestra['type'] === 'conductor') {
                                             $displayType = 'Dirigent*in';
                                         } elseif ($orchestra['type'] !== 'none') {
-                                            $groupManager = new \App\Core\GroupManager();
+                                            $groupManager = \App\Core\GroupManager::getInstance();
                                             $displayType = $groupManager->getDisplayName($orchestra['type']);
                                         }
                                     }

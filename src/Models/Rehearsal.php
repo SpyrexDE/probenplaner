@@ -169,7 +169,13 @@ class Rehearsal extends Model
             }
         }
 
-        return $this->enrichRows($visibleRows);
+        // Convert assoc groups to list format for enrichRows reuse
+        $preloadedGroups = [];
+        foreach ($allGroupsMap as $id => $assoc) {
+            $preloadedGroups[$id] = array_keys($assoc);
+        }
+
+        return $this->enrichRows($visibleRows, $preloadedGroups);
     }
 
     /**
@@ -232,7 +238,7 @@ class Rehearsal extends Model
             return false;
         }
 
-        $groupManager = new \App\Core\GroupManager();
+        $groupManager = \App\Core\GroupManager::getInstance();
         $userType = $groupManager->resolveAlias($userType);
 
         foreach (array_keys($groups) as $group) {
@@ -482,12 +488,12 @@ class Rehearsal extends Model
      * @param array $rows Raw rehearsal rows from DB
      * @return array Enriched rows
      */
-    private function enrichRows(array $rows): array
+    private function enrichRows(array $rows, array $preloadedGroups = []): array
     {
         if (empty($rows)) return [];
 
         $ids = array_column($rows, 'id');
-        $groupsMap = $this->batchLoadGroups($ids);
+        $groupsMap = !empty($preloadedGroups) ? $preloadedGroups : $this->batchLoadGroups($ids);
         $scheduleMap = $this->batchLoadScheduleItems($ids);
         $infosMap = $this->batchLoadInfos($ids);
 

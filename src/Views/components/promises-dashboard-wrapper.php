@@ -175,7 +175,9 @@ if (!$showOld) {
 
 <!-- Assets -->
 <link rel="stylesheet" href="<?= '/assets/css/promises-dashboard.css' ?>">
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<?php if (!$showOld && !($isLeader ?? false)): ?>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
+<?php endif; ?>
 
 <?php
 // Chart data generation
@@ -220,7 +222,7 @@ $warningSectionsCount = 0;
 foreach ($rehearsals ?? [] as $rehearsal) {
     $rehearsalId = $rehearsal['id'];
     if (!empty($membersBySection[$rehearsalId]['all'])) {
-        $groupManager = new \App\Core\GroupManager();
+        $groupManager = \App\Core\GroupManager::getInstance();
         $sectionPlayers = [];
 
         foreach ($membersBySection[$rehearsalId]['all'] as $member) {
@@ -357,7 +359,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                 $rehearsalAttendanceRate = $totalCount > 0 ? ($attendingCount / $totalCount) * 100 : 0;
 
                 // Dynamic member grouping
-                $groupManager = new \App\Core\GroupManager();
+                $groupManager = \App\Core\GroupManager::getInstance();
                 $sectionPlayers = [];
 
                 if (!empty($membersBySection[$rehearsalId]['all'])) {
@@ -456,9 +458,8 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                     $rehearsalCriticalSections = [];
 
                     if (!($isLeader ?? false) && ($showRehearsalInsights ?? false)) {
-                        require_once __DIR__ . '/../../Core/SmartDeviationDetector.php';
-                        $deviationDetector = new SmartDeviationDetector(\App\Core\Database::getInstance());
-                        $deviationAnalysis = $deviationDetector->analyzeRehearsal($rehearsal['id']);
+                        // Use pre-computed deviation data from controller
+                        $deviationAnalysis = $deviationData[$rehearsalId] ?? ['deviations' => [], 'insufficient_data' => []];
 
                         $individualInstruments = [];
                         foreach ($membersBySection[$rehearsalId]['all'] ?? [] as $member) {
@@ -657,7 +658,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
 
                                 // Leader section root
                                 if ($isLeaderOnlyView && !empty($leaderResolvedType)) {
-                                    $groupManager = new \App\Core\GroupManager();
+                                    $groupManager = \App\Core\GroupManager::getInstance();
                                     $rootDisplayName = $groupManager->getDisplayName($leaderResolvedType);
 
                                     // Find player section
@@ -816,7 +817,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
     </div>
 </div>
 
-<script src="/assets/js/promises-shared.js?v=<?= time() ?>"></script>
+<script src="/assets/js/promises-shared.js?v=<?= \App\Core\Version::getVersion() ?>"></script>
 <script>
     // Interactions
     document.addEventListener('DOMContentLoaded', function() {

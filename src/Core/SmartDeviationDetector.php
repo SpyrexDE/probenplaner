@@ -11,7 +11,7 @@ class SmartDeviationDetector
     public function __construct($db)
     {
         $this->db = $db;
-        $this->groupManager = new \App\Core\GroupManager();
+        $this->groupManager = \App\Core\GroupManager::getInstance();
         $this->minDataPoints = \App\Core\DashboardConstants::MIN_DATA_POINTS_FOR_ANALYSIS;
         $this->significanceThreshold = \App\Core\DashboardConstants::SIGNIFICANCE_THRESHOLD;
         $this->zScoreThreshold = \App\Core\DashboardConstants::Z_SCORE_THRESHOLD;
@@ -52,6 +52,115 @@ class SmartDeviationDetector
                     'required' => $this->minDataPoints
                 ];
             }
+        }
+
+        return $results;
+    }
+
+    /**
+     * Analyze a rehearsal using pre-loaded data to avoid per-rehearsal DB queries.
+     *
+     * @param array $rehearsal Rehearsal row with 'id', 'start', 'groups'
+     * @param array $stats Pre-computed ['attending' => int, 'not_attending' => int, 'no_response' => int]
+     * @param array $members Pre-loaded members for this rehearsal (each with 'type', 'status')
+     * @return array Same shape as analyzeRehearsal()
+     */
+    public function analyzeRehearsalFromData(array $rehearsal, array $stats, array $members): array
+    {
+        $results = [
+            'deviations' => [],
+            'insufficient_data' => [],
+            'summary' => []
+        ];
+
+        $parentGroupAnalysis = $this->analyzeParentGroupPatternsFromData($rehearsal, $stats);
+        if (!empty($parentGroupAnalysis['deviations'])) {
+            $results['deviations'] = array_merge($results['deviations'], $parentGroupAnalysis['deviations']);
+        }
+
+        // Derive sections from pre-loaded members
+        $groups = [];
+        foreach ($rehearsal['groups'] ?? [] as $name) {
+            $groups[$name] = 0;
+        }
+
+        // Group members by section type and compute current attendance from memory
+        $sectionMembers = [];
+        foreach ($members as $member) {
+            $sectionId = $member['type'];
+            if (!isset($sectionMembers[$sectionId])) {
+                $shouldParticipate = false;
+                foreach (array_keys($groups) as $rehearsalGroup) {
+                    if ($this->groupManager->isUserInGroup($sectionId, $rehearsalGroup)) {
+                        $shouldParticipate = true;
+                        break;
+                    }
+                }
+                if (!$shouldParticipate) continue;
+                $sectionMembers[$sectionId] = [];
+            }
+            if (isset($sectionMembers[$sectionId])) {
+                $sectionMembers[$sectionId][] = $member;
+            }
+        }
+
+        if (empty($sectionMembers)) {
+            return $results;
+        }
+
+        // Batch-load historical data for ALL sections in one query
+        $sectionIds = array_keys($sectionMembers);
+        $historicalBySection = $this->batchGetHistoricalAttendanceData($sectionIds, $rehearsal['id']);
+
+        foreach ($sectionMembers as $sectionId => $sMembers) {
+            // Compute current attendance from pre-loaded members (zero DB queries)
+            $total = count($sMembers);
+            $attending = 0;
+            $notAttending = 0;
+            foreach ($sMembers as $m) {
+                if ($m['status'] === 'attending') $attending++;
+                elseif ($m['status'] === 'not_attending') $notAttending++;
+            }
+            $noResponse = $total - $attending - $notAttending;
+            $totalResponded = $attending + $notAttending;
+            $attendanceRate = $totalResponded > 0 ? ($attending / $totalResponded) * 100 : 0;
+            $responseRate = $total > 0 ? ($totalResponded / $total) * 100 : 0;
+
+            $currentData = [
+                'total' => $total,
+                'attending' => $attending,
+                'not_attending' => $notAttending,
+                'no_response' => $noResponse,
+                'attendance_rate' => $attendanceRate,
+                'response_rate' => $responseRate
+            ];
+
+            $historicalData = $historicalBySection[$sectionId] ?? [];
+
+            if (count($historicalData) < $this->minDataPoints) {
+                $results['insufficient_data'][] = [
+                    'section' => $sectionId,
+                    'data_points' => count($historicalData),
+                    'required' => $this->minDataPoints
+                ];
+                continue;
+            }
+
+            $histStats = $this->calculateStatistics($historicalData);
+            $deviations = [];
+            $deviations = array_merge($deviations, $this->detectAttendanceDeviations($currentData, $histStats, $sectionId));
+            $deviations = array_merge($deviations, $this->detectResponseRateDeviations($currentData, $histStats, $sectionId));
+            $deviations = array_merge($deviations, $this->detectPatternDeviations($currentData, $historicalData, $sectionId));
+
+            if (!empty($deviations)) {
+                $results['deviations'] = array_merge($results['deviations'], $deviations);
+            }
+            $results['summary'][] = [
+                'section_id' => $sectionId,
+                'current_attendance_rate' => $currentData['attendance_rate'],
+                'historical_mean' => $histStats['mean'],
+                'historical_std' => $histStats['std']
+            ];
         }
 
         return $results;
@@ -147,6 +256,50 @@ class SmartDeviationDetector
     }
 
     /**
+     * Analyze parent group patterns using pre-loaded stats.
+     */
+    private function analyzeParentGroupPatternsFromData(array $rehearsal, array $stats): array
+    {
+        $deviations = [];
+
+        $total = ($stats['attending'] ?? 0) + ($stats['not_attending'] ?? 0) + ($stats['no_response'] ?? 0);
+        if ($total <= 0) {
+            return ['deviations' => $deviations];
+        }
+
+        $attendanceRate = ($stats['attending'] / $total) * 100;
+        $responseRate = (($stats['attending'] + $stats['not_attending']) / $total) * 100;
+        $contextText = "in allen Registern";
+
+        $rehearsalDate = new \DateTime($rehearsal['start']);
+        $today = new \DateTime();
+        $daysDifference = $today->diff($rehearsalDate)->days;
+        $isFutureRehearsal = $rehearsalDate > $today;
+        $skipResponseRateAnalysis = $isFutureRehearsal && $daysDifference > 14;
+
+        if ($attendanceRate < \App\Core\DashboardConstants::GROUP_PERFORMANCE_THRESHOLD) {
+            $deviations[] = [
+                'type' => 'overall_performance',
+                'severity' => 'critical',
+                'attendance_rate' => $attendanceRate,
+                'message' => "Nur " . number_format($attendanceRate, 0) . "% Teilnahme " . $contextText
+            ];
+        }
+
+        if (!$skipResponseRateAnalysis && $responseRate < \App\Core\DashboardConstants::LOW_RESPONSE_RATE_THRESHOLD) {
+            $severity = $responseRate < \App\Core\DashboardConstants::CRITICAL_RESPONSE_RATE_THRESHOLD ? 'critical' : 'warning';
+            $deviations[] = [
+                'type' => 'overall_response_rate',
+                'severity' => $severity,
+                'response_rate' => $responseRate,
+                'message' => "Nur " . number_format($responseRate, 0) . "% Rückmeldungen " . $contextText
+            ];
+        }
+
+        return ['deviations' => $deviations];
+    }
+
+    /**
      * Calculate overall attendance and response rates across all sections in a rehearsal
      * Now considers small group restrictions properly
      */
@@ -210,6 +363,59 @@ class SmartDeviationDetector
         $stmt->execute();
         $result = $stmt->get_result();
         return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+    }
+
+    /**
+     * Batch-load historical attendance data for multiple sections in one query.
+     *
+     * @param string[] $sectionIds Section type IDs
+     * @param int $excludeRehearsalId Current rehearsal to exclude
+     * @return array<string, array> Keyed by section ID
+     */
+    private function batchGetHistoricalAttendanceData(array $sectionIds, int $excludeRehearsalId): array
+    {
+        if (empty($sectionIds)) return [];
+
+        $placeholders = implode(',', array_fill(0, count($sectionIds), '?'));
+        $types = str_repeat('s', count($sectionIds)) . 'iii';
+
+        $sql = "
+            SELECT 
+                uo.type as section_id,
+                r.id as rehearsal_id,
+                r.start as date,
+                COUNT(up.id) as total_players,
+                SUM(CASE WHEN up.status = 'yes' THEN 1 ELSE 0 END) as attending,
+                SUM(CASE WHEN up.status = 'no' THEN 1 ELSE 0 END) as not_attending,
+                SUM(CASE WHEN up.status = 'maybe' THEN 1 ELSE 0 END) as no_response
+            FROM rehearsals r
+            JOIN user_promises up ON r.id = up.rehearsal_id
+            JOIN users u ON up.user_id = u.id
+            JOIN user_orchestras uo ON u.id = uo.user_id
+            WHERE uo.type IN ({$placeholders}) AND uo.orchestra_id = r.orchestra_id AND uo.is_active = 1
+            AND r.id != ?
+            AND r.start < (SELECT start FROM rehearsals WHERE id = ?)
+            AND r.start >= DATE_SUB((SELECT start FROM rehearsals WHERE id = ?), INTERVAL 6 MONTH)
+            GROUP BY uo.type, r.id, r.start
+            ORDER BY r.start DESC
+        ";
+
+        $stmt = $this->db->prepare($sql);
+        if ($stmt === false) return [];
+
+        $params = [...$sectionIds, $excludeRehearsalId, $excludeRehearsalId, $excludeRehearsalId];
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $bySection = [];
+        while ($row = $result->fetch_assoc()) {
+            $sid = $row['section_id'];
+            unset($row['section_id']);
+            $bySection[$sid][] = $row;
+        }
+        $stmt->close();
+        return $bySection;
     }
 
     /**
@@ -500,7 +706,7 @@ class SmartDeviationDetector
         // First, get the groups that are supposed to participate in this rehearsal
         $rehearsalModel = new \App\Models\Rehearsal();
         $rehearsalGroups = $rehearsalModel->getGroupsAsAssoc($rehearsalId);
-        $groupManager = new \App\Core\GroupManager();
+        $groupManager = \App\Core\GroupManager::getInstance();
 
         // Get all sections that have users in this rehearsal
         $stmt = $this->db->prepare("

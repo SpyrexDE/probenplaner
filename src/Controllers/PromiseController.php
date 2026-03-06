@@ -159,7 +159,7 @@ class PromiseController extends Controller
             }
 
             if (empty($members)) {
-                $groupManager = new \App\Core\GroupManager();
+                $groupManager = \App\Core\GroupManager::getInstance();
                 $resolvedType = $groupManager->resolveAlias($userType);
                 $allMembers = $userOrchestraModel->getOrchestraUsers($_SESSION['current_orchestra_id']);
 
@@ -184,7 +184,7 @@ class PromiseController extends Controller
             return !empty($m['can_attend_rehearsals']);
         }));
 
-        $groupManager = new \App\Core\GroupManager();
+        $groupManager = \App\Core\GroupManager::getInstance();
         $allSections = $groupManager->getAllSections();
 
         // Batch-load all promises for this orchestra
@@ -515,7 +515,7 @@ class PromiseController extends Controller
         $orchestra = $orchestraModel->findById($_SESSION['current_orchestra_id']);
         $showRehearsalInsights = !empty($orchestra['show_rehearsal_insights']);
 
-        $groupManager = new \App\Core\GroupManager();
+        $groupManager = \App\Core\GroupManager::getInstance();
         $allSections = $groupManager->getAllSections();
 
         // Batch-load all promises for this orchestra
@@ -599,6 +599,20 @@ class PromiseController extends Controller
 
         $hasPastRehearsals = $this->rehearsalModel->hasPastRehearsals($_SESSION['current_orchestra_id']);
 
+        // Pre-compute deviation analysis to avoid per-rehearsal DB queries in the view
+        $deviationData = [];
+        if ($showRehearsalInsights) {
+            require_once __DIR__ . '/../Core/SmartDeviationDetector.php';
+            $deviationDetector = new \SmartDeviationDetector(\App\Core\Database::getInstance());
+            foreach ($rehearsals as $rehearsal) {
+                $rId = $rehearsal['id'];
+                $deviationData[$rId] = $deviationDetector->analyzeRehearsalFromData(
+                    $rehearsal,
+                    $stats[$rId] ?? ['attending' => 0, 'not_attending' => 0, 'no_response' => 0],
+                    $membersBySection[$rId]['all'] ?? []
+                );
+            }
+        }
 
         $this->render('promises/admin', [
             'currentPage' => 'admin',
@@ -608,6 +622,7 @@ class PromiseController extends Controller
             'showOld' => $showOld,
             'showRehearsalInsights' => $showRehearsalInsights,
             'hasPastRehearsals' => $hasPastRehearsals,
+            'deviationData' => $deviationData,
             'sidebarStats' => !empty($rehearsals) ? array_merge(
                 $stats[$rehearsals[0]['id']] ?? ['attending' => 0, 'not_attending' => 0, 'no_response' => 0],
                 [

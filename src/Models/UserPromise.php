@@ -170,17 +170,29 @@ class UserPromise extends Model
         $userOrchestraModel = new UserOrchestra();
         $users = $userOrchestraModel->getOrchestraUsers($orchestraId);
 
+        // Batch-load once outside the loop
+        $rehearsalRoleIds = $rehearsalModel->getRehearsalRoleIds($rehearsalId);
+
+        $promiseStmt = $this->db->prepare("SELECT user_id, status, note FROM {$this->table} WHERE rehearsal_id = ?");
+        $promiseStmt->bind_param('i', $rehearsalId);
+        $promiseStmt->execute();
+        $promiseResult = $promiseStmt->get_result();
+        $allPromises = [];
+        while ($pRow = $promiseResult->fetch_assoc()) {
+            $allPromises[(int)$pRow['user_id']] = $pRow;
+        }
+        $promiseStmt->close();
+
         foreach ($users as $user) {
             if (empty($user['can_attend_rehearsals'])) {
                 continue;
             }
 
             $memberRoleIds = isset($user['role_ids']) ? $user['role_ids'] : [];
-            $rehearsalRoleIds = $rehearsalModel->getRehearsalRoleIds($rehearsalId);
             if ($rehearsalModel->isUserInRehearsalGroup($user['type'], $groups, $rehearsalRoleIds, $memberRoleIds)) {
                 $stats['total']++;
 
-                $promise = $this->findByUserAndRehearsal($user['id'], $rehearsalId);
+                $promise = $allPromises[(int)$user['id']] ?? null;
 
                 $userStat = [
                     'id' => $user['id'],

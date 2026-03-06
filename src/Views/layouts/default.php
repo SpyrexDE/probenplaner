@@ -1,12 +1,10 @@
 <!DOCTYPE html>
 <?php
-// Theme Initialization
-$currentUserTheme = null;
-if (isset($_SESSION['user_id'])) {
+// Theme — use session cache, only query DB on first load
+$currentUserTheme = $_SESSION['theme'] ?? null;
+if ($currentUserTheme === null && isset($_SESSION['user_id'])) {
     $userModel = new \App\Models\User();
     $currentUserTheme = $userModel->getUserTheme($_SESSION['user_id']);
-} elseif (isset($_SESSION['theme'])) {
-    $currentUserTheme = $_SESSION['theme'];
 }
 if ($currentUserTheme === null || !\App\Core\ThemeManager::themeExists($currentUserTheme)) {
     $currentUserTheme = \App\Core\ThemeManager::getDefaultTheme();
@@ -77,8 +75,9 @@ $hideNavbar = $isAuthPage || $isStandalone;
     // Generate theme CSS link
     echo \App\Core\ThemeManager::generateThemeCssLink($currentUserTheme);
     ?>
-    <link rel="stylesheet" href="/assets/css/components.css?v=<?= time() ?>">
-    <link rel="stylesheet" href="/assets/css/utilities.css?v=<?= time() ?>">
+    <?php $assetVersion = \App\Core\Version::getVersion(); ?>
+    <link rel="stylesheet" href="/assets/css/components.css?v=<?= $assetVersion ?>">
+    <link rel="stylesheet" href="/assets/css/utilities.css?v=<?= $assetVersion ?>">
     <link rel="stylesheet" href="/assets/css/focus-removal.css">
 
     <!-- Vanilla CSS Components -->
@@ -152,19 +151,13 @@ $hideNavbar = $isAuthPage || $isStandalone;
         }
     </script>
 
-    <!-- Google Fonts -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,600,700">
+
 
     <!-- Icon Fonts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css">
     <link rel="shortcut icon" href="/assets/icons/branding/Probenplaner Icon.svg" type="image/x-icon">
     <link rel="manifest" href="/manifest.json">
 
-    <!-- JavaScript Libraries (loaded at end of body) -->
-
-    <!-- Tippy.js for tooltips -->
-    <script src="https://unpkg.com/@popperjs/core@2"></script>
-    <script src="https://unpkg.com/tippy.js@6"></script>
     <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/animations/scale.css" />
 </head>
 
@@ -346,13 +339,15 @@ $hideNavbar = $isAuthPage || $isStandalone;
         </div>
     <?php endif; ?>
 
+    <script src="https://unpkg.com/@popperjs/core@2" defer></script>
+    <script src="https://unpkg.com/tippy.js@6" defer></script>
     <script src="/assets/js/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="/assets/js/notifications.js?v=<?= time() + 2 ?>"></script>
+    <script src="/assets/js/notifications.js?v=<?= $assetVersion ?>"></script>
     <script src="/assets/js/collapse.js"></script>
     <script src="/assets/js/dropdown.js"></script>
     <script src="/assets/js/tooltip.js"></script>
-    <script src="/assets/js/member-actions.js?v=<?= time() ?>"></script>
+    <script src="/assets/js/member-actions.js?v=<?= $assetVersion ?>"></script>
     <script src="/assets/js/script.min.js"></script>
     <script src="/assets/js/tree-view-clickable.js"></script>
     <?php include __DIR__ . '/../components/help-modal.php'; ?>

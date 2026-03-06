@@ -104,7 +104,7 @@ class MemberController extends Controller
         }
 
         $sections = FieldRegistry::getSections();
-        $groupManager = new \App\Core\GroupManager();
+        $groupManager = \App\Core\GroupManager::getInstance();
         $displayNames = [];
         foreach ($sections as $key => $items) {
             if ($key !== '') {
