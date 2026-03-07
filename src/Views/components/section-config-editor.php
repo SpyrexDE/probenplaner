@@ -264,7 +264,7 @@ $editorId          = 'section-config-editor';
             </button>
             <div style="flex:1;"></div>
             <button type="button" class="btn-modern btn-outline btn-sm" id="<?= $editorId ?>-reset" style="display: none;">
-                <?= icon('undo', 'btn-icon') ?> Standard laden
+                <?= icon('undo', 'btn-icon') ?> Auf Standard zurücksetzen
             </button>
         </div>
     </div>

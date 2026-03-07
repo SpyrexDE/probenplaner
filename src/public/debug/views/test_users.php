@@ -22,12 +22,14 @@ if ($result && $result->num_rows > 0) {
     }
 }
 
-$userTypes = [
-    "Streicher" => ["Violine_1", "Violine_2", "Bratsche", "Cello", "Kontrabass"],
-    "Holzbläser" => ["Flöte", "Oboe", "Klarinette", "Fagott"],
-    "Blechbläser" => ["Trompete", "Posaune", "Tuba", "Horn"],
-    "Andere" => ["Schlagwerk", "Andere"]
-];
+// Build section list dynamically from the default config
+$defaultGroups = require __DIR__ . '/../../../config/orchestra_groups.php';
+$gm = \App\Core\GroupManager::fromConfig($defaultGroups);
+$userTypes = [];
+foreach ($gm->getFlattenedSections() as $parentId => $instrumentIds) {
+    $label = $parentId ? $gm->getDisplayName($parentId) : 'Andere';
+    $userTypes[$label] = $instrumentIds;
+}
 ?>
 
 <h2><?= $modules[$currentModule]['icon'] ?> <?= htmlspecialchars($modules[$currentModule]['name']) ?></h2>

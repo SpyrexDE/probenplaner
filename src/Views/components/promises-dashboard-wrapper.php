@@ -767,8 +767,16 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                         <?php
                                     }
                                 } else {
-                                    // Normal view — render pruned tree roots
-                                    foreach ($prunedTree as $rootKey => $rootNode):
+                                    // Unwrap single-root wrappers (e.g. tutti) to avoid exceeding the component's rendering depth
+                                    $renderRoots = $prunedTree;
+                                    if (count($renderRoots) === 1) {
+                                        $onlyRoot = reset($renderRoots);
+                                        if (!empty($onlyRoot['children'])) {
+                                            $renderRoots = $onlyRoot['children'];
+                                        }
+                                    }
+
+                                    foreach ($renderRoots as $rootKey => $rootNode):
                                         $rootDisplayName = $rootNode['display_name'] ?? $rootNode['id'] ?? 'Gruppe';
                                         $rootNodeId = $rootNode['id'] ?? $rootKey;
 
