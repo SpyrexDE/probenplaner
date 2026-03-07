@@ -80,7 +80,7 @@ $userTypes = [
             <li>🏛️ Organization + Org-Admin</li>
             <li>🎻 2 Orchestras (Sinfonie + Kammer)</li>
             <li>👥 ~81 Users (full symphony orchestra, conductors, section leaders, inactive)</li>
-            <li>📅 25 Rehearsals (Probe, Registerprobe, Konzert, Generalprobe, Konzertreise, IYSO, Stimmführer-Besprechung)</li>
+            <li>📅 25 Rehearsals (Probe, Registerprobe, Konzert, Generalprobe, Konzertreise, IYSO, Stimmführungs-Besprechung)</li>
             <li>📋 Schedule items &amp; 📝 emoji info notes</li>
             <li>✅ Mixed attendances (yes/no/gray/no-response + notes)</li>
         </ul>

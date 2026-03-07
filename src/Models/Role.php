@@ -16,6 +16,7 @@ class Role extends Model
     /** Fixed permission set for the immutable conductor role */
     private const CONDUCTOR_PERMISSIONS = [
         'can_attend_rehearsals',
+        'can_view_schedule',
         'can_view_own_section_stats',
         'can_view_all_section_stats',
         'can_view_members',
@@ -28,6 +29,7 @@ class Role extends Model
     /** All valid permission names in the system */
     private const ALL_PERMISSIONS = [
         'can_attend_rehearsals',
+        'can_view_schedule',
         'can_view_own_section_stats',
         'can_view_all_section_stats',
         'can_view_members',
@@ -40,6 +42,7 @@ class Role extends Model
     /** Human-readable labels for permissions */
     public const PERMISSION_LABELS = [
         'can_attend_rehearsals'       => 'Proben besuchen',
+        'can_view_schedule'           => 'Probenplan ansehen',
         'can_view_own_section_stats'  => 'Eigene Register-Statistik',
         'can_view_all_section_stats'  => 'Alle Register-Statistiken',
         'can_view_members'            => 'Mitglieder ansehen',
@@ -58,6 +61,7 @@ class Role extends Model
      */
     public const PERMISSION_HIERARCHY = [
         ['id' => 'can_attend_rehearsals'],
+        ['id' => 'can_view_schedule'],
         [
             'id'       => 'can_view_own_section_stats',
             'children' => [
@@ -259,33 +263,6 @@ class Role extends Model
         $stmt->close();
         if ($roleCount <= 1) return false;
 
-        // Find members who will lose this role and might end up with none
-        $defaults = $this->getDefaultRoles($orchestraId);
-        $defaultIds = array_map(fn($d) => (int)$d['id'], $defaults);
-        $firstDefaultId = $defaultIds[0] ?? null;
-
-        if ($firstDefaultId) {
-            $stmt = $this->db->prepare(
-                "SELECT uor.user_orchestra_id FROM user_orchestra_roles uor
-                 WHERE uor.role_id = ?
-                 AND (SELECT COUNT(*) FROM user_orchestra_roles uor2
-                      WHERE uor2.user_orchestra_id = uor.user_orchestra_id AND uor2.role_id != ?) = 0"
-            );
-            $stmt->bind_param('ii', $id, $id);
-            $stmt->execute();
-            $orphans = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-            $stmt->close();
-
-            // Assign first default role to members who would be left with no role
-            foreach ($orphans as $row) {
-                $uoId = (int)$row['user_orchestra_id'];
-                $ins = $this->db->prepare("INSERT IGNORE INTO user_orchestra_roles (user_orchestra_id, role_id) VALUES (?, ?)");
-                $ins->bind_param('ii', $uoId, $firstDefaultId);
-                $ins->execute();
-                $ins->close();
-            }
-        }
-
         // Remove all assignments of this role
         $stmt = $this->db->prepare("DELETE FROM user_orchestra_roles WHERE role_id = ?");
         $stmt->bind_param('i', $id);
@@ -394,7 +371,7 @@ class Role extends Model
             'orchestra_id' => $orchestraId,
             'name'         => 'Mitglied',
             'tag_color'    => '#10b981',
-            'permissions'  => json_encode(['can_attend_rehearsals']),
+            'permissions'  => json_encode(['can_attend_rehearsals', 'can_view_schedule']),
             'is_system'    => 0,
             'is_default'   => 1,
             'is_self_assignable' => 0,

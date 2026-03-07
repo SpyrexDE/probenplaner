@@ -272,14 +272,18 @@ if (!empty($status)) {
 }
 ?>
 
+<?php $hasExpandableContent = !empty($rehearsal['schedule_items']) || !empty($rehearsal['infos']); ?>
+
 <!-- REHEARSAL CARD -->
-<div class="<?= $cardClasses ?> border border-l-4 my-2 cursor-pointer transition-all duration-200"
+<div class="<?= $cardClasses ?> border border-l-4 my-2 <?= $hasExpandableContent ? 'cursor-pointer' : 'cursor-default' ?> transition-all duration-200"
+    <?php if ($hasExpandableContent): ?>
     onclick="(function(e){
         if(e.target.closest('button') || e.target.closest('a')) return;
         const tl = document.getElementById('schedule-timeline-<?= $rehearsalId ?>');
         const tg = document.getElementById('schedule-toggle-<?= $rehearsalId ?>');
         if(tl && tg) { tl.classList.toggle('open'); tg.classList.toggle('expanded'); }
     })(event)"
+    <?php endif; ?>
     style="border-radius: var(--radius-lg); padding: var(--space-3) var(--space-4); <?= !empty($rehearsal['color']) ? 'border-left-color: ' . $rehearsal['color'] . ';' : '' ?>">
 
     <!-- Card Content: Flexbox layout with Tailwind -->
@@ -339,6 +343,12 @@ if (!empty($status)) {
                         <div class="rehearsal-section-badge" style="font-size: 10px; font-weight: var(--font-weight-semibold); text-transform: uppercase; letter-spacing: 0.3px; padding: 2px 6px; border-radius: var(--radius-sm); display: inline-block; width: fit-content; margin-right: var(--space-1);">
                             <?= $groupsText ?>
                         </div>
+                        <?php if (!empty($rehearsal['roles'])): ?>
+                            <?php foreach ($rehearsal['roles'] as $role): ?>
+                                <?= \App\Core\Utilities::renderRoleTag($role) ?>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+
                         <?php if (!empty($rehearsal['infos'])): ?>
                             <?php foreach ($rehearsal['infos'] as $info): ?>
                                 <span style="font-size: 11px; padding: 2px 6px; border-radius: var(--radius-sm); display: inline-flex; align-items: center; justify-content: center; width: fit-content; margin-right: var(--space-1); background-color: transparent; border: 1px solid var(--color-border); color: var(--color-text-primary);">

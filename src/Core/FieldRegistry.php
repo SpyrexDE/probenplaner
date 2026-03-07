@@ -132,6 +132,16 @@ class FieldRegistry
                 'permission'  => 'conductor',
             ],
             [
+                'name'        => 'allow_past_edit',
+                'type'        => 'toggle',
+                'label'       => 'Nachträgliche Änderung erlauben',
+                'description' => 'Wenn aktiviert, können Mitglieder ihre Zu-/Absagen und Kommentare für bereits vergangene Proben noch ändern.',
+                'group'       => 'permissions',
+                'default'     => true,
+                'save'        => 'auto',
+                'permission'  => 'conductor',
+            ],
+            [
                 'name'       => 'show_rehearsal_insights',
                 'type'       => 'toggle',
                 'label'      => 'Proben-Insights anzeigen (Beta)',

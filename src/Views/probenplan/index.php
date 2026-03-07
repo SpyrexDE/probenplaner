@@ -126,6 +126,11 @@ include __DIR__ . '/../components/table.php';
                                         $smartDisplay = new \App\Core\SmartGroupDisplay();
                                         echo htmlspecialchars($smartDisplay->generateDescription($rehearsal['groups'], $rehearsal, false));
                                     }
+                                    if (!empty($rehearsal['roles'])) {
+                                        foreach ($rehearsal['roles'] as $role) {
+                                            echo ' ' . \App\Core\Utilities::renderRoleTag($role);
+                                        }
+                                    }
                                     ?>
                                 </td>
                             </tr>

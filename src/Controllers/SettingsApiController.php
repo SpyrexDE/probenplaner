@@ -63,7 +63,7 @@ class SettingsApiController extends Controller
         $userRelationFields = ['group_type', 'role_ids'];
         foreach ($fieldsToUpdate as $fieldName => $value) {
             // Fields stored in separate tables — handled specially
-            if ($entity === 'rehearsal' && in_array($fieldName, ['groups', 'schedule_items', 'infos'])) {
+            if ($entity === 'rehearsal' && in_array($fieldName, ['groups', 'schedule_items', 'infos', 'role_ids'])) {
                 if (empty($_SESSION['current_permissions']['can_manage_rehearsals'])) {
                     $this->json(['success' => false, 'error' => 'Keine Berechtigung'], 403);
                     return;
@@ -111,7 +111,7 @@ class SettingsApiController extends Controller
         // Validate all fields
         $allErrors = [];
         foreach ($fieldsToUpdate as $fieldName => $value) {
-            if ($entity === 'rehearsal' && in_array($fieldName, ['groups', 'schedule_items', 'infos'])) continue;
+            if ($entity === 'rehearsal' && in_array($fieldName, ['groups', 'schedule_items', 'infos', 'role_ids'])) continue;
 
             if ($entity === 'orchestra' && $fieldName === 'section_config') continue;
 
@@ -319,6 +319,14 @@ class SettingsApiController extends Controller
                     $model->saveInfos($entityId, $items);
                 }
 
+                // Handle role_ids (stored in rehearsal_roles table)
+                if (isset($data['role_ids'])) {
+                    $roleIds = json_decode($data['role_ids'], true) ?: [];
+                    $roleIds = array_map('intval', $roleIds);
+                    unset($data['role_ids']);
+                    $roleModel = new \App\Models\Role();
+                    $roleModel->setRehearsalRoles($entityId, $roleIds);
+                }
 
                 if (empty($data)) return true;
                 $data['updated_at'] = date('Y-m-d H:i:s');

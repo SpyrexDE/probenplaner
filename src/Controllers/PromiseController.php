@@ -73,6 +73,7 @@ class PromiseController extends Controller
         $orchestra = $this->orchestraModel->findById($_SESSION['current_orchestra_id']);
         $forceDeclineReason = !empty($orchestra['force_decline_reason']);
         $allowAttendanceReset = !isset($orchestra['allow_attendance_reset']) || !empty($orchestra['allow_attendance_reset']);
+        $allowPastEdit = !isset($orchestra['allow_past_edit']) || !empty($orchestra['allow_past_edit']);
 
         $userRoleIds = [];
         if ($userId && $orchestraId) {
@@ -111,6 +112,7 @@ class PromiseController extends Controller
             'orchestra' => $orchestra,
             'forceDeclineReason' => $forceDeclineReason,
             'allowAttendanceReset' => $allowAttendanceReset,
+            'allowPastEdit' => $allowPastEdit,
             'hasPastRehearsals' => $hasPastRehearsals
         ]);
     }
@@ -391,14 +393,26 @@ class PromiseController extends Controller
             return;
         }
 
+        $orchestraModel = new \App\Models\Orchestra();
+        $orchestra = $orchestraModel->findById($_SESSION['current_orchestra_id']);
+
         // Check for force decline reason setting
         if ($status === false && empty($note)) {
-            $orchestraModel = new \App\Models\Orchestra();
-            $orchestra = $orchestraModel->findById($_SESSION['current_orchestra_id']);
-
             if (!empty($orchestra['force_decline_reason'])) {
                 header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'message' => 'Begründung erforderlich', 'details' => 'Bitte geben Sie einen Grund für Ihre Absage an.']);
+                return;
+            }
+        }
+
+        // Block edits for past rehearsals when disabled
+        $allowPastEdit = !isset($orchestra['allow_past_edit']) || !empty($orchestra['allow_past_edit']);
+        if (!$allowPastEdit) {
+            $rehearsalModel = new \App\Models\Rehearsal();
+            $rehearsal = $rehearsalModel->findById($rehearsalId);
+            if ($rehearsal && $rehearsal['date'] < date('Y-m-d')) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'Nicht erlaubt', 'details' => 'Nachträgliche Änderungen für vergangene Proben sind nicht erlaubt.']);
                 return;
             }
         }

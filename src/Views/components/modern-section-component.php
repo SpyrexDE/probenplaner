@@ -197,6 +197,7 @@ $sectionElementId = 'section-' . preg_replace('/[^a-zA-Z0-9]/', '', $sectionId) 
                                                             </span>
                                                         <?php endforeach; ?>
                                                     <?php endif; ?>
+                                                    <?= \App\Core\Utilities::generateUserLabels($player) ?>
                                                 </div>
 
                                                 <?php if (!empty($player['note'])): ?>
@@ -261,6 +262,7 @@ $sectionElementId = 'section-' . preg_replace('/[^a-zA-Z0-9]/', '', $sectionId) 
                                                 </span>
                                             <?php endforeach; ?>
                                         <?php endif; ?>
+                                        <?= \App\Core\Utilities::generateUserLabels($player) ?>
                                     </div>
 
                                     <?php if (!empty($player['note'])): ?>

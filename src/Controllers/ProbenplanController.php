@@ -34,8 +34,8 @@ class ProbenplanController extends Controller
      */
     public function index($params = []): void
     {
-        // Validate orchestra context and set session variables
         $this->validateOrchestraContext($params);
+        $this->requirePermission('can_view_schedule');
 
         // Get personalized view parameter
         $personalized = isset($_GET['personalized']) && $_GET['personalized'] === '1';

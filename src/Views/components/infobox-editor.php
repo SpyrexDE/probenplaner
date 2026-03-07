@@ -130,8 +130,7 @@ $editorId = 'infobox-editor-' . uniqid();
 </style>
 
 <div class="form-section">
-    <h3 class="form-section-title">Wichtige Hinweise (Bullet Points)</h3>
-    <p class="text-xs text-gray-500 mb-3">Diese Hinweise erscheinen prominent über dem Ablauf.</p>
+    <h3 class="form-section-title">Wichtige Hinweise</h3>
 
     <div class="infobox-editor" id="<?= $editorId ?>">
         <!-- Items rendered by JS -->

@@ -345,7 +345,7 @@ class Controller
             }
             $this->addAlert('Fehler!', 'Sie haben nicht die erforderliche Berechtigung für diese Aktion.', 'error');
             $slug = $_SESSION['current_orchestra_slug'] ?? null;
-            $this->redirect($slug ? $this->orchestraUrl('/probenplan') : '/orchestras/select');
+            $this->redirect($slug ? $this->orchestraUrl('/promises') : '/orchestras/select');
             return false;
         }
         return true;

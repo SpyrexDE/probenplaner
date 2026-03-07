@@ -110,7 +110,9 @@
             $menu[] = ['label' => 'Termine', 'href' => "{$basePath}/rehearsals", 'page' => 'rehearsals', 'icon' => 'fas fa-calendar-alt'];
         }
 
-        $menu[] = ['label' => 'Probenplan', 'href' => "{$basePath}/probenplan", 'page' => 'probenplan', 'icon' => 'fas fa-list'];
+        if (!empty($permissions['can_view_schedule'])) {
+            $menu[] = ['label' => 'Probenplan', 'href' => "{$basePath}/probenplan", 'page' => 'probenplan', 'icon' => 'fas fa-list'];
+        }
 
         if (!empty($permissions['can_view_members']) || !empty($permissions['can_manage_members'])) {
             $menu[] = ['label' => 'Mitglieder', 'href' => "{$basePath}/members", 'page' => 'members', 'icon' => 'fas fa-users'];

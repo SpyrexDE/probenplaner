@@ -168,6 +168,7 @@ include __DIR__ . '/../components/save-indicator.php';
         // Configuration
         const FORCE_DECLINE_REASON = <?= json_encode($forceDeclineReason ?? false) ?>;
         const ALLOW_ATTENDANCE_RESET = <?= json_encode($allowAttendanceReset ?? true) ?>;
+        const ALLOW_PAST_EDIT = <?= json_encode($allowPastEdit ?? true) ?>;
 
         // Store pending updates to prevent async issues
         window.updateQueue = [];
@@ -196,6 +197,11 @@ include __DIR__ . '/../components/save-indicator.php';
                 }
             }
         });
+
+        // Disable buttons on past rehearsal cards when past-edit is off
+        if (!ALLOW_PAST_EDIT) {
+            $('#pastRehearsalsSection .rehearsal-card .action-btn').addClass('disabled');
+        }
 
         let longPressTimer;
         const longPressDuration = 500; // ms

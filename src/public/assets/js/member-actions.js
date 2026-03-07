@@ -237,10 +237,16 @@ function initSwalRoleTagSelect(allRoles, selectedIds) {
 
 function saveEditModal(userId) {
     const roleContainer = document.getElementById('swalRoleTags');
+    const typeEl = document.getElementById('swalType');
+
+    // Collect values while the modal DOM still exists
+    const collectedType = typeEl ? typeEl.value : '';
+    const collectedRoleIds = roleContainer
+        ? [...roleContainer.querySelectorAll('.swal-role-tag')].map(t => t.dataset.id)
+        : null;
 
     if (roleContainer && window._swalInitialDefaultRoleIds) {
-        const currentIds = [...roleContainer.querySelectorAll('.swal-role-tag')].map(t => t.dataset.id);
-        const removedDefaults = window._swalInitialDefaultRoleIds.filter(id => !currentIds.includes(id));
+        const removedDefaults = window._swalInitialDefaultRoleIds.filter(id => !collectedRoleIds.includes(id));
         if (removedDefaults.length > 0) {
             Swal.fire({
                 title: 'Standardrolle entfernt',
@@ -253,26 +259,23 @@ function saveEditModal(userId) {
                 cancelButtonColor: '#6b7280',
                 reverseButtons: true,
             }).then(result => {
-                if (result.isConfirmed) doSaveEditModal(userId);
+                if (result.isConfirmed) doSaveEditModal(userId, collectedType, collectedRoleIds);
             });
             return;
         }
     }
-    doSaveEditModal(userId);
+    doSaveEditModal(userId, collectedType, collectedRoleIds);
 }
 
-function doSaveEditModal(userId) {
+function doSaveEditModal(userId, type, roleIds) {
     const orchestraBase = getOrchestraBase();
-    const typeEl = document.getElementById('swalType');
 
     const params = new URLSearchParams({
         csrf_token: getCsrfToken(),
-        type: typeEl ? typeEl.value : '',
+        type: type || '',
     });
 
-    const roleContainer = document.getElementById('swalRoleTags');
-    if (roleContainer) {
-        const roleIds = [...roleContainer.querySelectorAll('.swal-role-tag')].map(t => t.dataset.id);
+    if (roleIds !== null) {
         params.set('role_ids', JSON.stringify(roleIds));
     }
 

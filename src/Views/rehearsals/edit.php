@@ -224,5 +224,47 @@ $backUrl = '/' . $orchestraBase . '/rehearsals';
                     });
             });
         }
+
+        // Auto-save role_ids via tag-select
+        const roleSelect = document.getElementById('rehearsalEditRoleSelect');
+        if (roleSelect) {
+            roleSelect.addEventListener('tag-select:change', function(e) {
+                const ids = e.detail.ids || [];
+
+                if (window.SettingsEngine && window.SettingsEngine.showSaveState) {
+                    window.SettingsEngine.showSaveState('saving');
+                }
+
+                fetch(API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            field: 'role_ids',
+                            value: JSON.stringify(ids)
+                        }),
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (window.SettingsEngine && window.SettingsEngine.showSaveState) {
+                                window.SettingsEngine.showSaveState('success');
+                            }
+                        } else {
+                            if (window.SettingsEngine && window.SettingsEngine.showSaveState) {
+                                window.SettingsEngine.showSaveState('error');
+                            }
+                            window.notifyError(data.error || 'Fehler beim Speichern der Rollen');
+                        }
+                    })
+                    .catch(err => {
+                        if (window.SettingsEngine && window.SettingsEngine.showSaveState) {
+                            window.SettingsEngine.showSaveState('error');
+                        }
+                        window.notifyError('Netzwerkfehler: ' + (err.message || 'Verbindung fehlgeschlagen'));
+                    });
+            });
+        }
     })();
 </script>

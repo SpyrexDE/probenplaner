@@ -52,6 +52,14 @@ class MemberController extends Controller
         $members = $this->userOrchestraModel->getOrchestraUsers($orchestraId);
         $sections = FieldRegistry::getSections();
 
+        // Conductors (Leitung) are not shown in the member listing
+        $members = array_filter($members, function ($m) {
+            foreach ($m['roles'] ?? [] as $r) {
+                if (!empty($r['is_system'])) return false;
+            }
+            return true;
+        });
+
         $grouped = [];
         foreach ($members as $member) {
             $type = $member['type'] ?? 'Sonstige';

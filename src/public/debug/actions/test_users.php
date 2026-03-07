@@ -194,7 +194,7 @@ if ($_POST['action'] === 'generate_full_setup') {
         $conn->query("INSERT INTO users (email, display_name, password, is_org_admin, organization_id) VALUES ('harmonia-admin@probenplaner.local', 'Harmonia Admin', '{$adminPw}', 1, {$orgId})");
 
         // ── 2. Orchestras ────────────────────────────────────────────
-        $conn->query("INSERT INTO orchestras (name, slug, organization_id) VALUES ('Sinfonieorchester Harmonia', 'sinfonie-harmonia', {$orgId})");
+        $conn->query("INSERT INTO orchestras (name, slug, organization_id) VALUES ('JSH', 'jsh', {$orgId})");
         $sinfonieId = $conn->insert_id;
 
         $conn->query("INSERT INTO orchestras (name, slug, organization_id) VALUES ('Kammerensemble Harmonia', 'kammer-harmonia', {$orgId})");
@@ -215,16 +215,16 @@ if ($_POST['action'] === 'generate_full_setup') {
             'member' => [
                 'name' => 'Mitglied',
                 'tag_color' => '#10b981',
-                'permissions' => json_encode(['can_attend_rehearsals']),
+                'permissions' => json_encode(['can_attend_rehearsals', 'can_view_schedule']),
                 'is_system' => 0,
                 'is_default' => 1,
                 'is_self_assignable' => 0,
                 'sort_order' => 100,
             ],
             'section_leader' => [
-                'name' => 'Stimmführer',
+                'name' => 'Stimmführung',
                 'tag_color' => '#f59e0b',
-                'permissions' => json_encode(['can_attend_rehearsals', 'can_view_own_section_stats', 'can_view_members']),
+                'permissions' => json_encode(['can_attend_rehearsals', 'can_view_schedule', 'can_view_own_section_stats', 'can_view_members']),
                 'is_system' => 0,
                 'is_default' => 0,
                 'is_self_assignable' => 0,
@@ -233,7 +233,7 @@ if ($_POST['action'] === 'generate_full_setup') {
             'project' => [
                 'name' => 'IYSO 2026',
                 'tag_color' => '#8b5cf6',
-                'permissions' => json_encode(['can_attend_rehearsals']),
+                'permissions' => json_encode(['can_attend_rehearsals', 'can_view_schedule']),
                 'is_system' => 0,
                 'is_default' => 0,
                 'is_self_assignable' => 1,
@@ -260,7 +260,7 @@ if ($_POST['action'] === 'generate_full_setup') {
             ['dirigent@test.local',            'Thomas Müller',       '',           $sinfonieId, ['conductor'],                           1],
             ['assistenz@test.local',           'Katharina Engel',     '',           $sinfonieId, ['conductor'],                           1],
 
-            // ── Violine 1 (14) — 2× Stimmführer ──
+            // ── Violine 1 (14) — 2× Stimmführung ──
             ['stimmfuehrer@test.local',        'Sabine Becker',       'Violine_1',  $sinfonieId, ['member', 'project', 'section_leader'], 1],
             ['anna.mueller@test.local',        'Anna Müller',         'Violine_1',  $sinfonieId, ['member', 'project', 'section_leader'], 1],
             ['jan.schmidt@test.local',         'Jan Schmidt',         'Violine_1',  $sinfonieId, ['member'],                               1],
@@ -276,7 +276,7 @@ if ($_POST['action'] === 'generate_full_setup') {
             ['miriam.koenig@test.local',       'Miriam König',        'Violine_1',  $sinfonieId, ['member'],                               1],
             ['robert.haas@test.local',         'Robert Haas',         'Violine_1',  $sinfonieId, ['member'],                               1],
 
-            // ── Violine 2 (12) — 2× Stimmführer ──
+            // ── Violine 2 (12) — 2× Stimmführung ──
             ['anna.weber@test.local',          'Anna Weber',          'Violine_2',  $sinfonieId, ['member', 'project', 'section_leader'], 1],
             ['peter.fischer@test.local',       'Peter Fischer',       'Violine_2',  $sinfonieId, ['member', 'project', 'section_leader'], 1],
             ['marie.koch@test.local',          'Marie Koch',          'Violine_2',  $sinfonieId, ['member', 'project'],                   1],
@@ -290,7 +290,7 @@ if ($_POST['action'] === 'generate_full_setup') {
             ['viktoria.simon@test.local',      'Viktoria Simon',      'Violine_2',  $sinfonieId, ['member'],                               1],
             ['fabian.link@test.local',         'Fabian Link',         'Violine_2',  $sinfonieId, ['member', 'project'],                   1],
 
-            // ── Bratsche (8) — 1× Stimmführer ──
+            // ── Bratsche (8) — 1× Stimmführung ──
             ['sarah.mueller@test.local',       'Sarah Müller',        'Bratsche',   $sinfonieId, ['member', 'project', 'section_leader'], 1],
             ['felix.wolf@test.local',          'Felix Wolf',          'Bratsche',   $sinfonieId, ['member', 'project'],                   1],
             ['isabel.pfeiffer@test.local',     'Isabel Pfeiffer',     'Bratsche',   $sinfonieId, ['member'],                               1],
@@ -300,7 +300,7 @@ if ($_POST['action'] === 'generate_full_setup') {
             ['eva.riedel@test.local',          'Eva Riedel',          'Bratsche',   $sinfonieId, ['member'],                               1],
             ['johannes.blum@test.local',       'Johannes Blum',       'Bratsche',   $sinfonieId, ['member'],                               1],
 
-            // ── Cello (8) — 1× Stimmführer ──
+            // ── Cello (8) — 1× Stimmführung ──
             ['julia.richter@test.local',       'Julia Richter',       'Cello',      $sinfonieId, ['member', 'project', 'section_leader'], 1],
             ['noah.klein@test.local',          'Noah Klein',          'Cello',      $sinfonieId, ['member', 'project'],                   1],
             ['leonie.stein@test.local',        'Leonie Stein',        'Cello',      $sinfonieId, ['member'],                               1],
@@ -310,46 +310,46 @@ if ($_POST['action'] === 'generate_full_setup') {
             ['clara.roth@test.local',          'Clara Roth',          'Cello',      $sinfonieId, ['member'],                               1],
             ['benjamin.wendt@test.local',      'Benjamin Wendt',      'Cello',      $sinfonieId, ['member'],                               1],
 
-            // ── Kontrabass (4) — 1× Stimmführer ──
+            // ── Kontrabass (4) — 1× Stimmführung ──
             ['emma.schroeder@test.local',      'Emma Schröder',       'Kontrabass', $sinfonieId, ['member', 'project', 'section_leader'], 1],
             ['jakob.ibach@test.local',         'Jakob Ibach',         'Kontrabass', $sinfonieId, ['member', 'project'],                   1],
             ['paula.ebert@test.local',         'Paula Ebert',         'Kontrabass', $sinfonieId, ['member'],                               1],
             ['mark.gruber@test.local',         'Mark Gruber',         'Kontrabass', $sinfonieId, ['member'],                               1],
 
-            // ── Flöte (3) — 1× Stimmführer ──
+            // ── Flöte (3) — 1× Stimmführung ──
             ['lukas.neumann@test.local',       'Lukas Neumann',       'Flöte',      $sinfonieId, ['member', 'project', 'section_leader'], 1],
             ['sophia.vogel@test.local',        'Sophia Vogel',        'Flöte',      $sinfonieId, ['member', 'project'],                   1],
             ['leonard.pohl@test.local',        'Leonard Pohl',        'Flöte',      $sinfonieId, ['member'],                               1],
 
-            // ── Oboe (3) — 1× Stimmführer ──
+            // ── Oboe (3) — 1× Stimmführung ──
             ['hannah.schwarz@test.local',      'Hannah Schwarz',      'Oboe',       $sinfonieId, ['member', 'project', 'section_leader'], 1],
             ['rafael.keller@test.local',       'Rafael Keller',       'Oboe',       $sinfonieId, ['member', 'project'],                   1],
             ['antonia.albrecht@test.local',    'Antonia Albrecht',    'Oboe',       $sinfonieId, ['member'],                               1],
 
-            // ── Klarinette (3) — 1× Stimmführer ──
+            // ── Klarinette (3) — 1× Stimmführung ──
             ['max.zimmermann@test.local',      'Max Zimmermann',      'Klarinette', $sinfonieId, ['member', 'project', 'section_leader'], 1],
             ['sandra.kurz@test.local',         'Sandra Kurz',         'Klarinette', $sinfonieId, ['member', 'project'],                   1],
             ['till.winkler@test.local',        'Till Winkler',        'Klarinette', $sinfonieId, ['member'],                               1],
 
-            // ── Fagott (3) — 1× Stimmführer ──
+            // ── Fagott (3) — 1× Stimmführung ──
             ['lena.hoffmann@test.local',       'Lena Hoffmann',       'Fagott',     $sinfonieId, ['member', 'project', 'section_leader'], 1],
             ['judith.schmidt@test.local',      'Judith Schmidt',      'Fagott',     $sinfonieId, ['member', 'project'],                   1],
             ['gregor.bach@test.local',         'Gregor Bach',         'Fagott',     $sinfonieId, ['member'],                               1],
 
-            // ── Horn (5) — 1× Stimmführer ──
+            // ── Horn (5) — 1× Stimmführung ──
             ['paul.krueger@test.local',        'Paul Krüger',         'Horn',       $sinfonieId, ['member', 'project', 'section_leader'], 1],
             ['mia.lang@test.local',            'Mia Lang',            'Horn',       $sinfonieId, ['member', 'project'],                   1],
             ['konrad.reuter@test.local',       'Konrad Reuter',       'Horn',       $sinfonieId, ['member'],                               1],
             ['celine.walter@test.local',       'Céline Walter',       'Horn',       $sinfonieId, ['member', 'project'],                   1],
             ['erik.krause@test.local',         'Erik Krause',         'Horn',       $sinfonieId, ['member'],                               1],
 
-            // ── Trompete (4) — 1× Stimmführer ──
+            // ── Trompete (4) — 1× Stimmführung ──
             ['david.wagner@test.local',        'David Wagner',        'Trompete',   $sinfonieId, ['member', 'project', 'section_leader'], 1],
             ['sophie.bauer@test.local',        'Sophie Bauer',        'Trompete',   $sinfonieId, ['member', 'project'],                   1],
             ['nico.dietrich@test.local',       'Nico Dietrich',       'Trompete',   $sinfonieId, ['member'],                               1],
             ['lea.feldmann@test.local',        'Lea Feldmann',        'Trompete',   $sinfonieId, ['member'],                               1],
 
-            // ── Posaune (3) — 1× Stimmführer ──
+            // ── Posaune (3) — 1× Stimmführung ──
             ['tim.schulz@test.local',          'Tim Schulz',          'Posaune',    $sinfonieId, ['member', 'project', 'section_leader'], 1],
             ['marcel.braun@test.local',        'Marcel Braun',        'Posaune',    $sinfonieId, ['member', 'project'],                   1],
             ['helena.meier@test.local',        'Helena Meier',        'Posaune',    $sinfonieId, ['member'],                               1],
@@ -357,7 +357,7 @@ if ($_POST['action'] === 'generate_full_setup') {
             // ── Tuba (1) ──
             ['laura.hartmann@test.local',      'Laura Hartmann',      'Tuba',       $sinfonieId, ['member', 'project'],                   1],
 
-            // ── Schlagwerk (4) — 1× Stimmführer ──
+            // ── Schlagwerk (4) — 1× Stimmführung ──
             ['leon.frank@test.local',          'Leon Frank',          'Schlagwerk', $sinfonieId, ['member', 'project', 'section_leader'], 1],
             ['lovis.haury@test.local',         'Lovis Haury',         'Schlagwerk', $sinfonieId, ['member', 'project'],                   1],
             ['magnus.beck@test.local',         'Magnus Beck',         'Schlagwerk', $sinfonieId, ['member'],                               1],
@@ -525,7 +525,7 @@ if ($_POST['action'] === 'generate_full_setup') {
                 ['20:20:00', 'Hoche, Marimbakonzert mit Solistin'],
                 ['21:15:00', 'Gemeinsamer Abbau'],
             ],
-            19 => [ // Stimmführer-Besprechung
+            19 => [ // Stimmführungs-Besprechung
                 ['18:00:00', 'Begrüßung & Tagesordnung'],
                 ['18:15:00', 'Rückblick: Registerproben-Ergebnisse'],
                 ['18:45:00', 'Besetzungsfragen Universitätskonzert'],
@@ -764,7 +764,7 @@ if ($_POST['action'] === 'generate_full_setup') {
             }
         }
 
-        // Stimmführer-Besprechung (index 19): only section_leader users
+        // Stimmführungs-Besprechung (index 19): only section_leader users
         $sfRId = $rehearsalIdMap[19];
         foreach ($sinfonieUserIds as $userId) {
             $hasSfRole = $conn->query(
@@ -825,9 +825,9 @@ if ($_POST['action'] === 'generate_full_setup') {
         $summary = [];
         $summary[] = "🏛️ 1 Organization (Testverein Harmonia e.V.)";
         $summary[] = "🎻 {$counts['orchestras']} Orchestras";
-        $summary[] = "🎭 4 Roles: Leitung, Mitglied★, Stimmführer, IYSO 2026";
+        $summary[] = "🎭 4 Roles: Leitung, Mitglied★, Stimmführung, IYSO 2026";
         $summary[] = "👥 {$counts['users']} Users (full symphony orchestra, 3 inactive)";
-        $summary[] = "📅 {$counts['rehearsals']} Rehearsals (past + future, incl. IYSO & Stimmführer-Besprechung)";
+        $summary[] = "📅 {$counts['rehearsals']} Rehearsals (past + future, incl. IYSO & Stimmführungs-Besprechung)";
         $summary[] = "📋 {$counts['schedules']} Schedule items";
         $summary[] = "📝 {$counts['infos']} Info items (with emojis)";
         $summary[] = "✅ {$counts['promises']} Attendance records";
@@ -842,7 +842,7 @@ if ($_POST['action'] === 'generate_full_setup') {
                 'credentials' => [
                     ['email' => 'harmonia-admin@probenplaner.local', 'password' => 'testadmin',                'role' => 'Org-Admin'],
                     ['email' => 'dirigent@test.local',               'password' => 'dirigent@test.local',       'role' => 'Leitung (Sinfonie)'],
-                    ['email' => 'stimmfuehrer@test.local',           'password' => 'stimmfuehrer@test.local',   'role' => 'Stimmführer (V1)'],
+                    ['email' => 'stimmfuehrer@test.local',           'password' => 'stimmfuehrer@test.local',   'role' => 'Stimmführung (V1)'],
                     ['email' => 'jan.schmidt@test.local',            'password' => 'jan.schmidt@test.local',    'role' => 'Mitglied only'],
                     ['email' => 'nina.berg@test.local',              'password' => 'nina.berg@test.local',      'role' => 'Mitglied + IYSO 2026'],
                     ['email' => 'clara.roth@test.local',             'password' => 'clara.roth@test.local',     'role' => 'Mitglied (Cello)'],

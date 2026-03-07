@@ -629,10 +629,14 @@ $isAdmin = $canManage || !empty($canManagePermissions);
                                             </span>
                                             <span class="role-row-meta"><?= (int)$role['user_count'] ?></span>
                                         </div>
-                                        <?php if (empty($role['is_system'])): ?>
+                                        <?php if (empty($role['is_system']) && empty($role['is_default'])): ?>
                                             <div class="role-row-actions">
                                                 <button onclick="editRole(<?= (int)$role['id'] ?>, <?= htmlspecialchars(json_encode($role), ENT_QUOTES) ?>)" title="Bearbeiten"><i class="fas fa-pen"></i></button>
                                                 <button class="role-delete-btn" onclick="deleteRole(<?= (int)$role['id'] ?>, '<?= htmlspecialchars($role['name'], ENT_QUOTES) ?>', <?= (int)$role['user_count'] ?>)" title="Löschen"><i class="fas fa-trash"></i></button>
+                                            </div>
+                                        <?php elseif (empty($role['is_system'])): ?>
+                                            <div class="role-row-actions">
+                                                <button onclick="editRole(<?= (int)$role['id'] ?>, <?= htmlspecialchars(json_encode($role), ENT_QUOTES) ?>)" title="Bearbeiten"><i class="fas fa-pen"></i></button>
                                             </div>
                                         <?php else: ?>
                                             <div class="role-row-actions" style="width: 24px; justify-content: center;">
@@ -652,7 +656,7 @@ $isAdmin = $canManage || !empty($canManagePermissions);
                             <div class="admin-section-body">
                                 <?php if ($inviteLink): ?>
                                     <?php $linkUrl = rtrim($_SERVER['HTTP_HOST'] ?? '', '/') . '/invite/' . $inviteLink['token']; ?>
-                                    <div class="invite-link-box"><?= htmlspecialchars($linkUrl) ?></div>
+                                    <div class="invite-link-box"><?= htmlspecialchars('https://' . $linkUrl) ?></div>
                                     <div class="invite-meta"><?= (int)($inviteLink['used_count'] ?? 0) ?>× verwendet</div>
                                     <button class="btn-base btn-sm btn-primary" style="width: 100%;" onclick="copyInviteLink()"><i class="fas fa-copy" style="margin-right: var(--space-1);"></i> Link kopieren</button>
                                     <div class="swal-perm-row" style="margin-top: var(--space-2);">
@@ -804,6 +808,10 @@ $isAdmin = $canManage || !empty($canManagePermissions);
             const meta = `${role.user_count} Mitglieder${role.is_default ? ' · Standard' : ''}`;
             const actions = role.is_system ?
                 `<div class="role-row-actions" style="width: 24px; justify-content: center;"><span style="font-size: var(--font-size-xs); color: var(--color-text-muted);"><i class="fas fa-lock"></i></span></div>` :
+                role.is_default ?
+                `<div class="role-row-actions">
+                    <button onclick="Swal.close(); editRole(${role.id}, ${JSON.stringify(role).replace(/"/g, '&quot;')})" title="Bearbeiten"><i class="fas fa-pen"></i></button>
+                   </div>` :
                 `<div class="role-row-actions">
                     <button onclick="Swal.close(); editRole(${role.id}, ${JSON.stringify(role).replace(/"/g, '&quot;')})" title="Bearbeiten"><i class="fas fa-pen"></i></button>
                     <button class="role-delete-btn" onclick="Swal.close(); deleteRole(${role.id}, '${role.name.replace(/'/g, "\\'")}', ${role.user_count})" title="Löschen"><i class="fas fa-trash"></i></button>
@@ -839,7 +847,7 @@ $isAdmin = $canManage || !empty($canManagePermissions);
     // Invite modal (mobile fallback)
     function openInviteModal() {
         <?php if ($inviteLink): ?>
-            const linkUrl = '<?= htmlspecialchars(rtrim($_SERVER['HTTP_HOST'] ?? '', '/') . '/invite/' . $inviteLink['token']) ?>';
+            const linkUrl = 'https://<?= htmlspecialchars(rtrim($_SERVER['HTTP_HOST'] ?? '', '/') . '/invite/' . $inviteLink['token']) ?>';
             const usedCount = <?= (int)($inviteLink['used_count'] ?? 0) ?>;
             const keycloakOnly = <?= !empty($inviteLink['keycloak_only']) ? 'true' : 'false' ?>;
 
@@ -870,7 +878,7 @@ $isAdmin = $canManage || !empty($canManagePermissions);
                 focusConfirm: false,
             }).then(result => {
                 if (result.isConfirmed) {
-                    navigator.clipboard.writeText('https://' + linkUrl).then(() => {
+                    navigator.clipboard.writeText(linkUrl).then(() => {
                         window.notifySuccess('Link kopiert');
                     });
                 } else if (result.isDenied) {
@@ -948,6 +956,8 @@ $isAdmin = $canManage || !empty($canManagePermissions);
             .then(data => {
                 if (data.success === false) {
                     window.notifyError(data.error || 'Einstellung fehlgeschlagen');
+                } else {
+                    window.notifySuccess('Gespeichert');
                 }
             })
             .catch(err => {
@@ -1207,13 +1217,9 @@ $isAdmin = $canManage || !empty($canManagePermissions);
     }
 
     function deleteRole(roleId, roleName, userCount) {
-        const memberNote = userCount > 0 ?
-            `<p style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-top:var(--space-2);">${userCount} Mitglied${userCount > 1 ? 'er' : ''} werden zur Standardrolle verschoben.</p>` :
-            '';
-
         Swal.fire({
             title: 'Rolle löschen?',
-            html: `<p>Die Rolle <strong>${roleName}</strong> wird gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.</p>${memberNote}`,
+            html: `<p>Die Rolle <strong>${roleName}</strong> wird gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.</p>`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Ja, löschen',

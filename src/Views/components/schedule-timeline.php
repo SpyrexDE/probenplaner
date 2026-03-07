@@ -10,7 +10,8 @@
  */
 
 $scheduleItems = $rehearsal['schedule_items'] ?? [];
-if (empty($scheduleItems)) return;
+$infos = $rehearsal['infos'] ?? [];
+if (empty($scheduleItems) && empty($infos)) return;
 
 $rehearsalId = $rehearsal['id'];
 $timelineId = 'schedule-timeline-' . $rehearsalId;
@@ -205,7 +206,6 @@ $isPast = ($rehearsalDate < $today);
     <div class="schedule-timeline-inner">
         <!-- Info Box -->
         <?php
-        $infos = $rehearsal['infos'] ?? [];
         include __DIR__ . '/rehearsal-infobox.php';
         ?>
 

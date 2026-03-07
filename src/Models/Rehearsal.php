@@ -496,6 +496,7 @@ class Rehearsal extends Model
         $groupsMap = !empty($preloadedGroups) ? $preloadedGroups : $this->batchLoadGroups($ids);
         $scheduleMap = $this->batchLoadScheduleItems($ids);
         $infosMap = $this->batchLoadInfos($ids);
+        $rolesMap = $this->batchLoadRehearsalRoles($ids);
 
         foreach ($rows as &$row) {
             $row['date'] = date('Y-m-d', strtotime($row['start']));
@@ -507,6 +508,7 @@ class Rehearsal extends Model
             $row['groups'] = $groupsMap[$row['id']] ?? [];
             $row['schedule_items'] = $scheduleMap[$row['id']] ?? [];
             $row['infos'] = $infosMap[$row['id']] ?? [];
+            $row['roles'] = $rolesMap[$row['id']] ?? [];
         }
         unset($row);
 
@@ -552,6 +554,24 @@ class Rehearsal extends Model
             "SELECT rehearsal_id, role_id FROM rehearsal_roles WHERE rehearsal_id IN (%s)",
             $ids,
             fn($row) => (int)$row['role_id']
+        );
+    }
+
+    /**
+     * @return array<int, array[]> rehearsal_id => role objects [{id, name, tag_color}]
+     */
+    private function batchLoadRehearsalRoles(array $ids): array
+    {
+        return $this->batchQuery(
+            "SELECT rr.rehearsal_id, r.id, r.name, r.tag_color FROM rehearsal_roles rr JOIN roles r ON r.id = rr.role_id WHERE rr.rehearsal_id IN (%s)",
+            $ids,
+            function ($row) {
+                return [
+                    'id' => (int)$row['id'],
+                    'name' => $row['name'],
+                    'tag_color' => $row['tag_color'] ?? '#478cf4',
+                ];
+            }
         );
     }
 
