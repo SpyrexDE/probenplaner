@@ -48,39 +48,21 @@ class SmartGroupDisplay
     }
 
     /**
-     * Get the root group dynamically (the top-level group with special rules)
+     * Get the root group dynamically (first top-level group)
      */
     private function getRootGroup(): ?array
     {
-        $allGroups = $this->groupManager->getAllGroups();
-
-        foreach ($allGroups as $group) {
-            if (($group['type'] ?? '') === 'special' &&
-                isset($group['special_rules']['affects_all']) &&
-                $group['special_rules']['affects_all'] === true
-            ) {
-                return $group;
-            }
-        }
-
-        // Fallback: find the first group with no parent (top-level)
-        foreach ($allGroups as $group) {
-            $parent = $this->groupManager->getParent($group['id']);
-            if (!$parent) {
-                return $group;
-            }
-        }
-
-        return null;
+        $roots = $this->groupManager->getRootNodes();
+        return !empty($roots) ? reset($roots) : null;
     }
 
     /**
-     * Get the dynamic root group ID (fallback for when root group is not found)
+     * Get the dynamic root group ID
      */
     private function getDynamicRootId(): string
     {
         $rootGroup = $this->getRootGroup();
-        return $rootGroup ? $rootGroup['id'] : 'tutti'; // Keep 'tutti' as ultimate fallback
+        return $rootGroup ? $rootGroup['id'] : '';
     }
 
     /**
@@ -1382,6 +1364,9 @@ class SmartGroupDisplay
         $instrumentsOutsideRoot = array_diff($selectedInstruments, $rootInstruments);
 
         // Calculate coverage - what percentage of the selection is within this root
+        if (empty($selectedInstruments)) {
+            return null;
+        }
         $rootCoverage = count(array_intersect($selectedInstruments, $rootInstruments)) / count($selectedInstruments);
 
         // Only proceed if this root covers most of the selection (at least 70%)
@@ -1600,8 +1585,8 @@ class SmartGroupDisplay
             }
 
             // Among partial groups, prefer higher coverage
-            $aCoverage = count($aCovered) / count($aInstruments);
-            $bCoverage = count($bCovered) / count($bInstruments);
+            $aCoverage = count($aInstruments) > 0 ? count($aCovered) / count($aInstruments) : 0;
+            $bCoverage = count($bInstruments) > 0 ? count($bCovered) / count($bInstruments) : 0;
             if (abs($aCoverage - $bCoverage) > 0.1) {
                 return $bCoverage <=> $aCoverage; // Higher coverage first
             }

@@ -189,6 +189,11 @@ class PromiseController extends Controller
         $groupManager = \App\Core\GroupManager::getInstance();
         $allSections = $groupManager->getAllSections();
 
+        // Flat config fallback: use all non-special groups
+        if (empty($allSections)) {
+            $allSections = array_filter($groupManager->getAllGroups(), fn($g) => ($g['type'] ?? '') !== 'special');
+        }
+
         // Batch-load all promises for this orchestra
         $promiseModel = new \App\Models\UserPromise();
         $allPromises = $promiseModel->getAllForOrchestra($_SESSION['current_orchestra_id']);
@@ -531,6 +536,11 @@ class PromiseController extends Controller
 
         $groupManager = \App\Core\GroupManager::getInstance();
         $allSections = $groupManager->getAllSections();
+
+        // Flat config fallback: use all non-special groups
+        if (empty($allSections)) {
+            $allSections = array_filter($groupManager->getAllGroups(), fn($g) => ($g['type'] ?? '') !== 'special');
+        }
 
         // Batch-load all promises for this orchestra
         $promiseModel = new \App\Models\UserPromise();

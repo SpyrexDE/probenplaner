@@ -228,8 +228,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
         foreach ($membersBySection[$rehearsalId]['all'] as $member) {
             $userType = $member['type'];
             $resolvedType = $groupManager->resolveAlias($userType);
-            $sectionInfo = $groupManager->getSectionForInstrument($resolvedType);
-            $sectionKey = $sectionInfo['section'] ?? 'Andere';
+            $sectionKey = $groupManager->getSectionForInstrument($resolvedType) ?? $resolvedType;
 
             if (!isset($sectionPlayers[$sectionKey])) {
                 $sectionPlayers[$sectionKey] = [];
@@ -363,19 +362,27 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                 $sectionPlayers = [];
 
                 if (!empty($membersBySection[$rehearsalId]['all'])) {
-                    // Get only the top-level sections under 'tutti' to avoid showing subsections at root level
-                    $tuttiGroup = $groupManager->getGroup('tutti');
+                    // Collect children of all root nodes as top-level sections
+                    $rootNodes = $groupManager->getRootNodes();
                     $topLevelSections = [];
 
-                    if ($tuttiGroup && isset($tuttiGroup['children'])) {
-                        foreach ($tuttiGroup['children'] as $childKey => $child) {
-                            if (($child['type'] ?? '') === 'section') {
+                    foreach ($rootNodes as $root) {
+                        if (!empty($root['children'])) {
+                            foreach ($root['children'] as $child) {
                                 $topLevelSections[$child['id']] = $child;
                             }
+                        } else {
+                            $topLevelSections[$root['id']] = $root;
                         }
                     }
 
-                    // Group players by top-level section only
+                    // Flat config fallback
+                    if (empty($topLevelSections)) {
+                        foreach ($groupManager->getAllGroups() as $group) {
+                            $topLevelSections[$group['id']] = $group;
+                        }
+                    }
+
                     foreach ($topLevelSections as $sectionId => $sectionData) {
                         $sectionPlayers[$sectionId] = [];
 
@@ -424,6 +431,18 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                     echo htmlspecialchars($smartDisplay->generateDescription($rehearsal['groups'] ?? [], $rehearsal, false));
                                     ?>
                                 </span>
+                                <?php if (!empty($rehearsal['roles']) || !empty($rehearsal['infos'])): ?>
+                                    <div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center;">
+                                        <?php foreach ($rehearsal['roles'] ?? [] as $role): ?>
+                                            <?= \App\Core\Utilities::renderRoleTag($role) ?>
+                                        <?php endforeach; ?>
+                                        <?php foreach ($rehearsal['infos'] ?? [] as $info): ?>
+                                            <span style="font-size: 11px; padding: 2px 6px; border-radius: var(--radius-sm); display: inline-flex; align-items: center; justify-content: center; background-color: transparent; border: 1px solid var(--color-border); color: var(--color-text-primary);">
+                                                <?= htmlspecialchars($info['emoji']) ?>
+                                            </span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
                             </div>
 
                             <div class="rehearsal-stats-container">
@@ -622,35 +641,18 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                         <div class="tree-view">
                             <ul class="tree-list">
                                 <?php
-                                // Root group retrieval
-                                $allGroups = $groupManager->getAllGroups();
-                                $rootGroup = null;
-
-                                // Find affects-all group
-                                foreach ($allGroups as $group) {
-                                    if (($group['type'] ?? '') === 'special' &&
-                                        isset($group['special_rules']['affects_all']) &&
-                                        $group['special_rules']['affects_all'] === true
-                                    ) {
-                                        $rootGroup = $group;
-                                        break;
+                                // Build pruned tree based on present instruments
+                                $presentInstrumentIds = [];
+                                if (!empty($membersBySection[$rehearsalId]['all'])) {
+                                    foreach ($membersBySection[$rehearsalId]['all'] as $member) {
+                                        $resolved = $groupManager->resolveAlias($member['type']);
+                                        $presentInstrumentIds[$resolved] = true;
                                     }
                                 }
-
-                                // Fallback to top-level
-                                if (!$rootGroup) {
-                                    foreach ($allGroups as $group) {
-                                        $parent = $groupManager->getParent($group['id']);
-                                        if (!$parent) {
-                                            $rootGroup = $group;
-                                            break;
-                                        }
-                                    }
-                                }
+                                $prunedTree = $groupManager->pruneTree(array_keys($presentInstrumentIds));
 
                                 // Leader view check
                                 $isLeaderOnlyView = isset($isLeaderOnlyView) && $isLeaderOnlyView;
-                                $rootDisplayName = $rootGroup['display_name'] ?? 'Tutti';
 
                                 if (isset($sectionPlayers['all'])) {
                                 } else {
@@ -762,51 +764,64 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                                                 </div>
                                             </div>
                                         </li>
-                                    <?php
+                                        <?php
                                     }
                                 } else {
-                                    // Normal view
-                                    ?>
-                                    <!-- Main root node -->
-                                    <li class="tree-node tree-depth-0">
-                                        <button class="tree-node-header" data-toggle="collapse" data-target="#root-<?= $rehearsalId ?>" aria-expanded="false" aria-controls="root-<?= $rehearsalId ?>">
-                                            <i class="tree-node-icon fas fa-chevron-right"></i>
+                                    // Normal view — render pruned tree roots
+                                    foreach ($prunedTree as $rootKey => $rootNode):
+                                        $rootDisplayName = $rootNode['display_name'] ?? $rootNode['id'] ?? 'Gruppe';
+                                        $rootNodeId = $rootNode['id'] ?? $rootKey;
 
-                                            <div class="tree-node-title">
-                                                <span class="tree-node-title-text"><?= htmlspecialchars($rootDisplayName) ?></span>
-                                            </div>
+                                        // Collect members for this root
+                                        $rootPlayers = [];
+                                        if (!empty($membersBySection[$rehearsalId]['all'])) {
+                                            foreach ($membersBySection[$rehearsalId]['all'] as $member) {
+                                                if ($groupManager->isUserInGroup($member['type'], $rootNodeId)) {
+                                                    $rootPlayers[] = $member;
+                                                }
+                                            }
+                                        }
 
-                                            <div class="tree-node-stats">
-                                                <div class="tree-node-stat">
-                                                    <i class="tree-node-stat-icon fas fa-check-circle status-<?= DashboardConstants::CSS_ATTENDING_CLASS ?>"></i>
-                                                    <span><?= $attendingCount ?></span>
-                                                </div>
-                                                <div class="tree-node-stat">
-                                                    <i class="tree-node-stat-icon fas fa-times-circle status-<?= DashboardConstants::CSS_NOT_ATTENDING_CLASS ?>"></i>
-                                                    <span><?= $notAttendingCount ?></span>
-                                                </div>
-                                                <div class="tree-node-stat">
-                                                    <i class="tree-node-stat-icon fas fa-question-circle status-<?= DashboardConstants::CSS_NO_RESPONSE_CLASS ?>"></i>
-                                                    <span><?= $noResponseCount ?></span>
-                                                </div>
-                                            </div>
-                                        </button>
+                                        $rootAttending = count(array_filter($rootPlayers, fn($m) => $m['status'] === 'attending'));
+                                        $rootNotAttending = count(array_filter($rootPlayers, fn($m) => $m['status'] === 'not_attending'));
+                                        $rootNoResponse = count(array_filter($rootPlayers, fn($m) => $m['status'] === 'no_response'));
 
-                                        <div id="root-<?= $rehearsalId ?>" class="tree-node-content collapse">
-                                            <ul class="tree-list">
-                                                <?php foreach ($sectionPlayers as $sectionId => $players): ?>
-                                                    <?php
-                                                    // Filter empty sections
-                                                    if (!empty($players)) {
-                                                        // Include the tree-style dynamic section component
-                                                        include __DIR__ . '/dynamic-section-component.php';
-                                                    }
-                                                    ?>
-                                                <?php endforeach; ?>
-                                            </ul>
-                                        </div>
-                                    </li>
-                                <?php } ?>
+                                        if (empty($rootPlayers)) continue;
+
+                                        // If leaf node, render directly with members
+                                        if (empty($rootNode['children'])):
+                                        ?>
+                                            <li class="tree-node tree-depth-0">
+                                                <button class="tree-node-header" data-toggle="collapse" data-target="#pruned-<?= $rootKey . $rehearsalId ?>" aria-expanded="false">
+                                                    <i class="tree-node-icon fas fa-chevron-right"></i>
+                                                    <div class="tree-node-title"><span class="tree-node-title-text"><?= htmlspecialchars($rootDisplayName) ?></span></div>
+                                                    <div class="tree-node-stats">
+                                                        <div class="tree-node-stat"><i class="tree-node-stat-icon fas fa-check-circle status-<?= DashboardConstants::CSS_ATTENDING_CLASS ?>"></i><span><?= $rootAttending ?></span></div>
+                                                        <div class="tree-node-stat"><i class="tree-node-stat-icon fas fa-times-circle status-<?= DashboardConstants::CSS_NOT_ATTENDING_CLASS ?>"></i><span><?= $rootNotAttending ?></span></div>
+                                                        <div class="tree-node-stat"><i class="tree-node-stat-icon fas fa-question-circle status-<?= DashboardConstants::CSS_NO_RESPONSE_CLASS ?>"></i><span><?= $rootNoResponse ?></span></div>
+                                                    </div>
+                                                </button>
+                                                <div id="pruned-<?= $rootKey . $rehearsalId ?>" class="tree-node-content collapse">
+                                                    <ul class="tree-list">
+                                                        <?php
+                                                        sortPlayersByStatus($rootPlayers);
+                                                        foreach ($rootPlayers as $player):
+                                                            renderUserItem($player, $player['status']);
+                                                        endforeach;
+                                                        ?>
+                                                    </ul>
+                                                </div>
+                                            </li>
+                                        <?php else:
+                                            // Section with children — render as expandable root with sub-sections
+                                            $sectionId = $rootNodeId;
+                                            $players = $rootPlayers;
+                                            $prunedSubtree = $rootNode;
+                                        ?>
+                                            <?php include __DIR__ . '/dynamic-section-component.php'; ?>
+                                <?php endif;
+                                    endforeach;
+                                } ?>
                             </ul>
                         </div>
                     </div>

@@ -199,13 +199,105 @@ class GroupManager
     }
 
     /**
-     * Get all sections (non-leaf nodes, excluding special groups)
+     * Get all sections (non-leaf nodes)
      */
     public function getAllSections(): array
     {
         return array_filter($this->flatMapping, function ($group) {
             return ($group['type'] ?? '') === 'section';
         });
+    }
+
+    /**
+     * @return array Top-level config nodes (those without a parent)
+     */
+    public function getRootNodes(): array
+    {
+        $roots = [];
+        foreach ($this->flatMapping as $id => $group) {
+            if (!isset($this->parentMapping[$id])) {
+                $roots[$id] = $group;
+            }
+        }
+        return $roots;
+    }
+
+    /**
+     * Build a pruned config tree containing only branches with present instruments.
+     * Single-child chains are collapsed so the tree stays minimal.
+     *
+     * @param string[] $presentInstrumentIds Instrument IDs that have members
+     * @return array Pruned tree nodes ready for rendering
+     */
+    public function pruneTree(array $presentInstrumentIds): array
+    {
+        $present = array_flip($presentInstrumentIds);
+        $roots = $this->getRootNodes();
+
+        $pruned = [];
+        foreach ($roots as $id => $root) {
+            $node = $this->pruneNode($root, $present);
+            if ($node !== null) {
+                $pruned[$id] = $node;
+            }
+        }
+
+        // Collapse single-child wrapper chains at the top level
+        return $this->collapseSingleChildRoots($pruned);
+    }
+
+    /**
+     * Recursively prune a single node: strip empty branches, collapse single-child chains.
+     */
+    private function pruneNode(array $node, array $presentMap): ?array
+    {
+        $nodeId = $node['id'] ?? null;
+        $children = $node['children'] ?? [];
+
+        if (empty($children)) {
+            // Leaf node — keep only if instrument is present
+            return isset($presentMap[$nodeId]) ? $node : null;
+        }
+
+        // Recurse into children
+        $kept = [];
+        foreach ($children as $key => $child) {
+            if (!is_array($child) || !isset($child['id'])) continue;
+            $pruned = $this->pruneNode($child, $presentMap);
+            if ($pruned !== null) {
+                $kept[$key] = $pruned;
+            }
+        }
+
+        if (empty($kept)) {
+            return null;
+        }
+
+        // Collapse: if only one child remains, promote it
+        if (count($kept) === 1) {
+            return reset($kept);
+        }
+
+        $node['children'] = $kept;
+        return $node;
+    }
+
+    /**
+     * Second pass: collapse any remaining single-child wrappers at root level.
+     */
+    private function collapseSingleChildRoots(array $roots): array
+    {
+        $result = [];
+        foreach ($roots as $key => $node) {
+            $children = $node['children'] ?? [];
+            if (count($children) === 1 && !empty($children)) {
+                $only = reset($children);
+                $result[array_key_first($children)] = $only;
+            } else {
+                $result[$key] = $node;
+            }
+        }
+        return $result;
     }
 
     /**
@@ -293,12 +385,6 @@ class GroupManager
         $cacheKey = "$userType|$groupId";
         if (isset($this->membershipCache[$cacheKey])) {
             return $this->membershipCache[$cacheKey];
-        }
-
-        $group = $this->flatMapping[$groupId] ?? null;
-        if ($group && isset($group['special_rules']['affects_all']) && $group['special_rules']['affects_all']) {
-            $this->membershipCache[$cacheKey] = true;
-            return true;
         }
 
         if ($userType === $groupId) {
@@ -414,17 +500,20 @@ class GroupManager
      */
     public function getFlattenedSections(): array
     {
-        $config = $this->config;
-
-        // Peel single root node (e.g. "tutti")
-        if (count($config) === 1) {
-            $first = reset($config);
-            if (!empty($first['children'])) {
-                $config = $first['children'];
+        // Collect children of all root nodes as the flattening source
+        $nodes = [];
+        foreach ($this->getRootNodes() as $root) {
+            if (!empty($root['children'])) {
+                foreach ($root['children'] as $k => $child) {
+                    $nodes[$k] = $child;
+                }
+            } else {
+                // Root with no children is itself a leaf
+                $nodes[$root['id']] = $root;
             }
         }
 
-        return self::flattenRecursive($config);
+        return self::flattenRecursive($nodes);
     }
 
     /**

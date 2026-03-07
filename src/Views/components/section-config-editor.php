@@ -296,8 +296,12 @@ $editorId          = 'section-config-editor';
             return 'node_' + Date.now() + '_' + (idCounter++);
         }
 
+        function generateStableId() {
+            return 'grp_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 4);
+        }
+
         // --- Convert tree to flat working model ---
-        // Working model: array of nodes with { _uid, id, display_name, type, emoji?, bg?, tc?, plural?, aliases?, special_rules?, children: [] }
+        // Working model: array of nodes with { _uid, id, display_name, type, emoji?, bg?, tc?, plural?, aliases?, children: [] }
         function ensureUids(nodes) {
             if (!nodes || typeof nodes !== 'object') return {};
             const result = {};
@@ -321,12 +325,7 @@ $editorId          = 'section-config-editor';
         // --- Render ---
         function render() {
             rootEl.innerHTML = '';
-            const tuttiNode = workingTree.tutti;
-            if (tuttiNode && tuttiNode.children) {
-                renderNodes(tuttiNode.children, rootEl);
-            } else {
-                renderNodes(workingTree, rootEl);
-            }
+            renderNodes(workingTree, rootEl);
         }
 
         function renderNodes(nodes, parentEl) {
@@ -386,7 +385,6 @@ $editorId          = 'section-config-editor';
             let nameDebounce = null;
             input.oninput = () => {
                 node.display_name = input.value;
-                node.id = input.value.replace(/\s+/g, '_');
                 clearTimeout(nameDebounce);
                 nameDebounce = setTimeout(() => save(), 600);
             };
@@ -463,7 +461,7 @@ $editorId          = 'section-config-editor';
             parentNode.children[newKey] = {
                 _uid: uid(),
                 _key: newKey,
-                id: 'Neu',
+                id: generateStableId(),
                 display_name: 'Neu',
                 children: {}
             };
@@ -478,12 +476,12 @@ $editorId          = 'section-config-editor';
         }
 
         function addRootSection() {
-            const targetNodes = workingTree.tutti?.children ?? workingTree;
+            const targetNodes = workingTree;
             const newKey = 'new_' + uid();
             targetNodes[newKey] = {
                 _uid: uid(),
                 _key: newKey,
-                id: 'Neu',
+                id: generateStableId(),
                 display_name: 'Neu',
                 children: {}
             };
@@ -541,9 +539,32 @@ $editorId          = 'section-config-editor';
         }
 
         async function removeNode(targetUid) {
-            const allNodes = workingTree.tutti?.children ?? workingTree;
+            const allNodes = workingTree;
             const targetNode = findNodeByUid(allNodes, targetUid);
             if (!targetNode) return;
+
+            // Prevent deletion of the last remaining node
+            function countAllNodes(nodes) {
+                let count = 0;
+                for (const n of Object.values(nodes)) {
+                    count++;
+                    if (n.children) count += countAllNodes(n.children);
+                }
+                return count;
+            }
+            if (countAllNodes(allNodes) <= 1) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Letzte Gruppe',
+                        text: 'Es muss mindestens eine Gruppe vorhanden sein.',
+                        customClass: {
+                            popup: 'swal-custom-popup'
+                        }
+                    });
+                }
+                return;
+            }
 
             const deletedIds = collectGroupIds(targetNode);
 
@@ -677,7 +698,7 @@ $editorId          = 'section-config-editor';
                 }
                 return false;
             }
-            removeRecursive(workingTree.tutti?.children ?? workingTree);
+            removeRecursive(workingTree);
             render();
             save();
         }
@@ -773,7 +794,7 @@ $editorId          = 'section-config-editor';
                 clearDropFeedback();
                 if (!draggedUid || draggedUid === node._uid) return;
 
-                const allNodes = workingTree.tutti?.children ?? workingTree;
+                const allNodes = workingTree;
                 if (isDescendantOf(draggedUid, node._uid, allNodes)) return;
 
                 const zone = getDropZone(e, rowEl);
@@ -789,7 +810,7 @@ $editorId          = 'section-config-editor';
         });
 
         function moveNode(sourceUid, targetUid, zone) {
-            const allNodes = workingTree.tutti?.children ?? workingTree;
+            const allNodes = workingTree;
 
             let sourceNode = null;
 

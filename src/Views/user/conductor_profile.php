@@ -154,13 +154,13 @@ include __DIR__ . '/../components/theme-selector.php';
 
 <script src="/assets/js/settings-engine.js"></script>
 <script>
-    $(document).ready(function() {
+    document.addEventListener('DOMContentLoaded', function() {
         <?php $orchestraBase = ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? ''); ?>
         const userId = <?= (int)$user['id'] ?>;
         const orchestraSlug = '<?= $orchestraBase ?>';
         const csrfToken = '<?= \App\Core\CSRF::getToken() ?>';
 
-        ['email', 'display_name'].forEach(field => {
+        ['email', 'display_name'].forEach(function(field) {
             const el = document.getElementById(field);
             if (el) {
                 el.dataset.entity = 'user';
@@ -175,54 +175,50 @@ include __DIR__ . '/../components/theme-selector.php';
         if (window.SettingsEngine) window.SettingsEngine.init();
 
         // Theme selection
-        $('.theme-radio-compact').on('change', function() {
-            if (!$(this).is(':checked')) return;
-            const themeKey = $(this).data('theme-key');
-            const themeName = $(this).closest('.theme-option-compact').find('.theme-name-compact').text();
-            $('.theme-selection-compact').addClass('theme-switching');
+        document.querySelectorAll('.theme-radio-compact').forEach(function(radio) {
+            radio.addEventListener('change', function() {
+                if (!this.checked) return;
+                const themeKey = this.dataset.themeKey;
+                const themeName = this.closest('.theme-option-compact').querySelector('.theme-name-compact').textContent;
+                document.querySelector('.theme-selection-compact').classList.add('theme-switching');
 
-            $.ajax({
-                type: 'POST',
-                url: '/' + orchestraSlug + '/profile/switch-theme',
-                data: {
-                    theme: themeKey,
-                    csrf_token: csrfToken
-                },
-                success: function(response) {
-                    if (typeof response === 'string') try {
-                        response = JSON.parse(response);
-                    } catch (e) {
-                        response = {
-                            success: false
-                        };
-                    }
-                    if (response.success) {
-                        const link = $('link[data-theme]');
-                        if (link.length) {
-                            link.attr('href', '/assets/css/themes/theme-' + themeKey + '.css').attr('data-theme', themeKey);
+                fetch('/' + orchestraSlug + '/profile/switch-theme', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: 'theme=' + encodeURIComponent(themeKey) + '&csrf_token=' + encodeURIComponent(csrfToken)
+                    })
+                    .then(function(r) {
+                        return r.json();
+                    })
+                    .then(function(response) {
+                        if (response.success) {
+                            const link = document.querySelector('link[data-theme]');
+                            if (link) {
+                                link.setAttribute('href', '/assets/css/themes/theme-' + themeKey + '.css');
+                                link.setAttribute('data-theme', themeKey);
+                            }
+                            document.body.setAttribute('data-current-theme', themeKey);
+                            if (typeof Storage !== 'undefined') sessionStorage.setItem('current-theme', themeKey);
+                            window.notifySuccess('Theme "' + themeName + '" aktiviert');
+                        } else {
+                            window.notifyError(response.message || response.error || 'Fehler beim Wechseln des Themes');
+                            const cur = document.body.getAttribute('data-current-theme') || 'default';
+                            const prev = document.querySelector('input[data-theme-key="' + cur + '"]');
+                            if (prev) prev.checked = true;
                         }
-                        $('body').attr('data-current-theme', themeKey);
-                        if (typeof Storage !== 'undefined') sessionStorage.setItem('current-theme', themeKey);
-                        window.notifySuccess('Theme "' + themeName + '" aktiviert');
-                    } else {
-                        window.notifyError(response.message || response.error || 'Fehler beim Wechseln des Themes');
-                        const cur = $('body').data('current-theme') || 'default';
-                        $('input[data-theme-key="' + cur + '"]').prop('checked', true);
-                    }
-                    $('.theme-selection-compact').removeClass('theme-switching');
-                },
-                error: function(xhr, status, error) {
-                    const details = 'Status: ' + status + '\nError: ' + error + '\nResponse: ' + xhr.responseText;
-                    window.notifyErrorWithDetails('Netzwerkfehler beim Wechseln des Themes', details);
-                    $('.theme-selection-compact').removeClass('theme-switching');
-                }
+                        document.querySelector('.theme-selection-compact').classList.remove('theme-switching');
+                    })
+                    .catch(function(err) {
+                        window.notifyErrorWithDetails('Netzwerkfehler beim Wechseln des Themes', err.message || '');
+                        document.querySelector('.theme-selection-compact').classList.remove('theme-switching');
+                    });
             });
         });
 
-
-
         // Account deletion
-        $('#deleteAccount').click(function() {
+        document.getElementById('deleteAccount').addEventListener('click', function() {
             Swal.fire({
                 title: 'Account dauerhaft löschen?',
                 html: '<div class="text-left"><div class="bg-red-50 border border-red-200 rounded-lg p-4"><h3 class="font-semibold text-red-800 mb-2">⚠️ Diese Aktion kann nicht rückgängig gemacht werden!</h3><ul class="text-red-700 text-sm space-y-1"><li>• Alle Daten werden unwiderruflich gelöscht</li><li>• Der Zugriff wird sofort gesperrt</li></ul></div></div>',
@@ -234,13 +230,15 @@ include __DIR__ . '/../components/theme-selector.php';
                 cancelButtonColor: '#6b7280',
                 focusCancel: true,
                 reverseButtons: true
-            }).then((result) => {
+            }).then(function(result) {
                 if (result.isConfirmed) {
                     Swal.fire({
                         title: 'Account wird gelöscht...',
                         allowOutsideClick: false,
                         showConfirmButton: false,
-                        willOpen: () => Swal.showLoading()
+                        willOpen: function() {
+                            Swal.showLoading();
+                        }
                     });
                     window.location.href = '/' + orchestraSlug + '/conductor/profile/delete';
                 }

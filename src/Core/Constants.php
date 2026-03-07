@@ -21,10 +21,6 @@ class Constants
     // Use GroupManager class to access group information
     // User roles are now dynamic per orchestra — see Role model
 
-    // Rehearsal Types
-    const REHEARSAL_TUTTI = 'tutti';
-    const REHEARSAL_SECTIONAL = 'sectional';
-
     // Color Codes for Rehearsals
     const COLOR_WHITE = '#e5e7eb';
     const COLOR_BLUE = '#3b82f6';
