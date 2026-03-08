@@ -15,7 +15,7 @@ $renderComponent = true;
         padding: 1rem;
         border: 1px solid var(--color-gray-300);
         border-radius: var(--radius-lg);
-        background: white;
+        background: var(--color-bg-primary);
         transition: all var(--transition-base);
         text-decoration: none;
         color: inherit;
@@ -57,7 +57,7 @@ $renderComponent = true;
         width: 100%;
         padding: 0.75rem 1rem;
         background: var(--color-primary);
-        color: white;
+        color: var(--color-white);
         text-decoration: none;
         border-radius: var(--radius-md);
         font-size: var(--font-size-sm);
@@ -67,7 +67,7 @@ $renderComponent = true;
 
     .join-button:hover {
         background: var(--color-primary-600);
-        color: white;
+        color: var(--color-white);
     }
 
     .join-button-secondary {
@@ -88,7 +88,7 @@ $renderComponent = true;
 
     .orchestra-card[style*="cursor: default"]:hover {
         border-color: var(--color-gray-300);
-        background-color: white;
+        background-color: var(--color-bg-primary);
         transform: none;
         box-shadow: none;
     }
