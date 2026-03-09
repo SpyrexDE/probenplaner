@@ -159,6 +159,9 @@ $hideNavbar = $isAuthPage || $isStandalone;
     <link rel="manifest" href="/manifest.json">
 
     <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/animations/scale.css" />
+
+    <!-- jQuery (loaded in head so inline scripts in page content can use $) -->
+    <script src="/assets/js/jquery.min.js"></script>
 </head>
 
 <body class="bg-gray-50 text-gray-900 font-sans overflow-x-hidden<?= $showSidebar ? '' : ' layout-guest' ?>">
@@ -341,7 +344,6 @@ $hideNavbar = $isAuthPage || $isStandalone;
 
     <script src="https://unpkg.com/@popperjs/core@2" defer></script>
     <script src="https://unpkg.com/tippy.js@6" defer></script>
-    <script src="/assets/js/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="/assets/js/notifications.js?v=<?= $assetVersion ?>"></script>
     <script src="/assets/js/collapse.js"></script>

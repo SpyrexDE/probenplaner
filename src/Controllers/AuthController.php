@@ -179,6 +179,9 @@ class AuthController extends Controller
         $_SESSION['email'] = $user['email'];
         $_SESSION['display_name'] = $user['display_name'] ?? '';
 
+        // Force theme re-fetch from DB on next page load
+        unset($_SESSION['theme']);
+
         session_regenerate_id(true);
 
         if (!isset($_SESSION['user_id'])) {

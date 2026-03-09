@@ -114,6 +114,9 @@ class HomeController extends Controller
         $_SESSION['email'] = $user['email'];
         $_SESSION['display_name'] = $user['display_name'] ?? '';
 
+        // Force theme re-fetch from DB on next page load
+        unset($_SESSION['theme']);
+
         $this->setFlash('success', 'Sie wurden erfolgreich eingeloggt.');
 
         $this->redirect('/orchestras/select');
