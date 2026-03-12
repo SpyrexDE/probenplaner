@@ -297,17 +297,19 @@ class Controller
             $_SESSION['current_org_slug'] = $orchestra['org_slug'] ?? '';
             $_SESSION['current_orchestra_name'] = $orchestra['name'];
             $_SESSION['current_type'] = $relation['type'];
-            $userOrchestraModel = new \App\Models\UserOrchestra();
-            $_SESSION['current_permissions'] = $userOrchestraModel->getPermissions($_SESSION['user_id'], $orchestraId);
-            $allRoles = $userOrchestraModel->getUserRoles((int)$_SESSION['user_id'], $orchestraId);
-            $_SESSION['current_roles'] = array_map(fn($r) => [
-                'id' => $r['id'],
-                'name' => $r['name'],
-                'tag_color' => $r['tag_color'] ?? '#478cf4',
-                'is_default' => $r['is_default'] ?? 0,
-                'is_system' => $r['is_system'] ?? 0,
-            ], $allRoles);
         }
+
+        // Always refresh permissions from DB
+        $userOrchestraModel = new \App\Models\UserOrchestra();
+        $_SESSION['current_permissions'] = $userOrchestraModel->getPermissions($_SESSION['user_id'], $orchestraId);
+        $allRoles = $userOrchestraModel->getUserRoles((int)$_SESSION['user_id'], $orchestraId);
+        $_SESSION['current_roles'] = array_map(fn($r) => [
+            'id' => $r['id'],
+            'name' => $r['name'],
+            'tag_color' => $r['tag_color'] ?? '#478cf4',
+            'is_default' => $r['is_default'] ?? 0,
+            'is_system' => $r['is_system'] ?? 0,
+        ], $allRoles);
         // Keep slugs in sync
         $_SESSION['current_orchestra_slug'] = $orchestra['slug'];
         $_SESSION['current_org_slug'] = $orchestra['org_slug'] ?? '';

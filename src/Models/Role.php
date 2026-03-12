@@ -18,12 +18,16 @@ class Role extends Model
         'can_attend_rehearsals',
         'can_view_schedule',
         'can_view_own_section_stats',
+        'can_view_parent_section_stats',
         'can_view_all_section_stats',
         'can_view_members',
         'can_manage_rehearsals',
         'can_manage_members',
         'can_manage_permissions',
         'can_manage_ensemble',
+        'can_manage_attendance_own_section',
+        'can_manage_attendance_parent_section',
+        'can_manage_attendance_all',
     ];
 
     /** All valid permission names in the system */
@@ -31,25 +35,33 @@ class Role extends Model
         'can_attend_rehearsals',
         'can_view_schedule',
         'can_view_own_section_stats',
+        'can_view_parent_section_stats',
         'can_view_all_section_stats',
         'can_view_members',
         'can_manage_rehearsals',
         'can_manage_members',
         'can_manage_permissions',
         'can_manage_ensemble',
+        'can_manage_attendance_own_section',
+        'can_manage_attendance_parent_section',
+        'can_manage_attendance_all',
     ];
 
     /** Human-readable labels for permissions */
     public const PERMISSION_LABELS = [
-        'can_attend_rehearsals'       => 'Proben besuchen',
-        'can_view_schedule'           => 'Probenplan ansehen',
-        'can_view_own_section_stats'  => 'Eigene Register-Statistik',
-        'can_view_all_section_stats'  => 'Alle Register-Statistiken',
-        'can_view_members'            => 'Mitglieder ansehen',
-        'can_manage_rehearsals'       => 'Termine verwalten',
-        'can_manage_members'          => 'Mitglieder verwalten',
-        'can_manage_permissions'      => 'Rollen verwalten',
-        'can_manage_ensemble'         => 'Ensemble verwalten',
+        'can_attend_rehearsals'                  => 'Proben besuchen',
+        'can_view_schedule'                      => 'Probenplan ansehen',
+        'can_view_own_section_stats'              => 'Rückmeldungen eigene Gruppe',
+        'can_view_parent_section_stats'           => 'Rückmeldungen übergeordnete Registergruppe',
+        'can_view_all_section_stats'              => 'Alle Rückmeldungen',
+        'can_view_members'                       => 'Mitglieder ansehen',
+        'can_manage_rehearsals'                  => 'Termine verwalten',
+        'can_manage_members'                     => 'Mitglieder verwalten',
+        'can_manage_permissions'                 => 'Rollen verwalten',
+        'can_manage_ensemble'                    => 'Ensemble verwalten',
+        'can_manage_attendance_own_section'       => 'Anwesenheiten eigene Gruppe',
+        'can_manage_attendance_parent_section'    => 'Anwesenheiten übergeordnete Registergruppe',
+        'can_manage_attendance_all'               => 'Alle Anwesenheiten verwalten',
     ];
 
     /**
@@ -65,7 +77,12 @@ class Role extends Model
         [
             'id'       => 'can_view_own_section_stats',
             'children' => [
-                ['id' => 'can_view_all_section_stats'],
+                [
+                    'id'       => 'can_view_parent_section_stats',
+                    'children' => [
+                        ['id' => 'can_view_all_section_stats'],
+                    ],
+                ],
             ],
         ],
         [
@@ -77,6 +94,17 @@ class Role extends Model
         ],
         ['id' => 'can_manage_rehearsals'],
         ['id' => 'can_manage_ensemble'],
+        [
+            'id'       => 'can_manage_attendance_own_section',
+            'children' => [
+                [
+                    'id'       => 'can_manage_attendance_parent_section',
+                    'children' => [
+                        ['id' => 'can_manage_attendance_all'],
+                    ],
+                ],
+            ],
+        ],
     ];
 
     /**

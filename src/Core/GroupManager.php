@@ -418,9 +418,10 @@ class GroupManager
     {
         $ancestors = $this->getAncestors($instrumentId);
 
-        foreach ($ancestors as $ancestor) {
-            if (($ancestor['type'] ?? '') === 'section') {
-                return $ancestor['id'];
+        // Walk bottom-up to find the nearest section ancestor
+        for ($i = count($ancestors) - 1; $i >= 0; $i--) {
+            if (($ancestors[$i]['type'] ?? '') === 'section') {
+                return $ancestors[$i]['id'];
             }
         }
 

@@ -758,7 +758,7 @@ $isAdmin = $canManage || !empty($canManagePermissions);
                 // Re-apply rolesData from the new page
                 const scriptTag = doc.querySelector('script:not([src])');
                 if (scriptTag && scriptTag.textContent.includes('rolesData')) {
-                    const match = scriptTag.textContent.match(/const rolesData = (\[[\s\S]*?\]);/);
+                    const match = scriptTag.textContent.match(/let rolesData = (\[[\s\S]*?\]);/);
                     if (match) {
                         try {
                             rolesData = JSON.parse(match[1]);

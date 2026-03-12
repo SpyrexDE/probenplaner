@@ -198,7 +198,7 @@ if ($_POST['action'] === 'generate_full_setup') {
             'conductor' => [
                 'name' => 'Leitung',
                 'tag_color' => '#478cf4',
-                'permissions' => json_encode(['can_view_own_section_stats', 'can_view_all_section_stats', 'can_view_members', 'can_manage_rehearsals', 'can_manage_members', 'can_manage_permissions', 'can_manage_ensemble']),
+                'permissions' => json_encode(['can_view_own_section_stats', 'can_view_parent_section_stats', 'can_view_all_section_stats', 'can_view_members', 'can_manage_rehearsals', 'can_manage_members', 'can_manage_permissions', 'can_manage_ensemble', 'can_manage_attendance_own_section', 'can_manage_attendance_parent_section', 'can_manage_attendance_all']),
                 'is_system' => 1,
                 'is_default' => 0,
                 'is_self_assignable' => 0,
@@ -216,7 +216,7 @@ if ($_POST['action'] === 'generate_full_setup') {
             'section_leader' => [
                 'name' => 'Stimmführung',
                 'tag_color' => '#f59e0b',
-                'permissions' => json_encode(['can_attend_rehearsals', 'can_view_schedule', 'can_view_own_section_stats', 'can_view_members']),
+                'permissions' => json_encode(['can_attend_rehearsals', 'can_view_schedule', 'can_view_own_section_stats', 'can_view_members', 'can_manage_attendance_own_section']),
                 'is_system' => 0,
                 'is_default' => 0,
                 'is_self_assignable' => 0,

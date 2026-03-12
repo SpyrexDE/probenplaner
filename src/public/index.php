@@ -151,6 +151,12 @@ $router->addRoute('/{org_slug}/{orchestra_id}/promises/admin', 'PromiseControlle
 $router->addRoute('/{org_slug}/{orchestra_id}/promises/update', 'PromiseController', 'update');
 $router->addRoute('/{org_slug}/{orchestra_id}/promises/note', 'PromiseController', 'note');
 
+// Attendance routes
+$router->addRoute('/{org_slug}/{orchestra_id}/attendance', 'AttendanceController', 'index');
+$router->addRoute('/{org_slug}/{orchestra_id}/attendance/update', 'AttendanceController', 'update', 'POST');
+$router->addRoute('/{org_slug}/{orchestra_id}/attendance/bulk-confirm', 'AttendanceController', 'bulkConfirm', 'POST');
+$router->addRoute('/{org_slug}/{orchestra_id}/attendance/load-rehearsal', 'AttendanceController', 'loadRehearsal');
+
 // Rehearsal routes
 $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals', 'RehearsalController', 'index');
 $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/create', 'RehearsalController', 'create');

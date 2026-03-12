@@ -127,7 +127,7 @@ class PromiseController extends Controller
     {
         $this->validateOrchestraContext($params);
 
-        $this->requireAnyPermission('can_view_own_section_stats', 'can_view_all_section_stats');
+        $this->requireAnyPermission('can_view_own_section_stats', 'can_view_parent_section_stats', 'can_view_all_section_stats');
 
         $showOld = isset($_GET['showOld']);
 
@@ -154,26 +154,24 @@ class PromiseController extends Controller
         if ($viewAllSections) {
             $members = $userOrchestraModel->getOrchestraUsers($_SESSION['current_orchestra_id']);
         } else {
-            $members = $userOrchestraModel->getUsersByType($sectionName, $_SESSION['current_orchestra_id']);
+            $groupManager = \App\Core\GroupManager::getInstance();
+            $resolvedType = $groupManager->resolveAlias($userType);
+            $canViewParent = !empty($_SESSION['current_permissions']['can_view_parent_section_stats']);
 
-            if (empty($members)) {
-                $members = $userOrchestraModel->getUsersByType($userType, $_SESSION['current_orchestra_id']);
-            }
-
-            if (empty($members)) {
-                $groupManager = \App\Core\GroupManager::getInstance();
-                $resolvedType = $groupManager->resolveAlias($userType);
+            if ($canViewParent) {
+                $leaderSection = $groupManager->getSectionForInstrument($resolvedType);
                 $allMembers = $userOrchestraModel->getOrchestraUsers($_SESSION['current_orchestra_id']);
-
-                $members = array_filter($allMembers, function ($member) use ($groupManager, $resolvedType, $userType) {
-                    $memberType = $groupManager->resolveAlias($member['type']);
-                    $leaderSectionInfo = $groupManager->getSectionForInstrument($resolvedType);
-                    $memberSectionInfo = $groupManager->getSectionForInstrument($memberType);
-
-                    if ($leaderSectionInfo && $memberSectionInfo) {
-                        return $leaderSectionInfo === $memberSectionInfo;
+                $members = array_filter($allMembers, function ($m) use ($groupManager, $resolvedType, $leaderSection) {
+                    $memberType = $groupManager->resolveAlias($m['type']);
+                    if ($leaderSection) {
+                        return $groupManager->getSectionForInstrument($memberType) === $leaderSection;
                     }
-                    return $memberType === $resolvedType || $member['type'] === $userType;
+                    return $memberType === $resolvedType;
+                });
+            } else {
+                $allMembers = $userOrchestraModel->getOrchestraUsers($_SESSION['current_orchestra_id']);
+                $members = array_filter($allMembers, function ($m) use ($groupManager, $resolvedType) {
+                    return $groupManager->resolveAlias($m['type']) === $resolvedType;
                 });
             }
         }

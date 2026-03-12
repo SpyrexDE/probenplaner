@@ -101,9 +101,13 @@
             $menu[] = ['label' => 'Meine Meldungen', 'href' => "{$basePath}/promises", 'page' => 'promises', 'icon' => 'fas fa-clipboard-check'];
         }
 
-        if (!empty($permissions['can_view_all_section_stats']) || !empty($permissions['can_view_own_section_stats'])) {
+        if (!empty($permissions['can_view_all_section_stats']) || !empty($permissions['can_view_parent_section_stats']) || !empty($permissions['can_view_own_section_stats'])) {
             $route = !empty($permissions['can_manage_ensemble']) ? "{$basePath}/promises/admin" : "{$basePath}/promises/leader";
             $menu[] = ['label' => 'Rückmeldungen', 'href' => $route, 'page' => !empty($permissions['can_manage_ensemble']) ? 'admin' : 'leader', 'icon' => 'fas fa-chart-bar'];
+        }
+
+        if (!empty($permissions['can_manage_attendance_all']) || !empty($permissions['can_manage_attendance_parent_section']) || !empty($permissions['can_manage_attendance_own_section'])) {
+            $menu[] = ['label' => 'Anwesenheiten', 'href' => "{$basePath}/attendance", 'page' => 'attendance', 'icon' => 'fas fa-clipboard-list'];
         }
 
         if (!empty($permissions['can_manage_rehearsals'])) {
