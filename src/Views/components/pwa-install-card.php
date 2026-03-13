@@ -30,6 +30,7 @@
         cursor: pointer;
         transition: all var(--transition-base);
         margin-top: auto;
+        flex-shrink: 0;
         position: relative;
         overflow: hidden;
     }
