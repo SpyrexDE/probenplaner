@@ -15,6 +15,7 @@ $config = $groupManager->getConfig();
 /**
  * Recursively generate form checkboxes from config
  */
+if (!function_exists('generateGroupCheckboxes')) {
 function generateGroupCheckboxes($groups, $level = 0, $formData = [], $parentClass = '') {
     $html = '';
     $groupsArray = array_values($groups); // Convert to indexed array for easier last-item detection
@@ -67,31 +68,35 @@ function generateGroupCheckboxes($groups, $level = 0, $formData = [], $parentCla
     
     return $html;
 }
+} // end function_exists guard
 
 // Generate the complete form with cleaned form data, but keep original for exclusion logic
 echo generateGroupCheckboxes($config, 0, $formData ?? []);
 
 // Add some JavaScript for hierarchical functionality
 ?>
-
+<?php if (!defined('DGS_SCRIPT_LOADED')): define('DGS_SCRIPT_LOADED', true); ?>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize hierarchical checkbox logic
     initializeHierarchicalCheckboxes();
 });
 
 // 3-Level Hierarchy Logic for dynamic groups
-function initializeHierarchicalCheckboxes() {
+const _hierarchyBound = new WeakSet();
+function initializeHierarchicalCheckboxes(container) {
+    container = container || document.body;
     const groupManager = {
         init: function() {
-            this.bindEventListeners();
-            // Calculate initial states for all parent checkboxes
+            if (!_hierarchyBound.has(container)) {
+                this.bindEventListeners();
+                _hierarchyBound.add(container);
+            }
             this.calculateInitialStates();
         },
         
         calculateInitialStates: function() {
             // Find all checkboxes that have children and update their states
-            const allCheckboxes = document.querySelectorAll('input[type="checkbox"][name="groups[]"]');
+            const allCheckboxes = container.querySelectorAll('input[type="checkbox"][name="groups[]"]');
             
             // Bottom-up processing
             const checkboxesByDepth = [];
@@ -138,7 +143,7 @@ function initializeHierarchicalCheckboxes() {
         },
         
             bindEventListeners: function() {
-      const checkboxes = document.querySelectorAll('input[type="checkbox"][name="groups[]"]');
+      const checkboxes = container.querySelectorAll('input[type="checkbox"][name="groups[]"]');
       
       checkboxes.forEach(checkbox => {
         checkbox.addEventListener('change', (e) => {
@@ -146,8 +151,7 @@ function initializeHierarchicalCheckboxes() {
         });
       });
       
-      // Add click handlers for entire checkbox items
-      const checkboxItems = document.querySelectorAll('.checkbox-item');
+      const checkboxItems = container.querySelectorAll('.checkbox-item');
       checkboxItems.forEach(item => {
         item.addEventListener('click', (e) => {
           // Don't trigger if clicking directly on checkbox or label
@@ -215,13 +219,10 @@ function initializeHierarchicalCheckboxes() {
             const parentItem = parentCheckbox.closest('.checkbox-item');
             if (!parentItem) return [];
             
-            // Look for the next .checkbox-group sibling
+            // Only the immediate next sibling can be this item's children group
             let nextSibling = parentItem.nextElementSibling;
-            while (nextSibling && !nextSibling.classList.contains('checkbox-group')) {
-                nextSibling = nextSibling.nextElementSibling;
-            }
             
-            if (!nextSibling) return [];
+            if (!nextSibling || !nextSibling.classList.contains('checkbox-group')) return [];
             
             // Find all direct child checkboxes (not nested deeper)
             const directChildren = [];
@@ -301,4 +302,55 @@ function initializeHierarchicalCheckboxes() {
     
     groupManager.init();
 }
+
+/**
+ * Recalculate parent checkbox states (indeterminate/checked) without cascading side-effects.
+ */
+function recalculateHierarchyStates(container) {
+    container = container || document.body;
+    const allCbs = container.querySelectorAll('input[type="checkbox"][name="groups[]"]');
+
+    const findChildren = (cb) => {
+        const item = cb.closest('.checkbox-item');
+        if (!item) return [];
+        const next = item.nextElementSibling;
+        if (!next || !next.classList.contains('checkbox-group')) return [];
+        return [...next.children]
+            .filter(c => c.classList.contains('checkbox-item'))
+            .map(c => c.querySelector('input[type="checkbox"]'))
+            .filter(Boolean);
+    };
+
+    const getDepth = (cb) => {
+        let d = 0, el = cb.closest('.checkbox-item');
+        while (el) { if (el.classList.contains('checkbox-group')) d++; el = el.parentElement; }
+        return d;
+    };
+
+    // Sort by depth descending (bottom-up)
+    const byDepth = [];
+    allCbs.forEach(cb => {
+        const d = getDepth(cb);
+        if (!byDepth[d]) byDepth[d] = [];
+        byDepth[d].push(cb);
+    });
+
+    for (let d = byDepth.length - 1; d >= 0; d--) {
+        if (!byDepth[d]) continue;
+        byDepth[d].forEach(cb => {
+            const kids = findChildren(cb);
+            if (kids.length === 0) return;
+            const checked = kids.filter(k => k.checked).length;
+            const indet = kids.filter(k => k.indeterminate).length;
+            if (checked === kids.length && indet === 0) {
+                cb.checked = true; cb.indeterminate = false;
+            } else if (checked === 0 && indet === 0) {
+                cb.checked = false; cb.indeterminate = false;
+            } else {
+                cb.checked = false; cb.indeterminate = true;
+            }
+        });
+    }
+}
 </script>
+<?php endif; ?>

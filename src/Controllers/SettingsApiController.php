@@ -154,11 +154,25 @@ class SettingsApiController extends Controller
                 $_SESSION['current_orchestra_name'] = $fieldsToUpdate['name'];
             }
 
-            $this->json([
+            $response = [
                 'success'  => true,
                 'saved_at' => date('c'),
                 'fields'   => array_keys($fieldsToUpdate),
-            ]);
+            ];
+
+            // Return SmartGroupDisplay text when groups are saved
+            if ($entity === 'rehearsal' && isset($fieldsToUpdate['groups'])) {
+                $rehearsalModel = new \App\Models\Rehearsal();
+                $rehearsal = $rehearsalModel->findById($entityId);
+                if ($rehearsal) {
+                    $smartDisplay = new \App\Core\SmartGroupDisplay();
+                    $response['groups_display'] = $smartDisplay->generateDescription(
+                        $rehearsal['groups'] ?? [], $rehearsal, false
+                    );
+                }
+            }
+
+            $this->json($response);
         } else {
             $this->json(['success' => false, 'error' => 'Speichern fehlgeschlagen'], 500);
         }

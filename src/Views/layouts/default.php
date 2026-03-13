@@ -35,7 +35,7 @@ $hideNavbar = $isAuthPage || $isStandalone;
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <?php if (isset($_SESSION['user_id'])): ?>
         <meta name="csrf-token" content="<?= htmlspecialchars(\App\Core\CSRF::getToken()) ?>">
     <?php endif; ?>

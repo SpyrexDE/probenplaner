@@ -47,15 +47,114 @@ class RehearsalController extends Controller
 
         $showOld = isset($_GET['showOld']);
 
-        $rehearsals = $this->rehearsalModel->getUpcoming($_SESSION['current_orchestra_id'], $showOld);
-        $hasPastRehearsals = $this->rehearsalModel->hasPastRehearsals($_SESSION['current_orchestra_id']);
+        $orchestraId = (int)$_SESSION['current_orchestra_id'];
+        $rehearsals = $this->rehearsalModel->getUpcoming($orchestraId, $showOld);
+        $hasPastRehearsals = $this->rehearsalModel->hasPastRehearsals($orchestraId);
+
+        $roleModel = new Role();
+        $availableRoles = $roleModel->getByOrchestra($orchestraId);
+
+        $groupManager = \App\Core\GroupManager::getInstance();
+        $groupConfig = $groupManager->getConfig();
 
         $this->render('rehearsals/index', [
             'currentPage' => 'rehearsals',
             'rehearsals' => $rehearsals,
             'showOld' => $showOld,
-            'hasPastRehearsals' => $hasPastRehearsals
+            'hasPastRehearsals' => $hasPastRehearsals,
+            'availableRoles' => $availableRoles,
+            'groupConfig' => $groupConfig,
         ]);
+    }
+
+    /**
+     * AJAX: Create rehearsal with sensible defaults, return JSON with card HTML.
+     */
+    public function createAjax($params = [])
+    {
+        $this->validateOrchestraContext($params);
+        $this->requirePermission('can_manage_rehearsals');
+
+        header('Content-Type: application/json');
+
+        $orchestraId = (int)$_SESSION['current_orchestra_id'];
+
+        $today = date('Y-m-d');
+        $data = [
+            'start' => $today . ' 18:00:00',
+            'end' => $today . ' 20:00:00',
+            'location' => 'Probenraum',
+            'type' => '',
+            'orchestra_id' => $orchestraId,
+        ];
+
+        $groupManager = \App\Core\GroupManager::getInstance();
+        $rootGroups = array_map(fn($g) => $g['id'], $groupManager->getConfig());
+
+        $result = $this->rehearsalModel->create($data, $rootGroups);
+
+        if (!$result || is_array($result)) {
+            echo json_encode(['success' => false, 'message' => 'Probe konnte nicht erstellt werden']);
+            exit;
+        }
+
+        $roleModel = new Role();
+        $defaultRoles = $roleModel->getDefaultRoles($orchestraId);
+        $defaultRoleIds = array_map(fn($r) => (int)$r['id'], $defaultRoles);
+        if (!empty($defaultRoleIds)) {
+            $roleModel->setRehearsalRoles($result, $defaultRoleIds);
+        }
+
+        $rehearsal = $this->rehearsalModel->findById($result);
+
+        // Render card HTML
+        $context = 'inline-edit';
+        $options = ['showButtons' => false, 'expanded' => true];
+        $availableRoles = $roleModel->getByOrchestra($orchestraId);
+        $smartDisplay = new \App\Core\SmartGroupDisplay();
+
+        ob_start();
+        include APP_ROOT . '/Views/components/rehearsal-card.php';
+        $html = ob_get_clean();
+
+        echo json_encode(['success' => true, 'id' => $result, 'html' => $html]);
+        exit;
+    }
+
+    /**
+     * AJAX: Return rendered card HTML for a single rehearsal.
+     */
+    public function getCardHtml($params = [])
+    {
+        $this->validateOrchestraContext($params);
+        $this->requirePermission('can_manage_rehearsals');
+
+        $rehearsalId = isset($params['id']) ? (int)$params['id'] : 0;
+        if ($rehearsalId <= 0) {
+            http_response_code(400);
+            echo '';
+            exit;
+        }
+
+        $rehearsal = $this->rehearsalModel->findById($rehearsalId);
+        if (!$rehearsal) {
+            http_response_code(404);
+            echo '';
+            exit;
+        }
+
+        $orchestraId = (int)$_SESSION['current_orchestra_id'];
+        $roleModel = new Role();
+        $availableRoles = $roleModel->getByOrchestra($orchestraId);
+
+        $context = 'inline-edit';
+        $options = ['showButtons' => false];
+        $smartDisplay = new \App\Core\SmartGroupDisplay();
+
+        ob_start();
+        include APP_ROOT . '/Views/components/rehearsal-card.php';
+        echo ob_get_clean();
+        exit;
     }
 
     /**
@@ -446,13 +545,17 @@ class RehearsalController extends Controller
             $paginatedRehearsals = array_slice($pastRehearsals, $offset, $limit);
             $hasMore = ($offset + $limit) < $totalPastRehearsals;
 
+            $orchestraId = (int)$_SESSION['current_orchestra_id'];
+            $roleModel = new Role();
+            $availableRoles = $roleModel->getByOrchestra($orchestraId);
+            $smartDisplay = new \App\Core\SmartGroupDisplay();
+
             $html = '';
             foreach ($paginatedRehearsals as $rehearsal) {
                 // Set options for the rehearsal card component
-                $context = 'rehearsals';
+                $context = 'inline-edit';
                 $options = [
-                    'showButtons' => true,
-                    // Pass other necessary options
+                    'showButtons' => false,
                 ];
 
                 // Capture output

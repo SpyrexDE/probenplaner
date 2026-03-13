@@ -18,6 +18,7 @@ $apiUrl = $apiUrl ?? '';
 $editorId = 'infobox-editor-' . uniqid();
 ?>
 
+<?php if (!defined('INFOBOX_EDITOR_STYLES_LOADED')): define('INFOBOX_EDITOR_STYLES_LOADED', true); ?>
 <!-- Picmo Emoji Picker Assets -->
 <script>
     if (!window.picmo) {
@@ -128,9 +129,10 @@ $editorId = 'infobox-editor-' . uniqid();
         z-index: 9999;
     }
 </style>
+<?php endif; ?>
 
 <div class="form-section">
-    <h3 class="form-section-title">Wichtige Hinweise</h3>
+    <h3 class="form-section-title">Hinweise</h3>
 
     <div class="infobox-editor" id="<?= $editorId ?>">
         <!-- Items rendered by JS -->

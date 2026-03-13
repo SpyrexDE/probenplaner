@@ -18,6 +18,7 @@ $apiUrl = $apiUrl ?? '';
 $editorId = 'schedule-editor-' . uniqid();
 ?>
 
+<?php if (!defined('SCHEDULE_EDITOR_STYLES_LOADED')): define('SCHEDULE_EDITOR_STYLES_LOADED', true); ?>
 <style>
     .schedule-editor {
         display: flex;
@@ -175,6 +176,7 @@ $editorId = 'schedule-editor-' . uniqid();
         justify-content: center;
     }
 </style>
+<?php endif; ?>
 
 <div class="form-section">
     <h3 class="form-section-title">Ablauf</h3>

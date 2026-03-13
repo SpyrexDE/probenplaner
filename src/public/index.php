@@ -161,6 +161,8 @@ $router->addRoute('/{org_slug}/{orchestra_id}/attendance/table-data', 'Attendanc
 // Rehearsal routes
 $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals', 'RehearsalController', 'index');
 $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/create', 'RehearsalController', 'create');
+$router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/create-ajax', 'RehearsalController', 'createAjax', 'POST');
+$router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/card/{id}', 'RehearsalController', 'getCardHtml');
 $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/edit/{id}', 'RehearsalController', 'edit');
 $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/delete/{id}', 'RehearsalController', 'delete');
 

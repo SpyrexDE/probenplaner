@@ -41,14 +41,16 @@
     background-color: transparent;
 }
 
-.checkbox-item:hover {
-    background-color: var(--color-bg-tertiary);
-    transform: translateX(2px);
-    box-shadow: var(--shadow-sm);
-}
+@media (hover: hover) {
+    .checkbox-item:hover {
+        background-color: var(--color-bg-tertiary);
+        transform: translateX(2px);
+        box-shadow: var(--shadow-sm);
+    }
 
-.checkbox-item:active {
-    transform: translateX(1px);
+    .checkbox-item:active {
+        transform: translateX(1px);
+    }
 }
 
 .checkbox-item input[type="checkbox"] {
@@ -88,10 +90,12 @@
     opacity: 0.8;
 }
 
-.checkbox-item:has(input[type="checkbox"]:disabled):hover {
-    background-color: transparent;
-    transform: none;
-    box-shadow: none;
+@media (hover: hover) {
+    .checkbox-item:has(input[type="checkbox"]:disabled):hover {
+        background-color: transparent;
+        transform: none;
+        box-shadow: none;
+    }
 }
 
 /* Tree indentation with proper vertical lines */
@@ -185,13 +189,15 @@
     transition: transform var(--transition-base);
 }
 
-/* Keep lines stationary during hover animation */
-.checkbox-item:hover::before {
-    transform: translateX(-2px);
-}
+@media (hover: hover) {
+    /* Keep lines stationary during hover animation */
+    .checkbox-item:hover::before {
+        transform: translateX(-2px);
+    }
 
-.checkbox-item:active::before {
-    transform: translateX(-1px);
+    .checkbox-item:active::before {
+        transform: translateX(-1px);
+    }
 }
 
 /* Indeterminate state styling */
@@ -206,9 +212,10 @@
     font-weight: var(--font-weight-semibold);
 }
 
-/* Hover enhancement */
-.checkbox-item:hover label {
-    color: var(--color-text-primary);
+@media (hover: hover) {
+    .checkbox-item:hover label {
+        color: var(--color-text-primary);
+    }
 }
 </style>
 
