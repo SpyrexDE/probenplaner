@@ -156,6 +156,7 @@ $router->addRoute('/{org_slug}/{orchestra_id}/attendance', 'AttendanceController
 $router->addRoute('/{org_slug}/{orchestra_id}/attendance/update', 'AttendanceController', 'update', 'POST');
 $router->addRoute('/{org_slug}/{orchestra_id}/attendance/bulk-confirm', 'AttendanceController', 'bulkConfirm', 'POST');
 $router->addRoute('/{org_slug}/{orchestra_id}/attendance/load-rehearsal', 'AttendanceController', 'loadRehearsal');
+$router->addRoute('/{org_slug}/{orchestra_id}/attendance/table-data', 'AttendanceController', 'tableData');
 
 // Rehearsal routes
 $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals', 'RehearsalController', 'index');

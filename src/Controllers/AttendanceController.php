@@ -233,6 +233,132 @@ class AttendanceController extends Controller
     }
 
     /**
+     * AJAX: Return all data needed for the dense table view.
+     */
+    public function tableData($params = [])
+    {
+        $ctx = $this->validateOrchestraContext($params);
+        if (!$ctx) return;
+
+        if (!$this->requireAnyPermission('can_manage_attendance_own_section', 'can_manage_attendance_parent_section', 'can_manage_attendance_all')) {
+            return;
+        }
+
+        $orchestraId = $ctx['orchestra_id'];
+        $scope = $this->getAttendanceScope();
+
+        $rehearsals = $this->rehearsalModel->getUpcoming($orchestraId, true);
+        $now = new \DateTime();
+
+        $pastRehearsals = array_values(array_filter($rehearsals, function ($r) use ($now) {
+            return new \DateTime($r['start'] ?? $r['date'] ?? '') <= $now;
+        }));
+        usort($pastRehearsals, fn($a, $b) =>
+            strtotime($a['start'] ?? $a['date'] ?? '') - strtotime($b['start'] ?? $b['date'] ?? '')
+        );
+
+        $members = $this->loadScopedMembers($orchestraId, $scope);
+
+        $allAttendance = $this->attendanceModel->getAllForOrchestra($orchestraId);
+        $promiseModel = new UserPromise();
+        $allPromises = $promiseModel->getAllForOrchestra($orchestraId);
+
+        $groupManager = \App\Core\GroupManager::getInstance();
+
+        // Section-grouped members (same logic as the card view)
+        $sections = [];
+        if ($scope === 'all') {
+            $flatSections = $groupManager->getFlattenedSections();
+            $membersByType = [];
+            foreach ($members as $m) {
+                $membersByType[$groupManager->resolveAlias($m['type'] ?? '')][] = $m;
+            }
+
+            foreach ($flatSections as $parentId => $instrumentIds) {
+                $sectionMembers = [];
+                foreach ($instrumentIds as $instrId) {
+                    foreach ($membersByType[$instrId] ?? [] as $m) {
+                        $sectionMembers[] = [
+                            'id'   => (int)($m['user_id'] ?? $m['id']),
+                            'name' => $m['display_name'] ?? '',
+                            'type' => $m['type'] ?? '',
+                        ];
+                    }
+                }
+                if (!empty($sectionMembers)) {
+                    $label = $parentId ? $groupManager->getDisplayName($parentId) : '';
+                    $sections[] = ['label' => $label, 'members' => $sectionMembers];
+                }
+            }
+
+            $placed = array_merge(...array_values($flatSections));
+            $otherMembers = [];
+            foreach ($membersByType as $type => $ms) {
+                if (!in_array($type, $placed)) {
+                    foreach ($ms as $m) {
+                        $otherMembers[] = [
+                            'id'   => (int)($m['user_id'] ?? $m['id']),
+                            'name' => $m['display_name'] ?? '',
+                            'type' => $m['type'] ?? '',
+                        ];
+                    }
+                }
+            }
+            if (!empty($otherMembers)) {
+                $sections[] = ['label' => 'Sonstige', 'members' => $otherMembers];
+            }
+        } else {
+            $byType = [];
+            foreach ($members as $m) {
+                $type = $groupManager->resolveAlias($m['type'] ?? '');
+                $byType[$type]['label'] = $groupManager->getPluralName($type);
+                $byType[$type]['members'][] = [
+                    'id'   => (int)($m['user_id'] ?? $m['id']),
+                    'name' => $m['display_name'] ?? '',
+                    'type' => $m['type'] ?? '',
+                ];
+            }
+            $sections = array_values($byType);
+        }
+
+        // Rehearsal list with full date for filtering
+        $rehearsalList = array_map(function ($r) {
+            $start = new \DateTime($r['start'] ?? $r['date'] ?? '');
+            return [
+                'id'       => (int)$r['id'],
+                'date'     => $start->format('d.m'),
+                'dateFull' => $start->format('Y-m-d'),
+                'weekday'  => ['So','Mo','Di','Mi','Do','Fr','Sa'][$start->format('w')],
+            ];
+        }, $pastRehearsals);
+
+        // Attendance map
+        $attMap = [];
+        foreach ($allAttendance as $uid => $byRehearsal) {
+            foreach ($byRehearsal as $rid => $rec) {
+                $attMap[$uid][$rid] = (int)(bool)$rec['present'];
+            }
+        }
+
+        // Promise map
+        $promMap = [];
+        foreach ($allPromises as $uid => $byRehearsal) {
+            foreach ($byRehearsal as $rid => $rec) {
+                $promMap[$uid][$rid] = $rec['status'];
+            }
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success'    => true,
+            'rehearsals' => $rehearsalList,
+            'sections'   => $sections,
+            'attendance' => $attMap,
+            'promises'   => $promMap,
+        ]);
+    }
+
+    /**
      * Load members scoped by permission level.
      */
     /**

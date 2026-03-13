@@ -143,6 +143,30 @@ class Attendance extends Model
     }
 
     /**
+     * @return array<int, array<int, array>> All records keyed by [user_id][rehearsal_id]
+     */
+    public function getAllForOrchestra(int $orchestraId): array
+    {
+        $sql = "SELECT ra.*
+                FROM {$this->table} ra
+                JOIN rehearsals r ON ra.rehearsal_id = r.id
+                WHERE r.orchestra_id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param('i', $orchestraId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $map = [];
+        while ($row = $result->fetch_assoc()) {
+            $uid = (int)$row['user_id'];
+            $rid = (int)$row['rehearsal_id'];
+            $map[$uid][$rid] = $row;
+        }
+        $stmt->close();
+        return $map;
+    }
+
+    /**
      * Delete a single attendance record.
      */
     public function deleteRecord(int $rehearsalId, int $userId): bool

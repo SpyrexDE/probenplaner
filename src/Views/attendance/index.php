@@ -470,6 +470,248 @@ foreach ($members as $member) {
     color: var(--color-error-dark);
 }
 
+/* === DENSE TABLE VIEW === */
+.att-title-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin: 0 0 var(--space-3) 0;
+}
+
+.att-title-row .att-title {
+    margin: 0;
+}
+
+.att-view-toggle {
+    margin-left: auto;
+    gap: var(--space-2);
+    font-size: var(--font-size-sm);
+}
+
+.att-view-toggle i {
+    font-size: var(--font-size-base);
+}
+
+.att-table-filters {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.att-range-group {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.att-range-group-label {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.att-range-stepper {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--color-bg-primary);
+}
+
+.att-range-stepper button {
+    background: transparent;
+    border: none;
+    width: 28px;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-xs);
+    transition: all var(--transition-base);
+    padding: 0;
+}
+
+.att-range-stepper button:hover:not(:disabled) {
+    background: var(--color-gray-200);
+}
+
+.att-range-stepper button:disabled {
+    opacity: 0.2;
+    cursor: default;
+}
+
+.att-range-date {
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+    font-weight: var(--font-weight-medium);
+    border-left: 1px solid var(--color-border);
+    border-right: 1px solid var(--color-border);
+    white-space: nowrap;
+    min-width: 70px;
+    text-align: center;
+}
+
+.att-range-sep {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+
+
+.att-table-wrap {
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-primary);
+}
+
+.att-table-scroll {
+    overflow-x: auto;
+}
+
+.att-dense-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-sm);
+    white-space: nowrap;
+}
+
+.att-dense-table th,
+.att-dense-table td {
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--color-border);
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Remove outer-facing borders so they don't double up with the wrapper border */
+.att-dense-table tr:first-child th { border-top: none; }
+.att-dense-table tr:last-child td { border-bottom: none; }
+.att-dense-table th:first-child,
+.att-dense-table td:first-child { border-left: none; }
+.att-dense-table th:last-child,
+.att-dense-table td:last-child { border-right: none; }
+
+.att-dense-table thead th {
+    position: sticky;
+    top: 0;
+    background: var(--color-bg-secondary);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+    z-index: 2;
+}
+
+.att-dense-table thead th:first-child {
+    left: 0;
+    z-index: 3;
+}
+
+.att-dense-table .att-name-col {
+    position: sticky;
+    left: 0;
+    background: var(--color-bg-primary);
+    text-align: left;
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+    min-width: 140px;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    z-index: 1;
+}
+
+.att-dense-table thead .att-name-col {
+    background: var(--color-bg-secondary);
+}
+
+.att-section-row td {
+    background: var(--color-gray-200);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.5px;
+    text-align: left;
+    padding: var(--space-2) var(--space-2);
+}
+
+.att-section-row .att-name-col {
+    background: var(--color-gray-200);
+}
+
+.att-cell-present {
+    background: var(--color-success-100);
+    color: var(--color-success-dark);
+}
+
+.att-cell-absent {
+    background: var(--color-error-100);
+    color: var(--color-error-dark);
+}
+
+.att-cell-deviation {
+    background: var(--color-warning-200) !important;
+    color: var(--color-error-dark);
+}
+
+.att-cell-positive-dev {
+    background: var(--color-success-100);
+    color: var(--color-warning-dark);
+}
+
+.att-cell-unset {
+    color: var(--color-text-muted);
+}
+
+.att-legend {
+    display: flex;
+    gap: var(--space-4);
+    padding: var(--space-2) var(--space-1);
+    margin-top: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.att-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+}
+
+.att-legend-swatch {
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    font-size: 10px;
+    font-weight: var(--font-weight-bold);
+    border: 1px solid var(--color-border);
+}
+
+.att-col-total {
+    font-weight: var(--font-weight-bold);
+    background: var(--color-bg-secondary);
+    position: sticky;
+    right: 0;
+    z-index: 1;
+}
+
+thead .att-col-total {
+    z-index: 3;
+}
+
 /* === RESPONSIVE === */
 @media (max-width: 768px) {
     .att-page {
@@ -548,7 +790,12 @@ foreach ($members as $member) {
 
     <!-- Header -->
     <div class="att-header">
-        <h1 class="att-title">Anwesenheiten</h1>
+        <div class="att-title-row">
+            <h1 class="att-title">Anwesenheiten</h1>
+            <button type="button" id="att-view-toggle" class="btn-modern btn-outline btn-sm att-view-toggle" title="Tabellenansicht">
+                <i class="fas fa-table"></i> Tabelle
+            </button>
+        </div>
 
         <div class="att-actions">
             <button type="button" id="att-bulk-confirm" class="btn-modern btn-primary btn-sm">
@@ -655,6 +902,39 @@ foreach ($members as $member) {
         <?php endif; ?>
     </div>
 
+    <!-- Table View Filters (hidden by default) -->
+    <div id="att-table-filters" class="att-table-filters" style="display: none;">
+        <div class="att-range-group">
+            <span class="att-range-group-label">Von</span>
+            <div class="att-range-stepper">
+                <button type="button" id="att-from-minus"><i class="fas fa-chevron-left"></i></button>
+                <span class="att-range-date" id="att-from-label">–</span>
+                <button type="button" id="att-from-plus"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+        <span class="att-range-sep">–</span>
+        <div class="att-range-group">
+            <span class="att-range-group-label">Bis</span>
+            <div class="att-range-stepper">
+                <button type="button" id="att-to-minus"><i class="fas fa-chevron-left"></i></button>
+                <span class="att-range-date" id="att-to-label">–</span>
+                <button type="button" id="att-to-plus"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+        <div class="att-range-group">
+            <span class="att-range-group-label">Mind.</span>
+            <div class="att-range-stepper">
+                <button type="button" id="att-abs-minus"><i class="fas fa-chevron-left"></i></button>
+                <span class="att-range-date" id="att-abs-label">0</span>
+                <button type="button" id="att-abs-plus"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <span class="att-range-group-label">Fehlzeiten</span>
+        </div>
+    </div>
+
+    <!-- Dense Table View (hidden by default) -->
+    <div id="att-table-view" style="display: none;"></div>
+
 </div>
 
 <!-- Save Indicator -->
@@ -681,6 +961,7 @@ foreach ($members as $member) {
     let currentRehearsalId = INITIAL_REHEARSAL_ID;
     let currentFilter = 'all';
     let saveTimeout = null;
+    let onDataChange = null;
 
     // ── Save Indicator ──
     function showSave(text, type) {
@@ -710,6 +991,7 @@ foreach ($members as $member) {
         .then(res => {
             if (res.success) {
                 showSave('Gespeichert', 'saved');
+                if (onDataChange) onDataChange();
             } else {
                 showSave(res.error || 'Fehler', 'error');
             }
@@ -1075,5 +1357,245 @@ foreach ($members as $member) {
     arrowRight.addEventListener('click', () => { timeline.scrollLeft += SCROLL_STEP; });
     timeline.addEventListener('scroll', updateArrows);
     setTimeout(updateArrows, 100);
+
+    // ── Table View Toggle ──
+    const viewToggle = document.getElementById('att-view-toggle');
+    const cardView = document.getElementById('att-member-list');
+    const tableContainer = document.getElementById('att-table-view');
+    const tableFilters = document.getElementById('att-table-filters');
+    const timelineWrap = document.querySelector('.att-timeline-wrap');
+    const actionsBar = document.querySelector('.att-actions');
+    let tableMode = false;
+    let tableDataCache = null;
+
+    function invalidateTableCache() {
+        tableDataCache = null;
+    }
+
+    onDataChange = invalidateTableCache;
+
+    viewToggle.addEventListener('click', function() {
+        tableMode = !tableMode;
+        const icon = this.querySelector('i');
+
+        if (tableMode) {
+            icon.className = 'fas fa-list';
+            this.childNodes[this.childNodes.length - 1].textContent = ' Liste';
+            this.title = 'Listenansicht';
+            cardView.style.display = 'none';
+            timelineWrap.style.display = 'none';
+            actionsBar.style.display = 'none';
+            tableContainer.style.display = '';
+            tableFilters.style.display = '';
+
+            if (!tableDataCache) {
+                loadTableData();
+            }
+        } else {
+            icon.className = 'fas fa-table';
+            this.childNodes[this.childNodes.length - 1].textContent = ' Tabelle';
+            this.title = 'Tabellenansicht';
+            cardView.style.display = '';
+            timelineWrap.style.display = '';
+            actionsBar.style.display = '';
+            tableContainer.style.display = 'none';
+            tableFilters.style.display = 'none';
+        }
+    });
+
+    function loadTableData() {
+        tableContainer.innerHTML = '<div style="text-align:center; padding:var(--space-6); color:var(--color-text-muted)"><i class="fas fa-spinner fa-spin"></i> Laden…</div>';
+        fetch(BASE_URL + '/attendance/table-data', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) {
+                tableContainer.innerHTML = '<div style="text-align:center; padding:var(--space-6); color:var(--color-error)">Fehler beim Laden</div>';
+                return;
+            }
+            tableDataCache = data;
+            resetRange();
+            updateRangeUI();
+            renderTable();
+        })
+        .catch(() => {
+            tableContainer.innerHTML = '<div style="text-align:center; padding:var(--space-6); color:var(--color-error)">Netzwerkfehler</div>';
+        });
+    }
+
+    // Dual-range stepper
+    const fromMinus = document.getElementById('att-from-minus');
+    const fromPlus = document.getElementById('att-from-plus');
+    const toMinus = document.getElementById('att-to-minus');
+    const toPlus = document.getElementById('att-to-plus');
+    const fromLabel = document.getElementById('att-from-label');
+    const toLabel = document.getElementById('att-to-label');
+    let startIdx = 0;
+    let endIdx = -1; // -1 = last item (set properly on data load)
+
+    function resetRange() {
+        const total = tableDataCache ? tableDataCache.rehearsals.length : 0;
+        startIdx = 0;
+        endIdx = total - 1;
+    }
+
+    function updateRangeUI() {
+        if (!tableDataCache) return;
+        const r = tableDataCache.rehearsals;
+        const total = r.length;
+        fromLabel.textContent = total ? (r[startIdx].weekday + ' ' + r[startIdx].date) : '–';
+        toLabel.textContent = total ? (r[endIdx].weekday + ' ' + r[endIdx].date) : '–';
+        fromMinus.disabled = (startIdx <= 0);
+        fromPlus.disabled = (startIdx >= endIdx);
+        toMinus.disabled = (endIdx <= startIdx);
+        toPlus.disabled = (endIdx >= total - 1);
+    }
+
+    fromMinus.addEventListener('click', () => {
+        if (startIdx > 0) { startIdx--; updateRangeUI(); renderTable(); }
+    });
+    fromPlus.addEventListener('click', () => {
+        if (startIdx < endIdx) { startIdx++; updateRangeUI(); renderTable(); }
+    });
+    toMinus.addEventListener('click', () => {
+        if (endIdx > startIdx) { endIdx--; updateRangeUI(); renderTable(); }
+    });
+    toPlus.addEventListener('click', () => {
+        const total = tableDataCache ? tableDataCache.rehearsals.length : 0;
+        if (endIdx < total - 1) { endIdx++; updateRangeUI(); renderTable(); }
+    });
+
+    // Min-absences filter stepper
+    const absMinus = document.getElementById('att-abs-minus');
+    const absPlus = document.getElementById('att-abs-plus');
+    const absLabel = document.getElementById('att-abs-label');
+    let minAbsences = 0;
+
+    function updateAbsUI() {
+        absLabel.textContent = minAbsences;
+        absMinus.disabled = (minAbsences <= 0);
+    }
+
+    absMinus.addEventListener('click', () => {
+        if (minAbsences > 0) { minAbsences--; updateAbsUI(); if (tableDataCache) renderTable(); }
+    });
+    absPlus.addEventListener('click', () => {
+        minAbsences++; updateAbsUI(); if (tableDataCache) renderTable();
+    });
+
+    function renderTable() {
+        const data = tableDataCache;
+        const { sections, attendance, promises } = data;
+
+        const rehearsals = data.rehearsals.slice(startIdx, endIdx + 1);
+
+        const allMembers = sections.flatMap(s => s.members);
+        if (!rehearsals.length || !allMembers.length) {
+            tableContainer.innerHTML = '<div style="text-align:center; padding:var(--space-6); color:var(--color-text-muted)">Keine Daten im gewählten Zeitraum</div>';
+            return;
+        }
+
+        const colCount = rehearsals.length + 2;
+        const colAbsences = new Array(rehearsals.length).fill(0);
+        let totalAbsences = 0;
+
+        let html = '<div class="att-table-wrap"><div class="att-table-scroll"><table class="att-dense-table"><thead><tr>';
+        html += '<th class="att-name-col">Name</th>';
+        rehearsals.forEach(r => {
+            html += '<th title="' + r.weekday + ', ' + r.date + '">' + r.weekday + '<br>' + r.date + '</th>';
+        });
+        html += '<th class="att-col-total">Fehlzeiten</th>';
+        html += '</tr></thead><tbody>';
+
+        sections.forEach(section => {
+            const filteredMembers = minAbsences > 0 ? section.members.filter(m => {
+                const uid = String(m.id);
+                const userAtt = attendance[uid] || {};
+                let cnt = 0;
+                for (const r of rehearsals) {
+                    const att = userAtt[String(r.id)];
+                    if (att !== undefined && att !== 1) cnt++;
+                }
+                return cnt >= minAbsences;
+            }) : section.members;
+
+            if (!filteredMembers.length) return;
+
+            if (section.label) {
+                html += '<tr class="att-section-row"><td class="att-name-col" colspan="' + colCount + '">' + escapeHtml(section.label) + '</td></tr>';
+            }
+
+            filteredMembers.forEach(m => {
+                const uid = String(m.id);
+                const userAtt = attendance[uid] || {};
+                const userProm = promises[uid] || {};
+                let missed = 0;
+
+                html += '<tr><td class="att-name-col" title="' + escapeHtml(m.name) + '">' + escapeHtml(m.name) + '</td>';
+
+                rehearsals.forEach((r, ci) => {
+                    const rid = String(r.id);
+                    const att = userAtt[rid];
+                    const prom = userProm[rid];
+                    let cls = '';
+                    let icon = '';
+
+                    if (att !== undefined) {
+                        if (att === 1) {
+                            if (prom === 'no') {
+                                cls = 'att-cell-positive-dev';
+                                icon = '✓';
+                            } else {
+                                cls = 'att-cell-present';
+                                icon = '✓';
+                            }
+                        } else {
+                            missed++;
+                            colAbsences[ci]++;
+                            if (prom === 'yes') {
+                                cls = 'att-cell-deviation';
+                                icon = '✕';
+                            } else {
+                                cls = 'att-cell-absent';
+                                icon = '✕';
+                            }
+                        }
+                    } else {
+                        cls = 'att-cell-unset';
+                        icon = '–';
+                    }
+
+                    html += '<td class="' + cls + '">' + icon + '</td>';
+                });
+
+                totalAbsences += missed;
+                html += '<td class="att-col-total">' + (missed > 0 ? missed : '–') + '</td>';
+                html += '</tr>';
+            });
+        });
+
+        html += '</tbody><tfoot><tr><td class="att-name-col" style="background:var(--color-gray-200);font-weight:var(--font-weight-semibold)">Gesamt</td>';
+        colAbsences.forEach(c => {
+            html += '<td>' + (c > 0 ? c : '–') + '</td>';
+        });
+        html += '<td class="att-col-total">' + (totalAbsences > 0 ? totalAbsences : '–') + '</td>';
+        html += '</tr></tfoot></table></div></div>';
+
+        html += '<div class="att-legend">';
+        html += '<span class="att-legend-item"><span class="att-legend-swatch att-cell-present">✓</span> Anwesend</span>';
+        html += '<span class="att-legend-item"><span class="att-legend-swatch att-cell-absent">✕</span> Abwesend</span>';
+        html += '<span class="att-legend-item"><span class="att-legend-swatch att-cell-deviation" style="color:var(--color-error-dark)">✕</span> Zugesagt, aber abwesend</span>';
+        html += '<span class="att-legend-item"><span class="att-legend-swatch att-cell-positive-dev">✓</span> Abgesagt, aber anwesend</span>';
+        html += '<span class="att-legend-item"><span class="att-legend-swatch att-cell-unset">–</span> Nicht erfasst</span>';
+        html += '</div>';
+        tableContainer.innerHTML = html;
+    }
+
+    function escapeHtml(str) {
+        const el = document.createElement('span');
+        el.textContent = str;
+        return el.innerHTML;
+    }
 })();
 </script>
