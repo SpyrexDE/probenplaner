@@ -16,6 +16,8 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
 
 <div class="container-app pb-20">
 
+    <?php include __DIR__ . '/../components/bulk-select-bar.php'; ?>
+
     <?php if (empty($rehearsals)): ?>
         <?php
         if (!$showOld && ($hasPastRehearsals ?? false)) {
@@ -95,10 +97,19 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
     </div>
 </dialog>
 <script>
-// Close dialog on backdrop click
-document.getElementById('ieGroupsModal')?.addEventListener('click', function(e) {
-    if (e.target === this) window.IEM?.closeGroupsModal();
-});
+(function() {
+    const modal = document.getElementById('ieGroupsModal');
+    if (!modal) return;
+    // Backdrop click → validate before close
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) window.IEM?.closeGroupsModal();
+    });
+    // Escape key → validate before close
+    modal.addEventListener('cancel', function(e) {
+        e.preventDefault();
+        window.IEM?.closeGroupsModal();
+    });
+})();
 </script>
 
 <script src="/assets/js/settings-engine.js"></script>
@@ -122,7 +133,6 @@ document.getElementById('ieGroupsModal')?.addEventListener('click', function(e) 
         _activePopover: null,
         _backdrop: null,
 
-        // Only stops propagation when card is expanded; returns false otherwise so click bubbles to expand
         _guard(e) {
             const card = e.target.closest('.ie-card');
             if (card && card.classList.contains('ie-expanded')) {
@@ -201,7 +211,7 @@ document.getElementById('ieGroupsModal')?.addEventListener('click', function(e) 
             this._backdrop = backdrop;
 
             const rect = anchorEl.getBoundingClientRect();
-            pop.style.cssText = `position: fixed; z-index: 50; top: ${rect.bottom + 4}px; left: ${rect.left}px;`;
+            pop.style.cssText += `; position: fixed; z-index: 50; top: ${rect.bottom + 4}px; left: ${rect.left}px;`;
             document.body.appendChild(pop);
         },
 
@@ -742,7 +752,17 @@ document.getElementById('ieGroupsModal')?.addEventListener('click', function(e) 
                 cb.indeterminate = false;
             });
 
-            // Recalculate parent states (indeterminate/checked) without cascading
+            // Cascade parent selections to children (e.g. 'tutti' → all descendants)
+            body.querySelectorAll('input[name="groups[]"]:checked').forEach(cb => {
+                const next = cb.closest('.checkbox-item')?.nextElementSibling;
+                if (next?.classList.contains('checkbox-group')) {
+                    next.querySelectorAll('input[name="groups[]"]').forEach(child => {
+                        child.checked = true;
+                        child.indeterminate = false;
+                    });
+                }
+            });
+
             if (typeof recalculateHierarchyStates === 'function') {
                 recalculateHierarchyStates(body);
             }
@@ -753,13 +773,24 @@ document.getElementById('ieGroupsModal')?.addEventListener('click', function(e) 
         closeGroupsModal() {
             const modal = document.getElementById('ieGroupsModal');
             if (!modal) return;
+
+            const body = document.getElementById('ieGroupsBody');
+            const checked = [...body.querySelectorAll('input[name="groups[]"]:checked')].map(cb => cb.value);
+
+            if (checked.length === 0) {
+                const panel = modal.querySelector('.ie-groups-panel');
+                panel.style.animation = 'none';
+                panel.offsetHeight;
+                panel.style.animation = 'ie-shake 0.4s ease';
+                panel.addEventListener('animationend', () => { panel.style.animation = ''; }, { once: true });
+                return;
+            }
+
             modal.close();
 
             const card = this._groupsCard;
             if (!card) return;
 
-            const body = document.getElementById('ieGroupsBody');
-            const checked = [...body.querySelectorAll('input[name="groups[]"]:checked')].map(cb => cb.value);
             card.dataset.groups = JSON.stringify(checked);
 
             const badge = card.querySelector('[data-ie-groups]');
@@ -772,13 +803,140 @@ document.getElementById('ieGroupsModal')?.addEventListener('click', function(e) 
                 .then(data => {
                     if (badge) {
                         badge.style.opacity = '';
-                        badge.textContent = data?.groups_display || (checked.length > 0
-                            ? [...body.querySelectorAll('input[name="groups[]"]:checked')]
-                                .map(cb => cb.closest('label')?.textContent?.trim() || cb.value).join(', ')
-                            : 'Alle');
+                        badge.textContent = data?.groups_display ||
+                            [...body.querySelectorAll('input[name="groups[]"]:checked')]
+                                .map(cb => cb.closest('.checkbox-item')?.querySelector('label')?.textContent?.trim() || cb.value)
+                                .join(', ');
                     }
                 });
             this._groupsCard = null;
+        },
+
+        // ── TAGS ──
+        _tagsCache: null,
+
+        removeTag(btn) {
+            const card = this._card(btn);
+            if (!card.classList.contains('ie-expanded')) return;
+            btn.closest('.ie-tag').remove();
+            this._saveTagsFromCard(card);
+        },
+
+        addTagInput(addBtn) {
+            const card = this._card(addBtn);
+            if (!card.classList.contains('ie-expanded')) return;
+
+            addBtn.style.display = 'none';
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'ie-tag-input';
+            input.placeholder = 'Tag…';
+            addBtn.parentElement.insertBefore(input, addBtn);
+            input.focus();
+
+            const commitTag = () => {
+                const name = input.value.trim();
+                if (!name) return;
+
+                // Avoid duplicates
+                const existing = [...card.querySelectorAll('.ie-tag')].map(t => t.dataset.tag);
+                if (existing.includes(name)) { input.value = ''; return; }
+
+                const tag = document.createElement('span');
+                tag.className = 'ie-tag';
+                tag.dataset.tag = name;
+                tag.textContent = name;
+                const rm = document.createElement('button');
+                rm.type = 'button';
+                rm.className = 'ie-tag-remove';
+                rm.title = 'Entfernen';
+                rm.textContent = '×';
+                rm.style.display = 'inline';
+                rm.addEventListener('click', (e) => { e.stopPropagation(); this.removeTag(rm); });
+                tag.appendChild(rm);
+                input.parentElement.insertBefore(tag, input);
+                input.value = '';
+                this._saveTagsFromCard(card);
+            };
+
+            const closeInput = () => {
+                this._closePopover();
+                input.remove();
+                addBtn.style.display = '';
+            };
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    commitTag();
+                } else if (e.key === 'Escape') {
+                    closeInput();
+                }
+            });
+
+            input.addEventListener('blur', () => {
+                setTimeout(() => {
+                    if (document.activeElement !== input) {
+                        commitTag();
+                        closeInput();
+                    }
+                }, 150);
+            });
+
+            // Autocomplete
+            const showSuggestions = async () => {
+                if (!this._tagsCache) {
+                    try {
+                        const res = await fetch(`${BASE}/rehearsals/tags`);
+                        this._tagsCache = await res.json();
+                    } catch { this._tagsCache = []; }
+                }
+
+                const existing = [...card.querySelectorAll('.ie-tag')].map(t => t.dataset.tag);
+                const available = this._tagsCache.filter(t => !existing.includes(t));
+                if (!available.length) return;
+
+                this._closePopover();
+                const pop = document.createElement('div');
+                pop.className = 'ie-popover';
+                pop.style.cssText = 'min-width: 140px; display: flex; flex-direction: column; gap: 2px;';
+
+                const renderFiltered = (query) => {
+                    pop.innerHTML = '';
+                    const current = [...card.querySelectorAll('.ie-tag')].map(t => t.dataset.tag);
+                    const filtered = this._tagsCache.filter(t =>
+                        !current.includes(t) && t.toLowerCase().includes(query.toLowerCase())
+                    );
+                    if (!filtered.length) { this._closePopover(); return; }
+                    filtered.forEach(name => {
+                        const item = document.createElement('div');
+                        item.style.cssText = 'cursor: pointer; padding: 6px 10px; border-radius: var(--radius-sm); font-size: 12px; transition: background 0.1s;';
+                        item.textContent = name;
+                        item.addEventListener('mouseenter', () => item.style.background = 'var(--color-bg-secondary)');
+                        item.addEventListener('mouseleave', () => item.style.background = '');
+                        item.addEventListener('mousedown', (e) => {
+                            e.preventDefault();
+                            input.value = name;
+                            commitTag();
+                            renderFiltered(input.value);
+                        });
+                        pop.appendChild(item);
+                    });
+                };
+
+                renderFiltered('');
+                this._showPopover(pop, input);
+
+                input.addEventListener('input', () => renderFiltered(input.value));
+            };
+
+            showSuggestions();
+        },
+
+        _saveTagsFromCard(card) {
+            const tags = [...card.querySelectorAll('.ie-tag')].map(t => t.dataset.tag);
+            this._save(card, 'tags', JSON.stringify(tags));
+            this._tagsCache = null;
         },
 
         // ── DELETE ──
@@ -844,5 +1002,551 @@ document.getElementById('ieGroupsModal')?.addEventListener('click', function(e) 
     };
 
     window.IEM = IEM;
+})();
+</script>
+
+<script>
+(function() {
+    'use strict';
+
+    // Move action bar to body so parent transforms don't break position:fixed
+    const actionBar = document.getElementById('bulkActionBar');
+    if (actionBar) document.body.appendChild(actionBar);
+
+    const BASE = '/' + document.querySelector('[data-api-url]')?.dataset.apiUrl?.split('/').slice(1, 3).join('/') || '';
+    const COLORS = {
+        '#e5e7eb': 'Weiß', '#3b82f6': 'Blau', '#10b981': 'Grün',
+        '#f59e0b': 'Gelb', '#ef4444': 'Rot', '#8b5cf6': 'Lila',
+        '#f97316': 'Orange', '#ec4899': 'Pink', '#14b8a6': 'Türkis',
+        '#6366f1': 'Indigo', '#6b7280': 'Grau', '#475569': 'Schiefer'
+    };
+    const TYPE_PRESETS = ['Konzertreise', 'Konzert', 'Generalprobe', 'Registerprobe', 'Probenwochenende', 'Dozentenregisterprobe'];
+    const EMOJIS = ['📌', 'ℹ️', '⚠️', '🎵', '📍', '🎉', '📋', '🔔', '⭐', '💡'];
+
+    const BulkMgr = {
+        active: false,
+        selected: new Set(),
+        _popover: null,
+        _backdrop: null,
+        _activeFilters: {},
+
+        // ── Mode toggle ──
+        toggle() {
+            this.active = !this.active;
+            const btn = document.getElementById('bulkSelectToggle');
+            btn?.classList.toggle('active', this.active);
+
+            document.querySelectorAll('.ie-card').forEach(c => {
+                if (this.active) {
+                    c.classList.add('bulk-selectable');
+                } else {
+                    c.classList.remove('bulk-selectable', 'bulk-selected');
+                }
+            });
+
+            if (!this.active) {
+                this.selected.clear();
+                this._updateBar();
+            }
+        },
+
+        // ── Card selection ──
+        onCardClick(card, e) {
+            if (!this.active) return false;
+            e.preventDefault();
+            e.stopPropagation();
+
+            const id = card.dataset.rehearsalId;
+            if (this.selected.has(id)) {
+                this.selected.delete(id);
+                card.classList.remove('bulk-selected');
+            } else {
+                this.selected.add(id);
+                card.classList.add('bulk-selected');
+            }
+            this._updateBar();
+            return true;
+        },
+
+        _updateBar() {
+            const bar = document.getElementById('bulkActionBar');
+            const count = document.getElementById('bulkCount');
+            if (this.selected.size > 0) {
+                bar?.classList.add('visible');
+                count.textContent = this.selected.size + ' ausgewählt';
+            } else {
+                bar?.classList.remove('visible');
+            }
+        },
+
+        deselectAll() {
+            this.selected.clear();
+            document.querySelectorAll('.ie-card.bulk-selected').forEach(c => c.classList.remove('bulk-selected'));
+            this._updateBar();
+        },
+
+        // ── Search ──
+        search(query) {
+            const q = query.toLowerCase().trim();
+            let visible = 0;
+            document.querySelectorAll('.ie-card[data-rehearsal-id]').forEach(card => {
+                const haystack = [
+                    card.dataset.type || '',
+                    card.dataset.location || '',
+                    card.dataset.tags || '',
+                    card.dataset.note || '',
+                    card.dataset.start || '',
+                    card.querySelector('[data-ie-date]')?.textContent || '',
+                    card.querySelector('[data-ie-weekday]')?.textContent || '',
+                    card.querySelector('[data-ie-groups]')?.textContent || '',
+                ].join(' ').toLowerCase();
+
+                const matchSearch = !q || haystack.includes(q);
+                const matchFilter = this._matchFilters(card);
+                const show = matchSearch && matchFilter;
+                card.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+
+            const noRes = document.getElementById('bulkNoResults');
+            if (noRes) noRes.style.display = visible === 0 && (q || Object.keys(this._activeFilters).length) ? '' : 'none';
+        },
+
+        _matchFilters(card) {
+            for (const [key, val] of Object.entries(this._activeFilters)) {
+                if (!val) continue;
+                if (key === 'type' && (card.dataset.type || '').toLowerCase() !== val.toLowerCase()) return false;
+                if (key === 'location' && (card.dataset.location || '').toLowerCase() !== val.toLowerCase()) return false;
+                if (key === 'color' && (card.dataset.color || '') !== val) return false;
+                if (key === 'tags' && !(card.dataset.tags || '').toLowerCase().includes(val.toLowerCase())) return false;
+                if (key === 'dateRange') {
+                    const start = card.dataset.start?.split(' ')[0] || '';
+                    if (val.from && start < val.from) return false;
+                    if (val.to && start > val.to) return false;
+                }
+            }
+            return true;
+        },
+
+        // ── Filter chips ──
+        openFilter(chip) {
+            this._closePopover();
+            const filterType = chip.dataset.filter;
+            const vals = this._collectValues(filterType);
+
+            const pop = document.createElement('div');
+            pop.className = 'bulk-filter-dropdown';
+
+            if (filterType === 'dateRange') {
+                pop.innerHTML = `<div class="bulk-popover-title">Zeitraum</div>
+                    <label style="font-size:12px;color:var(--color-text-secondary)">Von</label>
+                    <input type="date" class="bulk-popover-input" id="filterDateFrom" value="${this._activeFilters.dateRange?.from || ''}" style="margin-bottom:8px">
+                    <label style="font-size:12px;color:var(--color-text-secondary)">Bis</label>
+                    <input type="date" class="bulk-popover-input" id="filterDateTo" value="${this._activeFilters.dateRange?.to || ''}">
+                    <button class="bulk-popover-apply" onclick="BulkMgr._applyDateFilter()">Anwenden</button>`;
+            } else if (filterType === 'color') {
+                pop.innerHTML = '<div class="bulk-popover-title">Farbe</div><div class="bulk-color-grid"></div>';
+                const grid = pop.querySelector('.bulk-color-grid');
+                Object.entries(COLORS).forEach(([hex, name]) => {
+                    const sw = document.createElement('button');
+                    sw.className = 'bulk-color-swatch';
+                    sw.style.background = hex;
+                    sw.title = name;
+                    sw.onclick = (e) => { e.stopPropagation(); this._setFilter('color', hex, chip); this._closePopover(); };
+                    grid.appendChild(sw);
+                });
+                const clearBtn = document.createElement('button');
+                clearBtn.className = 'bulk-popover-apply';
+                clearBtn.textContent = 'Filter entfernen';
+                clearBtn.style.cssText = 'background:var(--color-bg-tertiary);color:var(--color-text-secondary);margin-top:8px';
+                clearBtn.onclick = () => { this._clearFilter('color', chip); this._closePopover(); };
+                pop.appendChild(clearBtn);
+            } else {
+                vals.forEach(v => {
+                    const opt = document.createElement('div');
+                    opt.className = 'bulk-filter-option' + (this._activeFilters[filterType] === v ? ' selected' : '');
+                    opt.textContent = v;
+                    opt.onclick = (e) => {
+                        e.stopPropagation();
+                        if (this._activeFilters[filterType] === v) {
+                            this._clearFilter(filterType, chip);
+                        } else {
+                            this._setFilter(filterType, v, chip);
+                        }
+                        this._closePopover();
+                    };
+                    pop.appendChild(opt);
+                });
+                if (!vals.length) {
+                    pop.innerHTML = '<div style="padding:8px;font-size:12px;color:var(--color-text-muted)">Keine Optionen</div>';
+                }
+            }
+
+            const rect = chip.getBoundingClientRect();
+            pop.style.cssText += `position:fixed;top:${rect.bottom + 4}px;left:${Math.max(8, rect.left)}px;`;
+            pop.onclick = e => e.stopPropagation();
+
+            const backdrop = document.createElement('div');
+            backdrop.className = 'bulk-backdrop';
+            backdrop.onclick = () => this._closePopover();
+            document.body.appendChild(backdrop);
+            document.body.appendChild(pop);
+            this._backdrop = backdrop;
+            this._popover = pop;
+        },
+
+        _collectValues(filterType) {
+            const set = new Set();
+            document.querySelectorAll('.ie-card[data-rehearsal-id]').forEach(card => {
+                let v;
+                if (filterType === 'type') v = card.dataset.type;
+                else if (filterType === 'location') v = card.dataset.location;
+                else if (filterType === 'tags') {
+                    (card.dataset.tags || '').split(',').forEach(t => { if (t.trim()) set.add(t.trim()); });
+                    return;
+                }
+                if (v?.trim()) set.add(v.trim());
+            });
+            return [...set].sort();
+        },
+
+        _setFilter(key, val, chip) {
+            this._activeFilters[key] = val;
+            chip.classList.add('active');
+            this.search(document.getElementById('bulkSearch')?.value || '');
+        },
+
+        _clearFilter(key, chip) {
+            delete this._activeFilters[key];
+            chip.classList.remove('active');
+            this.search(document.getElementById('bulkSearch')?.value || '');
+        },
+
+        _applyDateFilter() {
+            const from = document.getElementById('filterDateFrom')?.value || '';
+            const to = document.getElementById('filterDateTo')?.value || '';
+            const chip = document.querySelector('[data-filter="dateRange"]');
+            if (from || to) {
+                this._setFilter('dateRange', { from, to }, chip);
+            } else {
+                this._clearFilter('dateRange', chip);
+            }
+            this._closePopover();
+        },
+
+        _closePopover() {
+            this._popover?.remove(); this._popover = null;
+            this._backdrop?.remove(); this._backdrop = null;
+        },
+
+        // ── Bulk actions ──
+        openAction(type, btn) {
+            this._closePopover();
+            const ids = [...this.selected];
+            if (!ids.length) return;
+
+            const pop = document.createElement('div');
+            pop.className = 'bulk-popover';
+
+            switch (type) {
+                case 'type':
+                    pop.innerHTML = '<div class="bulk-popover-title">Typ setzen</div><div class="bulk-type-list"></div>';
+                    const list = pop.querySelector('.bulk-type-list');
+                    const allTypes = [...new Set([...TYPE_PRESETS, ...[...document.querySelectorAll('.ie-card[data-type]')].map(c => c.dataset.type).filter(t => t && t.toLowerCase() !== 'probe')])];
+                    allTypes.forEach(t => {
+                        const opt = document.createElement('div');
+                        opt.className = 'bulk-type-option';
+                        opt.textContent = t;
+                        opt.onclick = () => { this._applyBulk({ type: t }); this._closePopover(); };
+                        list.appendChild(opt);
+                    });
+                    break;
+
+                case 'location':
+                    pop.innerHTML = `<div class="bulk-popover-title">Ort setzen</div>
+                        <input class="bulk-popover-input" id="bulkLocInput" placeholder="Ort eingeben…" autocomplete="off">
+                        <button class="bulk-popover-apply" onclick="BulkMgr._applyBulk({location:document.getElementById('bulkLocInput').value.trim()});BulkMgr._closePopover()">Anwenden</button>`;
+                    setTimeout(() => pop.querySelector('#bulkLocInput')?.focus(), 50);
+                    pop.querySelector('#bulkLocInput')?.addEventListener('keydown', e => {
+                        if (e.key === 'Enter') { e.preventDefault(); this._applyBulk({ location: e.target.value.trim() }); this._closePopover(); }
+                    });
+                    break;
+
+                case 'groups':
+                    // Reuse the existing groups modal with bulk callback
+                    this._bulkGroupsMode = true;
+                    const modal = document.getElementById('ieGroupsModal');
+                    const body = document.getElementById('ieGroupsBody');
+                    if (modal && body) {
+                        body.querySelectorAll('input[name="groups[]"]').forEach(cb => { cb.checked = false; cb.indeterminate = false; });
+                        if (typeof recalculateHierarchyStates === 'function') recalculateHierarchyStates(body);
+                        modal.showModal();
+                    }
+                    return;
+
+                case 'color':
+                    pop.innerHTML = '<div class="bulk-popover-title">Farbe setzen</div><div class="bulk-color-grid"></div>';
+                    const cGrid = pop.querySelector('.bulk-color-grid');
+                    Object.entries(COLORS).forEach(([hex, name]) => {
+                        const sw = document.createElement('button');
+                        sw.className = 'bulk-color-swatch';
+                        sw.style.background = hex;
+                        sw.title = name;
+                        sw.onclick = () => { this._applyBulk({ color: hex }); this._closePopover(); };
+                        cGrid.appendChild(sw);
+                    });
+                    break;
+
+                case 'time':
+                    pop.innerHTML = `<div class="bulk-popover-title">Uhrzeit setzen</div>
+                        <div class="bulk-time-row">
+                            <input type="time" id="bulkTimeStart" value="18:00">
+                            <span>–</span>
+                            <input type="time" id="bulkTimeEnd" value="20:00">
+                        </div>
+                        <button class="bulk-popover-apply" onclick="BulkMgr._applyTimeAction()">Anwenden</button>`;
+                    break;
+
+                case 'tag':
+                    pop.innerHTML = `<div class="bulk-popover-title">Tag hinzufügen</div>
+                        <input class="bulk-popover-input" id="bulkTagInput" placeholder="Tag eingeben…" autocomplete="off">
+                        <button class="bulk-popover-apply" onclick="BulkMgr._applyTagAction()">Hinzufügen</button>`;
+                    setTimeout(() => pop.querySelector('#bulkTagInput')?.focus(), 50);
+                    pop.querySelector('#bulkTagInput')?.addEventListener('keydown', e => {
+                        if (e.key === 'Enter') { e.preventDefault(); this._applyTagAction(); }
+                    });
+                    break;
+
+                case 'note':
+                    pop.innerHTML = `<div class="bulk-popover-title">Info hinzufügen</div>
+                        <div class="bulk-note-row">
+                            <input class="bulk-emoji-pick" id="bulkNoteEmoji" value="📌" maxlength="2" readonly>
+                            <input class="bulk-popover-input" id="bulkNoteText" placeholder="Info-Text…" style="flex:1">
+                        </div>
+                        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px" id="bulkEmojiGrid"></div>
+                        <button class="bulk-popover-apply" onclick="BulkMgr._applyNoteAction()">Hinzufügen</button>`;
+                    const emojiGrid = pop.querySelector('#bulkEmojiGrid');
+                    EMOJIS.forEach(em => {
+                        const b = document.createElement('button');
+                        b.type = 'button';
+                        b.textContent = em;
+                        b.style.cssText = 'font-size:18px;padding:4px 6px;border:1px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-bg-primary);cursor:pointer';
+                        b.onclick = () => { pop.querySelector('#bulkNoteEmoji').value = em; };
+                        emojiGrid.appendChild(b);
+                    });
+                    setTimeout(() => pop.querySelector('#bulkNoteText')?.focus(), 50);
+                    break;
+            }
+
+            // Position above the action bar
+            const barRect = document.querySelector('.bulk-action-panel')?.getBoundingClientRect();
+            if (barRect) {
+                pop.style.bottom = (window.innerHeight - barRect.top + 8) + 'px';
+                pop.style.left = '50%';
+                pop.style.transform = 'translateX(-50%)';
+                pop.style.position = 'fixed';
+            }
+
+            const backdrop = document.createElement('div');
+            backdrop.className = 'bulk-backdrop';
+            backdrop.onclick = () => this._closePopover();
+            document.body.appendChild(backdrop);
+            document.body.appendChild(pop);
+            this._backdrop = backdrop;
+            this._popover = pop;
+        },
+
+        // ── Apply bulk field update via API ──
+        _applyBulk(fields) {
+            const ids = [...this.selected].map(Number);
+            if (!ids.length) return;
+
+            const orchestraBase = document.querySelector('[data-api-url]')?.dataset.apiUrl?.match(/^\/([^/]+\/[^/]+)/)?.[1];
+            if (!orchestraBase) return;
+
+            fetch('/' + orchestraBase + '/api/rehearsals/bulk-update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids, fields }),
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success && data.errors > 0) {
+                    window.notifyError?.('Einige Änderungen konnten nicht gespeichert werden');
+                }
+                // Update DOM for each affected card
+                ids.forEach(id => {
+                    const card = document.querySelector(`[data-rehearsal-id="${id}"]`);
+                    if (!card) return;
+                    if (fields.type != null) {
+                        card.dataset.type = fields.type;
+                        const badge = card.querySelector('[data-ie-type]');
+                        if (badge) {
+                            const isDefault = !fields.type || fields.type.toLowerCase() === 'probe';
+                            badge.textContent = isDefault ? 'Typ…' : fields.type;
+                            badge.style.opacity = isDefault ? '0.4' : '';
+                            badge.style.borderStyle = isDefault ? 'dashed' : '';
+                        }
+                    }
+                    if (fields.location != null) {
+                        card.dataset.location = fields.location;
+                        const loc = card.querySelector('[data-ie-location]');
+                        if (loc) {
+                            const isDefault = !fields.location || fields.location.toLowerCase() === 'probenraum';
+                            loc.textContent = fields.location || '📍 Ort…';
+                            loc.style.opacity = isDefault ? '0.4' : '';
+                            loc.style.borderStyle = isDefault ? 'dashed' : '';
+                        }
+                    }
+                    if (fields.color != null) {
+                        card.dataset.color = fields.color;
+                        card.style.borderLeftColor = fields.color;
+                        const dot = card.querySelector('[data-ie-color-dot]');
+                        if (dot) dot.style.background = fields.color;
+                    }
+                    if (data.results?.[id]?.groups_display) {
+                        const badge = card.querySelector('[data-ie-groups]');
+                        if (badge) badge.textContent = data.results[id].groups_display;
+                    }
+                });
+                window.notifySuccess?.(data.updated + ' Termine aktualisiert');
+            })
+            .catch(() => window.notifyError?.('Fehler beim Speichern'));
+        },
+
+        _applyTimeAction() {
+            const st = document.getElementById('bulkTimeStart')?.value;
+            const et = document.getElementById('bulkTimeEnd')?.value;
+            if (!st || !et) return;
+
+            [...this.selected].forEach(id => {
+                const card = document.querySelector(`[data-rehearsal-id="${id}"]`);
+                if (!card) return;
+                const oldStart = card.dataset.start || '';
+                const oldEnd = card.dataset.end || '';
+                const datePart = oldStart.split(' ')[0] || new Date().toISOString().split('T')[0];
+                const endDatePart = oldEnd.split(' ')[0] || datePart;
+                const newStart = datePart + ' ' + st + ':00';
+                const newEnd = endDatePart + ' ' + et + ':00';
+                card.dataset.start = newStart;
+                card.dataset.end = newEnd;
+                window.IEM?._saveFields(card, { start: newStart, end: newEnd });
+
+                // Update time display
+                const timeEl = card.querySelector('[data-ie-time]');
+                if (timeEl) timeEl.textContent = st + ' – ' + et;
+            });
+            this._closePopover();
+            window.notifySuccess?.(this.selected.size + ' Termine aktualisiert');
+        },
+
+        _applyTagAction() {
+            const tag = document.getElementById('bulkTagInput')?.value.trim();
+            if (!tag) return;
+
+            [...this.selected].forEach(id => {
+                const card = document.querySelector(`[data-rehearsal-id="${id}"]`);
+                if (!card) return;
+                const existing = [...card.querySelectorAll('.ie-tag')].map(t => t.dataset.tag);
+                if (existing.includes(tag)) return;
+
+                // Create tag element
+                const tagsContainer = card.querySelector('[data-ie-tags]');
+                if (tagsContainer) {
+                    const addBtn = tagsContainer.querySelector('.ie-tag-add');
+                    const tagEl = document.createElement('span');
+                    tagEl.className = 'ie-tag';
+                    tagEl.dataset.tag = tag;
+                    tagEl.textContent = tag;
+                    const rm = document.createElement('button');
+                    rm.type = 'button';
+                    rm.className = 'ie-tag-remove';
+                    rm.title = 'Entfernen';
+                    rm.textContent = '×';
+                    rm.addEventListener('click', (e) => { e.stopPropagation(); window.IEM?.removeTag(rm); });
+                    tagEl.appendChild(rm);
+                    if (addBtn) tagsContainer.insertBefore(tagEl, addBtn);
+                    else tagsContainer.appendChild(tagEl);
+                }
+
+                const allTags = [...card.querySelectorAll('.ie-tag')].map(t => t.dataset.tag);
+                card.dataset.tags = allTags.join(',');
+                window.IEM?._save(card, 'tags', JSON.stringify(allTags));
+            });
+            this._closePopover();
+            window.notifySuccess?.('Tag "' + tag + '" hinzugefügt');
+        },
+
+        _applyNoteAction() {
+            const emoji = document.getElementById('bulkNoteEmoji')?.value || '📌';
+            const text = document.getElementById('bulkNoteText')?.value.trim();
+            if (!text) return;
+
+            [...this.selected].forEach(id => {
+                const card = document.querySelector(`[data-rehearsal-id="${id}"]`);
+                if (!card) return;
+                const apiUrl = card.dataset.apiUrl;
+                if (!apiUrl) return;
+
+                // Fetch current infos, append new one, save
+                fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ field: 'infos', value: JSON.stringify([{ emoji, text }]) }),
+                });
+            });
+            this._closePopover();
+            window.notifySuccess?.('Info zu ' + this.selected.size + ' Terminen hinzugefügt');
+        },
+    };
+
+    window.BulkMgr = BulkMgr;
+
+    // ── Wire up events ──
+    document.getElementById('bulkSelectToggle')?.addEventListener('click', () => BulkMgr.toggle());
+    document.getElementById('bulkSearch')?.addEventListener('input', e => BulkMgr.search(e.target.value));
+    document.getElementById('bulkDeselectAll')?.addEventListener('click', () => { BulkMgr.deselectAll(); if (BulkMgr.active) BulkMgr.toggle(); });
+
+    document.querySelectorAll('.bulk-filter-chip').forEach(chip => {
+        chip.addEventListener('click', () => BulkMgr.openFilter(chip));
+    });
+
+    document.querySelectorAll('.bulk-action-btn').forEach(btn => {
+        btn.addEventListener('click', () => BulkMgr.openAction(btn.dataset.bulk, btn));
+    });
+
+    // Intercept card clicks in bulk mode
+    document.addEventListener('click', e => {
+        if (!BulkMgr.active) return;
+        const card = e.target.closest('.ie-card');
+        if (card && !e.target.closest('.ie-footer-btn') && !e.target.closest('.ie-popover') && !e.target.closest('.ie-section')) {
+            BulkMgr.onCardClick(card, e);
+        }
+    }, true);
+
+    // Handle groups modal close in bulk mode
+    const origClose = window.IEM?.closeGroupsModal;
+    if (origClose) {
+        const originalFn = origClose.bind(window.IEM);
+        window.IEM.closeGroupsModal = function() {
+            if (BulkMgr._bulkGroupsMode) {
+                const body = document.getElementById('ieGroupsBody');
+                const checked = [...body.querySelectorAll('input[name="groups[]"]:checked')].map(cb => cb.value);
+                if (checked.length === 0) {
+                    const panel = document.querySelector('.ie-groups-panel');
+                    panel.style.animation = 'none';
+                    panel.offsetHeight;
+                    panel.style.animation = 'ie-shake 0.4s ease';
+                    panel.addEventListener('animationend', () => { panel.style.animation = ''; }, { once: true });
+                    return;
+                }
+                document.getElementById('ieGroupsModal')?.close();
+                BulkMgr._bulkGroupsMode = false;
+                BulkMgr._applyBulk({ groups: JSON.stringify(checked) });
+                return;
+            }
+            originalFn();
+        };
+    }
 })();
 </script>

@@ -63,7 +63,7 @@ class SettingsApiController extends Controller
         $userRelationFields = ['group_type', 'role_ids'];
         foreach ($fieldsToUpdate as $fieldName => $value) {
             // Fields stored in separate tables — handled specially
-            if ($entity === 'rehearsal' && in_array($fieldName, ['groups', 'schedule_items', 'infos', 'role_ids'])) {
+            if ($entity === 'rehearsal' && in_array($fieldName, ['groups', 'schedule_items', 'infos', 'role_ids', 'tags'])) {
                 if (empty($_SESSION['current_permissions']['can_manage_rehearsals'])) {
                     $this->json(['success' => false, 'error' => 'Keine Berechtigung'], 403);
                     return;
@@ -111,7 +111,7 @@ class SettingsApiController extends Controller
         // Validate all fields
         $allErrors = [];
         foreach ($fieldsToUpdate as $fieldName => $value) {
-            if ($entity === 'rehearsal' && in_array($fieldName, ['groups', 'schedule_items', 'infos', 'role_ids'])) continue;
+            if ($entity === 'rehearsal' && in_array($fieldName, ['groups', 'schedule_items', 'infos', 'role_ids', 'tags'])) continue;
 
             if ($entity === 'orchestra' && $fieldName === 'section_config') continue;
 
@@ -315,6 +315,10 @@ class SettingsApiController extends Controller
                 // Handle groups separately (stored in rehearsal_groups table)
                 if (isset($data['groups'])) {
                     $groups = json_decode($data['groups'], true) ?: [];
+                    if (empty($groups)) {
+                        $groupManager = \App\Core\GroupManager::getInstance();
+                        $groups = array_map(fn($g) => $g['id'], $groupManager->getConfig());
+                    }
                     unset($data['groups']);
                     $model->updateGroups($entityId, $groups);
                 }
@@ -340,6 +344,12 @@ class SettingsApiController extends Controller
                     unset($data['role_ids']);
                     $roleModel = new \App\Models\Role();
                     $roleModel->setRehearsalRoles($entityId, $roleIds);
+                }
+
+                if (isset($data['tags'])) {
+                    $tags = json_decode($data['tags'], true) ?: [];
+                    unset($data['tags']);
+                    $model->saveTags($entityId, (int)$context['orchestra_id'], $tags);
                 }
 
                 if (empty($data)) return true;
@@ -429,6 +439,71 @@ class SettingsApiController extends Controller
         }
 
         $this->json(['success' => $errors === 0, 'errors' => $errors]);
+    }
+
+    /**
+     * Bulk-update multiple rehearsals with the same field values.
+     *
+     * POST body: { "ids": [1,2,3], "fields": { "type": "Konzert", ... } }
+     */
+    public function bulkUpdateRehearsals(array $params = []): void
+    {
+        $context = $this->validateOrchestraContext($params);
+        if (!$context) {
+            $this->json(['success' => false, 'error' => 'Kein Orchesterkontext'], 403);
+            return;
+        }
+
+        if (empty($_SESSION['current_permissions']['can_manage_rehearsals'])) {
+            $this->json(['success' => false, 'error' => 'Keine Berechtigung'], 403);
+            return;
+        }
+
+        $body = json_decode(file_get_contents('php://input'), true) ?: [];
+        $ids = array_map('intval', $body['ids'] ?? []);
+        $fields = $body['fields'] ?? [];
+
+        if (empty($ids) || empty($fields)) {
+            $this->json(['success' => false, 'error' => 'Keine IDs oder Felder angegeben'], 400);
+            return;
+        }
+
+        $orchestraId = (int) $context['orchestra_id'];
+        $model = new \App\Models\Rehearsal();
+        $results = [];
+        $errorCount = 0;
+
+        foreach ($ids as $id) {
+            $rehearsal = $model->findById($id);
+            if (!$rehearsal || (int)($rehearsal['orchestra_id'] ?? 0) !== $orchestraId) {
+                $results[$id] = ['success' => false, 'error' => 'Nicht gefunden'];
+                $errorCount++;
+                continue;
+            }
+
+            $ok = $this->persistUpdate('rehearsal', $id, $fields, $context);
+            $entry = ['success' => $ok];
+
+            if ($ok && isset($fields['groups'])) {
+                $updated = $model->findById($id);
+                if ($updated) {
+                    $smartDisplay = new \App\Core\SmartGroupDisplay();
+                    $entry['groups_display'] = $smartDisplay->generateDescription(
+                        $updated['groups'] ?? [], $updated, false
+                    );
+                }
+            }
+
+            if (!$ok) $errorCount++;
+            $results[$id] = $entry;
+        }
+
+        $this->json([
+            'success' => $errorCount === 0,
+            'results' => $results,
+            'updated' => count($ids) - $errorCount,
+            'errors'  => $errorCount,
+        ]);
     }
 
     private function json(array $data, int $status = 200): void

@@ -158,6 +158,22 @@ class RehearsalController extends Controller
     }
 
     /**
+     * AJAX: Return all distinct tag names for the current orchestra.
+     */
+    public function tagsAutocomplete($params = [])
+    {
+        $this->validateOrchestraContext($params);
+        $this->requirePermission('can_manage_rehearsals');
+
+        $orchestraId = (int)$_SESSION['current_orchestra_id'];
+        $tags = $this->rehearsalModel->getOrchestraTags($orchestraId);
+
+        header('Content-Type: application/json');
+        echo json_encode($tags);
+        exit;
+    }
+
+    /**
      * Display rehearsal creation form
      * 
      * @param array $params Route parameters containing orchestra_id

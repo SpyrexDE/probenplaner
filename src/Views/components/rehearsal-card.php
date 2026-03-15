@@ -288,6 +288,13 @@
         from { transform: scale(0.95); opacity: 0; }
         to { transform: scale(1); opacity: 1; }
     }
+    @keyframes ie-shake {
+        0%, 100% { transform: translateX(0); }
+        20% { transform: translateX(-6px); }
+        40% { transform: translateX(6px); }
+        60% { transform: translateX(-4px); }
+        80% { transform: translateX(4px); }
+    }
     .ie-groups-header {
         display: flex;
         align-items: center;
@@ -355,6 +362,65 @@
     }
     .ie-footer-delete:hover, .ie-footer-delete:active { opacity: 1; color: var(--color-error); }
 
+    /* ── Tags ── */
+    .ie-tags {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        flex: 1;
+        min-width: 0;
+    }
+    .ie-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: var(--radius-full, 99px);
+        background: var(--color-bg-tertiary, #f3f4f6);
+        color: var(--color-text-secondary);
+        white-space: nowrap;
+        transition: all 0.15s ease;
+    }
+    .ie-tag-remove {
+        display: none;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 12px;
+        color: var(--color-text-muted);
+        padding: 0;
+        margin-left: 2px;
+        line-height: 1;
+    }
+    .ie-tag-remove:hover { color: var(--color-error); }
+    .ie-expanded .ie-tag-remove { display: inline; }
+    .ie-tag-add {
+        display: none;
+        background: none;
+        border: 1px dashed var(--color-border);
+        cursor: pointer;
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: var(--radius-full, 99px);
+        color: var(--color-text-muted);
+        transition: all 0.15s ease;
+    }
+    .ie-tag-add:hover { border-color: var(--color-text-secondary); color: var(--color-text-secondary); }
+    .ie-expanded .ie-tag-add { display: inline-flex; }
+    .ie-tag-input {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: var(--radius-full, 99px);
+        border: 1px solid var(--color-primary);
+        background: var(--color-bg-primary);
+        color: var(--color-text-primary);
+        outline: none;
+        min-width: 80px;
+        max-width: 150px;
+    }
+
     /* ── Mobile ── */
     @media (max-width: 480px) {
         .rehearsal-card.ie-expanded { padding: var(--space-3) var(--space-3) !important; }
@@ -417,7 +483,9 @@ $hasExpandableContent = !empty($rehearsal['schedule_items']) || !empty($rehearsa
         data-location="<?= htmlspecialchars($rehearsal['location'] ?? '') ?>"
         data-type="<?= htmlspecialchars($rehearsalType) ?>"
         data-color="<?= htmlspecialchars($rehearsal['color'] ?? '#e5e7eb') ?>"
-        data-groups="<?= htmlspecialchars(json_encode(array_column($groupArray, 'id'))) ?>"
+        data-groups="<?= htmlspecialchars(json_encode(array_values($groupArray))) ?>"
+        data-tags="<?= htmlspecialchars(implode(',', $rehearsal['tags'] ?? [])) ?>"
+        data-note="<?= htmlspecialchars(implode(' ', array_map(fn($i) => ($i['emoji'] ?? '') . ' ' . ($i['text'] ?? ''), $rehearsal['infos'] ?? []))) ?>"
         onclick="window.IEM && window.IEM.onCardClick(this, event)"
     <?php elseif ($hasExpandableContent): ?>
         onclick="(function(e){
@@ -607,7 +675,19 @@ $hasExpandableContent = !empty($rehearsal['schedule_items']) || !empty($rehearsa
         </div>
 
         <div class="ie-footer">
-            <span></span>
+            <div class="ie-tags" data-ie-tags>
+                <?php foreach (($rehearsal['tags'] ?? []) as $tag): ?>
+                    <span class="ie-tag" data-tag="<?= htmlspecialchars($tag) ?>">
+                        <?= htmlspecialchars($tag) ?>
+                        <button type="button" class="ie-tag-remove"
+                            onclick="if(!window.IEM?._guard(event))return; window.IEM.removeTag(this)"
+                            title="Entfernen">×</button>
+                    </span>
+                <?php endforeach; ?>
+                <button type="button" class="ie-tag-add"
+                    onclick="if(!window.IEM?._guard(event))return; window.IEM.addTagInput(this)"
+                    title="Tag hinzufügen">+ Tag</button>
+            </div>
             <button type="button" class="ie-footer-btn ie-footer-delete"
                 onclick="event.stopPropagation(); window.IEM && window.IEM.deleteRehearsal(<?= $rehearsalId ?>)"
                 title="Probe löschen">

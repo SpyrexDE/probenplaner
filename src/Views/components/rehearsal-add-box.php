@@ -52,7 +52,7 @@ $createUrl = '/' . $orchestraBase . '/rehearsals/create-ajax';
 
 <div class="rehearsal-add-box" id="rehearsalAddBox"
      data-create-url="<?= htmlspecialchars($createUrl) ?>"
-     onclick="window.InlineEditManager && window.InlineEditManager.createRehearsal(this)">
+     onclick="window.IEM && window.IEM.createRehearsal(this)">
     <i class="fas fa-plus"></i>
     <span>Neue Probe</span>
 </div>

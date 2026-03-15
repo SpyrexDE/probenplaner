@@ -416,6 +416,7 @@ class Rehearsal extends Model
             $rehearsal['groups'] = $this->getGroups($id);
             $rehearsal['schedule_items'] = $this->getScheduleItems($id);
             $rehearsal['infos'] = $this->getInfos($id);
+            $rehearsal['tags'] = $this->getTags($id);
             $rehearsal['date'] = date('Y-m-d', strtotime($rehearsal['start']));
 
             $rehearsal['start_time'] = date('H:i', strtotime($rehearsal['start']));
@@ -497,6 +498,7 @@ class Rehearsal extends Model
         $scheduleMap = $this->batchLoadScheduleItems($ids);
         $infosMap = $this->batchLoadInfos($ids);
         $rolesMap = $this->batchLoadRehearsalRoles($ids);
+        $tagsMap = $this->batchLoadTags($ids);
 
         foreach ($rows as &$row) {
             $row['date'] = date('Y-m-d', strtotime($row['start']));
@@ -509,6 +511,7 @@ class Rehearsal extends Model
             $row['schedule_items'] = $scheduleMap[$row['id']] ?? [];
             $row['infos'] = $infosMap[$row['id']] ?? [];
             $row['roles'] = $rolesMap[$row['id']] ?? [];
+            $row['tags'] = $tagsMap[$row['id']] ?? [];
         }
         unset($row);
 
@@ -737,5 +740,80 @@ class Rehearsal extends Model
             ErrorHandler::handleDatabaseError($e, 'Infos save');
             return false;
         }
+    }
+
+    // ── Tags ──────────────────────────────────────────────────────────
+
+    /**
+     * @return string[] Tag names for a rehearsal
+     */
+    public function getTags(int $rehearsalId): array
+    {
+        $stmt = $this->db->prepare("SELECT name FROM rehearsal_tags WHERE rehearsal_id = ? ORDER BY id ASC");
+        $stmt->bind_param('i', $rehearsalId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $tags = [];
+        while ($row = $result->fetch_assoc()) {
+            $tags[] = $row['name'];
+        }
+        return $tags;
+    }
+
+    /**
+     * Replace all tags for a rehearsal (delete + reinsert).
+     */
+    public function saveTags(int $rehearsalId, int $orchestraId, array $tags): bool
+    {
+        $this->db->getConnection()->begin_transaction();
+        try {
+            $stmt = $this->db->prepare("DELETE FROM rehearsal_tags WHERE rehearsal_id = ?");
+            $stmt->bind_param('i', $rehearsalId);
+            $stmt->execute();
+
+            $sql = "INSERT INTO rehearsal_tags (rehearsal_id, orchestra_id, name) VALUES (?, ?, ?)";
+            $stmt = $this->db->prepare($sql);
+            foreach ($tags as $name) {
+                $name = trim($name);
+                if ($name === '') continue;
+                $stmt->bind_param('iis', $rehearsalId, $orchestraId, $name);
+                $stmt->execute();
+            }
+
+            $this->db->getConnection()->commit();
+            return true;
+        } catch (\Exception $e) {
+            $this->db->getConnection()->rollback();
+            ErrorHandler::handleDatabaseError($e, 'Tags save');
+            return false;
+        }
+    }
+
+    /**
+     * @return array<int, string[]> rehearsal_id => tag names
+     */
+    private function batchLoadTags(array $ids): array
+    {
+        return $this->batchQuery(
+            "SELECT rehearsal_id, name FROM rehearsal_tags WHERE rehearsal_id IN (%s) ORDER BY id ASC",
+            $ids,
+            fn($row) => $row['name']
+        );
+    }
+
+    /**
+     * @return string[] All distinct tag names used in an orchestra (for autocomplete)
+     */
+    public function getOrchestraTags(int $orchestraId): array
+    {
+        $stmt = $this->db->prepare("SELECT DISTINCT name FROM rehearsal_tags WHERE orchestra_id = ? ORDER BY name ASC");
+        $stmt->bind_param('i', $orchestraId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $tags = [];
+        while ($row = $result->fetch_assoc()) {
+            $tags[] = $row['name'];
+        }
+        return $tags;
     }
 }
