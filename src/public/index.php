@@ -166,6 +166,8 @@ $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/tags', 'RehearsalContro
 $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/card/{id}', 'RehearsalController', 'getCardHtml');
 $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/edit/{id}', 'RehearsalController', 'edit');
 $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/delete/{id}', 'RehearsalController', 'delete');
+$router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/duplicate/{id}', 'RehearsalController', 'duplicateAjax', 'POST');
+$router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/batch-create', 'RehearsalController', 'batchCreateAjax', 'POST');
 
 // Probenplan route
 $router->addRoute('/{org_slug}/{orchestra_id}/probenplan', 'ProbenplanController', 'index');

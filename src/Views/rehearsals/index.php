@@ -16,8 +16,6 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
 
 <div class="container-app pb-20">
 
-    <?php include __DIR__ . '/../components/bulk-select-bar.php'; ?>
-
     <?php if (empty($rehearsals)): ?>
         <?php
         if (!$showOld && ($hasPastRehearsals ?? false)) {
@@ -33,7 +31,9 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
         }
         include __DIR__ . '/../components/empty-state.php';
         ?>
+        <div id="rehearsalsList"></div>
     <?php else: ?>
+        <?php include __DIR__ . '/../components/bulk-select-bar.php'; ?>
         <?php
         $currentRehearsals = [];
         $pastRehearsals = [];
@@ -64,6 +64,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
         <?php endif; ?>
 
         <div id="rehearsalsList">
+            <?php include __DIR__ . '/../components/recurring-dialog.php'; ?>
             <?php foreach ($currentRehearsals as $rehearsal): ?>
                 <?php
                 $context = 'inline-edit';
@@ -218,6 +219,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
         _card(el) { return el.closest('[data-rehearsal-id]'); },
 
         _save(card, field, value) {
+            if (!card.dataset.apiUrl) return Promise.resolve();
             return fetch(card.dataset.apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -227,6 +229,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
         },
 
         _saveFields(card, fields) {
+            if (!card.dataset.apiUrl) return Promise.resolve();
             return fetch(card.dataset.apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -939,6 +942,15 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             this._tagsCache = null;
         },
 
+        // Re-execute <script> tags inside dynamically inserted HTML
+        _activateScripts(el) {
+            el.querySelectorAll('script').forEach(old => {
+                const s = document.createElement('script');
+                s.textContent = old.textContent;
+                old.replaceWith(s);
+            });
+        },
+
         // ── DELETE ──
         deleteRehearsal(rehearsalId) {
             Swal.fire({
@@ -971,6 +983,66 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             });
         },
 
+        // ── DUPLICATE ──
+        duplicateRehearsal(rehearsalId, btn) {
+            const card = document.querySelector(`[data-rehearsal-id="${rehearsalId}"]`);
+            if (!card) return;
+
+            const startDate = card.dataset.start?.split(' ')[0];
+            const defaultDate = startDate ? (() => {
+                const d = new Date(startDate);
+                d.setDate(d.getDate() + 7);
+                return d.toISOString().split('T')[0];
+            })() : new Date().toISOString().split('T')[0];
+
+            const rect = btn.getBoundingClientRect();
+            const pop = document.createElement('div');
+            pop.className = 'bulk-filter-dropdown';
+            pop.innerHTML = `<div class="bulk-popover-title">Duplizieren</div>
+                <label>Neues Datum</label>
+                <input type="date" class="bulk-popover-input" id="dupDate" value="${defaultDate}">
+                <button class="bulk-popover-apply" id="dupConfirm">Duplizieren</button>`;
+            pop.style.cssText = `position:fixed;top:${rect.bottom + 4}px;left:${Math.max(8, rect.left - 80)}px;`;
+            pop.onclick = e => e.stopPropagation();
+
+            const backdrop = document.createElement('div');
+            backdrop.className = 'bulk-backdrop';
+            backdrop.onclick = () => { backdrop.remove(); pop.remove(); };
+            document.body.appendChild(backdrop);
+            document.body.appendChild(pop);
+
+            pop.querySelector('#dupConfirm').addEventListener('click', () => {
+                const newDate = pop.querySelector('#dupDate').value;
+                if (!newDate || !startDate) return;
+
+                const origMs = new Date(startDate).getTime();
+                const newMs = new Date(newDate).getTime();
+                const offsetDays = Math.round((newMs - origMs) / 86400000);
+
+                backdrop.remove();
+                pop.remove();
+
+                const fd = new FormData();
+                fd.append('offset_days', offsetDays);
+
+                fetch(`${BASE}/rehearsals/duplicate/${rehearsalId}`, { method: 'POST', body: fd })
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success || !data.html) return;
+                    const tmp = document.createElement('div');
+                    tmp.innerHTML = data.html;
+                    const newCard = tmp.querySelector('.ie-card');
+                    if (!newCard) return;
+                    card.after(newCard);
+                    this._activateScripts(newCard);
+                    requestAnimationFrame(() => {
+                        this._expand(newCard);
+                        newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    });
+                });
+            });
+        },
+
         // ── CREATE ──
         createRehearsal(addBox) {
             const url = addBox.dataset.createUrl;
@@ -986,9 +1058,11 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                 const list = document.getElementById('rehearsalsList') || addBox.parentElement;
                 const tmp = document.createElement('div');
                 tmp.innerHTML = data.html;
-                const newCard = tmp.firstElementChild;
+                const newCard = tmp.querySelector('.ie-card');
                 if (!newCard) return;
-                list.insertBefore(newCard, addBox);
+                list.appendChild(newCard);
+                this._activateScripts(newCard);
+                document.querySelector('.empty-state')?.closest('.flex')?.remove();
                 requestAnimationFrame(() => {
                     this._expand(newCard);
                     newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1021,7 +1095,6 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
         '#6366f1': 'Indigo', '#6b7280': 'Grau', '#475569': 'Schiefer'
     };
     const TYPE_PRESETS = ['Konzertreise', 'Konzert', 'Generalprobe', 'Registerprobe', 'Probenwochenende', 'Dozentenregisterprobe'];
-    const EMOJIS = ['📌', 'ℹ️', '⚠️', '🎵', '📍', '🎉', '📋', '🔔', '⭐', '💡'];
 
     const BulkMgr = {
         active: false,
@@ -1139,9 +1212,9 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
 
             if (filterType === 'dateRange') {
                 pop.innerHTML = `<div class="bulk-popover-title">Zeitraum</div>
-                    <label style="font-size:12px;color:var(--color-text-secondary)">Von</label>
-                    <input type="date" class="bulk-popover-input" id="filterDateFrom" value="${this._activeFilters.dateRange?.from || ''}" style="margin-bottom:8px">
-                    <label style="font-size:12px;color:var(--color-text-secondary)">Bis</label>
+                    <label>Von</label>
+                    <input type="date" class="bulk-popover-input" id="filterDateFrom" value="${this._activeFilters.dateRange?.from || ''}">
+                    <label>Bis</label>
                     <input type="date" class="bulk-popover-input" id="filterDateTo" value="${this._activeFilters.dateRange?.to || ''}">
                     <button class="bulk-popover-apply" onclick="BulkMgr._applyDateFilter()">Anwenden</button>`;
             } else if (filterType === 'color') {
@@ -1237,6 +1310,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
         _closePopover() {
             this._popover?.remove(); this._popover = null;
             this._backdrop?.remove(); this._backdrop = null;
+            this._bulkPicmoContainer?.remove(); this._bulkPicmoContainer = null;
         },
 
         // ── Bulk actions ──
@@ -1320,21 +1394,84 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                 case 'note':
                     pop.innerHTML = `<div class="bulk-popover-title">Info hinzufügen</div>
                         <div class="bulk-note-row">
-                            <input class="bulk-emoji-pick" id="bulkNoteEmoji" value="📌" maxlength="2" readonly>
+                            <button type="button" class="bulk-emoji-pick" id="bulkNoteEmoji" title="Emoji wählen">📌</button>
                             <input class="bulk-popover-input" id="bulkNoteText" placeholder="Info-Text…" style="flex:1">
                         </div>
-                        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px" id="bulkEmojiGrid"></div>
                         <button class="bulk-popover-apply" onclick="BulkMgr._applyNoteAction()">Hinzufügen</button>`;
-                    const emojiGrid = pop.querySelector('#bulkEmojiGrid');
-                    EMOJIS.forEach(em => {
-                        const b = document.createElement('button');
-                        b.type = 'button';
-                        b.textContent = em;
-                        b.style.cssText = 'font-size:18px;padding:4px 6px;border:1px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-bg-primary);cursor:pointer';
-                        b.onclick = () => { pop.querySelector('#bulkNoteEmoji').value = em; };
-                        emojiGrid.appendChild(b);
+                    pop.querySelector('#bulkNoteEmoji').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this._openBulkEmojiPicker(pop.querySelector('#bulkNoteEmoji'));
                     });
                     setTimeout(() => pop.querySelector('#bulkNoteText')?.focus(), 50);
+                    break;
+
+                case 'delete':
+                    pop.innerHTML = `<div class="bulk-popover-title">${ids.length} Termin${ids.length > 1 ? 'e' : ''} löschen</div>
+                        <p style="font-size:var(--font-size-sm);color:var(--color-text-secondary);margin:0 0 var(--space-2)">Kann nicht rückgängig gemacht werden.</p>
+                        <button class="bulk-popover-apply" id="bulkDeleteConfirm" style="background:var(--color-danger,#ef4444)">Endgültig löschen</button>`;
+                    pop.querySelector('#bulkDeleteConfirm').addEventListener('click', async () => {
+                        this._closePopover();
+                        const orchestraBase = document.querySelector('[data-api-url]')?.dataset.apiUrl?.match(/^\/([^/]+\/[^/]+)/)?.[1];
+                        await Promise.all(ids.map(id =>
+                            fetch(`/${orchestraBase}/rehearsals/delete/${id}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                body: 'id=' + id,
+                            })
+                        ));
+                        ids.forEach(id => {
+                            const card = document.querySelector(`[data-rehearsal-id="${id}"]`);
+                            if (card) {
+                                card.style.transition = 'opacity 0.3s ease, max-height 0.3s ease';
+                                card.style.opacity = '0';
+                                card.style.maxHeight = '0';
+                                card.style.overflow = 'hidden';
+                                setTimeout(() => card.remove(), 350);
+                            }
+                        });
+                        this.deselectAll();
+                        if (this.active) this.toggle();
+                        window.notifySuccess?.(ids.length + ' Termine gelöscht');
+                    });
+                    break;
+
+                case 'duplicate':
+                    pop.innerHTML = `<div class="bulk-popover-title">${ids.length} Termin${ids.length > 1 ? 'e' : ''} duplizieren</div>
+                        <label style="font-size:var(--font-size-sm);color:var(--color-text-secondary)">Tage verschieben
+                            <input type="number" class="bulk-popover-input" id="bulkDupOffset" value="7" min="1" max="365" style="margin-top:4px">
+                        </label>
+                        <button class="bulk-popover-apply" id="bulkDupConfirm">Duplizieren</button>`;
+                    pop.querySelector('#bulkDupConfirm').addEventListener('click', async () => {
+                        const offset = parseInt(pop.querySelector('#bulkDupOffset').value) || 7;
+                        this._closePopover();
+                        const orchestraBase = document.querySelector('[data-api-url]')?.dataset.apiUrl?.match(/^\/([^/]+\/[^/]+)/)?.[1];
+                        const list = document.getElementById('rehearsalsList');
+                        let created = 0;
+                        for (const id of ids) {
+                            try {
+                                const res = await fetch(`/${orchestraBase}/rehearsals/duplicate/${id}`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                    body: 'offset_days=' + offset,
+                                });
+                                const data = await res.json();
+                                if (data.success && data.html && list) {
+                                    const tmp = document.createElement('div');
+                                    tmp.innerHTML = data.html;
+                                    const newCard = tmp.firstElementChild;
+                                    if (newCard) {
+                                        newCard.style.opacity = '0';
+                                        list.appendChild(newCard);
+                                        requestAnimationFrame(() => { newCard.style.transition = 'opacity 0.3s'; newCard.style.opacity = '1'; });
+                                        created++;
+                                    }
+                                }
+                            } catch (_) {}
+                        }
+                        this.deselectAll();
+                        if (this.active) this.toggle();
+                        window.notifySuccess?.(created + ' Termin' + (created !== 1 ? 'e' : '') + ' dupliziert');
+                    });
                     break;
             }
 
@@ -1477,8 +1614,46 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             window.notifySuccess?.('Tag "' + tag + '" hinzugefügt');
         },
 
+        _openBulkEmojiPicker(btnEl) {
+            // Lazy-load picmo
+            const load = () => new Promise(resolve => {
+                if (window.picmo) return resolve();
+                const s = document.createElement('script');
+                s.src = 'https://cdn.jsdelivr.net/npm/picmo@5.8.5/dist/umd/index.min.js';
+                s.onload = resolve;
+                document.head.appendChild(s);
+            });
+
+            load().then(() => {
+                this._bulkPicmoContainer?.remove();
+                const c = document.createElement('div');
+                c.style.cssText = 'position:fixed;z-index:9999;';
+                document.body.appendChild(c);
+                this._bulkPicmoContainer = c;
+
+                const picker = picmo.createPicker({
+                    rootElement: c,
+                    showPreview: false,
+                    autoFocus: 'search',
+                    messages: { searchPlaceholder: 'Suchen...', noEmojisFound: 'Keine Emojis gefunden', recents: 'Zuletzt verwendet' }
+                });
+
+                picker.addEventListener('emoji:select', ev => {
+                    btnEl.textContent = ev.emoji;
+                    c.remove();
+                    this._bulkPicmoContainer = null;
+                });
+
+                // Position above the popover
+                const rect = btnEl.getBoundingClientRect();
+                c.style.bottom = (window.innerHeight - rect.top + 8) + 'px';
+                c.style.left = '50%';
+                c.style.transform = 'translateX(-50%)';
+            });
+        },
+
         _applyNoteAction() {
-            const emoji = document.getElementById('bulkNoteEmoji')?.value || '📌';
+            const emoji = document.getElementById('bulkNoteEmoji')?.textContent?.trim() || '📌';
             const text = document.getElementById('bulkNoteText')?.value.trim();
             if (!text) return;
 
@@ -1488,7 +1663,6 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                 const apiUrl = card.dataset.apiUrl;
                 if (!apiUrl) return;
 
-                // Fetch current infos, append new one, save
                 fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1511,8 +1685,83 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
         chip.addEventListener('click', () => BulkMgr.openFilter(chip));
     });
 
-    document.querySelectorAll('.bulk-action-btn').forEach(btn => {
+    document.querySelectorAll('[data-bulk]').forEach(btn => {
         btn.addEventListener('click', () => BulkMgr.openAction(btn.dataset.bulk, btn));
+    });
+
+    // Quick-add rehearsal with date picker
+    document.getElementById('bulkQuickAdd')?.addEventListener('click', function() {
+        BulkMgr._closePopover();
+
+        const btn = this;
+        const rect = btn.getBoundingClientRect();
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const defaultDate = tomorrow.toISOString().split('T')[0];
+
+        const pop = document.createElement('div');
+        pop.className = 'bulk-filter-dropdown';
+        pop.innerHTML = `<div class="bulk-popover-title">Neue Probe</div>
+            <label>Datum</label>
+            <input type="date" class="bulk-popover-input" id="quickAddDate" value="${defaultDate}">
+            <button class="bulk-popover-apply" id="quickAddConfirm">Erstellen</button>`;
+        pop.style.cssText = `position:fixed;top:${rect.bottom + 4}px;left:${Math.max(8, rect.left - 120)}px;`;
+        pop.onclick = e => e.stopPropagation();
+
+        const backdrop = document.createElement('div');
+        backdrop.className = 'bulk-backdrop';
+        backdrop.onclick = () => BulkMgr._closePopover();
+        document.body.appendChild(backdrop);
+        document.body.appendChild(pop);
+        BulkMgr._backdrop = backdrop;
+        BulkMgr._popover = pop;
+
+        pop.querySelector('#quickAddConfirm').addEventListener('click', () => {
+            const date = pop.querySelector('#quickAddDate').value;
+            if (!date) return;
+            BulkMgr._closePopover();
+
+            const createUrl = document.querySelector('[data-create-url]')?.dataset.createUrl;
+            if (!createUrl) return;
+
+            btn.classList.add('loading');
+            fetch(createUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date })
+            })
+            .then(r => r.json())
+            .then(data => {
+                btn.classList.remove('loading');
+                if (!data.success || !data.html) return;
+                const list = document.getElementById('rehearsalsList') || document.querySelector('.rehearsal-add-box')?.parentElement;
+                if (!list) return;
+                const tmp = document.createElement('div');
+                tmp.innerHTML = data.html;
+                const newCard = tmp.querySelector('.ie-card');
+                if (!newCard) return;
+                // Insert before add-box if present
+                const addBox = list.querySelector('.rehearsal-add-box');
+                if (addBox) list.insertBefore(newCard, addBox);
+                else list.appendChild(newCard);
+                if (window.IEM) window.IEM._activateScripts(newCard);
+                document.querySelector('.empty-state')?.closest('.flex')?.remove();
+                requestAnimationFrame(() => {
+                    if (window.IEM) window.IEM._expand(newCard);
+                    newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                });
+            })
+            .catch(() => { btn.classList.remove('loading'); });
+        });
+    });
+
+    // Vertical wheel → horizontal scroll for chip rows
+    document.querySelectorAll('.bulk-action-buttons, .bulk-filter-row').forEach(row => {
+        row.addEventListener('wheel', e => {
+            if (row.scrollWidth <= row.clientWidth) return;
+            e.preventDefault();
+            row.scrollLeft += e.deltaY;
+        }, { passive: false });
     });
 
     // Intercept card clicks in bulk mode
@@ -1532,21 +1781,239 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             if (BulkMgr._bulkGroupsMode) {
                 const body = document.getElementById('ieGroupsBody');
                 const checked = [...body.querySelectorAll('input[name="groups[]"]:checked')].map(cb => cb.value);
-                if (checked.length === 0) {
-                    const panel = document.querySelector('.ie-groups-panel');
-                    panel.style.animation = 'none';
-                    panel.offsetHeight;
-                    panel.style.animation = 'ie-shake 0.4s ease';
-                    panel.addEventListener('animationend', () => { panel.style.animation = ''; }, { once: true });
-                    return;
-                }
                 document.getElementById('ieGroupsModal')?.close();
                 BulkMgr._bulkGroupsMode = false;
-                BulkMgr._applyBulk({ groups: JSON.stringify(checked) });
+                if (checked.length > 0) {
+                    BulkMgr._applyBulk({ groups: JSON.stringify(checked) });
+                }
                 return;
             }
             originalFn();
         };
+    }
+
+    // Long-press to enter select mode (mobile)
+    let longPressTimer = null;
+    document.addEventListener('touchstart', (e) => {
+        const card = e.target.closest('.ie-card');
+        if (!card || BulkMgr.active) return;
+        longPressTimer = setTimeout(() => {
+            BulkMgr.toggle();
+            BulkMgr.onCardClick(card, e);
+        }, 500);
+    }, { passive: true });
+    document.addEventListener('touchend', () => clearTimeout(longPressTimer));
+    document.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+
+    // ── Recurring Card (inline series creator) ──
+    const recCard = document.getElementById('recurringCard');
+    if (recCard) {
+        const DAY_SHORT = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+        let selectedDays = new Set();
+        let intervalWeeks = 1;
+
+        const today = new Date();
+        const nextMon = new Date(today);
+        nextMon.setDate(today.getDate() + ((8 - today.getDay()) % 7 || 7));
+        const endDefault = new Date(nextMon);
+        endDefault.setMonth(endDefault.getMonth() + 3);
+
+        function computeDates() {
+            const startInput = document.getElementById('recurringStart');
+            const endInput = document.getElementById('recurringEnd');
+            const startStr = startInput ? startInput.value : null;
+            const endStr = endInput ? endInput.value : null;
+            if (!startStr || !endStr || selectedDays.size === 0) return [];
+
+            const start = new Date(startStr + 'T00:00:00');
+            const end = new Date(endStr + 'T23:59:59');
+            if (start > end) return [];
+            
+            const dates = [];
+            const cursor = new Date(start);
+            cursor.setDate(cursor.getDate() - ((cursor.getDay() + 6) % 7));
+            while (cursor <= end) {
+                for (let d = 0; d < 7; d++) {
+                    const check = new Date(cursor);
+                    check.setDate(cursor.getDate() + d);
+                    if (check < start || check > end) continue;
+                    if (selectedDays.has(check.getDay())) {
+                        const localDateStr = check.getFullYear() + '-' + String(check.getMonth() + 1).padStart(2, '0') + '-' + String(check.getDate()).padStart(2, '0');
+                        dates.push(localDateStr);
+                    }
+                }
+                cursor.setDate(cursor.getDate() + 7 * intervalWeeks);
+            }
+            return dates;
+        }
+
+        window.updateEndDateFromDuration = function(selectEl) {
+            const val = selectEl.value;
+            if (val === 'custom') return;
+            
+            // Text is now natively displayed by the select element
+            
+            const startInput = document.getElementById('recurringStart');
+            const endInput = document.getElementById('recurringEnd');
+            if (!startInput || !endInput || !startInput.value) return;
+            
+            const start = new Date(startInput.value + 'T00:00:00');
+            const num = parseInt(val);
+            const unit = val.replace(/[0-9]/g, '');
+            
+            if (unit === 'w') start.setDate(start.getDate() + num * 7);
+            else if (unit === 'm') start.setMonth(start.getMonth() + num);
+            else if (unit === 'y') start.setFullYear(start.getFullYear() + num);
+            
+            const endStr = start.toISOString().split('T')[0];
+            endInput.value = endStr;
+            const endSpanText = document.getElementById('recurringEndSpan').firstChild;
+            if (endSpanText) endSpanText.textContent = endStr + '\n';
+            
+            updatePreview();
+        };
+
+        function updatePreview() {
+            const dates = computeDates();
+            const preview = document.getElementById('recurringPreview');
+            const submit = document.getElementById('recurringSubmit');
+            if (dates.length === 0) {
+                preview.innerHTML = 'Wähle mindestens einen Tag';
+                submit.disabled = true;
+            } else {
+                preview.innerHTML = `→ <strong>${dates.length}</strong> Termin${dates.length !== 1 ? 'e' : ''}`;
+                submit.disabled = false;
+            }
+        }
+
+        document.getElementById('recurringDays').addEventListener('click', e => {
+            const btn = e.target.closest('.rc-day');
+            if (!btn) return;
+            const day = parseInt(btn.dataset.day);
+            const DAY_TAGS = ['Sonntags-Probe', 'Montags-Probe', 'Dienstags-Probe', 'Mittwochs-Probe', 'Donnerstags-Probe', 'Freitags-Probe', 'Samstags-Probe'];
+            const tagName = DAY_TAGS[day];
+
+            const tagsContainer = document.getElementById('recurringTagsContainer');
+            const addBtn = tagsContainer?.querySelector('.ie-tag-add');
+
+            if (selectedDays.has(day)) {
+                // Deselect day
+                selectedDays.delete(day);
+                btn.classList.remove('active');
+                
+                // Remove the corresponding auto-tag if it exists
+                if (tagsContainer) {
+                    const tagEl = tagsContainer.querySelector(`.ie-tag[data-tag="${tagName}"]`);
+                    if (tagEl) tagEl.remove();
+                }
+            } else {
+                // Select day
+                selectedDays.add(day);
+                btn.classList.add('active');
+                
+                // Add the corresponding auto-tag
+                if (tagsContainer && addBtn && !tagsContainer.querySelector(`.ie-tag[data-tag="${tagName}"]`)) {
+                    const span = document.createElement('span');
+                    span.className = 'ie-tag';
+                    span.dataset.tag = tagName;
+                    span.innerHTML = `${tagName}<button type="button" class="ie-tag-remove" onclick="if(!window.IEM?._guard(event))return; window.IEM.removeTag(this)" title="Entfernen">×</button>`;
+                    tagsContainer.insertBefore(span, addBtn);
+                }
+            }
+            
+            updatePreview();
+        });
+
+        document.getElementById('recurringStart')?.addEventListener('change', updatePreview);
+        document.getElementById('recurringEnd')?.addEventListener('change', updatePreview);
+
+        document.getElementById('recurringInterval').addEventListener('click', e => {
+            const btn = e.target.closest('.rc-toggle-opt');
+            if (!btn) return;
+            document.querySelectorAll('.rc-toggle-opt').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            intervalWeeks = parseInt(btn.dataset.weeks);
+            updatePreview();
+        });
+
+        // Type, location, color: handled by IEM via onclick on badges
+        // Values are read from the ie-card's data-* attrs at submit time
+
+        // Listen for dataset.start/end changes (IEM updates these) to refresh the preview
+        const observer = new MutationObserver((mutations) => {
+            for (let m of mutations) {
+                if (m.type === 'attributes' && (m.attributeName === 'data-start' || m.attributeName === 'data-end')) {
+                    updatePreview();
+                }
+            }
+        });
+        observer.observe(recCard.querySelector('.ie-card'), { attributes: true, attributeFilter: ['data-start', 'data-end'] });
+
+        document.getElementById('recurringOpen')?.addEventListener('click', () => {
+            const isOpen = recCard.classList.toggle('open');
+            if (isOpen) recCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+        document.getElementById('recurringClose').addEventListener('click', () => recCard.classList.remove('open'));
+
+        document.getElementById('recurringSubmit').addEventListener('click', () => {
+            const dates = computeDates();
+            if (dates.length === 0) return;
+
+            const ieCard = recCard.querySelector('.ie-card');
+            
+            // Extract tags from DOM elements (managed by IEM addTagInput/removeTag)
+            const tags = Array.from(recCard.querySelectorAll('#recurringTagsContainer .ie-tag'))
+                .map(span => span.dataset.tag)
+                .filter(Boolean);
+
+            // Read JSON from the hidden inputs created by the editors
+            let scheduleItems = [];
+            let infos = [];
+            try {
+                const schedInput = document.getElementById('schedule-editor-recurring-hidden');
+                if (schedInput && schedInput.value) scheduleItems = JSON.parse(schedInput.value);
+                const infoInput = document.getElementById('infobox-editor-recurring-hidden');
+                if (infoInput && infoInput.value) infos = JSON.parse(infoInput.value);
+            } catch (e) { console.error('Error parsing embedded editors', e); }
+
+            const payload = {
+                dates,
+                start_time: ieCard.dataset.start ? ieCard.dataset.start.split(' ')[1] : '18:00:00',
+                end_time: ieCard.dataset.end ? ieCard.dataset.end.split(' ')[1] : '20:00:00',
+                type: ieCard.dataset.type || '',
+                location: ieCard.dataset.location || 'Probenraum',
+                color: ieCard.dataset.color || '#e5e7eb',
+                tags,
+                schedule_items: scheduleItems,
+                infos
+            };
+
+            const submit = document.getElementById('recurringSubmit');
+            submit.disabled = true;
+            submit.textContent = 'Erstelle…';
+
+            const baseUrl = window.location.pathname.replace(/\/rehearsals\/?$/, '');
+            fetch(`${baseUrl}/rehearsals/batch-create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    recCard.classList.remove('open');
+                    window.notifySuccess?.(`${data.count} Termine erfolgreich erstellt!`);
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    submit.disabled = false;
+                    submit.textContent = 'Erstellen';
+                }
+            })
+            .catch(() => {
+                submit.disabled = false;
+                submit.textContent = 'Erstellen';
+            });
+        });
     }
 })();
 </script>

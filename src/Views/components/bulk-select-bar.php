@@ -11,18 +11,44 @@
 ?>
 <style>
     /* ═══ SEARCH & FILTER TOOLBAR ═══ */
+    .bulk-toolbar-sticky {
+        position: sticky;
+        top: var(--navbar-height, 64px);
+        z-index: 50;
+        padding: var(--space-3) 0 var(--space-2);
+        background: inherit;
+    }
     .bulk-toolbar {
+        background: var(--color-white, var(--color-bg-primary));
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-xl);
+        box-shadow: 0 4px 16px -2px rgba(0,0,0,0.1);
+        padding: var(--space-3) var(--space-4);
+        margin-bottom: var(--space-4);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3);
+        min-width: 0;
+    }
+
+    .bulk-toolbar-row {
         display: flex;
         align-items: center;
         gap: var(--space-2);
-        margin-bottom: var(--space-4);
-        flex-wrap: wrap;
+        min-width: 0;
+    }
+
+    .bulk-toolbar-actions {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        flex-shrink: 0;
     }
 
     .bulk-search-wrapper {
         position: relative;
         flex: 1;
-        min-width: 180px;
+        min-width: 0;
     }
     .bulk-search-icon {
         position: absolute;
@@ -37,11 +63,11 @@
     .bulk-search {
         width: 100%;
         padding: var(--space-2) var(--space-3) var(--space-2) calc(var(--space-8) + 2px);
-        border: 2px solid var(--color-border);
+        border: 1.5px solid var(--color-border);
         border-radius: var(--radius-full);
         font-size: var(--font-size-sm);
         color: var(--color-text-primary);
-        background: var(--color-bg-primary);
+        background: var(--color-bg-secondary);
         transition: all var(--transition-base);
     }
     .bulk-search:focus {
@@ -59,8 +85,9 @@
         overflow-x: auto;
         scrollbar-width: none;
         -webkit-overflow-scrolling: touch;
-        width: 100%;
         padding-bottom: 2px;
+        width: 100%;
+        min-width: 0;
     }
     .bulk-filter-row::-webkit-scrollbar { display: none; }
 
@@ -98,24 +125,72 @@
     }
     .bulk-filter-chip .chip-clear:hover { opacity: 1; }
 
+    .bulk-series-btn {
+        margin-left: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 14px;
+        border: 1px solid var(--color-primary);
+        border-radius: var(--radius-md);
+        background: transparent;
+        color: var(--color-primary);
+        font-size: 12px;
+        font-weight: var(--font-weight-semibold);
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.15s ease;
+    }
+    .bulk-series-btn:hover {
+        background: var(--color-primary);
+        color: #fff;
+    }
+
     .bulk-filter-dropdown {
-        position: absolute;
-        z-index: 60;
+        position: fixed;
+        z-index: 110;
         background: var(--color-bg-primary);
         border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        padding: var(--space-2);
-        box-shadow: var(--shadow-lg);
-        max-height: 220px;
+        border-radius: var(--radius-lg);
+        padding: var(--space-3);
+        box-shadow: var(--shadow-xl);
+        max-height: 280px;
         overflow-y: auto;
-        min-width: 160px;
+        min-width: 200px;
+        max-width: 320px;
+        animation: filterDropIn 0.15s ease;
+    }
+    .bulk-filter-dropdown label {
+        display: block;
+        font-size: 12px;
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-secondary);
+        margin-bottom: 4px;
+    }
+    .bulk-filter-dropdown label + label {
+        margin-top: var(--space-2);
+    }
+    .bulk-filter-dropdown input[type="date"] {
+        width: 100%;
+        padding: var(--space-2) var(--space-3);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+        background: var(--color-bg-primary);
+        transition: border-color 0.15s;
+    }
+    .bulk-filter-dropdown input[type="date"]:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 2px rgba(71, 140, 244, 0.1);
     }
     .bulk-filter-option {
-        padding: 6px 10px;
+        padding: 8px 12px;
         border-radius: var(--radius-sm);
         cursor: pointer;
         font-size: var(--font-size-sm);
-        transition: background 0.1s;
+        transition: all 0.1s ease;
         display: flex;
         align-items: center;
         gap: var(--space-2);
@@ -157,6 +232,30 @@
         user-select: none;
         -webkit-user-select: none;
     }
+
+    /* Edit toggle → selection indicator in bulk mode */
+    .ie-card.bulk-selectable .ie-edit-toggle {
+        width: 28px;
+        height: 28px;
+        border: 2px solid var(--color-border);
+        border-radius: 50%;
+        background: var(--color-bg-primary);
+        color: transparent;
+        pointer-events: none;
+        transition: all 0.2s ease;
+    }
+    .ie-card.bulk-selectable .ie-edit-toggle .fa-pen::before {
+        content: '' !important;
+    }
+    .ie-card.bulk-selected .ie-edit-toggle {
+        border-color: var(--color-primary);
+        background: var(--color-primary);
+        color: #fff;
+    }
+    .ie-card.bulk-selected .ie-edit-toggle .fa-pen::before {
+        content: '\f00c' !important;
+    }
+
     /* Inset text effect: text looks stamped into the card surface */
     .ie-card.bulk-selectable .rehearsal-weekday {
         background-color: #888;
@@ -234,17 +333,51 @@
         display: flex;
         flex-direction: column;
         gap: var(--space-2);
+        min-width: 0;
     }
 
     .bulk-action-header {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        gap: var(--space-2);
+        min-width: 0;
     }
     .bulk-action-count {
         font-size: var(--font-size-sm);
         font-weight: var(--font-weight-bold);
         color: var(--color-primary);
+        margin-right: auto;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .bulk-header-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-md);
+        transition: all 0.15s ease;
+        flex-shrink: 0;
+    }
+    .bulk-header-btn--duplicate {
+        color: var(--color-text-muted);
+    }
+    .bulk-header-btn--duplicate:hover {
+        color: var(--color-primary);
+        background: var(--color-primary-50);
+    }
+    .bulk-header-btn--delete {
+        color: var(--color-text-muted);
+    }
+    .bulk-header-btn--delete:hover {
+        color: var(--color-danger, #ef4444);
+        background: color-mix(in srgb, var(--color-danger, #ef4444) 10%, transparent);
     }
     .bulk-action-close {
         background: none;
@@ -252,11 +385,19 @@
         cursor: pointer;
         color: var(--color-text-muted);
         font-size: 16px;
-        padding: 4px;
-        border-radius: var(--radius-sm);
-        transition: color 0.15s;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-md);
+        transition: all 0.15s ease;
+        flex-shrink: 0;
     }
-    .bulk-action-close:hover { color: var(--color-text-primary); }
+    .bulk-action-close:hover {
+        color: var(--color-text-primary);
+        background: var(--color-bg-secondary);
+    }
 
     .bulk-action-buttons {
         display: flex;
@@ -265,6 +406,8 @@
         scrollbar-width: none;
         -webkit-overflow-scrolling: touch;
         padding-bottom: 2px;
+        width: 100%;
+        min-width: 0;
     }
     .bulk-action-buttons::-webkit-scrollbar { display: none; }
 
@@ -311,6 +454,10 @@
         animation: bulkPopIn 0.15s ease;
     }
     @keyframes bulkPopIn {
+        from { opacity: 0; transform: translateX(-50%) translateY(8px) scale(0.97); }
+        to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+    }
+    @keyframes filterDropIn {
         from { opacity: 0; transform: translateY(8px) scale(0.97); }
         to { opacity: 1; transform: translateY(0) scale(1); }
     }
@@ -454,23 +601,32 @@
 </style>
 
 <!-- Search & filter toolbar -->
-<div class="bulk-toolbar" id="bulkToolbar">
-    <div class="bulk-search-wrapper">
-        <i class="fas fa-search bulk-search-icon"></i>
-        <input type="text" class="bulk-search" id="bulkSearch" placeholder="Termine durchsuchen…" autocomplete="off">
+<div class="bulk-toolbar-sticky" id="bulkToolbarSticky">
+    <div class="bulk-toolbar" id="bulkToolbar">
+        <div class="bulk-toolbar-row">
+            <div class="bulk-search-wrapper">
+                <i class="fas fa-search bulk-search-icon"></i>
+                <input type="text" class="bulk-search" id="bulkSearch" placeholder="Termine durchsuchen…" autocomplete="off">
+            </div>
+            <button type="button" class="bulk-select-toggle" id="bulkQuickAdd" title="Neue Probe">
+                <i class="fas fa-plus"></i>
+            </button>
+            <button type="button" class="bulk-select-toggle" id="bulkSelectToggle" title="Mehrfachauswahl">
+                <i class="fas fa-check-double"></i>
+            </button>
+        </div>
+
+        <div class="bulk-filter-row" id="bulkFilterRow">
+            <button type="button" class="bulk-filter-chip" data-filter="type"><i class="fas fa-tag"></i> Typ</button>
+            <button type="button" class="bulk-filter-chip" data-filter="location"><i class="fas fa-map-marker-alt"></i> Ort</button>
+            <button type="button" class="bulk-filter-chip" data-filter="color"><i class="fas fa-palette"></i> Farbe</button>
+            <button type="button" class="bulk-filter-chip" data-filter="tags"><i class="fas fa-hashtag"></i> Tags</button>
+            <button type="button" class="bulk-filter-chip" data-filter="dateRange"><i class="fas fa-calendar"></i> Zeitraum</button>
+            <button type="button" class="bulk-series-btn" id="recurringOpen"><i class="fas fa-layer-group"></i> Serie erstellen</button>
+        </div>
     </div>
-    <button type="button" class="bulk-select-toggle" id="bulkSelectToggle" title="Mehrfachauswahl">
-        <i class="fas fa-check-double"></i>
-    </button>
 </div>
 
-<div class="bulk-filter-row" id="bulkFilterRow">
-    <button type="button" class="bulk-filter-chip" data-filter="type"><i class="fas fa-tag"></i> Typ</button>
-    <button type="button" class="bulk-filter-chip" data-filter="location"><i class="fas fa-map-marker-alt"></i> Ort</button>
-    <button type="button" class="bulk-filter-chip" data-filter="color"><i class="fas fa-palette"></i> Farbe</button>
-    <button type="button" class="bulk-filter-chip" data-filter="tags"><i class="fas fa-hashtag"></i> Tags</button>
-    <button type="button" class="bulk-filter-chip" data-filter="dateRange"><i class="fas fa-calendar"></i> Zeitraum</button>
-</div>
 
 <div class="bulk-no-results" id="bulkNoResults">
     <i class="fas fa-search"></i>
@@ -483,6 +639,12 @@
         <div class="bulk-action-panel">
             <div class="bulk-action-header">
                 <span class="bulk-action-count" id="bulkCount">0 ausgewählt</span>
+                <button type="button" class="bulk-header-btn bulk-header-btn--duplicate" data-bulk="duplicate" title="Duplizieren">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <button type="button" class="bulk-header-btn bulk-header-btn--delete" data-bulk="delete" title="Löschen">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
                 <button type="button" class="bulk-action-close" id="bulkDeselectAll" title="Auswahl aufheben">
                     <i class="fas fa-times"></i>
                 </button>
@@ -495,6 +657,7 @@
                 <button type="button" class="bulk-action-btn" data-bulk="time"><i class="fas fa-clock"></i> Uhrzeit</button>
                 <button type="button" class="bulk-action-btn" data-bulk="tag"><i class="fas fa-hashtag"></i> Tag</button>
                 <button type="button" class="bulk-action-btn" data-bulk="note"><i class="fas fa-sticky-note"></i> Notiz</button>
+
             </div>
         </div>
     </div>

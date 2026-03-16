@@ -357,8 +357,8 @@
     }
     .ie-footer-edit:hover, .ie-footer-edit:active { opacity: 1; color: var(--color-primary); }
     .ie-footer-delete {
-        color: var(--color-text-muted);
-        opacity: 0.5;
+        color: var(--color-text-secondary);
+        opacity: 0.6;
     }
     .ie-footer-delete:hover, .ie-footer-delete:active { opacity: 1; color: var(--color-error); }
 
@@ -688,6 +688,11 @@ $hasExpandableContent = !empty($rehearsal['schedule_items']) || !empty($rehearsa
                     onclick="if(!window.IEM?._guard(event))return; window.IEM.addTagInput(this)"
                     title="Tag hinzufügen">+ Tag</button>
             </div>
+            <button type="button" class="ie-footer-btn ie-footer-edit"
+                onclick="event.stopPropagation(); window.IEM && window.IEM.duplicateRehearsal(<?= $rehearsalId ?>, this)"
+                title="Probe duplizieren">
+                <i class="fas fa-copy"></i> Duplizieren
+            </button>
             <button type="button" class="ie-footer-btn ie-footer-delete"
                 onclick="event.stopPropagation(); window.IEM && window.IEM.deleteRehearsal(<?= $rehearsalId ?>)"
                 title="Probe löschen">

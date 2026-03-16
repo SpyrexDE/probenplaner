@@ -79,10 +79,27 @@ class RehearsalController extends Controller
 
         $orchestraId = (int)$_SESSION['current_orchestra_id'];
 
-        $today = date('Y-m-d');
+        // Accept optional date from JSON body
+        $body = json_decode(file_get_contents('php://input'), true) ?: [];
+        $requestedDate = $body['date'] ?? null;
+
+        if ($requestedDate && preg_match('/^\d{4}-\d{2}-\d{2}$/', $requestedDate)) {
+            $nextDate = $requestedDate;
+        } else {
+            $upcoming = $this->rehearsalModel->getUpcoming($orchestraId, false);
+            if (!empty($upcoming)) {
+                $lastDate = end($upcoming)['start'] ?? null;
+                $next = new \DateTime($lastDate ?? 'tomorrow');
+                $next->modify('+1 day');
+            } else {
+                $next = new \DateTime('tomorrow');
+            }
+            $nextDate = $next->format('Y-m-d');
+        }
+
         $data = [
-            'start' => $today . ' 18:00:00',
-            'end' => $today . ' 20:00:00',
+            'start' => $nextDate . ' 18:00:00',
+            'end' => $nextDate . ' 20:00:00',
             'location' => 'Probenraum',
             'type' => '',
             'orchestra_id' => $orchestraId,
@@ -98,16 +115,9 @@ class RehearsalController extends Controller
             exit;
         }
 
-        $roleModel = new Role();
-        $defaultRoles = $roleModel->getDefaultRoles($orchestraId);
-        $defaultRoleIds = array_map(fn($r) => (int)$r['id'], $defaultRoles);
-        if (!empty($defaultRoleIds)) {
-            $roleModel->setRehearsalRoles($result, $defaultRoleIds);
-        }
-
         $rehearsal = $this->rehearsalModel->findById($result);
 
-        // Render card HTML
+        $roleModel = new Role();
         $context = 'inline-edit';
         $options = ['showButtons' => false, 'expanded' => true];
         $availableRoles = $roleModel->getByOrchestra($orchestraId);
@@ -118,6 +128,79 @@ class RehearsalController extends Controller
         $html = ob_get_clean();
 
         echo json_encode(['success' => true, 'id' => $result, 'html' => $html]);
+        exit;
+    }
+
+    /**
+     * AJAX: Batch-create rehearsals from a list of dates with shared properties.
+     */
+    public function batchCreateAjax($params = [])
+    {
+        $this->validateOrchestraContext($params);
+        $this->requirePermission('can_manage_rehearsals');
+        header('Content-Type: application/json');
+
+        $orchestraId = (int)$_SESSION['current_orchestra_id'];
+        $body = json_decode(file_get_contents('php://input'), true) ?: [];
+        file_put_contents(__DIR__ . '/../../batch_payload_debug.log', json_encode($body, JSON_PRETTY_PRINT));
+        
+        $dates         = $body['dates'] ?? [];
+        $startTime     = substr($body['start_time'] ?? '18:00', 0, 5);
+        $endTime       = substr($body['end_time'] ?? '20:00', 0, 5);
+        $type          = $body['type'] ?? '';
+        $location      = $body['location'] ?? 'Probenraum';
+        $color         = $body['color'] ?? '#e5e7eb';
+        $tags          = $body['tags'] ?? [];
+        $groups        = $body['groups'] ?? null;
+        $scheduleItems = $body['schedule_items'] ?? null;
+        $infos         = $body['infos'] ?? null;
+        
+        error_log("Batch Create Payload - Schedule: " . json_encode($scheduleItems));
+        error_log("Batch Create Payload - Infos: " . json_encode($infos));
+
+        if (empty($dates) || !is_array($dates)) {
+            echo json_encode(['success' => false, 'message' => 'Keine Termine angegeben']);
+            exit;
+        }
+
+        // Default groups: all root groups
+        if ($groups === null) {
+            $groupManager = \App\Core\GroupManager::getInstance();
+            $groups = array_map(fn($g) => $g['id'], $groupManager->getConfig());
+        }
+
+        $created = 0;
+        foreach ($dates as $date) {
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) continue;
+
+            $data = [
+                'start'        => $date . ' ' . $startTime . ':00',
+                'end'          => $date . ' ' . $endTime . ':00',
+                'location'     => $location,
+                'type'         => $type,
+                'color'        => $color,
+                'orchestra_id' => $orchestraId,
+            ];
+
+            $rehearsalId = $this->rehearsalModel->create($data, $groups);
+            if (!$rehearsalId || is_array($rehearsalId)) continue;
+
+            if (!empty($tags)) {
+                $this->rehearsalModel->saveTags($rehearsalId, $orchestraId, $tags);
+            }
+
+            // Save Schedule Items / Infos
+            if ($scheduleItems !== null) {
+                $this->rehearsalModel->saveScheduleItems($rehearsalId, $scheduleItems);
+            }
+            if ($infos !== null) {
+                $this->rehearsalModel->saveInfos($rehearsalId, $infos);
+            }
+
+            $created++;
+        }
+
+        echo json_encode(['success' => true, 'count' => $created]);
         exit;
     }
 
@@ -170,6 +253,87 @@ class RehearsalController extends Controller
 
         header('Content-Type: application/json');
         echo json_encode($tags);
+        exit;
+    }
+
+    /**
+     * AJAX: Duplicate a rehearsal with date shifted +N days.
+     */
+    public function duplicateAjax($params = [])
+    {
+        $this->validateOrchestraContext($params);
+        $this->requirePermission('can_manage_rehearsals');
+
+        header('Content-Type: application/json');
+
+        $rehearsalId = (int)($params['id'] ?? 0);
+        $offsetDays = (int)($_POST['offset_days'] ?? 7);
+        if ($rehearsalId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Ungültige Proben-ID']);
+            exit;
+        }
+
+        $source = $this->rehearsalModel->findById($rehearsalId);
+        if (!$source) {
+            echo json_encode(['success' => false, 'message' => 'Probe nicht gefunden']);
+            exit;
+        }
+
+        $orchestraId = (int)$_SESSION['current_orchestra_id'];
+        $startDt = new \DateTime($source['start']);
+        $endDt = new \DateTime($source['end']);
+        $startDt->modify("+{$offsetDays} days");
+        $endDt->modify("+{$offsetDays} days");
+
+        $data = [
+            'start'        => $startDt->format('Y-m-d H:i:s'),
+            'end'          => $endDt->format('Y-m-d H:i:s'),
+            'location'     => $source['location'] ?? '',
+            'type'         => $source['type'] ?? '',
+            'color'        => $source['color'] ?? '',
+            'orchestra_id' => $orchestraId,
+        ];
+
+        $groups = array_map(fn($g) => $g['id'] ?? $g, $source['groups'] ?? []);
+        $newId = $this->rehearsalModel->create($data, $groups);
+
+        if (!$newId || is_array($newId)) {
+            echo json_encode(['success' => false, 'message' => 'Duplizieren fehlgeschlagen']);
+            exit;
+        }
+
+        // Copy tags
+        $tags = $source['tags'] ?? [];
+        if (!empty($tags)) {
+            $this->rehearsalModel->saveTags($newId, $orchestraId, $tags);
+        }
+
+        // Copy role scoping
+        $roleModel = new Role();
+        $existingRoles = $roleModel->getRehearsalRoles($rehearsalId);
+        if (!empty($existingRoles)) {
+            $roleModel->setRehearsalRoles($newId, array_map(fn($r) => (int)$r['id'], $existingRoles));
+        }
+
+        // Copy schedule items and infos
+        if (!empty($source['schedule_items'])) {
+            $this->rehearsalModel->saveScheduleItems($newId, $source['schedule_items']);
+        }
+        if (!empty($source['infos'])) {
+            $this->rehearsalModel->saveInfos($newId, $source['infos']);
+        }
+
+        $rehearsal = $this->rehearsalModel->findById($newId);
+        $context = 'inline-edit';
+        $options = ['showButtons' => false];
+        $availableRoles = $roleModel->getByOrchestra($orchestraId);
+        $smartDisplay = new \App\Core\SmartGroupDisplay();
+
+        ob_start();
+        include APP_ROOT . '/Views/components/rehearsal-card.php';
+        $html = ob_get_clean();
+
+        echo json_encode(['success' => true, 'id' => $newId, 'html' => $html]);
         exit;
     }
 
