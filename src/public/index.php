@@ -176,6 +176,8 @@ $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/edit/{id}', 'RehearsalC
 $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/delete/{id}', 'RehearsalController', 'delete');
 $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/duplicate/{id}', 'RehearsalController', 'duplicateAjax', 'POST');
 $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/batch-create', 'RehearsalController', 'batchCreateAjax', 'POST');
+$router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/ai-import-prompt', 'RehearsalController', 'getAiImportPrompt');
+$router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/ai-import', 'RehearsalController', 'processAiImport', 'POST');
 
 // Probenplan route
 $router->addRoute('/{org_slug}/{orchestra_id}/probenplan', 'ProbenplanController', 'index');

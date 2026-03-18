@@ -274,7 +274,7 @@ class PromiseController extends Controller
         if ($hasMore) {
             $base = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '');
             $nextUrl = htmlspecialchars($base . '/promises/index-past?offset=' . $nextOffset);
-            echo '<div data-lazy-button-url="' . $nextUrl . '" style="display:none"></div>';
+            echo '<div data-lazy-next-url="' . $nextUrl . '" style="display:none"></div>';
         }
     }
 
@@ -625,7 +625,7 @@ class PromiseController extends Controller
             5
         );
 
-        $rehearsals = array_reverse($result['rows']);
+        $rehearsals = $result['rows'];
         if (empty($rehearsals)) {
             echo '';
             return;
@@ -691,7 +691,7 @@ class PromiseController extends Controller
         if ($nextOffset < $result['total']) {
             $base = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '');
             $nextUrl = htmlspecialchars($base . '/promises/leader-past?offset=' . $nextOffset . ($viewAllSections ? '&viewAll=1' : ''));
-            echo '<div data-lazy-button-url="' . $nextUrl . '" style="display:none"></div>';
+            echo '<div data-lazy-next-url="' . $nextUrl . '" style="display:none"></div>';
         }
     }
 
@@ -1108,7 +1108,7 @@ class PromiseController extends Controller
             5
         );
 
-        $rehearsals = array_reverse($result['rows']);
+        $rehearsals = $result['rows'];
         if (empty($rehearsals)) {
             echo '';
             return;

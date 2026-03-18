@@ -10,8 +10,8 @@
     <script>
         <?php foreach ($_SESSION['flash_messages'] as $key => $message): ?>
                 (function() {
-                    const type = '<?= $message['type'] ?>';
-                    const text = '<?= htmlspecialchars($message['message']) ?>';
+                    const type = <?= json_encode($message['type']) ?>;
+                    const text = <?= json_encode($message['message']) ?>;
                     const details = <?= isset($message['details']) && $message['details'] ? json_encode($message['details']) : 'null' ?>;
 
                     if (type === 'error' && details) {
@@ -32,9 +32,9 @@
     <script>
         <?php foreach ($_SESSION['alerts'] as $key => $alert): ?>
                 (function() {
-                    const type = '<?= $alert[2] ?>';
-                    const title = '<?= htmlspecialchars($alert[0]) ?>';
-                    const message = `<?= nl2br(htmlspecialchars($alert[1])) ?>`;
+                    const type = <?= json_encode($alert[2]) ?>;
+                    const title = <?= json_encode($alert[0]) ?>;
+                    const message = <?= json_encode(preg_replace('/<br\s*\/?>/i', "\n", $alert[1])) ?>;
                     const hasDetails = <?= isset($alert[3]) && $alert[3] ? 'true' : 'false' ?>;
                     const details = `<?= isset($alert[3]) ? htmlspecialchars($alert[3]) : '' ?>`;
 

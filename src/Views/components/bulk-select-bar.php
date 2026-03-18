@@ -14,6 +14,7 @@
     .bulk-toolbar-sticky {
         position: sticky;
         top: var(--navbar-height, 64px);
+        bottom: 0;
         z-index: 50;
         padding: var(--space-3) 0 var(--space-2);
         background: inherit;
@@ -610,6 +611,9 @@
             </div>
             <button type="button" class="bulk-select-toggle" id="bulkQuickAdd" title="Neue Probe">
                 <i class="fas fa-plus"></i>
+            </button>
+            <button type="button" class="bulk-select-toggle" onclick="openAiImportModal()" title="KI Import">
+                <i class="fas fa-wand-magic-sparkles"></i>
             </button>
             <button type="button" class="bulk-select-toggle" id="bulkSelectToggle" title="Mehrfachauswahl">
                 <i class="fas fa-check-double"></i>

@@ -66,8 +66,19 @@
             temp.innerHTML = html;
             
             if (isPrepend) {
+                // Calculate height before insertion
+                var oldScrollHeight = el.scrollHeight;
+                var oldScrollTop = window.scrollY || document.documentElement.scrollTop;
+
                 while (temp.lastChild) {
                     existing.insertBefore(temp.lastChild, existing.firstChild);
+                }
+
+                // Adjust scroll position to prevent jump
+                var newScrollHeight = el.scrollHeight;
+                var heightDiff = newScrollHeight - oldScrollHeight;
+                if (heightDiff > 0) {
+                    window.scrollTo(0, oldScrollTop + heightDiff);
                 }
             } else {
                 while (temp.firstChild) {
@@ -115,12 +126,20 @@
     }
 
     function chainNextBatch(el, url) {
-        // Create a sentinel at the bottom to trigger the next batch load
+        // Create a sentinel to trigger the next batch load
         var sentinel = document.createElement('div');
         sentinel.className = 'lazy-batch-sentinel';
         sentinel.style.minHeight = '1px';
         var content = el.querySelector('.lazy-section-content');
-        if (content) content.appendChild(sentinel);
+        var isPrepend = el.getAttribute('data-lazy-prepend') === 'true';
+
+        if (content) {
+            if (isPrepend) {
+                content.insertBefore(sentinel, content.firstChild);
+            } else {
+                content.appendChild(sentinel);
+            }
+        }
 
         if (!observer) {
             fetchBatch(el, url);

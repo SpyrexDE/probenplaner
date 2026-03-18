@@ -119,7 +119,7 @@ class RehearsalController extends Controller
         $orchestraId = (int)$_SESSION['current_orchestra_id'];
         $result = $this->rehearsalModel->getPastPaginated($orchestraId, $offset, 5);
 
-        $rehearsals = $result['rows'];
+        $rehearsals = array_reverse($result['rows']);
         if (empty($rehearsals)) {
             echo '';
             return;
@@ -137,7 +137,7 @@ class RehearsalController extends Controller
         if ($nextOffset < $result['total']) {
             $base = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '');
             $nextUrl = htmlspecialchars($base . '/rehearsals/past?offset=' . $nextOffset);
-            echo '<div data-lazy-button-url="' . $nextUrl . '" style="display:none"></div>';
+            echo '<div data-lazy-next-url="' . $nextUrl . '" style="display:none"></div>';
         }
     }
 
@@ -274,6 +274,198 @@ class RehearsalController extends Controller
         }
 
         echo json_encode(['success' => true, 'count' => $created]);
+        exit;
+    }
+
+    /**
+     * AJAX: Get personalized AI prompt for rehearsal import
+     */
+    public function getAiImportPrompt($params = [])
+    {
+        $this->validateOrchestraContext($params);
+        $this->requirePermission('can_manage_rehearsals');
+
+        $orchestraId = (int)$_SESSION['current_orchestra_id'];
+        
+        $roleModel = new Role();
+        $roles = $roleModel->getByOrchestra($orchestraId);
+        $rolesFiltered = array_filter($roles, fn($r) => strcasecmp($r['name'], 'Mitglied') !== 0);
+        $rolesList = implode(", ", array_map(fn($r) => '"' . $r['name'] . '"', $rolesFiltered));
+        
+        // Types and locations can be fetched from existing rehearsals
+        $rehearsals = $this->rehearsalModel->getUpcoming($orchestraId, true);
+        $types = array_filter(array_unique(array_column($rehearsals, 'type')));
+        $typesList = implode(", ", array_map(fn($t) => '"' . $t . '"', $types));
+        
+        $locations = array_filter(array_unique(array_column($rehearsals, 'location')));
+        $locationsList = implode(", ", array_map(fn($l) => '"' . $l . '"', $locations));
+        
+        $groupManager = \App\Core\GroupManager::getInstance();
+        $allGroups = $groupManager->getAllGroups();
+        $sections = [];
+        foreach ($allGroups as $id => $g) {
+            if ((isset($g['type']) && $g['type'] === 'section') || empty($g['type'])) {
+                $sections[] = $g['display_name'] ?? $id;
+            }
+        }
+        $groupsList = implode(", ", array_map(fn($s) => '"' . $s . '"', $sections));
+        
+        $promptPath = APP_ROOT . '/Docs/ai_rehearsal_import_prompt.md';
+        $promptText = file_exists($promptPath) ? file_get_contents($promptPath) : 'Prompt-Vorlage nicht gefunden.';
+        
+        $promptText = str_replace(
+            ['{{ROLES_LIST}}', '{{LOCATIONS_LIST}}', '{{TYPES_LIST}}', '{{GROUPS_LIST}}'],
+            [$rolesList, $locationsList, $typesList, $groupsList],
+            $promptText
+        );
+        
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'prompt' => $promptText]);
+        exit;
+    }
+
+    /**
+     * AJAX: Process JSON parsed by AI and import rehearsals
+     */
+    public function processAiImport($params = [])
+    {
+        $this->validateOrchestraContext($params);
+        $this->requirePermission('can_manage_rehearsals');
+        
+        header('Content-Type: application/json');
+        $orchestraId = (int)$_SESSION['current_orchestra_id'];
+        
+        $body = json_decode(file_get_contents('php://input'), true) ?: [];
+        $rehearsals = $body['rehearsals'] ?? [];
+        
+        if (empty($rehearsals) || !is_array($rehearsals)) {
+            echo json_encode(['success' => false, 'message' => 'Keine Proben im JSON gefunden']);
+            exit;
+        }
+
+        $roleModel = new Role();
+        $existingRoles = $roleModel->getByOrchestra($orchestraId);
+        
+        // Build map of lowercased role name to role ID
+        $roleMap = [];
+        foreach ($existingRoles as $r) {
+            $roleMap[strtolower(trim($r['name']))] = (int)$r['id'];
+        }
+
+        // Validate roles first
+        $missingRoles = [];
+        foreach ($rehearsals as $rehearsal) {
+            $roles = $rehearsal['roles'] ?? [];
+            if (!is_array($roles)) continue;
+            foreach ($roles as $rName) {
+                if (empty($rName)) continue;
+                $key = strtolower(trim($rName));
+                if (!isset($roleMap[$key])) {
+                    $missingRoles[$rName] = true;
+                }
+            }
+        }
+
+        if (!empty($missingRoles)) {
+            $missingList = implode(", ", array_keys($missingRoles));
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Folgende Rollen existieren nicht: ' . $missingList . '. Bitte erstelle sie vor dem Import, oder weise die KI an, nur existierende Rollen zu verwenden.'
+            ]);
+            exit;
+        }
+
+        $groupManager = \App\Core\GroupManager::getInstance();
+        $rootGroups = array_map(fn($g) => $g['id'], $groupManager->getConfig());
+        
+        $allGroups = $groupManager->getAllGroups();
+        $sectionMap = [];
+        foreach ($allGroups as $id => $g) {
+            if ((isset($g['type']) && $g['type'] === 'section') || empty($g['type'])) {
+                $name = strtolower(trim($g['display_name'] ?? $id));
+                $sectionMap[$name] = $id;
+            }
+        }
+
+        $createdCount = 0;
+
+        foreach ($rehearsals as $i => $r) {
+            // Provide sensible defaults for timestamps if parsing fails
+            if (empty($r['start']) || !preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $r['start'])) {
+                $r['start'] = date('Y-m-d 19:30:00');
+            }
+            if (empty($r['end']) || !preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $r['end'])) {
+                // Determine sensible end: 2.5h after start
+                $startTs = strtotime($r['start']);
+                $r['end'] = date('Y-m-d H:i:s', $startTs + (2.5 * 3600));
+            }
+
+            $data = [
+                'start' => $r['start'],
+                'end' => $r['end'],
+                'location' => $r['location'] ?? 'Probenraum',
+                'type' => $r['type'] ?? '',
+                'color' => $r['color'] ?? '#e5e7eb',
+                'orchestra_id' => $orchestraId
+            ];
+            
+            // Map groups
+            $groupIDsToAssign = [];
+            $extractedGroups = $r['groups'] ?? [];
+            if (!empty($extractedGroups) && is_array($extractedGroups)) {
+                foreach ($extractedGroups as $gn) {
+                    $key = strtolower(trim($gn));
+                    if (isset($sectionMap[$key])) {
+                        $groupIDsToAssign[] = $sectionMap[$key];
+                    }
+                }
+            }
+            // Fallback to Tutti if empty
+            if (empty($groupIDsToAssign)) {
+                $groupIDsToAssign = $rootGroups;
+            }
+
+            $rehearsalId = $this->rehearsalModel->create($data, $groupIDsToAssign);
+            if (!$rehearsalId || is_array($rehearsalId)) continue;
+            
+            // Handle tags
+            $tags = $r['tags'] ?? [];
+            if (!is_array($tags)) $tags = [];
+            $tags[] = 'importiert';
+            $this->rehearsalModel->saveTags($rehearsalId, $orchestraId, array_unique($tags));
+
+            // Handle schedule
+            $schedule = $r['schedule_items'] ?? [];
+            if (!empty($schedule) && is_array($schedule)) {
+                $this->rehearsalModel->saveScheduleItems($rehearsalId, $schedule);
+            }
+
+            // Handle infos
+            $infos = $r['infos'] ?? [];
+            if (!empty($infos) && is_array($infos)) {
+                $this->rehearsalModel->saveInfos($rehearsalId, $infos);
+            }
+
+            // Handle roles scoping
+            $roleIds = [];
+            $roles = $r['roles'] ?? [];
+            if (is_array($roles)) {
+                foreach ($roles as $rName) {
+                    if (empty($rName)) continue;
+                    $key = strtolower(trim($rName));
+                    if (isset($roleMap[$key])) {
+                        $roleIds[] = $roleMap[$key];
+                    }
+                }
+            }
+            if (!empty($roleIds)) {
+                $roleModel->setRehearsalRoles($rehearsalId, $roleIds);
+            }
+
+            $createdCount++;
+        }
+
+        echo json_encode(['success' => true, 'count' => $createdCount]);
         exit;
     }
 

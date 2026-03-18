@@ -20,6 +20,8 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
         <?php include __DIR__ . '/../components/date-separator.php'; ?>
     <?php endif; ?>
 
+    <?php include __DIR__ . '/../components/bulk-select-bar.php'; ?>
+
     <?php if (empty($rehearsals)): ?>
         <?php
         if ($hasPastRehearsals ?? false) {
@@ -32,9 +34,10 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
 
         include __DIR__ . '/../components/empty-state.php';
         ?>
-        <div id="rehearsalsList"></div>
+        <div id="rehearsalsList">
+            <?php include __DIR__ . '/../components/recurring-dialog.php'; ?>
+        </div>
     <?php else: ?>
-        <?php include __DIR__ . '/../components/bulk-select-bar.php'; ?>
         <?php
         $currentRehearsals = [];
         $pastRehearsals = [];
@@ -95,6 +98,9 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
         </div>
     </div>
 </dialog>
+
+<?php include __DIR__ . '/../components/ai-rehearsal-import-modal.php'; ?>
+
 <script>
 (function() {
     const modal = document.getElementById('ieGroupsModal');
@@ -1000,7 +1006,11 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                 <label>Neues Datum</label>
                 <input type="date" class="bulk-popover-input" id="dupDate" value="${defaultDate}">
                 <button class="bulk-popover-apply" id="dupConfirm">Duplizieren</button>`;
-            pop.style.cssText = `position:fixed;top:${rect.bottom + 4}px;left:${Math.max(8, rect.left - 80)}px;`;
+            if (rect.bottom + 200 > window.innerHeight) {
+                pop.style.cssText = `position:fixed;bottom:${window.innerHeight - rect.top + 4}px;left:${Math.max(8, rect.left - 80)}px;`;
+            } else {
+                pop.style.cssText = `position:fixed;top:${rect.bottom + 4}px;left:${Math.max(8, rect.left - 80)}px;`;
+            }
             pop.onclick = e => e.stopPropagation();
 
             const backdrop = document.createElement('div');
@@ -1031,7 +1041,11 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                     tmp.innerHTML = data.html;
                     const newCard = tmp.querySelector('.ie-card');
                     if (!newCard) return;
-                    card.after(newCard);
+                    
+                    // Insert all children from tmp after the current card
+                    while (tmp.firstChild) {
+                        card.parentNode.insertBefore(tmp.firstChild, card.nextSibling);
+                    }
                     this._activateScripts(newCard);
                     requestAnimationFrame(() => {
                         this._expand(newCard);
@@ -1058,7 +1072,11 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                 tmp.innerHTML = data.html;
                 const newCard = tmp.querySelector('.ie-card');
                 if (!newCard) return;
-                list.appendChild(newCard);
+                
+                while (tmp.firstChild) {
+                    list.appendChild(tmp.firstChild);
+                }
+                
                 this._activateScripts(newCard);
                 document.querySelector('.empty-state')?.closest('.flex')?.remove();
                 requestAnimationFrame(() => {
@@ -1100,6 +1118,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
         _popover: null,
         _backdrop: null,
         _activeFilters: {},
+        _lastClickedCard: null,
 
         // ── Mode toggle ──
         toggle() {
@@ -1117,6 +1136,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
 
             if (!this.active) {
                 this.selected.clear();
+                this._lastClickedCard = null;
                 this._updateBar();
             }
         },
@@ -1128,13 +1148,42 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             e.stopPropagation();
 
             const id = card.dataset.rehearsalId;
-            if (this.selected.has(id)) {
-                this.selected.delete(id);
-                card.classList.remove('bulk-selected');
+            const isSelected = this.selected.has(id);
+            const willSelect = !isSelected;
+
+            if (e.shiftKey && this._lastClickedCard) {
+                const allVisibleCards = [...document.querySelectorAll('.ie-card')].filter(c => c.style.display !== 'none');
+                const startIdx = allVisibleCards.indexOf(this._lastClickedCard);
+                const endIdx = allVisibleCards.indexOf(card);
+
+                if (startIdx !== -1 && endIdx !== -1) {
+                    const minIdx = Math.min(startIdx, endIdx);
+                    const maxIdx = Math.max(startIdx, endIdx);
+
+                    for (let i = minIdx; i <= maxIdx; i++) {
+                        const targetCard = allVisibleCards[i];
+                        const targetId = targetCard.dataset.rehearsalId;
+                        
+                        if (willSelect) {
+                            this.selected.add(targetId);
+                            targetCard.classList.add('bulk-selected');
+                        } else {
+                            this.selected.delete(targetId);
+                            targetCard.classList.remove('bulk-selected');
+                        }
+                    }
+                }
             } else {
-                this.selected.add(id);
-                card.classList.add('bulk-selected');
+                if (isSelected) {
+                    this.selected.delete(id);
+                    card.classList.remove('bulk-selected');
+                } else {
+                    this.selected.add(id);
+                    card.classList.add('bulk-selected');
+                }
             }
+
+            this._lastClickedCard = card;
             this._updateBar();
             return true;
         },
@@ -1272,7 +1321,12 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             }
 
             const rect = chip.getBoundingClientRect();
-            pop.style.cssText += `position:fixed;top:${rect.bottom + 4}px;left:${Math.max(8, rect.left)}px;`;
+            const isBottomSticky = document.getElementById('bulkToolbarSticky')?.classList.contains('is-bottom-sticky');
+            if (isBottomSticky || rect.bottom + 250 > window.innerHeight) {
+                pop.style.cssText += `position:fixed;bottom:${window.innerHeight - rect.top + 4}px;left:${Math.max(8, rect.left)}px;`;
+            } else {
+                pop.style.cssText += `position:fixed;top:${rect.bottom + 4}px;left:${Math.max(8, rect.left)}px;`;
+            }
             pop.onclick = e => e.stopPropagation();
 
             const backdrop = document.createElement('div');
@@ -1478,10 +1532,12 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                                 if (data.success && data.html && list) {
                                     const tmp = document.createElement('div');
                                     tmp.innerHTML = data.html;
-                                    const newCard = tmp.firstElementChild;
+                                    const newCard = tmp.querySelector('.ie-card');
                                     if (newCard) {
                                         newCard.style.opacity = '0';
-                                        list.appendChild(newCard);
+                                        while (tmp.firstChild) {
+                                            list.appendChild(tmp.firstChild);
+                                        }
                                         requestAnimationFrame(() => { newCard.style.transition = 'opacity 0.3s'; newCard.style.opacity = '1'; });
                                         created++;
                                     }
@@ -1725,7 +1781,12 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             <label>Datum</label>
             <input type="date" class="bulk-popover-input" id="quickAddDate" value="${defaultDate}">
             <button class="bulk-popover-apply" id="quickAddConfirm">Erstellen</button>`;
-        pop.style.cssText = `position:fixed;top:${rect.bottom + 4}px;left:${Math.max(8, rect.left - 120)}px;`;
+        const isBottomSticky = document.getElementById('bulkToolbarSticky')?.classList.contains('is-bottom-sticky');
+        if (isBottomSticky || rect.bottom + 200 > window.innerHeight) {
+            pop.style.cssText = `position:fixed;bottom:${window.innerHeight - rect.top + 4}px;left:${Math.max(8, rect.left - 120)}px;`;
+        } else {
+            pop.style.cssText = `position:fixed;top:${rect.bottom + 4}px;left:${Math.max(8, rect.left - 120)}px;`;
+        }
         pop.onclick = e => e.stopPropagation();
 
         const backdrop = document.createElement('div');
@@ -2035,5 +2096,14 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             });
         });
     }
+
+    // Ensure newly loaded rehearsals inherit the bulk-selection state
+    document.addEventListener('lazy:loaded', function(e) {
+        if (window.BulkMgr && window.BulkMgr.active) {
+            var cards = (e.target || document).querySelectorAll('.ie-card:not(.bulk-selectable)');
+            cards.forEach(card => card.classList.add('bulk-selectable'));
+        }
+    });
+
 })();
 </script>
