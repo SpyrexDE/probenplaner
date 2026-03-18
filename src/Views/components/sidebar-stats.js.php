@@ -18,7 +18,7 @@
 
         // Check if page has scroll positioning logic (like date separator)
         const separator = document.getElementById('dateSeparator');
-        if (separator && !window.location.search.includes('showOld')) {
+        if (separator) {
             // Listen for scroll positioning completion, then fade in
             document.addEventListener('scrollPositioningComplete', function() {
                 triggerContainerFadeIn();

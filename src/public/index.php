@@ -150,6 +150,12 @@ $router->addRoute('/{org_slug}/{orchestra_id}/promises/leader', 'PromiseControll
 $router->addRoute('/{org_slug}/{orchestra_id}/promises/admin', 'PromiseController', 'admin');
 $router->addRoute('/{org_slug}/{orchestra_id}/promises/update', 'PromiseController', 'update');
 $router->addRoute('/{org_slug}/{orchestra_id}/promises/note', 'PromiseController', 'note');
+$router->addRoute('/{org_slug}/{orchestra_id}/promises/admin-lazy', 'PromiseController', 'adminLazy');
+$router->addRoute('/{org_slug}/{orchestra_id}/promises/admin-past', 'PromiseController', 'adminPast');
+$router->addRoute('/{org_slug}/{orchestra_id}/promises/index-lazy', 'PromiseController', 'indexLazy');
+$router->addRoute('/{org_slug}/{orchestra_id}/promises/index-past', 'PromiseController', 'indexPast');
+$router->addRoute('/{org_slug}/{orchestra_id}/promises/leader-lazy', 'PromiseController', 'leaderLazy');
+$router->addRoute('/{org_slug}/{orchestra_id}/promises/leader-past', 'PromiseController', 'leaderPast');
 
 // Attendance routes
 $router->addRoute('/{org_slug}/{orchestra_id}/attendance', 'AttendanceController', 'index');
@@ -160,6 +166,8 @@ $router->addRoute('/{org_slug}/{orchestra_id}/attendance/table-data', 'Attendanc
 
 // Rehearsal routes
 $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals', 'RehearsalController', 'index');
+$router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/lazy', 'RehearsalController', 'indexLazy');
+$router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/past', 'RehearsalController', 'indexPast');
 $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/create', 'RehearsalController', 'create');
 $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/create-ajax', 'RehearsalController', 'createAjax', 'POST');
 $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/tags', 'RehearsalController', 'tagsAutocomplete');
@@ -171,6 +179,7 @@ $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/batch-create', 'Rehears
 
 // Probenplan route
 $router->addRoute('/{org_slug}/{orchestra_id}/probenplan', 'ProbenplanController', 'index');
+$router->addRoute('/{org_slug}/{orchestra_id}/probenplan/past', 'ProbenplanController', 'indexPast');
 
 // User profile routes (orchestra-specific context)
 $router->addRoute('/{org_slug}/{orchestra_id}/profile', 'UserController', 'profile');

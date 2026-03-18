@@ -485,6 +485,7 @@ $hasExpandableContent = !empty($rehearsal['schedule_items']) || !empty($rehearsa
         data-color="<?= htmlspecialchars($rehearsal['color'] ?? '#e5e7eb') ?>"
         data-groups="<?= htmlspecialchars(json_encode(array_values($groupArray))) ?>"
         data-tags="<?= htmlspecialchars(implode(',', $rehearsal['tags'] ?? [])) ?>"
+        data-roles="<?= htmlspecialchars(implode(',', array_map(fn($r) => $r['name'] ?? '', $rehearsal['roles'] ?? []))) ?>"
         data-note="<?= htmlspecialchars(implode(' ', array_map(fn($i) => ($i['emoji'] ?? '') . ' ' . ($i['text'] ?? ''), $rehearsal['infos'] ?? []))) ?>"
         onclick="window.IEM && window.IEM.onCardClick(this, event)"
     <?php elseif ($hasExpandableContent): ?>
@@ -603,9 +604,9 @@ $hasExpandableContent = !empty($rehearsal['schedule_items']) || !empty($rehearsa
             </div>
         </div>
 
-        <!-- === ACTION BUTTONS (promises / legacy only) === -->
+        <!-- === ACTION BUTTONS === -->
         <?php if ($showButtons && $context === 'promises'): ?>
-            <div class="flex gap-2 flex-shrink-0">
+            <div class="flex gap-2 flex-shrink-0 self-center">
                 <button type="button" id="<?= $rehearsalId ?>"
                     class="checkBtn action-btn w-[52px] h-[52px] border-2 flex items-center justify-center cursor-pointer <?= $status !== 'attending' ? 'deselected' : 'selected' ?>"
                     style="border-radius: var(--radius-lg);">
@@ -618,7 +619,7 @@ $hasExpandableContent = !empty($rehearsal['schedule_items']) || !empty($rehearsa
                 </button>
             </div>
         <?php elseif ($showButtons && $context === 'rehearsals'): ?>
-            <div class="flex gap-2 flex-shrink-0">
+            <div class="flex gap-2 flex-shrink-0 self-center">
                 <button type="button" id="<?= $rehearsalId ?>"
                     class="btn-base btn-icon btn-outline edit-btn inline-flex items-center justify-center w-12 h-12 border-2 transition-all duration-200"
                     style="border-radius: var(--radius-md);">
@@ -631,7 +632,7 @@ $hasExpandableContent = !empty($rehearsal['schedule_items']) || !empty($rehearsa
                 </button>
             </div>
         <?php elseif ($showButtons && !empty($buttons)): ?>
-            <div class="flex gap-2 flex-shrink-0">
+            <div class="flex gap-2 flex-shrink-0 self-center">
                 <?php foreach ($buttons as $button): ?>
                     <button type="button" id="<?= $rehearsalId ?>"
                         class="<?= $button['class'] ?? 'btn-primary' ?>"
@@ -661,6 +662,7 @@ $hasExpandableContent = !empty($rehearsal['schedule_items']) || !empty($rehearsa
             $formData = ['schedule_items' => $rehearsal['schedule_items'] ?? []];
             $autoSave = true;
             $apiUrl = '/' . $orchestraBase . '/api/settings/rehearsal/' . $rehearsalId;
+            $editorId = null;
             include __DIR__ . '/schedule-editor.php';
             ?>
         </div>
@@ -670,6 +672,7 @@ $hasExpandableContent = !empty($rehearsal['schedule_items']) || !empty($rehearsa
             $formData = ['infos' => $rehearsal['infos'] ?? []];
             $autoSave = true;
             $apiUrl = '/' . $orchestraBase . '/api/settings/rehearsal/' . $rehearsalId;
+            $editorId = null;
             include __DIR__ . '/infobox-editor.php';
             ?>
         </div>

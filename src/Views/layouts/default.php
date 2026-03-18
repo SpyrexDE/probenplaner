@@ -78,6 +78,7 @@ $hideNavbar = $isAuthPage || $isStandalone;
     <?php $assetVersion = \App\Core\Version::getVersion(); ?>
     <link rel="stylesheet" href="/assets/css/components.css?v=<?= $assetVersion ?>">
     <link rel="stylesheet" href="/assets/css/utilities.css?v=<?= $assetVersion ?>">
+    <link rel="stylesheet" href="/assets/css/components/lazy-section.css?v=<?= $assetVersion ?>">
     <link rel="stylesheet" href="/assets/css/focus-removal.css">
 
     <!-- Vanilla CSS Components -->
@@ -352,6 +353,7 @@ $hideNavbar = $isAuthPage || $isStandalone;
     <script src="/assets/js/member-actions.js?v=<?= $assetVersion ?>"></script>
     <script src="/assets/js/script.min.js"></script>
     <script src="/assets/js/tree-view-clickable.js"></script>
+    <script src="/assets/js/lazy-section.js?v=<?= $assetVersion ?>"></script>
     <?php include __DIR__ . '/../components/help-modal.php'; ?>
     <?php include __DIR__ . '/../components/notification-system.php'; ?>
 

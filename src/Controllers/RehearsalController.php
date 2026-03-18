@@ -15,6 +15,9 @@ use App\Core\Constants;
  */
 class RehearsalController extends Controller
 {
+    private const INITIAL_LIMIT = 5;
+    private const LAZY_BATCH_SIZE = 10;
+
     /**
      * @var Rehearsal
      */
@@ -30,9 +33,7 @@ class RehearsalController extends Controller
     }
 
     /**
-     * Display rehearsal list
-     * 
-     * @return void
+     * Display rehearsal list with initial batch, lazy-loading the rest.
      */
     public function index($params = [])
     {
@@ -45,10 +46,12 @@ class RehearsalController extends Controller
             return;
         }
 
-        $showOld = isset($_GET['showOld']);
-
         $orchestraId = (int)$_SESSION['current_orchestra_id'];
-        $rehearsals = $this->rehearsalModel->getUpcoming($orchestraId, $showOld);
+        $allRehearsals = $this->rehearsalModel->getUpcoming($orchestraId, false);
+        $totalRehearsals = count($allRehearsals);
+        $hasMore = $totalRehearsals > self::INITIAL_LIMIT;
+
+        $rehearsals = $hasMore ? array_slice($allRehearsals, 0, self::INITIAL_LIMIT) : $allRehearsals;
         $hasPastRehearsals = $this->rehearsalModel->hasPastRehearsals($orchestraId);
 
         $roleModel = new Role();
@@ -60,11 +63,82 @@ class RehearsalController extends Controller
         $this->render('rehearsals/index', [
             'currentPage' => 'rehearsals',
             'rehearsals' => $rehearsals,
-            'showOld' => $showOld,
             'hasPastRehearsals' => $hasPastRehearsals,
             'availableRoles' => $availableRoles,
             'groupConfig' => $groupConfig,
+            'hasMoreRehearsals' => $hasMore,
+            'totalRehearsals' => $totalRehearsals,
         ]);
+    }
+
+    /**
+     * AJAX endpoint: returns a batch of rehearsal cards as HTML partial.
+     */
+    public function indexLazy($params = [])
+    {
+        $this->validateOrchestraContext($params);
+        $this->requirePermission('can_manage_rehearsals');
+
+        $offset = max(0, (int)($_GET['offset'] ?? self::INITIAL_LIMIT));
+        $orchestraId = (int)$_SESSION['current_orchestra_id'];
+        $allRehearsals = $this->rehearsalModel->getUpcoming($orchestraId, false);
+        $remaining = array_slice($allRehearsals, $offset);
+        $rehearsals = array_slice($remaining, 0, self::LAZY_BATCH_SIZE);
+        $hasMore = count($remaining) > self::LAZY_BATCH_SIZE;
+        $nextOffset = $offset + count($rehearsals);
+
+        if (empty($rehearsals)) {
+            echo '';
+            return;
+        }
+
+        $context = 'inline-edit';
+        $options = ['showButtons' => false];
+        $today = date('Y-m-d');
+
+        foreach ($rehearsals as $rehearsal) {
+            include APP_ROOT . '/Views/components/rehearsal-card.php';
+        }
+
+        if ($hasMore) {
+            $base = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '');
+            $nextUrl = htmlspecialchars($base . '/rehearsals/lazy?offset=' . $nextOffset);
+            echo '<div data-lazy-next-url="' . $nextUrl . '" style="display:none"></div>';
+        }
+    }
+
+    /**
+     * AJAX endpoint: returns a batch of past rehearsal cards as HTML partial.
+     */
+    public function indexPast($params = [])
+    {
+        $this->validateOrchestraContext($params);
+        $this->requirePermission('can_manage_rehearsals');
+
+        $offset = max(0, (int)($_GET['offset'] ?? 0));
+        $orchestraId = (int)$_SESSION['current_orchestra_id'];
+        $result = $this->rehearsalModel->getPastPaginated($orchestraId, $offset, 5);
+
+        $rehearsals = $result['rows'];
+        if (empty($rehearsals)) {
+            echo '';
+            return;
+        }
+
+        $context = 'inline-edit';
+        $options = ['showButtons' => false];
+        $today = date('Y-m-d');
+
+        foreach ($rehearsals as $rehearsal) {
+            include APP_ROOT . '/Views/components/rehearsal-card.php';
+        }
+
+        $nextOffset = $offset + count($rehearsals);
+        if ($nextOffset < $result['total']) {
+            $base = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '');
+            $nextUrl = htmlspecialchars($base . '/rehearsals/past?offset=' . $nextOffset);
+            echo '<div data-lazy-button-url="' . $nextUrl . '" style="display:none"></div>';
+        }
     }
 
     /**
@@ -142,7 +216,7 @@ class RehearsalController extends Controller
 
         $orchestraId = (int)$_SESSION['current_orchestra_id'];
         $body = json_decode(file_get_contents('php://input'), true) ?: [];
-        file_put_contents(__DIR__ . '/../../batch_payload_debug.log', json_encode($body, JSON_PRETTY_PRINT));
+
         
         $dates         = $body['dates'] ?? [];
         $startTime     = substr($body['start_time'] ?? '18:00', 0, 5);
@@ -155,8 +229,7 @@ class RehearsalController extends Controller
         $scheduleItems = $body['schedule_items'] ?? null;
         $infos         = $body['infos'] ?? null;
         
-        error_log("Batch Create Payload - Schedule: " . json_encode($scheduleItems));
-        error_log("Batch Create Payload - Infos: " . json_encode($infos));
+
 
         if (empty($dates) || !is_array($dates)) {
             echo json_encode(['success' => false, 'message' => 'Keine Termine angegeben']);

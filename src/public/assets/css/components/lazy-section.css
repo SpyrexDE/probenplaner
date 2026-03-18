@@ -1,0 +1,222 @@
+/* === LAZY SECTION COMPONENT === */
+
+.lazy-section {
+    min-height: 80px;
+    transition: opacity 0.3s ease;
+}
+
+/* Skeleton container */
+.lazy-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+/* Card skeleton (rehearsal-card-sized) */
+.lazy-skeleton-card {
+    background: var(--color-white);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-border-light);
+    padding: var(--space-5);
+    min-height: 120px;
+    overflow: hidden;
+    position: relative;
+}
+
+.lazy-skeleton-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        color-mix(in srgb, var(--color-primary) 4%, transparent) 40%,
+        color-mix(in srgb, var(--color-primary) 8%, transparent) 50%,
+        color-mix(in srgb, var(--color-primary) 4%, transparent) 60%,
+        transparent 100%
+    );
+    animation: lazyShimmer 1.8s ease-in-out infinite;
+}
+
+@keyframes lazyShimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Skeleton inner bar elements */
+.lazy-skeleton-bar {
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-base);
+    height: 14px;
+}
+
+.lazy-skeleton-bar.bar-title {
+    width: 40%;
+    height: 18px;
+    margin-bottom: var(--space-3);
+}
+
+.lazy-skeleton-bar.bar-subtitle {
+    width: 60%;
+    margin-bottom: var(--space-2);
+}
+
+.lazy-skeleton-bar.bar-text {
+    width: 80%;
+    margin-bottom: var(--space-2);
+}
+
+.lazy-skeleton-bar.bar-short {
+    width: 30%;
+}
+
+/* Row skeleton (member-row-sized) */
+.lazy-skeleton-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-1);
+    position: relative;
+    overflow: hidden;
+}
+
+.lazy-skeleton-row::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        color-mix(in srgb, var(--color-primary) 4%, transparent) 40%,
+        color-mix(in srgb, var(--color-primary) 8%, transparent) 50%,
+        color-mix(in srgb, var(--color-primary) 4%, transparent) 60%,
+        transparent 100%
+    );
+    animation: lazyShimmer 1.8s ease-in-out infinite;
+}
+
+.lazy-skeleton-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-full);
+    background: var(--color-bg-tertiary);
+    flex-shrink: 0;
+}
+
+.lazy-skeleton-lines {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* Section skeleton (member section-band-sized) */
+.lazy-skeleton-section {
+    background: var(--color-white);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+    overflow: hidden;
+    position: relative;
+}
+
+.lazy-skeleton-section::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        color-mix(in srgb, var(--color-primary) 4%, transparent) 40%,
+        color-mix(in srgb, var(--color-primary) 8%, transparent) 50%,
+        color-mix(in srgb, var(--color-primary) 4%, transparent) 60%,
+        transparent 100%
+    );
+    animation: lazyShimmer 1.8s ease-in-out infinite;
+}
+
+.lazy-skeleton-section-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.lazy-skeleton-section-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-tertiary);
+    flex-shrink: 0;
+}
+
+/* Content reveal animation */
+.lazy-section-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--lazy-gap, 0);
+    opacity: 0;
+    transform: translateY(6px);
+    animation: lazyReveal 0.4s ease-out forwards;
+}
+
+@keyframes lazyReveal {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Error state */
+.lazy-error {
+    text-align: center;
+    padding: var(--space-6) var(--space-4);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.lazy-error i {
+    font-size: var(--font-size-xl);
+    margin-bottom: var(--space-2);
+    display: block;
+    color: var(--color-text-muted);
+    opacity: 0.5;
+}
+
+.lazy-retry-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    padding: var(--space-2) var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-base);
+    background: var(--color-bg-primary);
+    color: var(--color-primary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.lazy-retry-btn:hover {
+    background: var(--color-primary-50);
+    border-color: var(--color-primary-200);
+    transform: translateY(-1px);
+}
+
+/* Skeleton exit animation */
+.lazy-skeleton.skeleton-exit {
+    animation: skeletonExit 0.25s ease-out forwards;
+}
+
+@keyframes skeletonExit {
+    to {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+}

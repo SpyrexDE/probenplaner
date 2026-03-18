@@ -10,55 +10,114 @@
 use App\Core\DashboardConstants;
 use App\Core\Utilities;
 
-/**
- * Render a single user item inline (avoids ~1800 include calls per page).
- */
-function renderUserItem(array $member, string $status, string $additionalInfo = ''): void
-{
-    $displayName = htmlspecialchars($member['display_name'] ?? $member['email'] ?? '');
-    $note = !empty($member['note']) ? htmlspecialchars($member['note']) : '';
-    $memberStatus = $status ?: ($member['status'] ?? 'no_response');
-    $userLabels = Utilities::generateUserLabels($member);
+if (!function_exists('renderUserItem')) {
+    function renderUserItem(array $member, string $status, string $additionalInfo = ''): void
+    {
+        $displayName = htmlspecialchars($member['display_name'] ?? $member['email'] ?? '');
+        $note = !empty($member['note']) ? htmlspecialchars($member['note']) : '';
+        $memberStatus = $status ?: ($member['status'] ?? 'no_response');
+        $userLabels = Utilities::generateUserLabels($member);
 
-    $iconClass = 'fas fa-question-circle';
-    switch ($memberStatus) {
-        case 'attending':
-            $iconClass = 'fas fa-check-circle';
-            break;
-        case 'not_attending':
-            $iconClass = 'fas fa-times-circle';
-            break;
+        $iconClass = 'fas fa-question-circle';
+        switch ($memberStatus) {
+            case 'attending':
+                $iconClass = 'fas fa-check-circle';
+                break;
+            case 'not_attending':
+                $iconClass = 'fas fa-times-circle';
+                break;
+        }
+        $userId = $member['user_id'] ?? $member['id'] ?? '';
+        echo '<li class="tree-user-item userSpan" data-user-id="' . $userId . '">';
+        echo '<i class="tree-user-item-icon fas fa-user"></i>';
+        echo '<div class="tree-user-item-content">';
+        echo '<span class="tree-user-item-name">' . $displayName . $userLabels . '</span>';
+        if ($additionalInfo) {
+            echo '<span class="tree-user-item-info">' . $additionalInfo . '</span>';
+        }
+        if ($note) {
+            echo '<span class="tree-user-item-note">' . icon('quote-left', 'tree-user-note-icon') . ' ' . $note . '</span>';
+        }
+        echo '</div>';
+        echo '<div class="tree-user-item-status"><i class="tree-user-item-status-icon ' . $iconClass . ' status-' . $memberStatus . '"></i></div>';
+        echo '</li>';
     }
-    $userId = $member['user_id'] ?? $member['id'] ?? '';
-    echo '<li class="tree-user-item userSpan" data-user-id="' . $userId . '">';
-    echo '<i class="tree-user-item-icon fas fa-user"></i>';
-    echo '<div class="tree-user-item-content">';
-    echo '<span class="tree-user-item-name">' . $displayName . $userLabels . '</span>';
-    if ($additionalInfo) {
-        echo '<span class="tree-user-item-info">' . $additionalInfo . '</span>';
-    }
-    if ($note) {
-        echo '<span class="tree-user-item-note">' . icon('quote-left', 'tree-user-note-icon') . ' ' . $note . '</span>';
-    }
-    echo '</div>';
-    echo '<div class="tree-user-item-status"><i class="tree-user-item-status-icon ' . $iconClass . ' status-' . $memberStatus . '"></i></div>';
-    echo '</li>';
 }
 
-/**
- * Standard sort: not_attending first, then attending, then no_response, then by name.
- */
-function sortPlayersByStatus(array &$players): void
-{
-    usort($players, function ($a, $b) {
-        static $order = ['not_attending' => 0, 'attending' => 1, 'no_response' => 2];
-        $d = ($order[$a['status']] ?? 3) - ($order[$b['status']] ?? 3);
-        return $d !== 0 ? $d : strcasecmp($a['display_name'] ?? '', $b['display_name'] ?? '');
-    });
+if (!function_exists('sortPlayersByStatus')) {
+    function sortPlayersByStatus(array &$players): void
+    {
+        usort($players, function ($a, $b) {
+            static $order = ['not_attending' => 0, 'attending' => 1, 'no_response' => 2];
+            $d = ($order[$a['status']] ?? 3) - ($order[$b['status']] ?? 3);
+            return $d !== 0 ? $d : strcasecmp($a['display_name'] ?? '', $b['display_name'] ?? '');
+        });
+    }
 }
 
-// Statistics calculation
-$showOld = $showOld ?? false;
+$lazyPartial = $lazyPartial ?? false;
+
+// Shared card variable prep — used by both lazy partial and main loop
+$groupManager = \App\Core\GroupManager::getInstance();
+$prepareCardVars = function (array $rehearsal) use ($stats, $membersBySection, $groupManager) {
+    $id = $rehearsal['id'];
+    $a = $stats[$id]['attending'] ?? 0;
+    $na = $stats[$id]['not_attending'] ?? 0;
+    $nr = $stats[$id]['no_response'] ?? 0;
+    $total = $a + $na + $nr;
+
+    $sectionPlayers = [];
+    if (!empty($membersBySection[$id]['all'])) {
+        $topLevelSections = [];
+        foreach ($groupManager->getRootNodes() as $root) {
+            if (!empty($root['children'])) {
+                foreach ($root['children'] as $child) {
+                    $topLevelSections[$child['id']] = $child;
+                }
+            } else {
+                $topLevelSections[$root['id']] = $root;
+            }
+        }
+        if (empty($topLevelSections)) {
+            foreach ($groupManager->getAllGroups() as $group) {
+                $topLevelSections[$group['id']] = $group;
+            }
+        }
+        foreach ($topLevelSections as $sectionId => $sectionData) {
+            $sectionPlayers[$sectionId] = [];
+            foreach ($membersBySection[$id]['all'] as $member) {
+                if ($groupManager->isUserInGroup($member['type'], $sectionId)) {
+                    $sectionPlayers[$sectionId][] = $member;
+                }
+            }
+        }
+    }
+
+    return [
+        'rehearsalId' => $id,
+        'rehearsalDate' => $rehearsal['date'],
+        'rehearsalStartTime' => $rehearsal['start_time'],
+        'rehearsalEndTime' => $rehearsal['end_time'],
+        'attendingCount' => $a,
+        'notAttendingCount' => $na,
+        'noResponseCount' => $nr,
+        'totalCount' => $total,
+        'rehearsalAttendanceRate' => $total > 0 ? ($a / $total) * 100 : 0,
+        'sectionPlayers' => $sectionPlayers,
+        'rehearsalColor' => $rehearsal['color'] ?? null,
+    ];
+};
+
+// Lazy partial: raw cards only — no wrapper, analytics, or scripts
+if ($lazyPartial) {
+    $smartDisplay = new \App\Core\SmartGroupDisplay();
+    foreach ($rehearsals as $rehearsal) {
+        extract($prepareCardVars($rehearsal));
+        include __DIR__ . '/promises-dashboard-card.php';
+    }
+    return;
+}
+
 
 // Variable initialization
 $overallAttendanceRate = 0;
@@ -68,8 +127,8 @@ $responseTrend = 'neutral';
 $attendanceTrendValue = 0;
 $responseTrendValue = 0;
 
-if (!$showOld) {
-    // Overall statistics (last 10)
+
+// Overall statistics (last 10)
     $rehearsalsForStats = array_slice($rehearsals ?? [], -10);
     $totalRehearsals = count($rehearsalsForStats);
     $totalPromises = 0;
@@ -169,13 +228,12 @@ if (!$showOld) {
             }
         }
     }
-}
 
 ?>
 
 <!-- Assets -->
 <link rel="stylesheet" href="<?= '/assets/css/promises-dashboard.css' ?>">
-<?php if (!$showOld && !($isLeader ?? false)): ?>
+<?php if (!($isLeader ?? false)): ?>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
 <?php endif; ?>
 
@@ -187,7 +245,6 @@ $rehearsalDates = [];
 $currentRehearsalIndex = 0;
 
 // Chart data processing
-if (!$showOld) {
     // Last 10 rehearsals
     $rehearsalsForCharts = array_slice($rehearsals ?? [], -10);
 
@@ -213,7 +270,6 @@ if (!$showOld) {
 
         $currentRehearsalIndex++;
     }
-}
 
 // Critical sections calculation
 $criticalSectionsCount = 0;
@@ -255,7 +311,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
 
 <div class="promises-dashboard">
     <!-- Modern Analytics Overview - Only show when not viewing old rehearsals and not for leaders -->
-    <?php if (!$showOld && !($isLeader ?? false)): ?>
+    <?php if (!$lazyPartial && !($isLeader ?? false)): ?>
         <div class="analytics-overview">
             <div class="analytics-card attendance-card">
                 <div class="analytics-card-background"></div>
@@ -311,548 +367,59 @@ foreach ($rehearsals ?? [] as $rehearsal) {
         </div>
     <?php endif; ?>
 
-    <!-- Toggle for Old Rehearsals (Admin only) -->
-    <?php if (($isAdmin ?? false)): ?>
-        <div style="margin-bottom: 20px; text-align: right;">
-            <div style="display: inline-flex; align-items: center; gap: 12px; padding: 12px 16px; background: white; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <span style="font-size: 14px; font-weight: 500; color: #666;">Vergangene Proben anzeigen</span>
-                <label style="position: relative; display: inline-block; width: 50px; height: 24px;">
-                    <input type="checkbox" id="showOldToggle"
-                        <?php echo $showOld ? 'checked' : ''; ?>
-                        style="opacity: 0; width: 0; height: 0; position: absolute;" />
-                    <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; border-radius: 24px; transition: .3s;"></span>
-                    <span class="toggle-dot" style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: .3s; cursor: pointer;"></span>
-                </label>
-            </div>
-        </div>
-    <?php endif; ?>
+    <!-- Toggle for Old Rehearsals removed (handled universally now by date-separator) -->
 
     <!-- Rehearsals Container -->
     <div class="rehearsals-container">
+        <!-- Date Separator and Load Past Button (Universal) -->
+        <?php if (!$lazyPartial && (!empty($rehearsals) || ($hasPastRehearsals ?? false))): ?>
+            <?php 
+            $pastEndpoint = ($isAdmin ?? false) ? 'admin-past' : 'leader-past';
+            $pastLazyUrl = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '') . '/promises/' . $pastEndpoint . '?offset=0';
+            $pastLazyUrl .= (($currentlyViewingAll ?? false) ? '&viewAll=1' : '');
+            include __DIR__ . '/date-separator.php'; 
+            ?>
+        <?php endif; ?>
+
         <?php if (empty($rehearsals)): ?>
             <?php
             $title = 'Keine Termine gefunden';
             $message = 'Es gibt aktuell keine geplanten Proben.';
-
-            if (!$showOld && ($hasPastRehearsals ?? false)) {
-                $actionHref = '?showOld=1';
-                $actionLabel = 'Vergangene Termine anzeigen';
-            }
-
             include __DIR__ . '/empty-state.php';
             ?>
         <?php else: ?>
             <?php $smartDisplay = new \App\Core\SmartGroupDisplay(); ?>
             <?php foreach ($rehearsals as $rehearsal): ?>
-                <?php
-                $rehearsalId = $rehearsal['id'];
-                $rehearsalDate = $rehearsal['date'];
-                $rehearsalStartTime = $rehearsal['start_time'];
-                $rehearsalEndTime = $rehearsal['end_time'];
-                $attendingCount = $stats[$rehearsalId]['attending'] ?? 0;
-                $notAttendingCount = $stats[$rehearsalId]['not_attending'] ?? 0;
-                $noResponseCount = $stats[$rehearsalId]['no_response'] ?? 0;
-                $totalCount = $attendingCount + $notAttendingCount + $noResponseCount;
-
-                // Calculate rehearsal attendance rate
-                $rehearsalAttendanceRate = $totalCount > 0 ? ($attendingCount / $totalCount) * 100 : 0;
-
-                // Dynamic member grouping
-                $groupManager = \App\Core\GroupManager::getInstance();
-                $sectionPlayers = [];
-
-                if (!empty($membersBySection[$rehearsalId]['all'])) {
-                    // Collect children of all root nodes as top-level sections
-                    $rootNodes = $groupManager->getRootNodes();
-                    $topLevelSections = [];
-
-                    foreach ($rootNodes as $root) {
-                        if (!empty($root['children'])) {
-                            foreach ($root['children'] as $child) {
-                                $topLevelSections[$child['id']] = $child;
-                            }
-                        } else {
-                            $topLevelSections[$root['id']] = $root;
-                        }
-                    }
-
-                    // Flat config fallback
-                    if (empty($topLevelSections)) {
-                        foreach ($groupManager->getAllGroups() as $group) {
-                            $topLevelSections[$group['id']] = $group;
-                        }
-                    }
-
-                    foreach ($topLevelSections as $sectionId => $sectionData) {
-                        $sectionPlayers[$sectionId] = [];
-
-                        foreach ($membersBySection[$rehearsalId]['all'] as $member) {
-                            if ($groupManager->isUserInGroup($member['type'], $sectionId)) {
-                                $sectionPlayers[$sectionId][] = $member;
-                            }
-                        }
-                    }
-                }
-
-                // Rehearsal color
-                $rehearsalColor = $rehearsal['color'] ?? null;
-                ?>
-
-                <div class="rehearsal-compact" data-rehearsal-id="<?= $rehearsalId ?>">
-                    <!-- Compact Rehearsal Header -->
-                    <div class="rehearsal-compact-header <?= ($rehearsalColor) ? 'has-color' : '' ?>"
-                        <?= ($rehearsalColor) ? 'style="--rehearsal-color: ' . $rehearsalColor . '"' : '' ?>>
-                        <div class="rehearsal-modern-title">
-                            <?php
-                            $germanWeekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-                            $dayOfWeek = date('w', strtotime($rehearsalDate));
-                            $weekdayShort = $germanWeekdays[$dayOfWeek];
-                            ?>
-                            <div class="rehearsal-date-display">
-                                <div class="weekday-letter"><?= strtoupper($weekdayShort) ?></div>
-                                <div class="date-info">
-                                    <div class="date-text"><?= date('d.m.Y', strtotime($rehearsalDate)) ?></div>
-                                    <div class="date-subtitle">
-                                        <?= htmlspecialchars($rehearsal['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL) ?>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="rehearsal-compact-right">
-                            <div class="rehearsal-compact-meta">
-                                <span><i class="fas fa-clock"></i> <?= $rehearsalStartTime ? substr($rehearsalStartTime, 0, DashboardConstants::TIME_SUBSTRING_LENGTH) : '??:??' ?> - <?= $rehearsalEndTime ? substr($rehearsalEndTime, 0, DashboardConstants::TIME_SUBSTRING_LENGTH) : '??:??' ?></span>
-                                <?php if (!empty($rehearsal['location'])): ?>
-                                    <span><i class="fas fa-map-marker-alt"></i> <?= htmlspecialchars($rehearsal['location']) ?></span>
-                                <?php endif; ?>
-                                <span>
-                                    <i class="fas fa-users"></i>
-                                    <?php
-                                    echo htmlspecialchars($smartDisplay->generateDescription($rehearsal['groups'] ?? [], $rehearsal, false));
-                                    ?>
-                                </span>
-                                <?php if (!empty($rehearsal['roles']) || !empty($rehearsal['infos'])): ?>
-                                    <div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center;">
-                                        <?php foreach ($rehearsal['roles'] ?? [] as $role): ?>
-                                            <?= \App\Core\Utilities::renderRoleTag($role) ?>
-                                        <?php endforeach; ?>
-                                        <?php foreach ($rehearsal['infos'] ?? [] as $info): ?>
-                                            <span style="font-size: 11px; padding: 2px 6px; border-radius: var(--radius-sm); display: inline-flex; align-items: center; justify-content: center; background-color: transparent; border: 1px solid var(--color-border); color: var(--color-text-primary);">
-                                                <?= htmlspecialchars($info['emoji']) ?>
-                                            </span>
-                                        <?php endforeach; ?>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-
-                            <div class="rehearsal-stats-container">
-                                <div class="rehearsal-stats-numbers">
-                                    <div class="rehearsal-stats-item">
-                                        <div class="rehearsal-stats-dot attending"></div>
-                                        <span><?= $attendingCount ?></span>
-                                    </div>
-                                    <div class="rehearsal-stats-item">
-                                        <div class="rehearsal-stats-dot not-attending"></div>
-                                        <span><?= $notAttendingCount ?></span>
-                                    </div>
-                                    <div class="rehearsal-stats-item">
-                                        <div class="rehearsal-stats-dot no-response"></div>
-                                        <span><?= $noResponseCount ?></span>
-                                    </div>
-                                </div>
-                                <div class="rehearsal-stats-bar">
-                                    <?php if ($totalCount > 0): ?>
-                                        <div class="rehearsal-stats-segment attending" style="width: <?= ($attendingCount / $totalCount) * 100 ?>%"></div>
-                                        <div class="rehearsal-stats-segment not-attending" style="width: <?= ($notAttendingCount / $totalCount) * 100 ?>%"></div>
-                                        <div class="rehearsal-stats-segment no-response" style="width: <?= ($noResponseCount / $totalCount) * 100 ?>%"></div>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <?php
-                    $rehearsalSmartDeviations = [];
-                    $insufficientData = [];
-                    $rehearsalCriticalSections = [];
-
-                    if (!($isLeader ?? false) && ($showRehearsalInsights ?? false)) {
-                        // Use pre-computed deviation data from controller
-                        $deviationAnalysis = $deviationData[$rehearsalId] ?? ['deviations' => [], 'insufficient_data' => []];
-
-                        $individualInstruments = [];
-                        foreach ($membersBySection[$rehearsalId]['all'] ?? [] as $member) {
-                            $instrumentId = $member['type'];
-                            if (!isset($individualInstruments[$instrumentId])) {
-                                $individualInstruments[$instrumentId] = [];
-                            }
-                            $individualInstruments[$instrumentId][] = $member;
-                        }
-
-                        foreach ($individualInstruments as $instrumentId => $players) {
-                            $attending = count(array_filter($players, function ($m) {
-                                return $m['status'] === 'attending';
-                            }));
-                            $total = count($players);
-                            if ($total > 0) {
-                                $attendanceRate = ($attending / $total) * 100;
-                                if ($attendanceRate < DashboardConstants::CRITICAL_ATTENDANCE_THRESHOLD) {
-                                    $rehearsalCriticalSections[] = [
-                                        'name' => $groupManager->getDisplayName($instrumentId),
-                                        'rate' => $attendanceRate,
-                                        'total' => $total,
-                                        'attending' => $attending
-                                    ];
-                                }
-                            }
-                        }
-
-                        if (empty($rehearsalCriticalSections)) {
-                            foreach ($sectionPlayers as $sectionId => $players) {
-                                $attending = count(array_filter($players, function ($m) {
-                                    return $m['status'] === 'attending';
-                                }));
-                                $total = count($players);
-                                if ($total > 0) {
-                                    $attendanceRate = ($attending / $total) * 100;
-                                    if ($attendanceRate < DashboardConstants::CRITICAL_ATTENDANCE_THRESHOLD) {
-                                        $rehearsalCriticalSections[] = [
-                                            'name' => $groupManager->getDisplayName($sectionId),
-                                            'rate' => $attendanceRate,
-                                            'total' => $total,
-                                            'attending' => $attending
-                                        ];
-                                    }
-                                }
-                            }
-                        }
-
-                        usort($rehearsalCriticalSections, function ($a, $b) {
-                            return $a['rate'] - $b['rate'];
-                        });
-                        $rehearsalCriticalSections = array_slice($rehearsalCriticalSections, 0, DashboardConstants::MAX_CRITICAL_SECTIONS_DISPLAY);
-
-                        $rehearsalCriticalSections = array_filter($rehearsalCriticalSections, function ($critical) {
-                            return $critical['rate'] < DashboardConstants::CRITICAL_ATTENDANCE_THRESHOLD;
-                        });
-
-                        $criticalSectionNames = array_map(function ($critical) {
-                            return $critical['name'];
-                        }, $rehearsalCriticalSections);
-
-                        $rehearsalSmartDeviations = array_filter($deviationAnalysis['deviations'], function ($deviation) use ($criticalSectionNames) {
-                            if (($deviation['severity'] ?? 'info') === 'info') {
-                                return false;
-                            }
-                            if (!isset($deviation['section'])) {
-                                return true;
-                            }
-                            return !in_array($deviation['section'], $criticalSectionNames);
-                        });
-
-                        $uniqueDeviations = [];
-                        $seenMessages = [];
-                        $groupPerformanceMessages = [];
-                        $otherMessages = [];
-
-                        foreach ($rehearsalSmartDeviations as $deviation) {
-                            if ($deviation['type'] === 'group_performance') {
-                                $groupPerformanceMessages[] = $deviation;
-                            } else {
-                                $otherMessages[] = $deviation;
-                            }
-                        }
-
-                        if (!empty($groupPerformanceMessages)) {
-                            usort($groupPerformanceMessages, function ($a, $b) {
-                                return $a['mean_rate'] - $b['mean_rate'];
-                            });
-                            $uniqueDeviations[] = $groupPerformanceMessages[0];
-                        }
-
-                        $mergedMessages = mergeParticipationMessages($otherMessages);
-
-                        foreach ($mergedMessages as $deviation) {
-                            $messageKey = $deviation['message'];
-                            if (!in_array($messageKey, $seenMessages)) {
-                                $uniqueDeviations[] = $deviation;
-                                $seenMessages[] = $messageKey;
-                            }
-                        }
-                        $rehearsalSmartDeviations = $uniqueDeviations;
-
-                        usort($rehearsalSmartDeviations, function ($a, $b) {
-                            $severityOrder = ['critical' => 3, 'warning' => 2, 'info' => 1];
-                            $aSeverity = $severityOrder[$a['severity'] ?? 'info'] ?? 1;
-                            $bSeverity = $severityOrder[$b['severity'] ?? 'info'] ?? 1;
-                            return $bSeverity - $aSeverity;
-                        });
-                        $insufficientData = $deviationAnalysis['insufficient_data'];
-                    }
-                    ?>
-
-                    <!-- Critical Sections & Smart Insights - Hidden for leaders and when disabled -->
-                    <?php if (!($isLeader ?? false) && ($showRehearsalInsights ?? false)): ?>
-                        <div class="rehearsal-insights">
-                            <div class="critical-sections">
-                                <h4><i class="fas fa-exclamation-triangle"></i> Kritische Register</h4>
-                                <div class="critical-list">
-                                    <?php if (!empty($rehearsalCriticalSections)): ?>
-                                        <?php foreach ($rehearsalCriticalSections as $critical): ?>
-                                            <div class="critical-item">
-                                                <span class="critical-name"><?= htmlspecialchars($critical['name']) ?></span>
-                                                <span class="critical-percentage <?= $critical['rate'] < DashboardConstants::DANGER_ATTENDANCE_THRESHOLD ? DashboardConstants::CSS_DANGER_CLASS : DashboardConstants::CSS_WARNING_CLASS ?>">
-                                                    <?= number_format($critical['rate'], 0) ?>%
-                                                </span>
-                                            </div>
-                                        <?php endforeach; ?>
-                                    <?php else: ?>
-                                        <div class="critical-item">
-                                            <span class="critical-name">Keine kritischen Register</span>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-
-                            <div class="smart-deviations">
-                                <h4><i class="fas fa-brain"></i> Auffälligkeiten</h4>
-                                <div class="deviation-list" style="max-height: <?= DashboardConstants::DEVIATION_LIST_MAX_HEIGHT ?>px; overflow-y: auto;">
-                                    <?php foreach ($rehearsalSmartDeviations as $deviation): ?>
-                                        <div class="critical-item">
-                                            <span class="critical-name"><?= htmlspecialchars($deviation['message']) ?></span>
-                                            <span class="critical-percentage <?= getDeviationCssClass($deviation['severity'] ?? 'warning') ?>">
-                                                <i class="fas fa-<?= getDeviationIcon($deviation['type']) ?>"></i>
-                                            </span>
-                                        </div>
-                                    <?php endforeach; ?>
-
-                                    <?php if (empty($rehearsalSmartDeviations)): ?>
-                                        <div class="critical-item">
-                                            <span class="critical-name">Keine Auffälligkeiten</span>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endif; ?>
-
-                    <!-- Tree View -->
-                    <div class="rehearsal-tree-view">
-                        <div class="tree-view">
-                            <ul class="tree-list">
-                                <?php
-                                // Build pruned tree based on present instruments
-                                $presentInstrumentIds = [];
-                                if (!empty($membersBySection[$rehearsalId]['all'])) {
-                                    foreach ($membersBySection[$rehearsalId]['all'] as $member) {
-                                        $resolved = $groupManager->resolveAlias($member['type']);
-                                        $presentInstrumentIds[$resolved] = true;
-                                    }
-                                }
-                                $prunedTree = $groupManager->pruneTree(array_keys($presentInstrumentIds));
-
-                                // Leader view check
-                                $isLeaderOnlyView = isset($isLeaderOnlyView) && $isLeaderOnlyView;
-
-                                if (isset($sectionPlayers['all'])) {
-                                } else {
-                                }
-
-                                // Leader section root
-                                if ($isLeaderOnlyView && !empty($leaderResolvedType)) {
-                                    $groupManager = \App\Core\GroupManager::getInstance();
-                                    $rootDisplayName = $groupManager->getDisplayName($leaderResolvedType);
-
-                                    // Find player section
-                                    $players = [];
-                                    $sectionId = 'all';
-
-                                    // Try different possible keys where the filtered players might be stored
-                                    if (!empty($sectionPlayers['all'])) {
-                                        $players = $sectionPlayers['all'];
-                                        $sectionId = 'all';
-                                    } else {
-                                        // Use leader's section id from context (no hardcoded section name)
-                                        $found = false;
-                                        if (!empty($leaderSection) && isset($sectionPlayers[$leaderSection]) && is_array($sectionPlayers[$leaderSection])) {
-                                            $players = $sectionPlayers[$leaderSection];
-                                            $sectionId = $leaderSection;
-                                            $found = true;
-                                        }
-                                        if (!$found && !empty($leaderSectionNames) && is_array($leaderSectionNames)) {
-                                            foreach ($leaderSectionNames as $candidateId) {
-                                                if (!empty($sectionPlayers[$candidateId]) && is_array($sectionPlayers[$candidateId])) {
-                                                    $players = $sectionPlayers[$candidateId];
-                                                    $sectionId = $candidateId;
-                                                    $found = true;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                        if (!$found) {
-                                            foreach ($sectionPlayers as $key => $sectionData) {
-                                                if (!empty($sectionData) && is_array($sectionData)) {
-                                                    $players = $sectionData;
-                                                    $sectionId = $key;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    if (!empty($players)) {
-
-                                        // Section statistics
-                                        $sectionAttending = count(array_filter($players, function ($m) {
-                                            return $m['status'] === 'attending';
-                                        }));
-                                        $sectionNotAttending = count(array_filter($players, function ($m) {
-                                            return $m['status'] === 'not_attending';
-                                        }));
-                                        $sectionNoResponse = count(array_filter($players, function ($m) {
-                                            return $m['status'] === 'no_response';
-                                        }));
-                                ?>
-                                        <!-- Leader section as root node -->
-                                        <li class="tree-node tree-depth-0">
-                                            <button class="tree-node-header" data-toggle="collapse" data-target="#leader-root-<?= $rehearsalId ?>" aria-expanded="false" aria-controls="leader-root-<?= $rehearsalId ?>">
-                                                <i class="tree-node-icon fas fa-chevron-right"></i>
-
-                                                <div class="tree-node-title">
-                                                    <span class="tree-node-title-text"><?= htmlspecialchars($rootDisplayName) ?></span>
-                                                </div>
-
-                                                <div class="tree-node-stats">
-                                                    <div class="tree-node-stat">
-                                                        <i class="tree-node-stat-icon fas fa-check-circle status-<?= DashboardConstants::CSS_ATTENDING_CLASS ?>"></i>
-                                                        <span><?= $sectionAttending ?></span>
-                                                    </div>
-                                                    <div class="tree-node-stat">
-                                                        <i class="tree-node-stat-icon fas fa-times-circle status-<?= DashboardConstants::CSS_NOT_ATTENDING_CLASS ?>"></i>
-                                                        <span><?= $sectionNotAttending ?></span>
-                                                    </div>
-                                                    <div class="tree-node-stat">
-                                                        <i class="tree-node-stat-icon fas fa-question-circle status-<?= DashboardConstants::CSS_NO_RESPONSE_CLASS ?>"></i>
-                                                        <span><?= $sectionNoResponse ?></span>
-                                                    </div>
-                                                </div>
-                                            </button>
-
-                                            <div id="leader-root-<?= $rehearsalId ?>" class="tree-node-content collapse">
-                                                <ul class="tree-list">
-                                                    <?php
-                                                    if (!empty($players)) {
-                                                        sortPlayersByStatus($players);
-
-                                                        foreach ($players as $player): ?>
-                                                            <?php renderUserItem($player, $player['status']); ?>
-                                                    <?php endforeach;
-                                                    } else {
-                                                        echo '<li class="tree-user-item">Keine Mitglieder gefunden</li>';
-                                                    } ?>
-                                                </ul>
-                                            </div>
-                                        </li>
-                                    <?php
-                                    } else {
-                                        // Empty state
-                                    ?>
-                                        <li class="tree-node tree-depth-0">
-                                            <div class="tree-node-header">
-                                                <div class="tree-node-title">
-                                                    <span class="tree-node-title-text"><?= htmlspecialchars($rootDisplayName) ?> - Keine Mitglieder</span>
-                                                </div>
-                                            </div>
-                                        </li>
-                                        <?php
-                                    }
-                                } else {
-                                    // Unwrap single-root wrappers (e.g. tutti) to avoid exceeding the component's rendering depth
-                                    $renderRoots = $prunedTree;
-                                    if (count($renderRoots) === 1) {
-                                        $onlyRoot = reset($renderRoots);
-                                        if (!empty($onlyRoot['children'])) {
-                                            $renderRoots = $onlyRoot['children'];
-                                        }
-                                    }
-
-                                    foreach ($renderRoots as $rootKey => $rootNode):
-                                        $rootDisplayName = $rootNode['display_name'] ?? $rootNode['id'] ?? 'Gruppe';
-                                        $rootNodeId = $rootNode['id'] ?? $rootKey;
-
-                                        // Collect members for this root
-                                        $rootPlayers = [];
-                                        if (!empty($membersBySection[$rehearsalId]['all'])) {
-                                            foreach ($membersBySection[$rehearsalId]['all'] as $member) {
-                                                if ($groupManager->isUserInGroup($member['type'], $rootNodeId)) {
-                                                    $rootPlayers[] = $member;
-                                                }
-                                            }
-                                        }
-
-                                        $rootAttending = count(array_filter($rootPlayers, fn($m) => $m['status'] === 'attending'));
-                                        $rootNotAttending = count(array_filter($rootPlayers, fn($m) => $m['status'] === 'not_attending'));
-                                        $rootNoResponse = count(array_filter($rootPlayers, fn($m) => $m['status'] === 'no_response'));
-
-                                        if (empty($rootPlayers)) continue;
-
-                                        // If leaf node, render directly with members
-                                        if (empty($rootNode['children'])):
-                                        ?>
-                                            <li class="tree-node tree-depth-0">
-                                                <button class="tree-node-header" data-toggle="collapse" data-target="#pruned-<?= $rootKey . $rehearsalId ?>" aria-expanded="false">
-                                                    <i class="tree-node-icon fas fa-chevron-right"></i>
-                                                    <div class="tree-node-title"><span class="tree-node-title-text"><?= htmlspecialchars($rootDisplayName) ?></span></div>
-                                                    <div class="tree-node-stats">
-                                                        <div class="tree-node-stat"><i class="tree-node-stat-icon fas fa-check-circle status-<?= DashboardConstants::CSS_ATTENDING_CLASS ?>"></i><span><?= $rootAttending ?></span></div>
-                                                        <div class="tree-node-stat"><i class="tree-node-stat-icon fas fa-times-circle status-<?= DashboardConstants::CSS_NOT_ATTENDING_CLASS ?>"></i><span><?= $rootNotAttending ?></span></div>
-                                                        <div class="tree-node-stat"><i class="tree-node-stat-icon fas fa-question-circle status-<?= DashboardConstants::CSS_NO_RESPONSE_CLASS ?>"></i><span><?= $rootNoResponse ?></span></div>
-                                                    </div>
-                                                </button>
-                                                <div id="pruned-<?= $rootKey . $rehearsalId ?>" class="tree-node-content collapse">
-                                                    <ul class="tree-list">
-                                                        <?php
-                                                        sortPlayersByStatus($rootPlayers);
-                                                        foreach ($rootPlayers as $player):
-                                                            renderUserItem($player, $player['status']);
-                                                        endforeach;
-                                                        ?>
-                                                    </ul>
-                                                </div>
-                                            </li>
-                                        <?php else:
-                                            // Section with children — render as expandable root with sub-sections
-                                            $sectionId = $rootNodeId;
-                                            $players = $rootPlayers;
-                                            $prunedSubtree = $rootNode;
-                                        ?>
-                                            <?php include __DIR__ . '/dynamic-section-component.php'; ?>
-                                <?php endif;
-                                    endforeach;
-                                } ?>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
+                <?php extract($prepareCardVars($rehearsal)); ?>
+                <?php include __DIR__ . '/promises-dashboard-card.php'; ?>
             <?php endforeach; ?>
+
+            <?php if (!$lazyPartial && ($hasMoreRehearsals ?? false)): ?>
+                <?php
+                $lazyBase = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '');
+                $lazyEndpoint = ($isAdmin ?? false) ? 'admin-lazy' : 'leader-lazy';
+                $lazyUrl = $lazyBase . '/promises/' . $lazyEndpoint . '?offset=' . count($rehearsals);
+                $lazyUrl .= (($currentlyViewingAll ?? false) ? '&viewAll=1' : '');
+                $lazyId = ($isAdmin ?? false) ? 'admin-rehearsals' : 'leader-rehearsals';
+                $lazyType = 'cards';
+                $lazyCount = min(3, ($totalRehearsals ?? 0) - count($rehearsals));
+                include __DIR__ . '/lazy-section.php';
+                ?>
+            <?php endif; ?>
+
         <?php endif; ?>
     </div>
 </div>
 
+<?php if (!$lazyPartial): ?>
 <script src="/assets/js/promises-shared.js?v=<?= \App\Core\Version::getVersion() ?>"></script>
 <script>
     // Interactions
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize charts
+
         initializeCharts();
 
-        // Initialize tree view
-        initializeTreeView();
-    });
-
-    function initializeCharts() {
-        <?php if (!$showOld): ?>
+        function initializeCharts() {
             // Chart initialization check
 
             // Attendance chart
@@ -1027,77 +594,40 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                 const responseChart = new ApexCharts(document.querySelector("#response-chart"), responseOptions);
                 responseChart.render();
             }
-        <?php endif; ?>
-    }
-
-    function initializeTreeView() {
-        // Handle arrow rotation for tree view elements
-        document.querySelectorAll('.tree-node-header[data-toggle="collapse"]').forEach(function(button) {
-            const icon = button.querySelector('.tree-node-icon');
-            let targetSelector = button.getAttribute('data-target') || button.getAttribute('href');
-
-            if (targetSelector && icon) {
-                const target = document.querySelector(targetSelector);
-                if (target) {
-                    // Set initial state - everything starts collapsed
-                    icon.classList.remove('expanded');
-                    target.classList.remove('show');
-
-                    // Let Bootstrap handle collapse, but make arrow immediate
-                    button.addEventListener('click', function(e) {
-                        // Toggle arrow state immediately
-                        icon.classList.toggle('expanded');
-
-                        // Set aria-expanded immediately
-                        const isExpanded = icon.classList.contains('expanded');
-                        button.setAttribute('aria-expanded', isExpanded);
-
-                        // Let the default collapse behavior handle the content
-                        // but sync arrow state after transition completes
-                        setTimeout(() => {
-                            const actualExpanded = target.classList.contains('show');
-                            if (actualExpanded !== isExpanded) {
-                                // Sync arrow with actual state if they don't match
-                                if (actualExpanded) {
-                                    icon.classList.add('expanded');
-                                } else {
-                                    icon.classList.remove('expanded');
-                                }
-                                button.setAttribute('aria-expanded', actualExpanded);
-                            }
-                        }, <?= DashboardConstants::TREE_VIEW_ANIMATION_TIMEOUT ?>); // Match the collapse.js timeout
-                    });
-                }
-            }
-        });
-    }
-
-    // Toggle for old rehearsals (Admin only)
-    const showOldToggle = document.getElementById('showOldToggle');
-    if (showOldToggle) {
-        const slider = showOldToggle.nextElementSibling;
-        const dot = slider.nextElementSibling;
-
-        // Set initial state
-        if (showOldToggle.checked) {
-            slider.style.backgroundColor = '#007bff';
-            dot.style.transform = 'translateX(26px)';
-        } else {
-            slider.style.backgroundColor = '#ccc';
-            dot.style.transform = 'translateX(0px)';
         }
 
-        // Handle toggle change
-        showOldToggle.addEventListener('change', function() {
-            const currentUrl = new URL(window.location.href);
-            if (this.checked) {
-                currentUrl.searchParams.set('showOld', '1');
-            } else {
-                currentUrl.searchParams.delete('showOld');
-            }
-            window.location.href = currentUrl.toString();
+        // Event delegation: handles tree-node collapse/expand for all cards (including lazy-loaded)
+    var container = document.querySelector('.rehearsals-container');
+    if (container) {
+        container.addEventListener('click', function(e) {
+            var button = e.target.closest('.tree-node-header[data-toggle="collapse"]');
+            if (!button) return;
+            e.preventDefault();
+
+            var icon = button.querySelector('.tree-node-icon');
+            var targetSelector = button.getAttribute('data-target') || button.getAttribute('href');
+            if (!targetSelector || !icon) return;
+
+            var target = document.querySelector(targetSelector);
+            if (!target) return;
+
+            icon.classList.toggle('expanded');
+            target.classList.toggle('show');
+
+            var isExpanded = icon.classList.contains('expanded');
+            button.setAttribute('aria-expanded', isExpanded);
+
+            setTimeout(function() {
+                var actualExpanded = target.classList.contains('show');
+                if (actualExpanded !== isExpanded) {
+                    icon.classList.toggle('expanded', actualExpanded);
+                    button.setAttribute('aria-expanded', actualExpanded);
+                }
+            }, <?= DashboardConstants::TREE_VIEW_ANIMATION_TIMEOUT ?>);
         });
     }
+    
+    }); // End DOMContentLoaded
 </script>
 
 <?php
@@ -1348,3 +878,4 @@ function getDeviationCssClass($severity)
         min-width: 200px;
     }
 </style>
+<?php endif; /* !$lazyPartial */ ?>

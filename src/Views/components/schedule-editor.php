@@ -15,7 +15,7 @@
 $existingItems = $formData['schedule_items'] ?? [];
 $autoSave = $autoSave ?? false;
 $apiUrl = $apiUrl ?? '';
-$editorId = 'schedule-editor-' . uniqid();
+$editorId = $editorId ?? ('schedule-editor-' . uniqid());
 ?>
 
 <?php if (!defined('SCHEDULE_EDITOR_STYLES_LOADED')): define('SCHEDULE_EDITOR_STYLES_LOADED', true); ?>
@@ -291,7 +291,7 @@ $editorId = 'schedule-editor-' . uniqid();
         container.addEventListener('input', function(e) {
             const idx = parseInt(e.target.dataset.index);
             const field = e.target.dataset.field;
-            if (isNaN(idx) || !field) return;
+            if (isNaN(idx) || !field || !items[idx]) return;
             items[idx][field] = e.target.value;
             serialize();
             if (autoSave) debouncedSave();

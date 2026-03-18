@@ -16,19 +16,20 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
 
 <div class="container-app pb-20">
 
+    <?php if (!empty($rehearsals) || ($hasPastRehearsals ?? false)): ?>
+        <?php include __DIR__ . '/../components/date-separator.php'; ?>
+    <?php endif; ?>
+
     <?php if (empty($rehearsals)): ?>
         <?php
-        if (!$showOld && ($hasPastRehearsals ?? false)) {
+        if ($hasPastRehearsals ?? false) {
             $title = 'Keine aktuellen Termine';
             $message = 'Es stehen keine kommenden Proben an.';
-            $actionHref = '?showOld=1';
-            $actionLabel = 'Vergangene Termine anzeigen';
         } else {
             $title = 'Noch keine Termine';
             $message = 'Klicke unten auf „Neue Probe", um loszulegen.';
-            $actionHref = null;
-            $actionLabel = null;
         }
+
         include __DIR__ . '/../components/empty-state.php';
         ?>
         <div id="rehearsalsList"></div>
@@ -47,21 +48,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
         }
         ?>
 
-        <?php if ($showOld && !empty($pastRehearsals)): ?>
-            <div class="past-rehearsals-section" id="pastRehearsalsSection">
-                <?php foreach ($pastRehearsals as $rehearsal): ?>
-                    <?php
-                    $context = 'inline-edit';
-                    $options = ['showButtons' => false];
-                    include __DIR__ . '/../components/rehearsal-card.php';
-                    ?>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
 
-        <?php if (!empty($currentRehearsals) || !empty($pastRehearsals)): ?>
-            <?php include __DIR__ . '/../components/date-separator.php'; ?>
-        <?php endif; ?>
 
         <div id="rehearsalsList">
             <?php include __DIR__ . '/../components/recurring-dialog.php'; ?>
@@ -72,6 +59,17 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                 include __DIR__ . '/../components/rehearsal-card.php';
                 ?>
             <?php endforeach; ?>
+
+            <?php if ($hasMoreRehearsals ?? false): ?>
+                <?php
+                $lazyBase = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '');
+                $lazyUrl = $lazyBase . '/rehearsals/lazy?offset=' . count($rehearsals);
+                $lazyId = 'rehearsals-list';
+                $lazyType = 'cards';
+                $lazyCount = min(3, ($totalRehearsals ?? 0) - count($rehearsals));
+                include __DIR__ . '/../components/lazy-section.php';
+                ?>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 
@@ -1160,6 +1158,11 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
 
         // ── Search ──
         search(query) {
+            if (!this._lazyLoaded && document.querySelector('[data-lazy-section]')) {
+                this._lazyLoaded = true;
+                LazySection.loadAll('rehearsals-list').then(() => this.search(query));
+                return;
+            }
             const q = query.toLowerCase().trim();
             let visible = 0;
             document.querySelectorAll('.ie-card[data-rehearsal-id]').forEach(card => {
@@ -1167,6 +1170,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                     card.dataset.type || '',
                     card.dataset.location || '',
                     card.dataset.tags || '',
+                    card.dataset.roles || '',
                     card.dataset.note || '',
                     card.dataset.start || '',
                     card.querySelector('[data-ie-date]')?.textContent || '',
@@ -1192,6 +1196,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                 if (key === 'location' && (card.dataset.location || '').toLowerCase() !== val.toLowerCase()) return false;
                 if (key === 'color' && (card.dataset.color || '') !== val) return false;
                 if (key === 'tags' && !(card.dataset.tags || '').toLowerCase().includes(val.toLowerCase())) return false;
+                if (key === 'roles' && !(card.dataset.roles || '').toLowerCase().includes(val.toLowerCase())) return false;
                 if (key === 'dateRange') {
                     const start = card.dataset.start?.split(' ')[0] || '';
                     if (val.from && start < val.from) return false;
@@ -1205,6 +1210,17 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
         openFilter(chip) {
             this._closePopover();
             const filterType = chip.dataset.filter;
+
+            // Force-load all lazy batches before building filter options
+            if (!this._lazyLoaded && document.querySelector('[data-lazy-section]')) {
+                this._lazyLoaded = true;
+                LazySection.loadAll('rehearsals-list').then(() => this._buildFilterDropdown(chip, filterType));
+                return;
+            }
+            this._buildFilterDropdown(chip, filterType);
+        },
+
+        _buildFilterDropdown(chip, filterType) {
             const vals = this._collectValues(filterType);
 
             const pop = document.createElement('div');
@@ -1276,6 +1292,10 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                 else if (filterType === 'location') v = card.dataset.location;
                 else if (filterType === 'tags') {
                     (card.dataset.tags || '').split(',').forEach(t => { if (t.trim()) set.add(t.trim()); });
+                    return;
+                }
+                else if (filterType === 'roles') {
+                    (card.dataset.roles || '').split(',').forEach(r => { if (r.trim()) set.add(r.trim()); });
                     return;
                 }
                 if (v?.trim()) set.add(v.trim());

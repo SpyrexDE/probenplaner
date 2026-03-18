@@ -60,7 +60,7 @@ include __DIR__ . '/../components/table.php';
                 <div class="filter-toggle-container">
                     <span class="filter-label">Vergangene Proben anzeigen</span>
                     <label class="toggle-switch">
-                        <input type="checkbox" id="showOldToggle" <?= $showOld ? 'checked' : '' ?> />
+                        <input type="checkbox" id="showOldToggle" />
                         <span class="toggle-slider"></span>
                         <span class="toggle-dot"></span>
                     </label>
@@ -75,9 +75,9 @@ include __DIR__ . '/../components/table.php';
             $title = 'Keine Proben gefunden';
             $message = 'Aktuell sind keine öffentlichen Proben eingetragen.';
 
-            if (!$showOld && ($hasPastRehearsals ?? false)) {
+            if ($hasPastRehearsals ?? false) {
                 $buttonParams = $personalized ? '&personalized=1' : '';
-                $actionHref = '?showOld=1' . $buttonParams;
+                $actionHref = 'javascript:void(0)';
                 $actionLabel = 'Vergangene Proben anzeigen';
             }
 
@@ -499,92 +499,84 @@ include __DIR__ . '/../components/table.php';
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Elements
-        const personalizedToggle = document.getElementById('personalizedToggle');
-        const showOldToggle = document.getElementById('showOldToggle');
+        var personalizedToggle = document.getElementById('personalizedToggle');
+        var showOldToggle = document.getElementById('showOldToggle');
+        var pastBase = '<?= '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '') ?>';
+        var pastLoaded = false;
+        var pastRows = null;
 
-        // Initialize
-        initializeToggleStates();
-
-        // Listeners
         if (personalizedToggle) {
+            var currentlyPersonalized = <?= json_encode($personalized ?? false) ?>;
+            updateToggleVisuals(personalizedToggle, currentlyPersonalized);
             personalizedToggle.addEventListener('change', handlePersonalizedToggle);
         }
 
         if (showOldToggle) {
+            updateToggleVisuals(showOldToggle, false);
             showOldToggle.addEventListener('change', handleShowOldToggle);
         }
 
-        function initializeToggleStates() {
-            const currentlyPersonalized = <?= json_encode($personalized ?? false) ?>;
-            const currentlyShowingOld = <?= json_encode($showOld ?? false) ?>;
-
-            if (personalizedToggle) {
-                updateToggleVisuals(personalizedToggle, currentlyPersonalized);
-            }
-
-            if (showOldToggle) {
-                updateToggleVisuals(showOldToggle, currentlyShowingOld);
-            }
-        }
-
         function updateToggleVisuals(toggle, isActive) {
-            const slider = toggle.nextElementSibling;
-            const dot = slider.nextElementSibling;
-
-            if (isActive) {
-                slider.style.backgroundColor = 'var(--color-primary)';
-                dot.style.transform = 'translateX(26px)';
-            } else {
-                slider.style.backgroundColor = 'var(--color-gray-300)';
-                dot.style.transform = 'translateX(0px)';
-            }
+            var slider = toggle.nextElementSibling;
+            var dot = slider.nextElementSibling;
+            slider.style.backgroundColor = isActive ? 'var(--color-primary)' : 'var(--color-gray-300)';
+            dot.style.transform = 'translateX(' + (isActive ? '26' : '0') + 'px)';
         }
 
         function handlePersonalizedToggle() {
-            const url = new URL(window.location);
-            const slider = this.nextElementSibling;
-            const dot = slider.nextElementSibling;
-
+            var url = new URL(window.location);
             if (this.checked) {
                 url.searchParams.set('personalized', '1');
-                slider.style.backgroundColor = 'var(--color-primary)';
-                dot.style.transform = 'translateX(26px)';
             } else {
                 url.searchParams.delete('personalized');
-                slider.style.backgroundColor = 'var(--color-gray-300)';
-                dot.style.transform = 'translateX(0px)';
             }
-
-            // Preserve parameter
-            if (<?= json_encode($showOld ?? false) ?>) {
-                url.searchParams.set('showOld', '1');
-            }
-
             window.location.href = url.toString();
         }
 
         function handleShowOldToggle() {
-            const url = new URL(window.location);
-            const slider = this.nextElementSibling;
-            const dot = slider.nextElementSibling;
+            updateToggleVisuals(showOldToggle, this.checked);
+            var tbody = document.querySelector('.table-themed tbody');
+            if (!tbody) return;
 
             if (this.checked) {
-                url.searchParams.set('showOld', '1');
-                slider.style.backgroundColor = 'var(--color-primary)';
-                dot.style.transform = 'translateX(26px)';
+                if (pastRows) {
+                    // Re-insert cached rows
+                    pastRows.forEach(function(row) { tbody.insertBefore(row, tbody.firstChild); });
+                    return;
+                }
+                // Show loading skeleton row
+                var skeletonRow = document.createElement('tr');
+                skeletonRow.id = 'pastLoadingSkeleton';
+                skeletonRow.innerHTML = '<td colspan="6" style="padding:var(--space-4);text-align:center;color:var(--color-text-muted)"><i class="fas fa-spinner fa-spin"></i> Vergangene Proben werden geladen…</td>';
+                tbody.insertBefore(skeletonRow, tbody.firstChild);
+
+                var url = pastBase + '/probenplan/past?offset=0';
+                if (<?= json_encode($personalized ?? false) ?>) url += '&personalized=1';
+
+                fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+                    .then(function(res) { return res.text(); })
+                    .then(function(html) {
+                        var skeleton = document.getElementById('pastLoadingSkeleton');
+                        if (skeleton) skeleton.remove();
+                        if (!html.trim()) return;
+
+                        var temp = document.createElement('tbody');
+                        temp.innerHTML = html;
+                        pastRows = Array.from(temp.children);
+                        pastRows.forEach(function(row) {
+                            row.classList.add('past-rehearsal-row');
+                            tbody.insertBefore(row, tbody.firstChild);
+                        });
+                    })
+                    .catch(function() {
+                        var skeleton = document.getElementById('pastLoadingSkeleton');
+                        if (skeleton) skeleton.innerHTML = '<td colspan="6" style="padding:var(--space-4);text-align:center;color:var(--color-danger)">Fehler beim Laden</td>';
+                    });
             } else {
-                url.searchParams.delete('showOld');
-                slider.style.backgroundColor = 'var(--color-gray-300)';
-                dot.style.transform = 'translateX(0px)';
+                if (pastRows) {
+                    pastRows.forEach(function(row) { row.remove(); });
+                }
             }
-
-            // Preserve parameter
-            if (<?= json_encode($personalized ?? false) ?>) {
-                url.searchParams.set('personalized', '1');
-            }
-
-            window.location.href = url.toString();
         }
     });
 </script>

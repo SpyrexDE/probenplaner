@@ -15,7 +15,7 @@
 $existingInfos = $formData['infos'] ?? [];
 $autoSave = $autoSave ?? false;
 $apiUrl = $apiUrl ?? '';
-$editorId = 'infobox-editor-' . uniqid();
+$editorId = $editorId ?? ('infobox-editor-' . uniqid());
 ?>
 
 <?php if (!defined('INFOBOX_EDITOR_STYLES_LOADED')): define('INFOBOX_EDITOR_STYLES_LOADED', true); ?>
@@ -313,7 +313,7 @@ $editorId = 'infobox-editor-' . uniqid();
         container.addEventListener('input', function(e) {
             const idx = parseInt(e.target.dataset.index);
             const field = e.target.dataset.field;
-            if (isNaN(idx) || !field) return;
+            if (isNaN(idx) || !field || !items[idx]) return;
             items[idx][field] = e.target.value;
             serialize();
             if (autoSave) debouncedSave();

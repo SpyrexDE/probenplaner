@@ -58,7 +58,9 @@
             <p class="empty-state-message"><?= htmlspecialchars($message) ?></p>
             <?php if (!empty($actionHref) && !empty($actionLabel)): ?>
             <div class="text-center mt-4">
-                <a href="<?= htmlspecialchars($actionHref) ?>" class="btn-base btn-primary">
+                <a href="<?= htmlspecialchars($actionHref) ?>"
+                   <?= !empty($actionOnclick) ? 'onclick="' . htmlspecialchars($actionOnclick) . '"' : '' ?>
+                   class="btn-base btn-primary">
                     <?= htmlspecialchars($actionLabel) ?>
                 </a>
             </div>

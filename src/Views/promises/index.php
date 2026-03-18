@@ -45,36 +45,25 @@ function sortGroups($groups)
 
 <div class="container-app">
 
+    <!-- Date Separator and Load Past Button (Universal) -->
+    <?php if (!empty($rehearsals) || ($hasPastRehearsals ?? false)): ?>
+        <?php 
+        $pastLazyUrl = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '') . '/promises/index-past?offset=0';
+        include __DIR__ . '/../components/date-separator.php'; 
+        ?>
+    <?php endif; ?>
+
     <?php if (empty($rehearsals)): ?>
         <?php
         $title = 'Keine Proben gefunden';
         $message = 'Aktuell sind keine Proben für dich eingetragen.';
-
-        if (!$showOld && ($hasPastRehearsals ?? false)) {
-            $actionHref = '?showOld=1';
-            $actionLabel = 'Vergangene Proben anzeigen';
-        }
-
+        
         include __DIR__ . '/../components/empty-state.php';
         ?>
     <?php else: ?>
-        <?php
-        // Separate current/future and past rehearsals
-        $currentRehearsals = [];
-        $pastRehearsals = [];
-        $today = date('Y-m-d');
-
-        foreach ($rehearsals as $rehearsal) {
-            if ($rehearsal['date'] >= $today) {
-                $currentRehearsals[] = $rehearsal;
-            } else {
-                $pastRehearsals[] = $rehearsal;
-            }
-        }
-        ?>
 
         <!-- Past Rehearsals section (dynamically populated via AJAX) -->
-        <?php if ($showOld && !empty($pastRehearsals)): ?>
+        <?php if (false): // Past rehearsals loaded dynamically via date-separator ?>
             <div class="past-rehearsals-section" id="pastRehearsalsSection">
                 <?php foreach ($pastRehearsals as $rehearsal): ?>
                     <?php
@@ -111,13 +100,10 @@ function sortGroups($groups)
             </div>
         <?php endif; ?>
 
-        <!-- Date Separator and Load Past Button -->
-        <?php if (!empty($currentRehearsals) || !empty($pastRehearsals)): ?>
-            <?php include __DIR__ . '/../components/date-separator.php'; ?>
-        <?php endif; ?>
 
-        <!-- Current/Future Rehearsals -->
-        <?php foreach ($currentRehearsals as $rehearsal): ?>
+
+        <!-- Upcoming Rehearsals -->
+        <?php foreach ($rehearsals as $rehearsal): ?>
             <?php
             // Determine status for this rehearsal
             $status = 'pending';
@@ -149,6 +135,17 @@ function sortGroups($groups)
             include __DIR__ . '/../components/rehearsal-card.php';
             ?>
         <?php endforeach; ?>
+
+        <?php if ($hasMoreRehearsals ?? false): ?>
+            <?php
+            $lazyBase = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '');
+            $lazyUrl = $lazyBase . '/promises/index-lazy?offset=' . count($rehearsals);
+            $lazyId = 'upcoming-rehearsals';
+            $lazyType = 'cards';
+            $lazyCount = min(3, ($totalRehearsals ?? 0) - count($rehearsals));
+            include __DIR__ . '/../components/lazy-section.php';
+            ?>
+        <?php endif; ?>
     <?php endif; ?>
 </div>
 

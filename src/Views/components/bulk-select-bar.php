@@ -621,6 +621,7 @@
             <button type="button" class="bulk-filter-chip" data-filter="location"><i class="fas fa-map-marker-alt"></i> Ort</button>
             <button type="button" class="bulk-filter-chip" data-filter="color"><i class="fas fa-palette"></i> Farbe</button>
             <button type="button" class="bulk-filter-chip" data-filter="tags"><i class="fas fa-hashtag"></i> Tags</button>
+            <button type="button" class="bulk-filter-chip" data-filter="roles"><i class="fas fa-users"></i> Rollen</button>
             <button type="button" class="bulk-filter-chip" data-filter="dateRange"><i class="fas fa-calendar"></i> Zeitraum</button>
             <button type="button" class="bulk-series-btn" id="recurringOpen"><i class="fas fa-layer-group"></i> Serie erstellen</button>
         </div>

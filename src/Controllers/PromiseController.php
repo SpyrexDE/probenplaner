@@ -63,8 +63,6 @@ class PromiseController extends Controller
             return;
         }
 
-        $showOld = isset($_GET['showOld']);
-
         $userType = $_SESSION['current_type'];
 
         $userId = $_SESSION['user_id'] ?? null;
@@ -81,7 +79,7 @@ class PromiseController extends Controller
             $userRoles = $userOrchestraModel->getUserRoles((int)$userId, (int)$orchestraId);
             $userRoleIds = array_map(fn($r) => (int)$r['id'], $userRoles);
         }
-        $rehearsals = $this->rehearsalModel->getForUser($userType, $_SESSION['current_orchestra_id'], $showOld, $userRoleIds);
+        $rehearsals = $this->rehearsalModel->getForUser($userType, $_SESSION['current_orchestra_id'], false, $userRoleIds);
 
         $promises = [];
         $user = $this->userModel->findById((int)$_SESSION['user_id']);
@@ -103,18 +101,181 @@ class PromiseController extends Controller
 
         $hasPastRehearsals = $this->rehearsalModel->hasPastRehearsals($_SESSION['current_orchestra_id']);
 
+        $totalRehearsals = count($rehearsals);
+        $hasMore = $totalRehearsals > self::INITIAL_LIMIT;
+        $rehearsalsSliced = $hasMore ? array_slice($rehearsals, 0, self::INITIAL_LIMIT) : $rehearsals;
+
         $this->render('promises/index', [
             'currentPage' => $currentPage,
             'user' => $user,
-            'rehearsals' => $rehearsals,
+            'rehearsals' => $rehearsalsSliced,
+            'hasMoreRehearsals' => $hasMore,
+            'totalRehearsals' => $totalRehearsals,
             'promises' => $promises,
-            'showOld' => $showOld,
             'orchestra' => $orchestra,
             'forceDeclineReason' => $forceDeclineReason,
             'allowAttendanceReset' => $allowAttendanceReset,
             'allowPastEdit' => $allowPastEdit,
             'hasPastRehearsals' => $hasPastRehearsals
         ]);
+    }
+
+    /**
+     * AJAX endpoint: returns a batch of rehearsal cards for the player view.
+     */
+    public function indexLazy($params = [])
+    {
+        $this->validateOrchestraContext($params);
+
+        $userType = $_SESSION['current_type'];
+        $userId = $_SESSION['user_id'] ?? null;
+        $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
+        
+        $userRoleIds = [];
+        if ($userId && $orchestraId) {
+            $userOrchestraModel = new \App\Models\UserOrchestra();
+            $userRoles = $userOrchestraModel->getUserRoles((int)$userId, (int)$orchestraId);
+            $userRoleIds = array_map(fn($r) => (int)$r['id'], $userRoles);
+        }
+
+        $offset = max(0, (int)($_GET['offset'] ?? self::INITIAL_LIMIT));
+        $allRehearsals = $this->rehearsalModel->getForUser($userType, $orchestraId, false, $userRoleIds);
+        
+        $remaining = array_slice($allRehearsals, $offset);
+        $rehearsals = array_slice($remaining, 0, self::LAZY_BATCH_SIZE);
+        $hasMore = count($remaining) > self::LAZY_BATCH_SIZE;
+        $nextOffset = $offset + count($rehearsals);
+
+        if (empty($rehearsals)) {
+            echo '';
+            return;
+        }
+
+        $promises = [];
+        if ($userId) {
+            $userPromises = $this->userModel->getPromises($userId);
+            foreach ($userPromises as $promise) {
+                $promises[$promise['rehearsal_id']] = [
+                    'attending' => ($promise['status'] === 'yes'),
+                    'note' => $promise['note']
+                ];
+            }
+        }
+
+        $html = '';
+        foreach ($rehearsals as $rehearsal) {
+            $status = 'pending';
+            $note = '';
+
+            if (isset($promises[$rehearsal['id']])) {
+                $status = $promises[$rehearsal['id']]['attending'] ? 'attending' : 'not_attending';
+                $note = $promises[$rehearsal['id']]['note'];
+            }
+
+            $groupArray = $rehearsal['groups'] ?? [];
+            $smartDisplay = new \App\Core\SmartGroupDisplay();
+            $groupsText = $smartDisplay->generateDescription($groupArray, $rehearsal, false);
+
+            $context = 'promises';
+            $options = [
+                'status' => $status,
+                'note' => $note,
+                'showButtons' => true
+            ];
+
+            ob_start();
+            include __DIR__ . '/../Views/components/rehearsal-card.php';
+            $html .= ob_get_clean();
+        }
+
+        echo $html;
+
+        if ($hasMore) {
+            $base = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '');
+            $nextUrl = htmlspecialchars($base . '/promises/index-lazy?offset=' . $nextOffset);
+            echo '<div data-lazy-next-url="' . $nextUrl . '" style="display:none"></div>';
+        }
+    }
+
+    /**
+     * AJAX endpoint: returns a batch of past rehearsal cards for the player view.
+     */
+    public function indexPast($params = [])
+    {
+        $this->validateOrchestraContext($params);
+
+        $userType = $_SESSION['current_type'];
+        $userId = $_SESSION['user_id'] ?? null;
+        $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
+        
+        $userRoleIds = [];
+        if ($userId && $orchestraId) {
+            $userOrchestraModel = new \App\Models\UserOrchestra();
+            $userRoles = $userOrchestraModel->getUserRoles((int)$userId, (int)$orchestraId);
+            $userRoleIds = array_map(fn($r) => (int)$r['id'], $userRoles);
+        }
+
+        $offset = max(0, (int)($_GET['offset'] ?? 0));
+        $allRehearsals = $this->rehearsalModel->getForUser($userType, $orchestraId, true, $userRoleIds);
+        
+        $today = date('Y-m-d');
+        $pastRehearsals = array_filter($allRehearsals, fn($r) => $r['date'] < $today);
+        usort($pastRehearsals, fn($a, $b) => strcmp($b['date'] . ' ' . $b['start'], $a['date'] . ' ' . $a['start']));
+        
+        $remaining = array_slice($pastRehearsals, $offset);
+        $rehearsals = array_reverse(array_slice($remaining, 0, 5));
+        $hasMore = count($remaining) > 5;
+        $nextOffset = $offset + count($rehearsals);
+
+        if (empty($rehearsals)) {
+            echo '';
+            return;
+        }
+
+        $promises = [];
+        if ($userId) {
+            $userPromises = $this->userModel->getPromises($userId);
+            foreach ($userPromises as $promise) {
+                $promises[$promise['rehearsal_id']] = [
+                    'attending' => ($promise['status'] === 'yes'),
+                    'note' => $promise['note']
+                ];
+            }
+        }
+
+        $html = '';
+        foreach ($rehearsals as $rehearsal) {
+            $status = 'pending';
+            $note = '';
+
+            if (isset($promises[$rehearsal['id']])) {
+                $status = $promises[$rehearsal['id']]['attending'] ? 'attending' : 'not_attending';
+                $note = $promises[$rehearsal['id']]['note'];
+            }
+
+            $groupArray = $rehearsal['groups'] ?? [];
+            $smartDisplay = new \App\Core\SmartGroupDisplay();
+            $groupsText = $smartDisplay->generateDescription($groupArray, $rehearsal, false);
+
+            $context = 'promises';
+            $options = [
+                'status' => $status,
+                'note' => $note,
+                'showButtons' => true
+            ];
+
+            ob_start();
+            include __DIR__ . '/../Views/components/rehearsal-card.php';
+            $html .= ob_get_clean();
+        }
+
+        echo $html;
+
+        if ($hasMore) {
+            $base = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '');
+            $nextUrl = htmlspecialchars($base . '/promises/index-past?offset=' . $nextOffset);
+            echo '<div data-lazy-button-url="' . $nextUrl . '" style="display:none"></div>';
+        }
     }
 
     /**
@@ -129,12 +290,9 @@ class PromiseController extends Controller
 
         $this->requireAnyPermission('can_view_own_section_stats', 'can_view_parent_section_stats', 'can_view_all_section_stats');
 
-        $showOld = isset($_GET['showOld']);
-
         $userType = $_SESSION['current_type'];
         $sectionName = str_replace(' ', '_', $userType);
 
-        // Get user role IDs for visibility filtering
         $userRoleIds = [];
         $userId = $_SESSION['user_id'] ?? null;
         $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
@@ -143,7 +301,11 @@ class PromiseController extends Controller
             $userRoles = $userOrchestraModel->getUserRoles((int)$userId, (int)$orchestraId);
             $userRoleIds = array_map(fn($r) => (int)$r['id'], $userRoles);
         }
-        $rehearsals = $this->rehearsalModel->getForUser($sectionName, $_SESSION['current_orchestra_id'], $showOld, $userRoleIds);
+        $allRehearsals = $this->rehearsalModel->getForUser($sectionName, $_SESSION['current_orchestra_id'], false, $userRoleIds);
+        
+        $totalRehearsals = count($allRehearsals);
+        $hasMore = $totalRehearsals > self::INITIAL_LIMIT;
+        $rehearsals = $hasMore ? array_slice($allRehearsals, 0, self::INITIAL_LIMIT) : $allRehearsals;
 
         $orchestraModel = new \App\Models\Orchestra();
         $orchestra = $orchestraModel->findById($_SESSION['current_orchestra_id']);
@@ -335,16 +497,333 @@ class PromiseController extends Controller
             'stats' => $stats,
             'membersBySection' => $membersBySection,
             'memberPromises' => $memberPromises,
-            'showOld' => $showOld,
             'canViewAllSections' => $canViewAllSections,
             'currentlyViewingAll' => $viewAllSections,
             'leaderSection' => $leaderSectionId,
             'leaderSectionDisplayName' => $groupManager->getDisplayName($leaderSectionId),
             'leaderSectionNames' => $leaderSectionNames,
             'isLeaderOnlyView' => !$viewAllSections,
-            'leaderResolvedType' => $leaderResolvedType
+            'leaderResolvedType' => $leaderResolvedType,
+            'hasPastRehearsals' => $hasPastRehearsals,
+            'hasMoreRehearsals' => $hasMore,
+            'totalRehearsals' => $totalRehearsals
         ]);
     }
+
+    /**
+     * AJAX endpoint: returns a batch of leader dashboard rehearsal cards as HTML partial.
+     */
+    public function leaderLazy($params = [])
+    {
+        $this->validateOrchestraContext($params);
+        $this->requireAnyPermission('can_view_own_section_stats', 'can_view_parent_section_stats', 'can_view_all_section_stats');
+
+        $userType = $_SESSION['current_type'];
+        $sectionName = str_replace(' ', '_', $userType);
+
+        $userRoleIds = [];
+        $userId = $_SESSION['user_id'] ?? null;
+        $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
+        if ($userId && $orchestraId) {
+            $userOrchestraModel = new \App\Models\UserOrchestra();
+            $userRoles = $userOrchestraModel->getUserRoles((int)$userId, (int)$orchestraId);
+            $userRoleIds = array_map(fn($r) => (int)$r['id'], $userRoles);
+        }
+
+        $offset = max(0, (int)($_GET['offset'] ?? self::INITIAL_LIMIT));
+        $allRehearsals = $this->rehearsalModel->getForUser($sectionName, $orchestraId, false, $userRoleIds);
+        $remaining = array_slice($allRehearsals, $offset);
+        $rehearsals = array_slice($remaining, 0, self::LAZY_BATCH_SIZE);
+        $hasMore = count($remaining) > self::LAZY_BATCH_SIZE;
+        $nextOffset = $offset + count($rehearsals);
+
+        if (empty($rehearsals)) {
+            echo '';
+            return;
+        }
+
+        $canViewAllSections = !empty($_SESSION['current_permissions']['can_view_all_section_stats']);
+        $viewAllSections = $canViewAllSections && isset($_GET['viewAll']) && $_GET['viewAll'] === '1';
+
+        $userOrchestraModel = new \App\Models\UserOrchestra();
+        if ($viewAllSections) {
+            $members = $userOrchestraModel->getOrchestraUsers($orchestraId);
+        } else {
+            $groupManager = \App\Core\GroupManager::getInstance();
+            $resolvedType = $groupManager->resolveAlias($userType);
+            $canViewParent = !empty($_SESSION['current_permissions']['can_view_parent_section_stats']);
+
+            if ($canViewParent) {
+                $leaderSection = $groupManager->getSectionForInstrument($resolvedType);
+                $allMembers = $userOrchestraModel->getOrchestraUsers($orchestraId);
+                $members = array_filter($allMembers, function ($m) use ($groupManager, $resolvedType, $leaderSection) {
+                    $memberType = $groupManager->resolveAlias($m['type']);
+                    if ($leaderSection) {
+                        return $groupManager->getSectionForInstrument($memberType) === $leaderSection;
+                    }
+                    return $memberType === $resolvedType;
+                });
+            } else {
+                $allMembers = $userOrchestraModel->getOrchestraUsers($orchestraId);
+                $members = array_filter($allMembers, function ($m) use ($groupManager, $resolvedType) {
+                    return $groupManager->resolveAlias($m['type']) === $resolvedType;
+                });
+            }
+        }
+
+        [$stats, $membersBySection, $memberPromises, $leaderSectionId, $leaderResolvedType, $leaderSectionNames] = 
+            $this->buildLeaderRehearsalData($rehearsals, $viewAllSections, $members, $userType, $orchestraId);
+
+        $orchestraModel = new \App\Models\Orchestra();
+        $orchestra = $orchestraModel->findById($_SESSION['current_orchestra_id']);
+        $showRehearsalInsights = !empty($orchestra['show_rehearsal_insights']);
+
+        $deviationData = $this->computeDeviationData($rehearsals, $stats, $membersBySection, $showRehearsalInsights);
+
+        $this->renderPartial('components/promises-dashboard-wrapper', [
+            'rehearsals' => $rehearsals,
+            'stats' => $stats,
+            'membersBySection' => $membersBySection,
+            'memberPromises' => $memberPromises,
+            'canViewAllSections' => $canViewAllSections,
+            'currentlyViewingAll' => $viewAllSections,
+            'leaderSection' => $leaderSectionId,
+            'leaderSectionDisplayName' => $groupManager->getDisplayName($leaderSectionId),
+            'leaderSectionNames' => $leaderSectionNames,
+            'isLeaderOnlyView' => !$viewAllSections,
+            'leaderResolvedType' => $leaderResolvedType,
+            'showRehearsalInsights' => $showRehearsalInsights,
+            'deviationData' => $deviationData,
+            'isAdmin' => false,
+            'isLeader' => true,
+            'lazyPartial' => true,
+        ]);
+
+        if ($hasMore) {
+            $base = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '');
+            $nextUrl = htmlspecialchars($base . '/promises/leader-lazy?offset=' . $nextOffset . ($viewAllSections ? '&viewAll=1' : ''));
+            echo '<div data-lazy-next-url="' . $nextUrl . '" style="display:none"></div>';
+        }
+    }
+
+    /**
+     * AJAX endpoint: returns a batch of leader dashboard past rehearsal cards.
+     */
+    public function leaderPast($params = [])
+    {
+        $this->validateOrchestraContext($params);
+        $this->requireAnyPermission('can_view_own_section_stats', 'can_view_parent_section_stats', 'can_view_all_section_stats');
+
+        $userType = $_SESSION['current_type'];
+        $sectionName = str_replace(' ', '_', $userType);
+        $orchestraId = $_SESSION['current_orchestra_id'];
+
+        $offset = max(0, (int)($_GET['offset'] ?? 0));
+        $result = $this->rehearsalModel->getPastPaginated(
+            (int)$orchestraId,
+            $offset,
+            5
+        );
+
+        $rehearsals = array_reverse($result['rows']);
+        if (empty($rehearsals)) {
+            echo '';
+            return;
+        }
+
+        $canViewAllSections = !empty($_SESSION['current_permissions']['can_view_all_section_stats']);
+        $viewAllSections = $canViewAllSections && isset($_GET['viewAll']) && $_GET['viewAll'] === '1';
+
+        $userOrchestraModel = new \App\Models\UserOrchestra();
+        if ($viewAllSections) {
+            $members = $userOrchestraModel->getOrchestraUsers($orchestraId);
+        } else {
+            $groupManager = \App\Core\GroupManager::getInstance();
+            $resolvedType = $groupManager->resolveAlias($userType);
+            $canViewParent = !empty($_SESSION['current_permissions']['can_view_parent_section_stats']);
+
+            if ($canViewParent) {
+                $leaderSection = $groupManager->getSectionForInstrument($resolvedType);
+                $allMembers = $userOrchestraModel->getOrchestraUsers($orchestraId);
+                $members = array_filter($allMembers, function ($m) use ($groupManager, $resolvedType, $leaderSection) {
+                    $memberType = $groupManager->resolveAlias($m['type']);
+                    if ($leaderSection) {
+                        return $groupManager->getSectionForInstrument($memberType) === $leaderSection;
+                    }
+                    return $memberType === $resolvedType;
+                });
+            } else {
+                $allMembers = $userOrchestraModel->getOrchestraUsers($orchestraId);
+                $members = array_filter($allMembers, function ($m) use ($groupManager, $resolvedType) {
+                    return $groupManager->resolveAlias($m['type']) === $resolvedType;
+                });
+            }
+        }
+
+        [$stats, $membersBySection, $memberPromises, $leaderSectionId, $leaderResolvedType, $leaderSectionNames] = 
+            $this->buildLeaderRehearsalData($rehearsals, $viewAllSections, $members, $userType, $orchestraId);
+
+        $orchestraModel = new \App\Models\Orchestra();
+        $orchestra = $orchestraModel->findById($orchestraId);
+        $showRehearsalInsights = !empty($orchestra['show_rehearsal_insights']);
+        $deviationData = $this->computeDeviationData($rehearsals, $stats, $membersBySection, $showRehearsalInsights);
+
+        $this->renderPartial('components/promises-dashboard-wrapper', [
+            'rehearsals' => $rehearsals,
+            'stats' => $stats,
+            'membersBySection' => $membersBySection,
+            'memberPromises' => $memberPromises,
+            'canViewAllSections' => $canViewAllSections,
+            'currentlyViewingAll' => $viewAllSections,
+            'leaderSection' => $leaderSectionId,
+            'leaderSectionDisplayName' => $groupManager->getDisplayName($leaderSectionId) ?? '',
+            'leaderSectionNames' => $leaderSectionNames,
+            'isLeaderOnlyView' => !$viewAllSections,
+            'leaderResolvedType' => $leaderResolvedType,
+            'showRehearsalInsights' => $showRehearsalInsights,
+            'deviationData' => $deviationData,
+            'isAdmin' => false,
+            'isLeader' => true,
+            'lazyPartial' => true,
+        ]);
+
+        $nextOffset = $offset + count($rehearsals);
+        if ($nextOffset < $result['total']) {
+            $base = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '');
+            $nextUrl = htmlspecialchars($base . '/promises/leader-past?offset=' . $nextOffset . ($viewAllSections ? '&viewAll=1' : ''));
+            echo '<div data-lazy-button-url="' . $nextUrl . '" style="display:none"></div>';
+        }
+    }
+
+    /**
+     * Helper to build leader rehearsal data for charts/stats
+     */
+    private function buildLeaderRehearsalData(array $rehearsals, bool $viewAllSections, array $members, string $userType, int $orchestraId): array
+    {
+        if (!is_array($members)) $members = [];
+        $members = array_values(array_filter($members, function ($m) { return !empty($m['can_attend_rehearsals']); }));
+
+        $groupManager = \App\Core\GroupManager::getInstance();
+        $allSections = $groupManager->getAllSections();
+        if (empty($allSections)) {
+            $allSections = array_filter($groupManager->getAllGroups(), fn($g) => ($g['type'] ?? '') !== 'special');
+        }
+
+        $promiseModel = new \App\Models\UserPromise();
+        $allPromises = $promiseModel->getAllForOrchestra($orchestraId);
+
+        $stats = [];
+        $membersBySection = [];
+        $memberPromises = [];
+
+        $leaderResolvedType = $groupManager->resolveAlias($userType);
+        $leaderSectionInfo = $groupManager->getSectionForInstrument($leaderResolvedType);
+        $leaderSectionId = $leaderSectionInfo ?? $leaderResolvedType;
+
+        $rehearsalIds = array_column($rehearsals, 'id');
+        $groupsMap = [];
+        $rolesMap = [];
+        if (!empty($rehearsalIds)) {
+            foreach ($rehearsals as $r) {
+                $assoc = [];
+                foreach ($r['groups'] ?? [] as $name) $assoc[$name] = 0;
+                $groupsMap[$r['id']] = $assoc;
+            }
+            $rolesMap = $this->rehearsalModel->getBatchRehearsalRoleIds($rehearsalIds);
+        }
+
+        foreach ($rehearsals as $rehearsal) {
+            $rehearsalId = $rehearsal['id'];
+            $stats[$rehearsalId] = ['attending' => 0, 'not_attending' => 0, 'no_response' => 0];
+
+            if (!$viewAllSections) {
+                $membersBySection[$rehearsalId] = ['all' => []];
+                $membersBySection[$rehearsalId][$leaderSectionId] = [];
+            } else {
+                $membersBySection[$rehearsalId] = ['all' => []];
+                foreach ($allSections as $sectionId => $sectionData) $membersBySection[$rehearsalId][$sectionId] = [];
+            }
+
+            $memberPromises[$rehearsalId] = ['attending' => [], 'not_attending' => [], 'no_response' => []];
+
+            if (!empty($members)) {
+                $groups = $groupsMap[$rehearsalId] ?? [];
+                $rehearsalRoleIds = $rolesMap[$rehearsalId] ?? [];
+
+                foreach ($members as $member) {
+                    $memberRoleIds = $member['role_ids'] ?? [];
+
+                    if (!$this->rehearsalModel->isUserInRehearsalGroup($member['type'], $groups, $rehearsalRoleIds, $memberRoleIds)) {
+                        continue;
+                    }
+
+                    $promise = $allPromises[(int)$member['user_id']][$rehearsalId] ?? null;
+                    $status = 'no_response';
+                    $note = '';
+                    if ($promise) {
+                        $status = ($promise['status'] === 'yes') ? 'attending' : 'not_attending';
+                        $note = $promise['note'];
+                    }
+
+                    if (!$viewAllSections) {
+                        $memberResolvedType = $groupManager->resolveAlias($member['type']);
+                        $memberSectionInfo = $groupManager->getSectionForInstrument($memberResolvedType);
+                        if ($leaderSectionInfo) {
+                            $belongsToLeaderSection = $leaderSectionInfo === $memberSectionInfo;
+                        } else {
+                            $belongsToLeaderSection = $memberResolvedType === $leaderResolvedType || $member['type'] === $userType;
+                        }
+                        if (!$belongsToLeaderSection) continue;
+                    }
+
+                    $stats[$rehearsalId][$status]++;
+                    $memberInfo = [
+                        'display_name' => $member['display_name'] ?? $member['email'] ?? '',
+                        'type' => $member['type'],
+                        'status' => $status,
+                        'note' => $note,
+                        'permissions' => $member['permissions'] ?? [],
+                        'id' => $member['user_id'],
+                        'roles' => $member['roles'] ?? []
+                    ];
+
+                    $membersBySection[$rehearsalId]['all'][] = $memberInfo;
+
+                    $category = $status === 'attending' ? 'attending' : ($status === 'not_attending' ? 'not_attending' : 'no_response');
+                    $promiseEntry = [
+                        'display_name' => $memberInfo['display_name'],
+                        'type' => $memberInfo['type'],
+                    ];
+                    if ($status !== 'no_response') $promiseEntry['note'] = $note;
+                    $memberPromises[$rehearsalId][$category][] = $promiseEntry;
+
+                    if (!$viewAllSections) {
+                        $membersBySection[$rehearsalId][$leaderSectionId][] = $memberInfo;
+                    } else {
+                        $memberType = $groupManager->resolveAlias($member['type']);
+                        foreach ($allSections as $sectionId => $sectionData) {
+                            if ($groupManager->isUserInGroup($memberType, $sectionId)) {
+                                $membersBySection[$rehearsalId][$sectionId][] = $memberInfo;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        $leaderSectionNames = [];
+        if ($leaderSectionId) {
+            $leaderSectionNames[] = $leaderSectionId;
+            $leaderSectionNames[] = $groupManager->getDisplayName($leaderSectionId);
+        }
+        if ($leaderResolvedType !== $leaderSectionId) {
+            $leaderSectionNames[] = $leaderResolvedType;
+            $leaderSectionNames[] = $groupManager->getDisplayName($leaderResolvedType);
+        }
+
+        return [$stats, $membersBySection, $memberPromises, $leaderSectionId, $leaderResolvedType, $leaderSectionNames];
+    }
+
 
     /**
      * Update promise
@@ -514,137 +993,43 @@ class PromiseController extends Controller
      * 
      * @return void
      */
+    /**
+     * Initial render limit for the dashboard.
+     * Rehearsals beyond this count are lazy-loaded via adminLazy() or indexLazy()
+     */
+    private const INITIAL_LIMIT = 5;
+
     public function admin($params = [])
     {
         $this->validateOrchestraContext($params);
-
         $this->requirePermission('can_manage_rehearsals');
 
+        $allRehearsals = $this->rehearsalModel->getUpcoming($_SESSION['current_orchestra_id'], false);
+        $totalRehearsals = count($allRehearsals);
+        $hasMore = $totalRehearsals > self::INITIAL_LIMIT;
 
-        $showOld = isset($_GET['showOld']);
+        $rehearsals = $hasMore ? array_slice($allRehearsals, 0, self::INITIAL_LIMIT) : $allRehearsals;
 
-        $rehearsals = $this->rehearsalModel->getUpcoming($_SESSION['current_orchestra_id'], $showOld);
-
-        $userOrchestraModel = new \App\Models\UserOrchestra();
-        $users = $userOrchestraModel->getOrchestraUsers($_SESSION['current_orchestra_id']);
+        [$stats, $membersBySection] = $this->buildAdminRehearsalData($rehearsals);
 
         $orchestraModel = new \App\Models\Orchestra();
         $orchestra = $orchestraModel->findById($_SESSION['current_orchestra_id']);
         $showRehearsalInsights = !empty($orchestra['show_rehearsal_insights']);
 
-        $groupManager = \App\Core\GroupManager::getInstance();
-        $allSections = $groupManager->getAllSections();
-
-        // Flat config fallback: use all non-special groups
-        if (empty($allSections)) {
-            $allSections = array_filter($groupManager->getAllGroups(), fn($g) => ($g['type'] ?? '') !== 'special');
-        }
-
-        // Batch-load all promises for this orchestra
-        $promiseModel = new \App\Models\UserPromise();
-        $allPromises = $promiseModel->getAllForOrchestra($_SESSION['current_orchestra_id']);
-
-        // Batch-load groups and roles for visibility filtering
-        $rehearsalIds = array_column($rehearsals, 'id');
-        $groupsMap = [];
-        $rolesMap = [];
-        if (!empty($rehearsalIds)) {
-            // Groups are already in each rehearsal row from enrichRows().
-            // Build assoc map from the existing data.
-            foreach ($rehearsals as $r) {
-                $assoc = [];
-                foreach ($r['groups'] ?? [] as $name) {
-                    $assoc[$name] = 0;
-                }
-                $groupsMap[$r['id']] = $assoc;
-            }
-            // Role IDs need a batch load
-            $rolesMap = $this->rehearsalModel->getBatchRehearsalRoleIds($rehearsalIds);
-        }
-
-        $stats = [];
-        $membersBySection = [];
-
-        foreach ($rehearsals as $rehearsal) {
-            $rehearsalId = $rehearsal['id'];
-            $stats[$rehearsalId] = [
-                'attending' => 0,
-                'not_attending' => 0,
-                'no_response' => 0
-            ];
-
-            $membersBySection[$rehearsalId] = ['all' => []];
-            foreach ($allSections as $sectionId => $sectionData) {
-                $membersBySection[$rehearsalId][$sectionId] = [];
-            }
-
-            $groups = $groupsMap[$rehearsalId] ?? [];
-            $rehearsalRoleIds = $rolesMap[$rehearsalId] ?? [];
-
-            foreach ($users as $user) {
-                if (empty($user['can_attend_rehearsals'])) continue;
-
-                $memberRoleIds = $user['role_ids'] ?? [];
-
-                if ($this->rehearsalModel->isUserInRehearsalGroup($user['type'], $groups, $rehearsalRoleIds, $memberRoleIds)) {
-                    $promise = $allPromises[(int)$user['user_id']][$rehearsalId] ?? null;
-                    $status = 'no_response';
-                    $note = '';
-                    if ($promise) {
-                        $status = ($promise['status'] === 'yes') ? 'attending' : 'not_attending';
-                        $note = $promise['note'];
-                    }
-
-                    $stats[$rehearsalId][$status]++;
-
-                    $memberInfo = [
-                        'display_name' => $user['display_name'] ?? $user['email'] ?? '',
-                        'type' => $user['type'],
-                        'status' => $status,
-                        'note' => $note,
-                        'permissions' => $user['permissions'] ?? [],
-                        'id' => $user['user_id'],
-                        'roles' => $user['roles'] ?? []
-                    ];
-
-                    $membersBySection[$rehearsalId]['all'][] = $memberInfo;
-
-                    $userType = $groupManager->resolveAlias($user['type']);
-                    foreach ($allSections as $sectionId => $sectionData) {
-                        if ($groupManager->isUserInGroup($userType, $sectionId)) {
-                            $membersBySection[$rehearsalId][$sectionId][] = $memberInfo;
-                        }
-                    }
-                }
-            }
-        }
-
         $hasPastRehearsals = $this->rehearsalModel->hasPastRehearsals($_SESSION['current_orchestra_id']);
 
-        // Pre-compute deviation analysis to avoid per-rehearsal DB queries in the view
-        $deviationData = [];
-        if ($showRehearsalInsights) {
-            require_once __DIR__ . '/../Core/SmartDeviationDetector.php';
-            $deviationDetector = new \SmartDeviationDetector(\App\Core\Database::getInstance());
-            foreach ($rehearsals as $rehearsal) {
-                $rId = $rehearsal['id'];
-                $deviationData[$rId] = $deviationDetector->analyzeRehearsalFromData(
-                    $rehearsal,
-                    $stats[$rId] ?? ['attending' => 0, 'not_attending' => 0, 'no_response' => 0],
-                    $membersBySection[$rId]['all'] ?? []
-                );
-            }
-        }
+        $deviationData = $this->computeDeviationData($rehearsals, $stats, $membersBySection, $showRehearsalInsights);
 
         $this->render('promises/admin', [
             'currentPage' => 'admin',
             'rehearsals' => $rehearsals,
             'stats' => $stats,
             'membersBySection' => $membersBySection,
-            'showOld' => $showOld,
             'showRehearsalInsights' => $showRehearsalInsights,
             'hasPastRehearsals' => $hasPastRehearsals,
             'deviationData' => $deviationData,
+            'hasMoreRehearsals' => $hasMore,
+            'totalRehearsals' => $totalRehearsals,
             'sidebarStats' => !empty($rehearsals) ? array_merge(
                 $stats[$rehearsals[0]['id']] ?? ['attending' => 0, 'not_attending' => 0, 'no_response' => 0],
                 [
@@ -658,6 +1043,212 @@ class PromiseController extends Controller
                 ]
             ) : null
         ]);
+    }
+
+    /**
+     * AJAX endpoint: returns a batch of admin rehearsal cards as HTML partial.
+     * Supports progressive loading via offset + batch size.
+     */
+    private const LAZY_BATCH_SIZE = 10;
+
+    public function adminLazy($params = [])
+    {
+        $this->validateOrchestraContext($params);
+        $this->requireAnyPermission('can_view_all_section_stats', 'can_manage_ensemble');
+
+        $offset = max(0, (int)($_GET['offset'] ?? self::INITIAL_LIMIT));
+        $allRehearsals = $this->rehearsalModel->getUpcoming($_SESSION['current_orchestra_id'], false);
+        $remaining = array_slice($allRehearsals, $offset);
+        $rehearsals = array_slice($remaining, 0, self::LAZY_BATCH_SIZE);
+        $hasMore = count($remaining) > self::LAZY_BATCH_SIZE;
+        $nextOffset = $offset + count($rehearsals);
+
+        if (empty($rehearsals)) {
+            echo '';
+            return;
+        }
+
+        [$stats, $membersBySection] = $this->buildAdminRehearsalData($rehearsals);
+
+        $orchestraModel = new \App\Models\Orchestra();
+        $orchestra = $orchestraModel->findById($_SESSION['current_orchestra_id']);
+        $showRehearsalInsights = !empty($orchestra['show_rehearsal_insights']);
+
+        $deviationData = $this->computeDeviationData($rehearsals, $stats, $membersBySection, $showRehearsalInsights);
+
+        $this->renderPartial('components/promises-dashboard-wrapper', [
+            'rehearsals' => $rehearsals,
+            'stats' => $stats,
+            'membersBySection' => $membersBySection,
+            'showRehearsalInsights' => $showRehearsalInsights,
+            'deviationData' => $deviationData,
+            'isAdmin' => true,
+            'lazyPartial' => true,
+        ]);
+
+        if ($hasMore) {
+            $base = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '');
+            $nextUrl = htmlspecialchars($base . '/promises/admin-lazy?offset=' . $nextOffset);
+            echo '<div data-lazy-next-url="' . $nextUrl . '" style="display:none"></div>';
+        }
+    }
+
+    /**
+     * AJAX endpoint: returns a batch of past rehearsal cards.
+     */
+    public function adminPast($params = [])
+    {
+        $this->validateOrchestraContext($params);
+        $this->requireAnyPermission('can_view_all_section_stats', 'can_manage_ensemble');
+
+        $offset = max(0, (int)($_GET['offset'] ?? 0));
+        $result = $this->rehearsalModel->getPastPaginated(
+            (int)$_SESSION['current_orchestra_id'],
+            $offset,
+            5
+        );
+
+        $rehearsals = array_reverse($result['rows']);
+        if (empty($rehearsals)) {
+            echo '';
+            return;
+        }
+
+        [$stats, $membersBySection] = $this->buildAdminRehearsalData($rehearsals);
+
+        $orchestraModel = new \App\Models\Orchestra();
+        $orchestra = $orchestraModel->findById($_SESSION['current_orchestra_id']);
+        $showRehearsalInsights = !empty($orchestra['show_rehearsal_insights']);
+
+        $deviationData = $this->computeDeviationData($rehearsals, $stats, $membersBySection, $showRehearsalInsights);
+
+        $this->renderPartial('components/promises-dashboard-wrapper', [
+            'rehearsals' => $rehearsals,
+            'stats' => $stats,
+            'membersBySection' => $membersBySection,
+            'showRehearsalInsights' => $showRehearsalInsights,
+            'deviationData' => $deviationData,
+            'isAdmin' => true,
+            'lazyPartial' => true,
+        ]);
+
+        $nextOffset = $offset + count($rehearsals);
+        if ($nextOffset < $result['total']) {
+            $base = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '');
+            $nextUrl = htmlspecialchars($base . '/promises/admin-past?offset=' . $nextOffset);
+            echo '<div data-lazy-button-url="' . $nextUrl . '" style="display:none"></div>';
+        }
+    }
+
+    /**
+     * Build stats and membersBySection arrays for a set of rehearsals.
+     *
+     * @return array{0: array, 1: array} [$stats, $membersBySection]
+     */
+    private function buildAdminRehearsalData(array $rehearsals): array
+    {
+        $userOrchestraModel = new \App\Models\UserOrchestra();
+        $users = $userOrchestraModel->getOrchestraUsers($_SESSION['current_orchestra_id']);
+
+        $groupManager = \App\Core\GroupManager::getInstance();
+        $allSections = $groupManager->getAllSections();
+        if (empty($allSections)) {
+            $allSections = array_filter($groupManager->getAllGroups(), fn($g) => ($g['type'] ?? '') !== 'special');
+        }
+
+        $promiseModel = new \App\Models\UserPromise();
+        $allPromises = $promiseModel->getAllForOrchestra($_SESSION['current_orchestra_id']);
+
+        $rehearsalIds = array_column($rehearsals, 'id');
+        $groupsMap = [];
+        $rolesMap = [];
+        if (!empty($rehearsalIds)) {
+            foreach ($rehearsals as $r) {
+                $assoc = [];
+                foreach ($r['groups'] ?? [] as $name) {
+                    $assoc[$name] = 0;
+                }
+                $groupsMap[$r['id']] = $assoc;
+            }
+            $rolesMap = $this->rehearsalModel->getBatchRehearsalRoleIds($rehearsalIds);
+        }
+
+        $stats = [];
+        $membersBySection = [];
+
+        foreach ($rehearsals as $rehearsal) {
+            $rehearsalId = $rehearsal['id'];
+            $stats[$rehearsalId] = ['attending' => 0, 'not_attending' => 0, 'no_response' => 0];
+
+            $membersBySection[$rehearsalId] = ['all' => []];
+            foreach ($allSections as $sectionId => $sectionData) {
+                $membersBySection[$rehearsalId][$sectionId] = [];
+            }
+
+            $groups = $groupsMap[$rehearsalId] ?? [];
+            $rehearsalRoleIds = $rolesMap[$rehearsalId] ?? [];
+
+            foreach ($users as $user) {
+                if (empty($user['can_attend_rehearsals'])) continue;
+
+                $memberRoleIds = $user['role_ids'] ?? [];
+                if (!$this->rehearsalModel->isUserInRehearsalGroup($user['type'], $groups, $rehearsalRoleIds, $memberRoleIds)) {
+                    continue;
+                }
+
+                $promise = $allPromises[(int)$user['user_id']][$rehearsalId] ?? null;
+                $status = 'no_response';
+                $note = '';
+                if ($promise) {
+                    $status = ($promise['status'] === 'yes') ? 'attending' : 'not_attending';
+                    $note = $promise['note'];
+                }
+
+                $stats[$rehearsalId][$status]++;
+
+                $memberInfo = [
+                    'display_name' => $user['display_name'] ?? $user['email'] ?? '',
+                    'type' => $user['type'],
+                    'status' => $status,
+                    'note' => $note,
+                    'permissions' => $user['permissions'] ?? [],
+                    'id' => $user['user_id'],
+                    'roles' => $user['roles'] ?? []
+                ];
+
+                $membersBySection[$rehearsalId]['all'][] = $memberInfo;
+
+                $userType = $groupManager->resolveAlias($user['type']);
+                foreach ($allSections as $sectionId => $sectionData) {
+                    if ($groupManager->isUserInGroup($userType, $sectionId)) {
+                        $membersBySection[$rehearsalId][$sectionId][] = $memberInfo;
+                    }
+                }
+            }
+        }
+
+        return [$stats, $membersBySection];
+    }
+
+    /**
+     * Pre-compute deviation analysis for a set of rehearsals.
+     */
+    private function computeDeviationData(array $rehearsals, array $stats, array $membersBySection, bool $showInsights): array
+    {
+        if (!$showInsights) return [];
+
+        require_once __DIR__ . '/../Core/SmartDeviationDetector.php';
+        $detector = new \SmartDeviationDetector(\App\Core\Database::getInstance());
+        $data = [];
+        foreach ($rehearsals as $rehearsal) {
+            $rId = $rehearsal['id'];
+            $data[$rId] = $detector->analyzeRehearsalFromData(
+                $rehearsal,
+                $stats[$rId] ?? ['attending' => 0, 'not_attending' => 0, 'no_response' => 0],
+                $membersBySection[$rId]['all'] ?? []
+            );
+        }
+        return $data;
     }
 
     /**
