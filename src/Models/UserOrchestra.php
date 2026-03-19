@@ -279,7 +279,9 @@ class UserOrchestra extends Model
     {
         $roles = $this->getUserRoles($userId, $orchestraId);
         foreach ($roles as $role) {
-            $perms = json_decode($role['permissions'] ?? '[]', true) ?: [];
+            $perms = !empty($role['is_system'])
+                ? Role::getConductorPermissions()
+                : (json_decode($role['permissions'] ?? '[]', true) ?: []);
             if (in_array($permission, $perms, true)) return true;
         }
         return false;
@@ -293,7 +295,9 @@ class UserOrchestra extends Model
         $roles = $this->getUserRoles($userId, $orchestraId);
         $granted = [];
         foreach ($roles as $role) {
-            $perms = json_decode($role['permissions'] ?? '[]', true) ?: [];
+            $perms = !empty($role['is_system'])
+                ? Role::getConductorPermissions()
+                : (json_decode($role['permissions'] ?? '[]', true) ?: []);
             $granted = array_merge($granted, $perms);
         }
         $granted = array_unique($granted);
@@ -396,7 +400,9 @@ class UserOrchestra extends Model
 
             $allPerms = [];
             foreach ($roles as $role) {
-                $rolePerms = json_decode($role['permissions'] ?? '[]', true) ?: [];
+                $rolePerms = !empty($role['is_system'])
+                    ? Role::getConductorPermissions()
+                    : (json_decode($role['permissions'] ?? '[]', true) ?: []);
                 $allPerms = array_merge($allPerms, $rolePerms);
             }
             $allPerms = array_unique($allPerms);

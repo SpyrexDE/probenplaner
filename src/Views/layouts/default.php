@@ -357,6 +357,30 @@ $hideNavbar = $isAuthPage || $isStandalone;
     <?php include __DIR__ . '/../components/help-modal.php'; ?>
     <?php include __DIR__ . '/../components/notification-system.php'; ?>
 
+    <?php if (!empty($_SESSION['prompt_username_change']) && !empty($_SESSION['current_org_slug']) && !empty($_SESSION['current_orchestra_slug'])): ?>
+        <?php unset($_SESSION['prompt_username_change']); ?>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var profileUrl = <?= json_encode(
+                    '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '') . '/profile?highlight=display_name'
+                ) ?>;
+                Swal.fire({
+                    title: 'Benutzername ändern',
+                    html: '<p style="text-align:left;">Dein Anzeigename sieht noch wie eine E-Mail-Adresse aus. Bitte ändere ihn in deinen echten Namen, damit dich die anderen Mitglieder erkennen können.</p>',
+                    icon: 'info',
+                    confirmButtonText: 'Jetzt ändern',
+                    confirmButtonColor: 'var(--color-primary, #478cf4)',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        window.location.href = profileUrl;
+                    }
+                });
+            });
+        </script>
+    <?php endif; ?>
+
     <?php include __DIR__ . '/../components/sidebar-stats.js.php'; ?>
     <?php include __DIR__ . '/../components/service-worker.php'; ?>
 </body>

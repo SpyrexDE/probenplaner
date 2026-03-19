@@ -60,6 +60,9 @@ class RehearsalController extends Controller
         $groupManager = \App\Core\GroupManager::getInstance();
         $groupConfig = $groupManager->getConfig();
 
+        $orchestraModel = new \App\Models\Orchestra();
+        $orchestra = $orchestraModel->findById($orchestraId);
+
         $this->render('rehearsals/index', [
             'currentPage' => 'rehearsals',
             'rehearsals' => $rehearsals,
@@ -68,6 +71,7 @@ class RehearsalController extends Controller
             'groupConfig' => $groupConfig,
             'hasMoreRehearsals' => $hasMore,
             'totalRehearsals' => $totalRehearsals,
+            'allowRehearsalImport' => !empty($orchestra['allow_rehearsal_import']),
         ]);
     }
 
@@ -286,6 +290,15 @@ class RehearsalController extends Controller
         $this->requirePermission('can_manage_rehearsals');
 
         $orchestraId = (int)$_SESSION['current_orchestra_id'];
+
+        $orchestraModel = new \App\Models\Orchestra();
+        $orchestra = $orchestraModel->findById($orchestraId);
+        if (empty($orchestra['allow_rehearsal_import'])) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Import-Funktion ist deaktiviert']);
+            http_response_code(403);
+            exit;
+        }
         
         $roleModel = new Role();
         $roles = $roleModel->getByOrchestra($orchestraId);
@@ -334,6 +347,14 @@ class RehearsalController extends Controller
         
         header('Content-Type: application/json');
         $orchestraId = (int)$_SESSION['current_orchestra_id'];
+
+        $orchestraModel = new \App\Models\Orchestra();
+        $orchestra = $orchestraModel->findById($orchestraId);
+        if (empty($orchestra['allow_rehearsal_import'])) {
+            echo json_encode(['success' => false, 'error' => 'Import-Funktion ist deaktiviert']);
+            http_response_code(403);
+            exit;
+        }
         
         $body = json_decode(file_get_contents('php://input'), true) ?: [];
         $rehearsals = $body['rehearsals'] ?? [];

@@ -302,10 +302,13 @@ class PromiseController extends Controller
             $userRoleIds = array_map(fn($r) => (int)$r['id'], $userRoles);
         }
         $allRehearsals = $this->rehearsalModel->getForUser($sectionName, $_SESSION['current_orchestra_id'], false, $userRoleIds);
-        
+
         $totalRehearsals = count($allRehearsals);
         $hasMore = $totalRehearsals > self::INITIAL_LIMIT;
         $rehearsals = $hasMore ? array_slice($allRehearsals, 0, self::INITIAL_LIMIT) : $allRehearsals;
+
+        // Analytics rehearsals (last 10, independent of lazy loading)
+        $analyticsRehearsals = array_slice($allRehearsals, 0, 10);
 
         $orchestraModel = new \App\Models\Orchestra();
         $orchestra = $orchestraModel->findById($_SESSION['current_orchestra_id']);
@@ -491,12 +494,17 @@ class PromiseController extends Controller
 
         $hasPastRehearsals = $this->rehearsalModel->hasPastRehearsals($_SESSION['current_orchestra_id']);
 
+        // Analytics stats (last 10, independent of lazy loading)
+        [$analyticsStats] = $this->buildLeaderRehearsalData($analyticsRehearsals, $viewAllSections, $members, $userType, $orchestraId);
+
         $this->render('promises/leader', [
             'currentPage' => 'leader',
             'rehearsals' => $rehearsals,
             'stats' => $stats,
             'membersBySection' => $membersBySection,
             'memberPromises' => $memberPromises,
+            'analyticsRehearsals' => $analyticsRehearsals,
+            'analyticsStats' => $analyticsStats,
             'canViewAllSections' => $canViewAllSections,
             'currentlyViewingAll' => $viewAllSections,
             'leaderSection' => $leaderSectionId,
@@ -1010,7 +1018,12 @@ class PromiseController extends Controller
 
         $rehearsals = $hasMore ? array_slice($allRehearsals, 0, self::INITIAL_LIMIT) : $allRehearsals;
 
+        // Stats for displayed cards
         [$stats, $membersBySection] = $this->buildAdminRehearsalData($rehearsals);
+
+        // Stats for analytics (last 10, independent of lazy loading)
+        $analyticsRehearsals = array_slice($allRehearsals, 0, 10);
+        [$analyticsStats] = $this->buildAdminRehearsalData($analyticsRehearsals);
 
         $orchestraModel = new \App\Models\Orchestra();
         $orchestra = $orchestraModel->findById($_SESSION['current_orchestra_id']);
@@ -1025,6 +1038,8 @@ class PromiseController extends Controller
             'rehearsals' => $rehearsals,
             'stats' => $stats,
             'membersBySection' => $membersBySection,
+            'analyticsRehearsals' => $analyticsRehearsals,
+            'analyticsStats' => $analyticsStats,
             'showRehearsalInsights' => $showRehearsalInsights,
             'hasPastRehearsals' => $hasPastRehearsals,
             'deviationData' => $deviationData,

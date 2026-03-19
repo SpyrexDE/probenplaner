@@ -191,6 +191,11 @@ class AuthController extends Controller
             $_SESSION['display_name'] = $user['display_name'] ?? '';
         }
 
+        // Flag to prompt username change if display_name looks like an email
+        if (str_contains($user['display_name'] ?? '', '@')) {
+            $_SESSION['prompt_username_change'] = true;
+        }
+
         $this->setFlash('success', 'Sie wurden erfolgreich eingeloggt.');
 
         // Org-admin → orga panel

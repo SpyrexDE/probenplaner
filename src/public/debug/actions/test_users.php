@@ -182,14 +182,10 @@ if ($_POST['action'] === 'generate_full_setup') {
         $conn->query("INSERT INTO users (email, display_name, password, is_org_admin, organization_id) VALUES ('harmonia-admin@probenplaner.local', 'Harmonia Admin', '{$adminPw}', 1, {$orgId})");
 
         // ── 2. Orchestras ────────────────────────────────────────────
-        // Build section_config JSON from the default config
-        $defaultConfig = require __DIR__ . '/../../../config/orchestra_groups.php';
-        $sectionConfigJson = json_encode($defaultConfig);
-
-        $conn->query("INSERT INTO orchestras (name, slug, organization_id, section_config) VALUES ('JSH', 'jsh', {$orgId}, '" . $conn->real_escape_string($sectionConfigJson) . "')");
+        $conn->query("INSERT INTO orchestras (name, slug, organization_id) VALUES ('JSH', 'jsh', {$orgId})");
         $sinfonieId = $conn->insert_id;
 
-        $conn->query("INSERT INTO orchestras (name, slug, organization_id, section_config) VALUES ('Kammerensemble Harmonia', 'kammer-harmonia', {$orgId}, '" . $conn->real_escape_string($sectionConfigJson) . "')");
+        $conn->query("INSERT INTO orchestras (name, slug, organization_id) VALUES ('Kammerensemble Harmonia', 'kammer-harmonia', {$orgId})");
         $kammerId = $conn->insert_id;
         $counts['orchestras'] = 2;
 

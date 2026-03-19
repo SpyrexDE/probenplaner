@@ -128,9 +128,11 @@ $attendanceTrendValue = 0;
 $responseTrendValue = 0;
 
 
-// Overall statistics (last 10)
-    $rehearsalsForStats = array_slice($rehearsals ?? [], -10);
-    $totalRehearsals = count($rehearsalsForStats);
+// Overall statistics (last 10, independent of lazy loading)
+    $statsRehearsals = $analyticsRehearsals ?? $rehearsals ?? [];
+    $statsData = $analyticsStats ?? $stats;
+    $rehearsalsForStats = array_slice($statsRehearsals, -10);
+    $analyticsCount = count($rehearsalsForStats);
     $totalPromises = 0;
     $totalAttending = 0;
     $totalNotAttending = 0;
@@ -142,11 +144,11 @@ $responseTrendValue = 0;
 
     foreach ($rehearsalsForStats as $rehearsal) {
         $rehearsalId = $rehearsal['id'];
-        if (isset($stats[$rehearsalId])) {
-            $totalAttending += $stats[$rehearsalId]['attending'] ?? 0;
-            $totalNotAttending += $stats[$rehearsalId]['not_attending'] ?? 0;
-            $totalNoResponse += $stats[$rehearsalId]['no_response'] ?? 0;
-            $totalPromises += ($stats[$rehearsalId]['attending'] ?? 0) + ($stats[$rehearsalId]['not_attending'] ?? 0) + ($stats[$rehearsalId]['no_response'] ?? 0);
+        if (isset($statsData[$rehearsalId])) {
+            $totalAttending += $statsData[$rehearsalId]['attending'] ?? 0;
+            $totalNotAttending += $statsData[$rehearsalId]['not_attending'] ?? 0;
+            $totalNoResponse += $statsData[$rehearsalId]['no_response'] ?? 0;
+            $totalPromises += ($statsData[$rehearsalId]['attending'] ?? 0) + ($statsData[$rehearsalId]['not_attending'] ?? 0) + ($statsData[$rehearsalId]['no_response'] ?? 0);
         }
     }
 
@@ -161,7 +163,7 @@ $responseTrendValue = 0;
     $responseTrendValue = 0;
 
     // Historical data (last 20)
-    $rehearsalsForTrends = array_slice($rehearsals ?? [], -20);
+    $rehearsalsForTrends = array_slice($statsRehearsals, -20);
     $currentPeriodRehearsals = array_slice($rehearsalsForTrends, -10); // Last 10
     $previousPeriodRehearsals = array_slice($rehearsalsForTrends, 0, 10); // Previous 10
 
@@ -173,10 +175,10 @@ $responseTrendValue = 0;
 
         foreach ($currentPeriodRehearsals as $rehearsal) {
             $rehearsalId = $rehearsal['id'];
-            if (isset($stats[$rehearsalId])) {
-                $attending = $stats[$rehearsalId]['attending'] ?? 0;
-                $notAttending = $stats[$rehearsalId]['not_attending'] ?? 0;
-                $noResponse = $stats[$rehearsalId]['no_response'] ?? 0;
+            if (isset($statsData[$rehearsalId])) {
+                $attending = $statsData[$rehearsalId]['attending'] ?? 0;
+                $notAttending = $statsData[$rehearsalId]['not_attending'] ?? 0;
+                $noResponse = $statsData[$rehearsalId]['no_response'] ?? 0;
                 $total = $attending + $notAttending + $noResponse;
 
                 if ($total > 0) {
@@ -194,10 +196,10 @@ $responseTrendValue = 0;
 
         foreach ($previousPeriodRehearsals as $rehearsal) {
             $rehearsalId = $rehearsal['id'];
-            if (isset($stats[$rehearsalId])) {
-                $attending = $stats[$rehearsalId]['attending'] ?? 0;
-                $notAttending = $stats[$rehearsalId]['not_attending'] ?? 0;
-                $noResponse = $stats[$rehearsalId]['no_response'] ?? 0;
+            if (isset($statsData[$rehearsalId])) {
+                $attending = $statsData[$rehearsalId]['attending'] ?? 0;
+                $notAttending = $statsData[$rehearsalId]['not_attending'] ?? 0;
+                $noResponse = $statsData[$rehearsalId]['no_response'] ?? 0;
                 $total = $attending + $notAttending + $noResponse;
 
                 if ($total > 0) {
@@ -245,17 +247,17 @@ $rehearsalDates = [];
 $currentRehearsalIndex = 0;
 
 // Chart data processing
-    // Last 10 rehearsals
-    $rehearsalsForCharts = array_slice($rehearsals ?? [], -10);
+    // Last 10 rehearsals for charts
+    $rehearsalsForCharts = array_slice($statsRehearsals, -10);
 
     foreach ($rehearsalsForCharts as $rehearsal) {
         $rehearsalId = $rehearsal['id'];
         $rehearsalDates[] = $rehearsal['date'];
 
-        if (isset($stats[$rehearsalId])) {
-            $attending = $stats[$rehearsalId]['attending'] ?? 0;
-            $notAttending = $stats[$rehearsalId]['not_attending'] ?? 0;
-            $noResponse = $stats[$rehearsalId]['no_response'] ?? 0;
+        if (isset($statsData[$rehearsalId])) {
+            $attending = $statsData[$rehearsalId]['attending'] ?? 0;
+            $notAttending = $statsData[$rehearsalId]['not_attending'] ?? 0;
+            $noResponse = $statsData[$rehearsalId]['no_response'] ?? 0;
             $total = $attending + $notAttending + $noResponse;
 
             $attendanceRate = $total > 0 ? ($attending / $total) * 100 : 0;
@@ -310,8 +312,20 @@ foreach ($rehearsals ?? [] as $rehearsal) {
 ?>
 
 <div class="promises-dashboard">
-    <!-- Modern Analytics Overview - Only show when not viewing old rehearsals and not for leaders -->
-    <?php if (!$lazyPartial && !($isLeader ?? false)): ?>
+    <!-- Rehearsals Container -->
+    <div class="rehearsals-container">
+        <!-- Date Separator and Load Past Button (Universal) -->
+        <?php if (!$lazyPartial && (!empty($rehearsals) || ($hasPastRehearsals ?? false))): ?>
+            <?php 
+            $pastEndpoint = ($isAdmin ?? false) ? 'admin-past' : 'leader-past';
+            $pastLazyUrl = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '') . '/promises/' . $pastEndpoint . '?offset=0';
+            $pastLazyUrl .= (($currentlyViewingAll ?? false) ? '&viewAll=1' : '');
+            include __DIR__ . '/date-separator.php'; 
+            ?>
+        <?php endif; ?>
+
+        <!-- Analytics Overview - below HEUTE divider -->
+        <?php if (!$lazyPartial && !($isLeader ?? false)): ?>
         <div class="analytics-overview">
             <div class="analytics-card attendance-card">
                 <div class="analytics-card-background"></div>
@@ -365,20 +379,6 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                 </div>
             </div>
         </div>
-    <?php endif; ?>
-
-    <!-- Toggle for Old Rehearsals removed (handled universally now by date-separator) -->
-
-    <!-- Rehearsals Container -->
-    <div class="rehearsals-container">
-        <!-- Date Separator and Load Past Button (Universal) -->
-        <?php if (!$lazyPartial && (!empty($rehearsals) || ($hasPastRehearsals ?? false))): ?>
-            <?php 
-            $pastEndpoint = ($isAdmin ?? false) ? 'admin-past' : 'leader-past';
-            $pastLazyUrl = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '') . '/promises/' . $pastEndpoint . '?offset=0';
-            $pastLazyUrl .= (($currentlyViewingAll ?? false) ? '&viewAll=1' : '');
-            include __DIR__ . '/date-separator.php'; 
-            ?>
         <?php endif; ?>
 
         <?php if (empty($rehearsals)): ?>
@@ -417,10 +417,16 @@ foreach ($rehearsals ?? [] as $rehearsal) {
     // Interactions
     document.addEventListener('DOMContentLoaded', function() {
 
+        // Resolve theme colors from CSS variables
+        var rootStyle = getComputedStyle(document.documentElement);
+        var successColor = rootStyle.getPropertyValue('--color-success').trim() || '#10b981';
+        var successLight = rootStyle.getPropertyValue('--color-success-light').trim() || '#34d399';
+        var primaryColor = rootStyle.getPropertyValue('--color-primary').trim() || '#3b82f6';
+        var primaryLight = rootStyle.getPropertyValue('--color-primary-light').trim() || '#60a5fa';
+
         initializeCharts();
 
         function initializeCharts() {
-            // Chart initialization check
 
             // Attendance chart
             const attendanceOptions = {
@@ -428,7 +434,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                     name: 'Zusagen %',
                     data: <?= json_encode($attendanceHistory) ?>
                 }],
-                colors: ['#10b981'],
+                colors: [successColor],
                 chart: {
                     type: 'area',
                     height: <?= DashboardConstants::CHART_HEIGHT ?>,
@@ -449,15 +455,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                 stroke: {
                     curve: 'smooth',
                     width: 3,
-                    colors: ['#10b981'],
-                    gradient: {
-                        enabled: true,
-                        type: 'horizontal',
-                        shadeIntensity: 0.5,
-                        opacityFrom: 1,
-                        opacityTo: 0.8,
-                        stops: [0, 100]
-                    }
+                    colors: [successColor]
                 },
                 fill: {
                     type: "gradient",
@@ -468,12 +466,12 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                         stops: [0, 100],
                         colorStops: [{
                                 offset: 0,
-                                color: '#10b981',
+                                color: successColor,
                                 opacity: 0.2
                             },
                             {
                                 offset: 100,
-                                color: '#34d399',
+                                color: successLight,
                                 opacity: 0.05
                             }
                         ]
@@ -481,7 +479,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                 },
                 markers: {
                     size: 4,
-                    colors: ['#10b981'],
+                    colors: [successColor],
                     strokeColors: '#ffffff',
                     strokeWidth: 2,
                     hover: {
@@ -517,7 +515,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                     name: 'Rückmeldungen %',
                     data: <?= json_encode($responseHistory) ?>
                 }],
-                colors: ['#3b82f6'],
+                colors: [primaryColor],
                 chart: {
                     type: 'area',
                     height: <?= DashboardConstants::CHART_HEIGHT ?>,
@@ -533,15 +531,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                 stroke: {
                     curve: 'smooth',
                     width: 3,
-                    colors: ['#3b82f6'],
-                    gradient: {
-                        enabled: true,
-                        type: 'horizontal',
-                        shadeIntensity: 0.5,
-                        opacityFrom: 1,
-                        opacityTo: 0.8,
-                        stops: [0, 100]
-                    }
+                    colors: [primaryColor]
                 },
                 fill: {
                     type: "gradient",
@@ -552,12 +542,12 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                         stops: [0, 100],
                         colorStops: [{
                                 offset: 0,
-                                color: '#3b82f6',
+                                color: primaryColor,
                                 opacity: 0.2
                             },
                             {
                                 offset: 100,
-                                color: '#60a5fa',
+                                color: primaryLight,
                                 opacity: 0.05
                             }
                         ]
@@ -565,7 +555,7 @@ foreach ($rehearsals ?? [] as $rehearsal) {
                 },
                 markers: {
                     size: 4,
-                    colors: ['#3b82f6'],
+                    colors: [primaryColor],
                     strokeColors: '#ffffff',
                     strokeWidth: 2,
                     hover: {

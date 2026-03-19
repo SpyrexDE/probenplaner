@@ -212,6 +212,16 @@ include __DIR__ . '/../components/theme-selector.php';
         background: var(--color-error-100, #fee2e2);
         color: var(--color-error-700, #b91c1c);
     }
+
+    @keyframes field-highlight-pulse {
+        0%, 100% { box-shadow: 0 0 0 3px rgba(71, 140, 244, 0.3); }
+        50% { box-shadow: 0 0 0 6px rgba(71, 140, 244, 0.15); }
+    }
+
+    .field-highlight {
+        animation: field-highlight-pulse 1.5s ease-in-out 3;
+        border-color: var(--color-primary, #478cf4) !important;
+    }
 </style>
 <div id="settingsSaveIndicator" class="settings-save-indicator"></div>
 
@@ -273,6 +283,22 @@ include __DIR__ . '/../components/theme-selector.php';
         }
 
         if (window.SettingsEngine) window.SettingsEngine.init();
+
+        // Highlight field from query param (e.g. after username change prompt)
+        var params = new URLSearchParams(window.location.search);
+        var highlightField = params.get('highlight');
+        if (highlightField) {
+            var field = document.getElementById(highlightField);
+            if (field) {
+                field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                field.classList.add('field-highlight');
+                field.focus();
+                field.addEventListener('animationend', function() {
+                    field.classList.remove('field-highlight');
+                });
+            }
+            history.replaceState(null, '', window.location.pathname);
+        }
 
         // Theme selection
         document.querySelectorAll('.theme-radio-compact').forEach(function(radio) {

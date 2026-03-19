@@ -117,6 +117,10 @@ class HomeController extends Controller
         // Force theme re-fetch from DB on next page load
         unset($_SESSION['theme']);
 
+        if (str_contains($user['display_name'] ?? '', '@')) {
+            $_SESSION['prompt_username_change'] = true;
+        }
+
         $this->setFlash('success', 'Sie wurden erfolgreich eingeloggt.');
 
         $this->redirect('/orchestras/select');

@@ -612,9 +612,11 @@
             <button type="button" class="bulk-select-toggle" id="bulkQuickAdd" title="Neue Probe">
                 <i class="fas fa-plus"></i>
             </button>
+            <?php if (!empty($allowRehearsalImport)): ?>
             <button type="button" class="bulk-select-toggle" onclick="openAiImportModal()" title="KI Import">
                 <i class="fas fa-wand-magic-sparkles"></i>
             </button>
+            <?php endif; ?>
             <button type="button" class="bulk-select-toggle" id="bulkSelectToggle" title="Mehrfachauswahl">
                 <i class="fas fa-check-double"></i>
             </button>

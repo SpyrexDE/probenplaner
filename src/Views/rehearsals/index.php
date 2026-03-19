@@ -99,7 +99,9 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
     </div>
 </dialog>
 
-<?php include __DIR__ . '/../components/ai-rehearsal-import-modal.php'; ?>
+<?php if (!empty($allowRehearsalImport)): ?>
+    <?php include __DIR__ . '/../components/ai-rehearsal-import-modal.php'; ?>
+<?php endif; ?>
 
 <script>
 (function() {

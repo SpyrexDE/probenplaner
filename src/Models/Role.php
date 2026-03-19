@@ -116,6 +116,14 @@ class Role extends Model
     }
 
     /**
+     * @return string[] Hardcoded permissions for the immutable Leitung role
+     */
+    public static function getConductorPermissions(): array
+    {
+        return self::CONDUCTOR_PERMISSIONS;
+    }
+
+    /**
      * @return array All roles for an orchestra, ordered by sort_order
      */
     public function getByOrchestra(int $orchestraId): array

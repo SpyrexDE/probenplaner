@@ -152,6 +152,16 @@ class FieldRegistry
                 'permission' => 'conductor',
             ],
             [
+                'name'        => 'allow_rehearsal_import',
+                'type'        => 'toggle',
+                'label'       => 'KI Probenplan-Import',
+                'description' => 'Erlaubt das Importieren von Probenplänen über die KI-Import-Funktion.',
+                'group'       => 'features',
+                'default'     => true,
+                'save'        => 'auto',
+                'permission'  => 'conductor',
+            ],
+            [
                 'name'       => 'section_config',
                 'type'       => 'section_config',
                 'label'      => 'Registerstruktur anpassen',
