@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS permissions (
     description VARCHAR(255) NULL
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 -- Seed ensemble-level permissions (can_ prefix matches existing session keys)
-INSERT INTO permissions (name, scope, description)
+INSERT IGNORE INTO permissions (name, scope, description)
 VALUES (
         'can_view_own_section_stats',
         'ensemble',
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS user_ensemble_permissions (
     FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 -- Migrate conductor role -> all permissions
-INSERT INTO user_ensemble_permissions (user_orchestra_id, permission_id)
+INSERT IGNORE INTO user_ensemble_permissions (user_orchestra_id, permission_id)
 SELECT uo.id,
     p.id
 FROM user_orchestras uo
@@ -60,7 +60,7 @@ FROM user_orchestras uo
 WHERE uo.role = 'conductor'
     AND p.scope = 'ensemble';
 -- Migrate leader role -> section stat permissions
-INSERT INTO user_ensemble_permissions (user_orchestra_id, permission_id)
+INSERT IGNORE INTO user_ensemble_permissions (user_orchestra_id, permission_id)
 SELECT uo.id,
     p.id
 FROM user_orchestras uo

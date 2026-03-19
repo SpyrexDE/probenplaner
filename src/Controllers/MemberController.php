@@ -55,7 +55,7 @@ class MemberController extends Controller
         // Conductors (Leitung) are not shown in the member listing
         $members = array_filter($members, function ($m) {
             foreach ($m['roles'] ?? [] as $r) {
-                if (!empty($r['is_system'])) return false;
+                if (($r['name'] ?? '') === 'Leitung') return false;
             }
             return true;
         });

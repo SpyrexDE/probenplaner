@@ -1738,14 +1738,22 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             [...this.selected].forEach(id => {
                 const card = document.querySelector(`[data-rehearsal-id="${id}"]`);
                 if (!card) return;
-                const apiUrl = card.dataset.apiUrl;
-                if (!apiUrl) return;
 
-                fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ field: 'infos', value: JSON.stringify([{ emoji, text }]) }),
-                });
+                // Update badge row live
+                const badges = card.querySelector('.rehearsal-badges');
+                if (badges) {
+                    const infoTag = document.createElement('span');
+                    infoTag.className = 'ie-info-tag';
+                    infoTag.style.cssText = 'font-size:11px;padding:2px 6px;border-radius:var(--radius-sm);display:inline-flex;align-items:center;justify-content:center;width:fit-content;margin-right:var(--space-1);background-color:transparent;border:1px solid var(--color-border);color:var(--color-text-primary);transition:all 0.25s ease;';
+                    infoTag.textContent = emoji;
+                    badges.appendChild(infoTag);
+                }
+
+                // addInfoItem appends to the editor's items array and triggers auto-save
+                card.querySelector('.infobox-editor')?.addInfoItem?.(emoji, text);
+
+                // Keep data-note in sync for search
+                card.dataset.note = (card.dataset.note ? card.dataset.note + ' ' : '') + emoji + ' ' + text;
             });
             this._closePopover();
             window.notifySuccess?.('Info zu ' + this.selected.size + ' Terminen hinzugefügt');

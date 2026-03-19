@@ -434,11 +434,6 @@ class AttendanceController extends Controller
             }
         }
 
-        // Fallback: first rehearsal
-        if (!$bestId && !empty($rehearsals)) {
-            $bestId = (int)$rehearsals[0]['id'];
-        }
-
         return $bestId;
     }
 }

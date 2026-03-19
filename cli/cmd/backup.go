@@ -577,6 +577,17 @@ var backupRestoreCmd = &cobra.Command{
 		}
 		defer gr.Close()
 
+		// Wipe existing tables to prevent schema merging anomalies
+		log.Info("Wiping existing database tables to prevent schema anomalies...")
+		dropArgs := append(append([]string{"compose"}, composeFiles...), "exec", "-T", "db", "sh", "-c",
+			"mysql -N -s -u \"$MYSQL_USER\" -p\"$MYSQL_PASSWORD\" \"$MYSQL_DATABASE\" -e \"SHOW TABLES\" | awk '{print \"SET FOREIGN_KEY_CHECKS=0; DROP TABLE IF EXISTS `\" $1 \"`;\"}' | mysql -u \"$MYSQL_USER\" -p\"$MYSQL_PASSWORD\" \"$MYSQL_DATABASE\"")
+		dropCmd := exec.Command("docker", dropArgs...)
+		dropCmd.Stdout = os.Stdout
+		dropCmd.Stderr = os.Stderr
+		if err := dropCmd.Run(); err != nil {
+			log.Fatal("Failed to wipe existing database:", err)
+		}
+
 		composeArgs := append(append([]string{"compose"}, composeFiles...), "exec", "-T", "-i", "db", "sh", "-c",
 			"mysql -u \"$MYSQL_USER\" -p\"$MYSQL_PASSWORD\" \"$MYSQL_DATABASE\"")
 		restoreCmd := exec.Command("docker", composeArgs...)

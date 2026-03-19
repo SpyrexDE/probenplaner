@@ -55,6 +55,135 @@ if (!function_exists('sortPlayersByStatus')) {
     }
 }
 
+if (!function_exists("mergeParticipationMessages")) {
+/**
+ * Merge participation messages for the same section to avoid duplication.
+ * Uses comparison_kind (usual, all_time, trend) when present; falls back to parsing message.
+ */
+function mergeParticipationMessages($messages)
+{
+    $sectionGroups = [];
+    $otherMessages = [];
+    $priorityByKind = ['all_time' => 3, 'trend' => 2, 'usual' => 1];
+    $kindToDisplay = ['usual' => 'üblich', 'all_time' => 'je zuvor', 'trend' => 'früher'];
+    $legacyPriority = ['je zuvor' => 3, 'früher' => 2, 'üblich' => 1];
+
+    foreach ($messages as $deviation) {
+        $message = $deviation['message'];
+        $hasKind = isset($deviation['comparison_kind']);
+
+        if ($hasKind && preg_match('/^([^:]+):\s*(\d+)%\s*(mehr|weniger)\s+(Teilnahme|Rückmeldungen)\s+als\s+/', $message, $matches)) {
+            $section = $matches[1];
+            $percentage = intval($matches[2]);
+            $direction = $matches[3];
+            $type = $matches[4];
+            $comparisonKey = $deviation['comparison_kind'];
+            $comparisonDisplay = $kindToDisplay[$comparisonKey] ?? $comparisonKey;
+        } elseif (preg_match('/^([^:]+):\s*(\d+)%\s*(mehr|weniger)\s+(Teilnahme|Rückmeldungen)\s+als\s+(üblich|je zuvor|früher)/', $message, $matches)) {
+            $section = $matches[1];
+            $percentage = intval($matches[2]);
+            $direction = $matches[3];
+            $type = $matches[4];
+            $comparisonKey = $matches[5];
+            $comparisonDisplay = $comparisonKey;
+        } else {
+            $otherMessages[] = $deviation;
+            continue;
+        }
+
+        if (!isset($sectionGroups[$section])) {
+            $sectionGroups[$section] = [];
+        }
+        if (!isset($sectionGroups[$section][$type])) {
+            $sectionGroups[$section][$type] = [];
+        }
+        if (!isset($sectionGroups[$section][$type][$direction])) {
+            $sectionGroups[$section][$type][$direction] = [];
+        }
+        $sectionGroups[$section][$type][$direction][] = [
+            'deviation' => $deviation,
+            'percentage' => $percentage,
+            'comparison_key' => $comparisonKey,
+            'comparison_display' => $comparisonDisplay,
+            'message' => $message
+        ];
+    }
+
+    $mergedMessages = [];
+    foreach ($sectionGroups as $section => $types) {
+        foreach ($types as $type => $directions) {
+            foreach ($directions as $direction => $comparisons) {
+                if (count($comparisons) > 1) {
+                    $priority = $priorityByKind + $legacyPriority;
+                    usort($comparisons, function ($a, $b) use ($priority) {
+                        return ($priority[$b['comparison_key']] ?? 0) - ($priority[$a['comparison_key']] ?? 0);
+                    });
+                    $primary = $comparisons[0];
+                    $additionalInfo = [];
+                    for ($i = 1; $i < count($comparisons); $i++) {
+                        $additional = $comparisons[$i];
+                        $additionalInfo[] = $additional['percentage'] . '% ' . $direction . ' als ' . $additional['comparison_display'];
+                    }
+                    $mergedMessage = $section . ': ' . $primary['percentage'] . '% ' . $direction . ' ' . $type . ' als ' . $primary['comparison_display'];
+                    if (!empty($additionalInfo)) {
+                        $mergedMessage .= ' (' . implode(', ', $additionalInfo) . '!)';
+                    }
+                    $mergedDeviation = $primary['deviation'];
+                    $mergedDeviation['message'] = $mergedMessage;
+                    $mergedMessages[] = $mergedDeviation;
+                } else {
+                    $mergedMessages[] = $comparisons[0]['deviation'];
+                }
+            }
+        }
+    }
+    return array_merge($mergedMessages, $otherMessages);
+}
+
+/**
+ * Helper function to get appropriate icon for deviation types
+ */
+function getDeviationIcon($type)
+{
+    $iconMap = [
+
+        // Negative deviation types
+        'negative_statistical_anomaly' => 'chart-line',
+        'negative_response_rate_anomaly' => 'reply',
+        'negative_trend_change' => 'arrow-down',
+        'below_historical_minimum' => 'arrow-down',
+        'below_historical_response_minimum' => 'reply',
+        'low_response_rate' => 'reply',
+        'group_deviation' => 'users',
+        'group_performance' => 'exclamation-triangle',
+
+        // Positive deviation types  
+        'positive_statistical_anomaly' => 'arrow-up',
+        'positive_response_rate_anomaly' => 'reply',
+        'positive_trend_change' => 'arrow-up',
+        'above_historical_maximum' => 'arrow-up',
+        'above_historical_response_maximum' => 'reply'
+    ];
+
+    return $iconMap[$type] ?? 'info-circle';
+}
+
+/**
+ * Helper function to get appropriate CSS class for deviation severity levels
+ */
+function getDeviationCssClass($severity)
+{
+    $cssMap = [
+        'critical' => \App\Core\DashboardConstants::CSS_DANGER_CLASS,
+        'warning' => \App\Core\DashboardConstants::CSS_WARNING_CLASS,
+        'info' => \App\Core\DashboardConstants::CSS_WARNING_CLASS,
+        'positive' => 'positive'
+    ];
+
+    return $cssMap[$severity] ?? \App\Core\DashboardConstants::CSS_WARNING_CLASS;
+}
+}
+
 $lazyPartial = $lazyPartial ?? false;
 
 // Shared card variable prep — used by both lazy partial and main loop
@@ -619,135 +748,6 @@ foreach ($rehearsals ?? [] as $rehearsal) {
     
     }); // End DOMContentLoaded
 </script>
-
-<?php
-/**
- * Merge participation messages for the same section to avoid duplication.
- * Uses comparison_kind (usual, all_time, trend) when present; falls back to parsing message.
- */
-function mergeParticipationMessages($messages)
-{
-    $sectionGroups = [];
-    $otherMessages = [];
-    $priorityByKind = ['all_time' => 3, 'trend' => 2, 'usual' => 1];
-    $kindToDisplay = ['usual' => 'üblich', 'all_time' => 'je zuvor', 'trend' => 'früher'];
-    $legacyPriority = ['je zuvor' => 3, 'früher' => 2, 'üblich' => 1];
-
-    foreach ($messages as $deviation) {
-        $message = $deviation['message'];
-        $hasKind = isset($deviation['comparison_kind']);
-
-        if ($hasKind && preg_match('/^([^:]+):\s*(\d+)%\s*(mehr|weniger)\s+(Teilnahme|Rückmeldungen)\s+als\s+/', $message, $matches)) {
-            $section = $matches[1];
-            $percentage = intval($matches[2]);
-            $direction = $matches[3];
-            $type = $matches[4];
-            $comparisonKey = $deviation['comparison_kind'];
-            $comparisonDisplay = $kindToDisplay[$comparisonKey] ?? $comparisonKey;
-        } elseif (preg_match('/^([^:]+):\s*(\d+)%\s*(mehr|weniger)\s+(Teilnahme|Rückmeldungen)\s+als\s+(üblich|je zuvor|früher)/', $message, $matches)) {
-            $section = $matches[1];
-            $percentage = intval($matches[2]);
-            $direction = $matches[3];
-            $type = $matches[4];
-            $comparisonKey = $matches[5];
-            $comparisonDisplay = $comparisonKey;
-        } else {
-            $otherMessages[] = $deviation;
-            continue;
-        }
-
-        if (!isset($sectionGroups[$section])) {
-            $sectionGroups[$section] = [];
-        }
-        if (!isset($sectionGroups[$section][$type])) {
-            $sectionGroups[$section][$type] = [];
-        }
-        if (!isset($sectionGroups[$section][$type][$direction])) {
-            $sectionGroups[$section][$type][$direction] = [];
-        }
-        $sectionGroups[$section][$type][$direction][] = [
-            'deviation' => $deviation,
-            'percentage' => $percentage,
-            'comparison_key' => $comparisonKey,
-            'comparison_display' => $comparisonDisplay,
-            'message' => $message
-        ];
-    }
-
-    $mergedMessages = [];
-    foreach ($sectionGroups as $section => $types) {
-        foreach ($types as $type => $directions) {
-            foreach ($directions as $direction => $comparisons) {
-                if (count($comparisons) > 1) {
-                    $priority = $priorityByKind + $legacyPriority;
-                    usort($comparisons, function ($a, $b) use ($priority) {
-                        return ($priority[$b['comparison_key']] ?? 0) - ($priority[$a['comparison_key']] ?? 0);
-                    });
-                    $primary = $comparisons[0];
-                    $additionalInfo = [];
-                    for ($i = 1; $i < count($comparisons); $i++) {
-                        $additional = $comparisons[$i];
-                        $additionalInfo[] = $additional['percentage'] . '% ' . $direction . ' als ' . $additional['comparison_display'];
-                    }
-                    $mergedMessage = $section . ': ' . $primary['percentage'] . '% ' . $direction . ' ' . $type . ' als ' . $primary['comparison_display'];
-                    if (!empty($additionalInfo)) {
-                        $mergedMessage .= ' (' . implode(', ', $additionalInfo) . '!)';
-                    }
-                    $mergedDeviation = $primary['deviation'];
-                    $mergedDeviation['message'] = $mergedMessage;
-                    $mergedMessages[] = $mergedDeviation;
-                } else {
-                    $mergedMessages[] = $comparisons[0]['deviation'];
-                }
-            }
-        }
-    }
-    return array_merge($mergedMessages, $otherMessages);
-}
-
-/**
- * Helper function to get appropriate icon for deviation types
- */
-function getDeviationIcon($type)
-{
-    $iconMap = [
-
-        // Negative deviation types
-        'negative_statistical_anomaly' => 'chart-line',
-        'negative_response_rate_anomaly' => 'reply',
-        'negative_trend_change' => 'arrow-down',
-        'below_historical_minimum' => 'arrow-down',
-        'below_historical_response_minimum' => 'reply',
-        'low_response_rate' => 'reply',
-        'group_deviation' => 'users',
-        'group_performance' => 'exclamation-triangle',
-
-        // Positive deviation types  
-        'positive_statistical_anomaly' => 'arrow-up',
-        'positive_response_rate_anomaly' => 'reply',
-        'positive_trend_change' => 'arrow-up',
-        'above_historical_maximum' => 'arrow-up',
-        'above_historical_response_maximum' => 'reply'
-    ];
-
-    return $iconMap[$type] ?? 'info-circle';
-}
-
-/**
- * Helper function to get appropriate CSS class for deviation severity levels
- */
-function getDeviationCssClass($severity)
-{
-    $cssMap = [
-        'critical' => \App\Core\DashboardConstants::CSS_DANGER_CLASS,
-        'warning' => \App\Core\DashboardConstants::CSS_WARNING_CLASS,
-        'info' => \App\Core\DashboardConstants::CSS_WARNING_CLASS,
-        'positive' => 'positive'
-    ];
-
-    return $cssMap[$severity] ?? \App\Core\DashboardConstants::CSS_WARNING_CLASS;
-}
-?>
 
 <style>
     /* Modern rehearsal date display */

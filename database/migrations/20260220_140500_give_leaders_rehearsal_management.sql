@@ -1,5 +1,5 @@
 -- Migration: Give existing section leaders the 'can_manage_rehearsals' permission
-INSERT INTO user_ensemble_permissions (user_orchestra_id, permission_id)
+INSERT IGNORE INTO user_ensemble_permissions (user_orchestra_id, permission_id)
 SELECT uo.id,
     p.id
 FROM user_orchestras uo
@@ -13,7 +13,7 @@ WHERE uo.type = 'section_leader'
             AND uep2.permission_id = p.id
     );
 -- Also give them can_view_members just in case they need to see member lists for their section
-INSERT INTO user_ensemble_permissions (user_orchestra_id, permission_id)
+INSERT IGNORE INTO user_ensemble_permissions (user_orchestra_id, permission_id)
 SELECT uo.id,
     p.id
 FROM user_orchestras uo

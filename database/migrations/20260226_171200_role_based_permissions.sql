@@ -23,7 +23,7 @@ ALTER TABLE user_orchestras
 ADD CONSTRAINT fk_user_orchestras_role FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE
 SET NULL;
 -- ── Step 3: Create system roles per orchestra ───────────────────────
-INSERT INTO roles (
+INSERT IGNORE INTO roles (
         orchestra_id,
         name,
         tag_label,
@@ -51,7 +51,7 @@ SELECT o.id,
     0,
     0
 FROM orchestras o;
-INSERT INTO roles (
+INSERT IGNORE INTO roles (
         orchestra_id,
         name,
         tag_label,
@@ -70,6 +70,31 @@ SELECT o.id,
     1,
     100
 FROM orchestras o;
+INSERT IGNORE INTO roles (
+        orchestra_id,
+        name,
+        tag_label,
+        tag_color,
+        permissions,
+        is_system,
+        is_default,
+        sort_order
+    )
+SELECT o.id,
+    'Stimmführung',
+    'Stimmführung',
+    '#f59e0b',
+    JSON_ARRAY(
+        'can_attend_rehearsals',
+        'can_view_schedule',
+        'can_view_own_section_stats',
+        'can_view_members',
+        'can_manage_attendance_own_section'
+    ),
+    0,
+    0,
+    50
+FROM orchestras o;
 -- ── Step 4: Assign roles based on existing permissions ──────────────
 -- Users with can_manage_ensemble → Leitung
 UPDATE user_orchestras uo
@@ -83,6 +108,19 @@ SET uo.role_id = (
             AND r.name = 'Leitung'
         LIMIT 1
     );
+-- Users with can_view_own_section_stats who are NOT Leitung → Stimmführung
+UPDATE user_orchestras uo
+    JOIN user_ensemble_permissions uep ON uep.user_orchestra_id = uo.id
+    JOIN permissions p ON p.id = uep.permission_id
+    AND p.name = 'can_view_own_section_stats'
+SET uo.role_id = (
+        SELECT r.id
+        FROM roles r
+        WHERE r.orchestra_id = uo.orchestra_id
+            AND r.name = 'Stimmführung'
+        LIMIT 1
+    )
+WHERE uo.role_id IS NULL;
 -- Remaining users without a role → Mitglied
 UPDATE user_orchestras uo
 SET uo.role_id = (

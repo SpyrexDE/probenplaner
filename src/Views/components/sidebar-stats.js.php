@@ -121,8 +121,12 @@
                 updateStatsDisplay(stats);
             <?php else: ?>
                 // No statistics passed, make API call as fallback
-                <?php $orchestraBase = ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? ''); ?>
-                fetch('/<?= $orchestraBase ?>/api/user-stats', {
+                <?php 
+                $orgSlug = $_SESSION['current_org_slug'] ?? '';
+                $orchSlug = $_SESSION['current_orchestra_slug'] ?? '';
+                ?>
+                <?php if (!empty($orgSlug) && !empty($orchSlug)): ?>
+                    fetch('/<?= htmlspecialchars($orgSlug) ?>/<?= htmlspecialchars($orchSlug) ?>/api/user-stats', {
                         method: 'GET',
                         headers: {
                             'Accept': 'application/json',
@@ -188,6 +192,16 @@
                             setStatsLoadingState(false);
                         }
                     });
+                <?php else: ?>
+                    // Not in the context of an orchestra, just clear loading state
+                    updateStatsDisplay({
+                        attending: 0,
+                        not_attending: 0,
+                        no_response: 0,
+                        total: 0
+                    }, false);
+                    setStatsLoadingState(false);
+                <?php endif; ?>
             <?php endif; ?>
         }
 

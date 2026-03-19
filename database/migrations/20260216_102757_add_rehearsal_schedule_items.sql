@@ -1,5 +1,5 @@
 -- Add rehearsal schedule items table
-CREATE TABLE rehearsal_schedule_items (
+CREATE TABLE IF NOT EXISTS rehearsal_schedule_items (
     id INT AUTO_INCREMENT PRIMARY KEY,
     rehearsal_id INT NOT NULL,
     time TIME NOT NULL,

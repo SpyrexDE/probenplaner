@@ -21,6 +21,21 @@ $orgSlug = htmlspecialchars($org['slug'] ?? '');
     </a>
 </div>
 
+<?php if (!empty($ensembles)): ?>
+<div class="ensemble-search-wrap mb-4">
+    <div class="ensemble-search-input-wrap">
+        <i class="fas fa-search ensemble-search-icon"></i>
+        <input
+            type="search"
+            id="ensemble-search"
+            class="ensemble-search-input"
+            placeholder="Ensemble suchen…"
+            autocomplete="off"
+        >
+    </div>
+</div>
+<?php endif; ?>
+
 <?php if (empty($ensembles)): ?>
     <?php
     $title = 'Keine Ensembles';
@@ -31,6 +46,10 @@ $orgSlug = htmlspecialchars($org['slug'] ?? '');
     ?>
 <?php endif; ?>
 
+<div id="ensemble-no-results" class="ensemble-no-results" style="display:none;">
+    <i class="fas fa-search"></i> Keine Ensembles gefunden.
+</div>
+
 <?php foreach ($ensembles as $ensemble): ?>
     <?php
     $ensembleSlug = htmlspecialchars($ensemble['slug'] ?? '');
@@ -38,7 +57,7 @@ $orgSlug = htmlspecialchars($org['slug'] ?? '');
     $memberLink = $ensemble['member_link'];
     $conductorLink = $ensemble['conductor_link'];
     ?>
-    <div class="modern-card mb-3 ensemble-card">
+    <div class="modern-card mb-3 ensemble-card" data-name="<?= strtolower(htmlspecialchars($ensemble['name'])) ?>">
         <div class="modern-card-body">
             <div class="flex-between" style="align-items: flex-start;">
                 <div style="flex: 1; min-width: 0;">
@@ -129,6 +148,51 @@ $orgSlug = htmlspecialchars($org['slug'] ?? '');
 <?php endforeach; ?>
 
 <style>
+    .ensemble-search-wrap {
+        max-width: 420px;
+    }
+
+    .ensemble-search-input-wrap {
+        position: relative;
+    }
+
+    .ensemble-search-icon {
+        position: absolute;
+        left: var(--space-3);
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--color-text-subtle);
+        font-size: var(--font-size-sm);
+        pointer-events: none;
+    }
+
+    .ensemble-search-input {
+        width: 100%;
+        padding: var(--space-2) var(--space-3) var(--space-2) calc(var(--space-3) * 2 + 0.875rem);
+        font-size: var(--font-size-sm);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        background: var(--color-surface);
+        color: var(--color-text-primary);
+        outline: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        box-sizing: border-box;
+    }
+
+    .ensemble-search-input:focus {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 99, 102, 241), 0.12);
+    }
+
+    .ensemble-no-results {
+        color: var(--color-text-subtle);
+        font-size: var(--font-size-sm);
+        padding: var(--space-4) 0;
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+    }
+
     .ensemble-card {
         transition: border-color 0.2s ease;
     }
@@ -227,6 +291,26 @@ $orgSlug = htmlspecialchars($org['slug'] ?? '');
         background: var(--color-success-dark);
     }
 </style>
+
+<script>
+    (function () {
+        var input = document.getElementById('ensemble-search');
+        if (!input) return;
+        var cards = document.querySelectorAll('.ensemble-card');
+        var noResults = document.getElementById('ensemble-no-results');
+
+        input.addEventListener('input', function () {
+            var q = input.value.trim().toLowerCase();
+            var visible = 0;
+            cards.forEach(function (card) {
+                var match = !q || card.dataset.name.includes(q);
+                card.style.display = match ? '' : 'none';
+                if (match) visible++;
+            });
+            noResults.style.display = visible === 0 ? 'flex' : 'none';
+        });
+    }());
+</script>
 
 <script>
     function copyInviteLink(btn, token) {

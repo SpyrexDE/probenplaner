@@ -1,66 +1,29 @@
 -- Performance indexes for batch query patterns (batch 2)
--- Use stored procedure to safely add indexes that may already exist as FK indexes
-DROP PROCEDURE IF EXISTS add_index_if_not_exists;
-DELIMITER // CREATE PROCEDURE add_index_if_not_exists(
-    IN p_table VARCHAR(64),
-    IN p_index VARCHAR(64),
-    IN p_columns VARCHAR(255)
-) BEGIN
-DECLARE index_exists INT DEFAULT 0;
-SELECT COUNT(*) INTO index_exists
-FROM information_schema.statistics
-WHERE table_schema = DATABASE()
-    AND table_name = p_table
-    AND index_name = p_index;
-IF index_exists = 0 THEN
-SET @sql = CONCAT(
-        'CREATE INDEX ',
-        p_index,
-        ' ON ',
-        p_table,
-        '(',
-        p_columns,
-        ')'
-    );
-PREPARE stmt
-FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-END IF;
-END // DELIMITER;
-CALL add_index_if_not_exists(
-    'rehearsal_groups',
-    'idx_rg_rehearsal',
-    'rehearsal_id'
-);
-CALL add_index_if_not_exists(
-    'rehearsal_roles',
-    'idx_rr_rehearsal',
-    'rehearsal_id'
-);
-CALL add_index_if_not_exists(
-    'rehearsal_schedule_items',
-    'idx_rsi_rehearsal',
-    'rehearsal_id'
-);
-CALL add_index_if_not_exists(
-    'rehearsal_infos',
-    'idx_ri_rehearsal',
-    'rehearsal_id'
-);
-CALL add_index_if_not_exists(
-    'user_orchestra_roles',
-    'idx_uor_uo',
-    'user_orchestra_id'
-);
-CALL add_index_if_not_exists(
-    'user_promises',
-    'idx_up_user_rehearsal',
-    'user_id, rehearsal_id'
-);
-CALL add_index_if_not_exists(
-    'user_orchestras',
-    'idx_uo_orchestra_active',
-    'orchestra_id, is_active'
-);
-DROP PROCEDURE IF EXISTS add_index_if_not_exists;
+
+-- rehearsal_groups.rehearsal_id
+SET @sql = IF(NOT EXISTS(SELECT 1 FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'rehearsal_groups' AND index_name = 'idx_rg_rehearsal'), 'CREATE INDEX idx_rg_rehearsal ON rehearsal_groups(rehearsal_id)', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- rehearsal_roles.rehearsal_id
+SET @sql = IF(NOT EXISTS(SELECT 1 FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'rehearsal_roles' AND index_name = 'idx_rr_rehearsal'), 'CREATE INDEX idx_rr_rehearsal ON rehearsal_roles(rehearsal_id)', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- rehearsal_schedule_items.rehearsal_id
+SET @sql = IF(NOT EXISTS(SELECT 1 FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'rehearsal_schedule_items' AND index_name = 'idx_rsi_rehearsal'), 'CREATE INDEX idx_rsi_rehearsal ON rehearsal_schedule_items(rehearsal_id)', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- rehearsal_infos.rehearsal_id
+SET @sql = IF(NOT EXISTS(SELECT 1 FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'rehearsal_infos' AND index_name = 'idx_ri_rehearsal'), 'CREATE INDEX idx_ri_rehearsal ON rehearsal_infos(rehearsal_id)', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- user_orchestra_roles.user_orchestra_id
+SET @sql = IF(NOT EXISTS(SELECT 1 FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'user_orchestra_roles' AND index_name = 'idx_uor_uo'), 'CREATE INDEX idx_uor_uo ON user_orchestra_roles(user_orchestra_id)', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- user_promises.user_id, rehearsal_id
+SET @sql = IF(NOT EXISTS(SELECT 1 FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'user_promises' AND index_name = 'idx_up_user_rehearsal'), 'CREATE INDEX idx_up_user_rehearsal ON user_promises(user_id, rehearsal_id)', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- user_orchestras.orchestra_id, is_active
+SET @sql = IF(NOT EXISTS(SELECT 1 FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'user_orchestras' AND index_name = 'idx_uo_orchestra_active'), 'CREATE INDEX idx_uo_orchestra_active ON user_orchestras(orchestra_id, is_active)', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;

@@ -108,7 +108,13 @@ try {
                             if ($result = $conn->store_result()) {
                                 $result->free();
                             }
-                        } while ($conn->more_results() && $conn->next_result());
+                            if (!$conn->more_results()) {
+                                break;
+                            }
+                            if (!$conn->next_result()) {
+                                throw new Exception($conn->error);
+                            }
+                        } while (true);
                         
                         $stmt = $conn->prepare("INSERT INTO migrations (migration) VALUES (?)");
                         $stmt->bind_param('s', $file);

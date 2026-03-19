@@ -215,6 +215,11 @@
         max-height: 300px;
         overflow-y: auto;
     }
+    .ie-popover::-webkit-scrollbar { width: 8px; }
+    .ie-popover::-webkit-scrollbar-track { background: var(--color-bg-secondary); border-radius: var(--radius-sm); }
+    .ie-popover::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-sm); }
+    .ie-popover::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
+
     .ie-popover label { min-height: 36px; padding: var(--space-1) var(--space-2); }
 
     /* ── Inline role tags ── */

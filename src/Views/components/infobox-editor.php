@@ -356,5 +356,12 @@ $editorId = $editorId ?? ('infobox-editor-' . uniqid());
         });
 
         render();
+
+        // Public API for external callers (e.g. bulk actions)
+        container.addInfoItem = (emoji, text) => {
+            items.push({ emoji, text });
+            render();
+            if (autoSave) triggerAutoSave();
+        };
     })();
 </script>

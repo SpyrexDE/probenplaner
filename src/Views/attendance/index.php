@@ -79,7 +79,7 @@ if ($scope === 'all') {
 $initialPromises = [];
 foreach ($members as $member) {
     $uid = (int)($member['user_id'] ?? $member['id']);
-    $initialPromises[$uid] = $allPromises[$uid][$initialRehearsalId] ?? null;
+    $initialPromises[$uid] = $initialRehearsalId ? ($allPromises[$uid][$initialRehearsalId] ?? null) : null;
 }
 ?>
 
@@ -125,53 +125,11 @@ foreach ($members as $member) {
 }
 
 .att-timeline {
-    display: flex;
     gap: var(--space-2);
-    overflow-x: auto;
     padding: var(--space-2) var(--space-6) var(--space-3) var(--space-6);
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
 }
 
-.att-timeline::-webkit-scrollbar {
-    display: none;
-}
 
-.att-timeline-arrow {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 28px;
-    height: 28px;
-    border-radius: var(--radius-full);
-    border: 1px solid var(--color-border);
-    background: var(--color-bg-primary);
-    color: var(--color-text-secondary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 2;
-    box-shadow: var(--shadow-sm);
-    transition: all var(--transition-base);
-    font-size: 12px;
-    opacity: 0;
-    pointer-events: none;
-}
-
-.att-timeline-arrow.visible {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.att-timeline-arrow:hover {
-    background: var(--color-gray-100);
-    box-shadow: var(--shadow-md);
-}
-
-.att-timeline-arrow.left  { left: 0; }
-.att-timeline-arrow.right { right: 0; }
 
 .att-timeline-pill {
     display: flex;
@@ -797,7 +755,7 @@ thead .att-col-total {
             </button>
         </div>
 
-        <div class="att-actions">
+        <div class="att-actions" <?= !$initialRehearsalId ? 'style="display: none;"' : '' ?>>
             <button type="button" id="att-bulk-confirm" class="btn-modern btn-primary btn-sm">
                 <i class="fas fa-check-double"></i> Alle wie gemeldet bestätigen
             </button>
@@ -813,30 +771,37 @@ thead .att-col-total {
 
     <!-- Timeline -->
     <div class="att-timeline-wrap">
-        <button type="button" class="att-timeline-arrow left" id="att-arrow-left" aria-label="Frühere Proben">
-            <i class="fas fa-chevron-left"></i>
-        </button>
-        <div class="att-timeline" id="att-timeline">
-            <?php foreach ($rehearsalData as $r): ?>
-                <div class="att-timeline-pill <?= $r['id'] === $initialRehearsalId ? 'active' : '' ?> <?= !$r['isPast'] ? 'future' : '' ?>"
-                     data-rehearsal-id="<?= $r['id'] ?>"
-                     title="<?= $r['weekday'] ?>, <?= $r['dateFull'] ?>">
-                    <span class="pill-weekday"><?= $r['weekday'] ?></span>
-                    <span class="pill-date"><?= $r['dateShort'] ?></span>
-                    <?php if ($r['documented']): ?>
-                        <span class="pill-dot"></span>
-                    <?php endif; ?>
-                </div>
-            <?php endforeach; ?>
-        </div>
-        <button type="button" class="att-timeline-arrow right" id="att-arrow-right" aria-label="Spätere Proben">
-            <i class="fas fa-chevron-right"></i>
-        </button>
+        <?php
+        $hScrollId    = 'att-timeline';
+        $hScrollClass = 'att-timeline';
+        $hScrollStep  = 200;
+        include __DIR__ . '/../components/h-scroll-begin.php';
+        foreach ($rehearsalData as $r): ?>
+            <div class="att-timeline-pill <?= $r['id'] === $initialRehearsalId ? 'active' : '' ?> <?= !$r['isPast'] ? 'future' : '' ?>"
+                 data-rehearsal-id="<?= $r['id'] ?>"
+                 title="<?= $r['weekday'] ?>, <?= $r['dateFull'] ?>">
+                <span class="pill-weekday"><?= $r['weekday'] ?></span>
+                <span class="pill-date"><?= $r['dateShort'] ?></span>
+                <?php if ($r['documented']): ?>
+                    <span class="pill-dot"></span>
+                <?php endif; ?>
+            </div>
+        <?php endforeach;
+        include __DIR__ . '/../components/h-scroll-end.php';
+        ?>
     </div>
 
     <!-- Member List -->
     <div id="att-member-list">
-        <?php if (empty($members)): ?>
+        <?php if (!$initialRehearsalId): ?>
+            <div style="margin-top: var(--space-4);">
+                <?php
+                $title = 'Keine aktive Probe';
+                $message = 'Es gibt aktuell keine vergangenen Proben, für die Anwesenheiten erfasst werden können.';
+                include __DIR__ . '/../components/empty-state.php';
+                ?>
+            </div>
+        <?php elseif (empty($members)): ?>
             <?php
             $title = 'Keine Mitglieder';
             $message = 'Es wurden keine Mitglieder für diesen Bereich gefunden.';
@@ -1340,23 +1305,7 @@ thead .att-col-total {
         activePill.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
 
-    // Timeline arrow navigation
-    const timeline = document.getElementById('att-timeline');
-    const arrowLeft = document.getElementById('att-arrow-left');
-    const arrowRight = document.getElementById('att-arrow-right');
-    const SCROLL_STEP = 200;
 
-    function updateArrows() {
-        const atStart = timeline.scrollLeft <= 5;
-        const atEnd = timeline.scrollLeft + timeline.clientWidth >= timeline.scrollWidth - 5;
-        arrowLeft.classList.toggle('visible', !atStart);
-        arrowRight.classList.toggle('visible', !atEnd);
-    }
-
-    arrowLeft.addEventListener('click', () => { timeline.scrollLeft -= SCROLL_STEP; });
-    arrowRight.addEventListener('click', () => { timeline.scrollLeft += SCROLL_STEP; });
-    timeline.addEventListener('scroll', updateArrows);
-    setTimeout(updateArrows, 100);
 
     // ── Table View Toggle ──
     const viewToggle = document.getElementById('att-view-toggle');

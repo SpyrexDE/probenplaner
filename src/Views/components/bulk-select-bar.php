@@ -80,17 +80,20 @@
         color: var(--color-primary);
     }
 
+    /* Grid: 1fr forces chips column to a hard bounded width so overflow-x can scroll */
+    .bulk-filter-wrap {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: var(--space-2);
+        min-width: 0;
+    }
+
     .bulk-filter-row {
         display: flex;
         gap: 6px;
-        overflow-x: auto;
-        scrollbar-width: none;
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: 2px;
-        width: 100%;
         min-width: 0;
     }
-    .bulk-filter-row::-webkit-scrollbar { display: none; }
 
     .bulk-filter-chip {
         display: inline-flex;
@@ -127,7 +130,7 @@
     .bulk-filter-chip .chip-clear:hover { opacity: 1; }
 
     .bulk-series-btn {
-        margin-left: auto;
+        flex-shrink: 0;
         display: inline-flex;
         align-items: center;
         gap: 6px;
@@ -161,6 +164,11 @@
         max-width: 320px;
         animation: filterDropIn 0.15s ease;
     }
+    .bulk-filter-dropdown::-webkit-scrollbar { width: 8px; }
+    .bulk-filter-dropdown::-webkit-scrollbar-track { background: var(--color-bg-secondary); border-radius: var(--radius-sm); }
+    .bulk-filter-dropdown::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-sm); }
+    .bulk-filter-dropdown::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
+
     .bulk-filter-dropdown label {
         display: block;
         font-size: 12px;
@@ -403,14 +411,9 @@
     .bulk-action-buttons {
         display: flex;
         gap: 6px;
-        overflow-x: auto;
-        scrollbar-width: none;
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: 2px;
         width: 100%;
         min-width: 0;
     }
-    .bulk-action-buttons::-webkit-scrollbar { display: none; }
 
     .bulk-action-btn {
         display: inline-flex;
@@ -546,6 +549,11 @@
         max-height: 200px;
         overflow-y: auto;
     }
+    .bulk-type-list::-webkit-scrollbar { width: 8px; }
+    .bulk-type-list::-webkit-scrollbar-track { background: var(--color-bg-secondary); border-radius: var(--radius-sm); }
+    .bulk-type-list::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-sm); }
+    .bulk-type-list::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
+
     .bulk-type-option {
         padding: 8px 10px;
         border-radius: var(--radius-sm);
@@ -622,13 +630,20 @@
             </button>
         </div>
 
-        <div class="bulk-filter-row" id="bulkFilterRow">
-            <button type="button" class="bulk-filter-chip" data-filter="type"><i class="fas fa-tag"></i> Typ</button>
-            <button type="button" class="bulk-filter-chip" data-filter="location"><i class="fas fa-map-marker-alt"></i> Ort</button>
-            <button type="button" class="bulk-filter-chip" data-filter="color"><i class="fas fa-palette"></i> Farbe</button>
-            <button type="button" class="bulk-filter-chip" data-filter="tags"><i class="fas fa-hashtag"></i> Tags</button>
-            <button type="button" class="bulk-filter-chip" data-filter="roles"><i class="fas fa-users"></i> Rollen</button>
-            <button type="button" class="bulk-filter-chip" data-filter="dateRange"><i class="fas fa-calendar"></i> Zeitraum</button>
+        <div class="bulk-filter-wrap">
+            <?php
+            $hScrollId    = 'bulkFilterRow';
+            $hScrollClass = 'bulk-filter-row';
+            $hScrollStep  = 150;
+            include __DIR__ . '/h-scroll-begin.php';
+            ?>
+                <button type="button" class="bulk-filter-chip" data-filter="type"><i class="fas fa-tag"></i> Typ</button>
+                <button type="button" class="bulk-filter-chip" data-filter="location"><i class="fas fa-map-marker-alt"></i> Ort</button>
+                <button type="button" class="bulk-filter-chip" data-filter="color"><i class="fas fa-palette"></i> Farbe</button>
+                <button type="button" class="bulk-filter-chip" data-filter="tags"><i class="fas fa-hashtag"></i> Tags</button>
+                <button type="button" class="bulk-filter-chip" data-filter="roles"><i class="fas fa-users"></i> Rollen</button>
+                <button type="button" class="bulk-filter-chip" data-filter="dateRange"><i class="fas fa-calendar"></i> Zeitraum</button>
+            <?php include __DIR__ . '/h-scroll-end.php'; ?>
             <button type="button" class="bulk-series-btn" id="recurringOpen"><i class="fas fa-layer-group"></i> Serie erstellen</button>
         </div>
     </div>
@@ -656,7 +671,12 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="bulk-action-buttons">
+            <?php
+            $hScrollId    = 'bulkActionButtons';
+            $hScrollClass = 'bulk-action-buttons';
+            $hScrollStep  = 150;
+            include __DIR__ . '/h-scroll-begin.php';
+            ?>
                 <button type="button" class="bulk-action-btn" data-bulk="type"><i class="fas fa-tag"></i> Typ</button>
                 <button type="button" class="bulk-action-btn" data-bulk="location"><i class="fas fa-map-marker-alt"></i> Ort</button>
                 <button type="button" class="bulk-action-btn" data-bulk="groups"><i class="fas fa-users"></i> Gruppen</button>
@@ -664,8 +684,7 @@
                 <button type="button" class="bulk-action-btn" data-bulk="time"><i class="fas fa-clock"></i> Uhrzeit</button>
                 <button type="button" class="bulk-action-btn" data-bulk="tag"><i class="fas fa-hashtag"></i> Tag</button>
                 <button type="button" class="bulk-action-btn" data-bulk="note"><i class="fas fa-sticky-note"></i> Notiz</button>
-
-            </div>
+            <?php include __DIR__ . '/h-scroll-end.php'; ?>
         </div>
     </div>
 </div>

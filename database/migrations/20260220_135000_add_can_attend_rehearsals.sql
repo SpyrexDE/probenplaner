@@ -1,6 +1,6 @@
 -- [Description] Add can_attend_rehearsals permission
 -- Insert the new permission
-INSERT INTO permissions (name, scope, description)
+INSERT IGNORE INTO permissions (name, scope, description)
 VALUES (
         'can_attend_rehearsals',
         'ensemble',
@@ -8,7 +8,7 @@ VALUES (
     );
 -- Assign to everyone who DOES NOT have can_manage_ensemble (the old implicit rule)
 -- This ensures backward compatibility: members and leaders get it, conductors don't.
-INSERT INTO user_ensemble_permissions (user_orchestra_id, permission_id)
+INSERT IGNORE INTO user_ensemble_permissions (user_orchestra_id, permission_id)
 SELECT uo.id,
     p.id
 FROM user_orchestras uo

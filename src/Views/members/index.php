@@ -552,12 +552,23 @@ $isAdmin = $canManage || !empty($canManagePermissions);
                         $groupMemberCount += count($members);
                     }
                     ?>
+                    <?php
+                    if ($groupName === '' || $groupName === 'Sonstige') {
+                        if (count($sectionMembers) === 1) {
+                            $displayGroupName = $groupManager->getDisplayName(array_key_first($sectionMembers));
+                        } else {
+                            $displayGroupName = 'Sonstige';
+                        }
+                    } else {
+                        $displayGroupName = $groupManager->getDisplayName($groupName);
+                    }
+                    ?>
                     <div class="section-band" data-group style="--section-accent: <?= $meta['accent'] ?>">
                         <div class="section-band-header">
                             <div class="section-band-icon" style="background: linear-gradient(135deg, <?= $meta['accent'] ?>, color-mix(in srgb, <?= $meta['accent'] ?> 70%, #000));">
                                 <span><?= $meta['emoji'] ?></span>
                             </div>
-                            <span class="section-band-name"><?= htmlspecialchars($groupManager->getDisplayName($groupName)) ?></span>
+                            <span class="section-band-name"><?= htmlspecialchars($displayGroupName) ?></span>
                             <span class="section-band-count"><?= $groupMemberCount ?></span>
                         </div>
 
@@ -566,10 +577,14 @@ $isAdmin = $canManage || !empty($canManagePermissions);
                             <?php foreach ($sectionMembers as $sectionName => $members): ?>
                                 <?php foreach ($members as $member):
                                     $displayName = $member['display_name'] ?? $member['email'];
-                                    $initial = strtoupper(substr($displayName, 0, 1));
+                                    $initial = strtoupper(mb_substr($displayName, 0, 1));
                                     $roleColor = $member['role_tag_color'] ?? '';
                                     $userLabels = \App\Core\Utilities::generateUserLabels($member);
+                                    
+                                    // Normally we only show instrument if there are multiple instruments in the band.
+                                    // If this is the "Sonstige" catch-all band and there are multiple instruments, we ALWAYS show the label.
                                     $instrumentName = (count($sectionMembers) > 1) ? $groupManager->getDisplayName($sectionName) : '';
+                                    
                                     $memberRoleIds = [];
                                     if (!empty($member['roles'])) {
                                         $memberRoleIds = array_map(fn($r) => (int)$r['id'], $member['roles']);

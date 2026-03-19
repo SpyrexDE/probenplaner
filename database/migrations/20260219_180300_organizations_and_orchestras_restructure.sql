@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS organizations (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 -- Seed default organization
-INSERT INTO organizations (name, slug)
+INSERT IGNORE INTO organizations (name, slug)
 VALUES ('Default', 'default');
 -- Add organization_id and slug to orchestras
 ALTER TABLE orchestras

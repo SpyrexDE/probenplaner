@@ -92,7 +92,8 @@ class Organization extends Model
         $sql = "SELECT u.id, u.email, u.display_name
                 FROM users u
                 JOIN user_orchestras uo ON uo.user_id = u.id
-                JOIN roles r ON r.id = uo.role_id
+                JOIN user_orchestra_roles uor ON uor.user_orchestra_id = uo.id
+                JOIN roles r ON r.id = uor.role_id
                 WHERE uo.orchestra_id = ? AND uo.is_active = 1
                   AND JSON_CONTAINS(r.permissions, '\"can_manage_ensemble\"')
                 ORDER BY COALESCE(u.display_name, u.email)";
