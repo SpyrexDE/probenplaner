@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/charmbracelet/huh"
@@ -186,6 +187,16 @@ func init() {
 	// Ensure we are in project root or have access to it
 	if _, err := os.Stat("docker-compose.yml"); os.IsNotExist(err) {
 		log.Warn("docker-compose.yml not found in current directory. Make sure you are in the project root.")
+	}
+
+	// Auto-inject GIT_VERSION so docker-compose receives the correct tag
+	if os.Getenv("GIT_VERSION") == "" {
+		out, err := exec.Command("git", "describe", "--tags", "--always").Output()
+		if err == nil {
+			os.Setenv("GIT_VERSION", strings.TrimSpace(string(out)))
+		} else {
+			os.Setenv("GIT_VERSION", "N/A")
+		}
 	}
 }
 
