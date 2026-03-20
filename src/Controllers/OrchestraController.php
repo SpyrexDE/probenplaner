@@ -191,12 +191,18 @@ class OrchestraController extends Controller
                 throw new \Exception("Fehler beim Erstellen des Orchesters.");
             }
 
+            // Create default roles for the new orchestra (Leitung and Mitglied)
+            (new \App\Models\Role())->createDefaultRoles($orchestraId);
+
             // Automatically join the creator as conductor
+            $conductorRole = (new \App\Models\Role())->getConductorRole($orchestraId);
+            $conductorRoleId = $conductorRole ? (int)$conductorRole['id'] : null;
+            
             $joinResult = $this->userOrchestraModel->joinOrchestra(
                 $_SESSION['user_id'],
                 $orchestraId,
-                'none',
-                UserOrchestra::PRESETS['conductor']
+                'Leitung',
+                $conductorRoleId
             );
 
             if (is_array($joinResult) && isset($joinResult['error'])) {

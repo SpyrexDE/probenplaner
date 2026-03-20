@@ -41,6 +41,13 @@ class InviteLink extends Model
         if ($type === self::TYPE_CONDUCTOR) {
             $roleModel = new Role();
             $conductorRole = $roleModel->getConductorRole($orchestraId);
+            
+            // Self-heal: If conductor role does not exist, try to create default roles
+            if (!$conductorRole) {
+                $roleModel->createDefaultRoles($orchestraId);
+                $conductorRole = $roleModel->getConductorRole($orchestraId);
+            }
+            
             if ($conductorRole) {
                 $data['default_role_id'] = $conductorRole['id'];
             }

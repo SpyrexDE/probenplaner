@@ -115,6 +115,9 @@ class OrgaPanelController extends Controller
                 'slug' => $slug,
                 'organization_id' => $orgId,
             ]);
+
+            // Create default roles for the new orchestra (Leitung and Mitglied)
+            (new \App\Models\Role())->createDefaultRoles((int)$orchestraId);
         } catch (\Exception $e) {
             $this->setFlash('error', 'Ensemble konnte nicht erstellt werden: ' . $e->getMessage());
             $this->redirect('/orga/ensembles/create');
