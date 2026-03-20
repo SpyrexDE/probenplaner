@@ -65,6 +65,4 @@ ob_start();
 <?php
 $content = ob_get_clean();
 include __DIR__ . '/../components/centered-card.php';
-
-include __DIR__ . '/../components/notification-system.php';
 ?>
