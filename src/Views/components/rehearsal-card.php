@@ -202,6 +202,10 @@
     }
     .ie-inline-input::placeholder { color: var(--color-text-muted); font-style: italic; }
 
+    /* Suppress focus ring on invisible date/time overlay inputs */
+    [data-ie-field="datetime"] input[type="date"],
+    [data-ie-field="datetime"] input[type="time"] { outline: none; }
+
     /* ── Popover ── */
     .ie-popover {
         position: absolute;

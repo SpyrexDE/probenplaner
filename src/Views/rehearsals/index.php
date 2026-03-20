@@ -495,22 +495,26 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             const timeEl = el.querySelector('[data-ie-time]');
             if (!dateEl || !timeEl) return;
 
-            // Store original HTML for collapse restore
             el._dtOriginal = { date: dateEl.innerHTML, time: timeEl.innerHTML };
 
-            const overlayStyle = 'position:absolute;inset:0;width:100%;height:100%;opacity:0.01;cursor:pointer;z-index:1;border:0;padding:0;margin:0;-webkit-appearance:none;background:transparent;color:transparent;font-size:16px;';
+            // opacity:0 keeps layout + pointer events but hides native widget chrome (Firefox-safe)
+            const overlayStyle = 'position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:1;border:0;padding:0;margin:0;-webkit-appearance:none;-moz-appearance:none;appearance:none;background:transparent;color:transparent;font-size:16px;';
             const spanStyle = 'display:inline-block;position:relative;cursor:pointer;text-decoration:underline dashed var(--color-primary-200);text-underline-offset:2px;text-decoration-thickness:2px;';
 
-            // Create an overlay input inside a span — tapping opens native picker (iOS)
-            // + showPicker on click for desktop (entire area, not just calendar icon)
+            // Firefox-compatible: showPicker() is not supported everywhere
+            const tryShowPicker = (inp) => {
+                if (typeof inp.showPicker === 'function') {
+                    try { inp.showPicker(); } catch(_) {}
+                }
+            };
+
+            // Span shows custom-formatted text; invisible input sits on top and opens the native picker
             const mkOverlay = (parent, type, val) => {
                 const inp = document.createElement('input');
                 inp.type = type;
                 inp.value = val;
                 inp.style.cssText = overlayStyle;
-                inp.addEventListener('click', () => {
-                    try { inp.showPicker(); } catch(_) {}
-                });
+                inp.addEventListener('click', () => tryShowPicker(inp));
                 parent.style.cssText += spanStyle;
                 parent.appendChild(inp);
                 return inp;
@@ -521,15 +525,15 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             dateInp.type = 'date';
             dateInp.value = fmtDate(sD);
             dateInp.style.cssText = overlayStyle;
-            dateInp.addEventListener('click', () => { try { dateInp.showPicker(); } catch(_) {} });
+            dateInp.addEventListener('click', () => tryShowPicker(dateInp));
 
             const endDateInp = document.createElement('input');
             endDateInp.type = 'date';
             endDateInp.value = fmtDate(eD);
             endDateInp.style.cssText = overlayStyle;
-            endDateInp.addEventListener('click', () => { try { endDateInp.showPicker(); } catch(_) {} });
+            endDateInp.addEventListener('click', () => tryShowPicker(endDateInp));
 
-            // Time: split into two spans with overlay inputs
+            // Time: two spans with overlay inputs
             timeEl.innerHTML = '';
             const mkTimeSpan = (label, val) => {
                 const span = document.createElement('span');
@@ -539,7 +543,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                 inp.type = 'time';
                 inp.value = val;
                 inp.style.cssText = overlayStyle;
-                inp.addEventListener('click', () => { try { inp.showPicker(); } catch(_) {} });
+                inp.addEventListener('click', () => tryShowPicker(inp));
                 span.appendChild(inp);
                 return { span, inp };
             };
@@ -600,20 +604,20 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             updateDateDisplay();
 
             const save = () => {
-                const d = dateInp.value;
+                const d  = dateInp.value;
                 const st = startT.inp.value;
                 const ed = multiDay ? endDateInp.value : d;
                 const et = endT.inp.value;
                 if (!d || !st || !et) return;
 
                 const newStart = d + ' ' + st + ':00';
-                const newEnd = ed + ' ' + et + ':00';
+                const newEnd   = ed + ' ' + et + ':00';
                 card.dataset.start = newStart;
-                card.dataset.end = newEnd;
+                card.dataset.end   = newEnd;
 
                 updateDateDisplay();
                 startT.span.firstChild.textContent = this._formatTime(newStart);
-                endT.span.firstChild.textContent = this._formatTime(newEnd);
+                endT.span.firstChild.textContent   = this._formatTime(newEnd);
 
                 const sDate = new Date(newStart.replace(' ', 'T'));
                 const weekdayEl = card.querySelector('[data-ie-weekday]');
