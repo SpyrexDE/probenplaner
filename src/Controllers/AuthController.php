@@ -198,6 +198,14 @@ class AuthController extends Controller
 
         $this->setFlash('success', 'Sie wurden erfolgreich eingeloggt.');
 
+        // Resume pending invite flow
+        if (!empty($_SESSION['invite_token'])) {
+            $token = $_SESSION['invite_token'];
+            unset($_SESSION['invite_token']);
+            $this->redirect('/invite/' . urlencode($token));
+            return;
+        }
+
         // Org-admin → orga panel
         if (!empty($user['is_org_admin'])) {
             $_SESSION['is_org_admin'] = true;
