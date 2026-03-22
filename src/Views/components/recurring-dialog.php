@@ -8,6 +8,8 @@
  */
 ?>
 
+<?php include __DIR__ . '/rehearsal-card-styles.php'; ?>
+
 <?php if (!defined('RECURRING_CARD_STYLES_LOADED')): define('RECURRING_CARD_STYLES_LOADED', true); ?>
 <style>
     .recurring-card-wrapper { display: none; margin-bottom: var(--space-3); }

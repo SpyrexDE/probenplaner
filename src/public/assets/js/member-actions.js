@@ -131,6 +131,7 @@ function openEditModal(userId) {
                 reverseButtons: true,
                 focusConfirm: false,
                 didOpen: () => {
+                    window._swalDefaultRoleConfirmed = false;
                     const sel = document.getElementById('swalType');
                     if (sel && data.type) sel.value = data.type;
 
@@ -143,11 +144,12 @@ function openEditModal(userId) {
                             resetPassword(data.user_id, data.email);
                         });
                     }
-                }
+                },
+                preConfirm: () => {
+                    return saveEditModalAsync(userId);
+                },
             }).then(result => {
-                if (result.isConfirmed) {
-                    saveEditModal(userId);
-                } else if (result.isDenied) {
+                if (result.isDenied) {
                     confirmRemoveMember(userId, data.display_name || data.email);
                 }
             });
@@ -235,11 +237,10 @@ function initSwalRoleTagSelect(allRoles, selectedIds) {
     document.addEventListener('click', e => { if (!container.closest('.swal-field-group')?.contains(e.target)) dropdown.classList.remove('show'); });
 }
 
-function saveEditModal(userId) {
+function saveEditModalAsync(userId) {
     const roleContainer = document.getElementById('swalRoleTags');
     const typeEl = document.getElementById('swalType');
 
-    // Collect values while the modal DOM still exists
     const collectedType = typeEl ? typeEl.value : '';
     const collectedRoleIds = roleContainer
         ? [...roleContainer.querySelectorAll('.swal-role-tag')].map(t => t.dataset.id)
@@ -247,27 +248,18 @@ function saveEditModal(userId) {
 
     if (roleContainer && window._swalInitialDefaultRoleIds) {
         const removedDefaults = window._swalInitialDefaultRoleIds.filter(id => !collectedRoleIds.includes(id));
-        if (removedDefaults.length > 0) {
-            Swal.fire({
-                title: 'Standardrolle entfernt',
-                html: '<p style="color:var(--color-text-secondary)">Dieses Mitglied hat keine Standardrolle mehr zugewiesen. Trotzdem speichern?</p>',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Ja, speichern',
-                cancelButtonText: 'Abbrechen',
-                confirmButtonColor: '#478cf4',
-                cancelButtonColor: '#6b7280',
-                reverseButtons: true,
-            }).then(result => {
-                if (result.isConfirmed) doSaveEditModal(userId, collectedType, collectedRoleIds);
-            });
-            return;
+        if (removedDefaults.length > 0 && !window._swalDefaultRoleConfirmed) {
+            window._swalDefaultRoleConfirmed = true;
+            Swal.showValidationMessage('Standardrolle wird entfernt – erneut klicken zum Bestätigen');
+            return false;
         }
     }
-    doSaveEditModal(userId, collectedType, collectedRoleIds);
+
+    Swal.showLoading();
+    return doSaveEditModalAsync(userId, collectedType, collectedRoleIds);
 }
 
-function doSaveEditModal(userId, type, roleIds) {
+function doSaveEditModalAsync(userId, type, roleIds) {
     const orchestraBase = getOrchestraBase();
 
     const params = new URLSearchParams({
@@ -279,7 +271,7 @@ function doSaveEditModal(userId, type, roleIds) {
         params.set('role_ids', JSON.stringify(roleIds));
     }
 
-    fetch('/' + orchestraBase + '/members/' + userId + '/update', {
+    return fetch('/' + orchestraBase + '/members/' + userId + '/update', {
         method: 'POST',
         headers: {
             'Accept': 'application/json',
@@ -290,15 +282,16 @@ function doSaveEditModal(userId, type, roleIds) {
         .then(r => r.json())
         .then(data => {
             if (data.success) {
-                window.notifySuccess('Gespeichert');
                 if (typeof refreshMembersPage === 'function') refreshMembersPage();
                 else setTimeout(() => location.reload(), 600);
-            } else {
-                window.notifyError(data.error || 'Speichern fehlgeschlagen');
+                return true;
             }
+            Swal.showValidationMessage(data.error || 'Speichern fehlgeschlagen');
+            return false;
         })
         .catch(err => {
-            window.notifyError('Speichern fehlgeschlagen: ' + (err.message || 'Verbindung fehlgeschlagen'));
+            Swal.showValidationMessage('Speichern fehlgeschlagen: ' + (err.message || 'Verbindung fehlgeschlagen'));
+            return false;
         });
 }
 

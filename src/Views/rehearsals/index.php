@@ -1327,11 +1327,13 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             }
 
             const rect = chip.getBoundingClientRect();
+            const popWidth = 240;
+            const clampedLeft = Math.min(Math.max(8, rect.left), window.innerWidth - popWidth - 8);
             const isBottomSticky = document.getElementById('bulkToolbarSticky')?.classList.contains('is-bottom-sticky');
             if (isBottomSticky || rect.bottom + 250 > window.innerHeight) {
-                pop.style.cssText += `position:fixed;bottom:${window.innerHeight - rect.top + 4}px;left:${Math.max(8, rect.left)}px;`;
+                pop.style.cssText += `position:fixed;bottom:${window.innerHeight - rect.top + 4}px;left:${clampedLeft}px;`;
             } else {
-                pop.style.cssText += `position:fixed;top:${rect.bottom + 4}px;left:${Math.max(8, rect.left)}px;`;
+                pop.style.cssText += `position:fixed;top:${rect.bottom + 4}px;left:${clampedLeft}px;`;
             }
             pop.onclick = e => e.stopPropagation();
 

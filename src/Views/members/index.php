@@ -859,12 +859,13 @@ $isAdmin = $canManage || !empty($canManagePermissions);
         });
     }
 
+    let _keycloakOnly = <?= !empty($inviteLink['keycloak_only'] ?? false) ? 'true' : 'false' ?>;
+
     // Invite modal (mobile fallback)
     function openInviteModal() {
         <?php if ($inviteLink): ?>
             const linkUrl = 'https://<?= htmlspecialchars(rtrim($_SERVER['HTTP_HOST'] ?? '', '/') . '/invite/' . $inviteLink['token']) ?>';
             const usedCount = <?= (int)($inviteLink['used_count'] ?? 0) ?>;
-            const keycloakOnly = <?= !empty($inviteLink['keycloak_only']) ? 'true' : 'false' ?>;
 
             Swal.fire({
                 title: 'Einladungslink',
@@ -876,7 +877,7 @@ $isAdmin = $canManage || !empty($canManagePermissions);
                         <div class="invite-link-box" id="swalInviteLink">${linkUrl}</div>
                         <div class="invite-meta">${usedCount}× genutzt</div>
                         <div class="swal-perm-row" style="margin-top: var(--space-3);">
-                            <input type="checkbox" id="swalKeycloak" ${keycloakOnly ? 'checked' : ''} onchange="toggleKeycloak()">
+                            <input type="checkbox" id="swalKeycloak" ${_keycloakOnly ? 'checked' : ''} onchange="toggleKeycloak()">
                             <label for="swalKeycloak">Nur JMD-Accounts erlauben</label>
                         </div>
                     </div>
@@ -947,7 +948,7 @@ $isAdmin = $canManage || !empty($canManagePermissions);
                         window.notifyError(data.error || 'Link-Generierung fehlgeschlagen');
                     } else {
                         window.notifySuccess('Neuer Link generiert');
-                        refreshMembersPage();
+                        location.reload();
                     }
                 })
                 .catch(err => {
@@ -957,6 +958,9 @@ $isAdmin = $canManage || !empty($canManagePermissions);
     }
 
     function toggleKeycloak() {
+        _keycloakOnly = !_keycloakOnly;
+        syncKeycloakCheckboxes(_keycloakOnly);
+
         fetch('/' + orchestraBase + '/invite/toggle-keycloak', {
                 method: 'POST',
                 headers: {
@@ -970,14 +974,23 @@ $isAdmin = $canManage || !empty($canManagePermissions);
             .then(r => r.json())
             .then(data => {
                 if (data.success === false) {
+                    _keycloakOnly = !_keycloakOnly;
+                    syncKeycloakCheckboxes(_keycloakOnly);
                     window.notifyError(data.error || 'Einstellung fehlgeschlagen');
-                } else {
-                    window.notifySuccess('Gespeichert');
                 }
             })
             .catch(err => {
+                _keycloakOnly = !_keycloakOnly;
+                syncKeycloakCheckboxes(_keycloakOnly);
                 window.notifyError('Einstellung fehlgeschlagen: ' + (err.message || 'Verbindung fehlgeschlagen'));
             });
+    }
+
+    function syncKeycloakCheckboxes(state) {
+        const sidebar = document.getElementById('sidebarKeycloak');
+        const modal = document.getElementById('swalKeycloak');
+        if (sidebar) sidebar.checked = state;
+        if (modal) modal.checked = state;
     }
 
     // ── Role CRUD ──────────────────────────────────────────────

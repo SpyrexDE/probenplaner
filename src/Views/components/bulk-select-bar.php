@@ -160,8 +160,8 @@
         box-shadow: var(--shadow-xl);
         max-height: 280px;
         overflow-y: auto;
-        min-width: 200px;
-        max-width: 320px;
+        min-width: 160px;
+        max-width: 240px;
         animation: filterDropIn 0.15s ease;
     }
     .bulk-filter-dropdown::-webkit-scrollbar { width: 8px; }
