@@ -91,6 +91,35 @@ $renderComponent = true;
             flex-direction: column;
             gap: var(--space-3);
         }
+
+        .modern-card-header .flex-between {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: var(--space-2);
+        }
+
+        .org-card-credential {
+            flex-wrap: wrap;
+            gap: var(--space-2);
+        }
+
+        .org-card-credential button {
+            margin-left: 0 !important;
+        }
+
+        .org-card-actions {
+            flex-wrap: wrap;
+        }
+
+        .org-card-actions form {
+            margin-left: 0 !important;
+        }
+
+        .admin-credential-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: var(--space-1);
+        }
     }
 </style>
 

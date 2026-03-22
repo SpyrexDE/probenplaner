@@ -62,6 +62,34 @@ $panelContent   = $panelContent   ?? '';
         max-width: <?= htmlspecialchars($panelMaxWidth) ?>;
         margin: 0 auto;
         width: 100%;
+        box-sizing: border-box;
+    }
+
+    @media (max-width: 600px) {
+        .panel-topbar {
+            padding: var(--space-2) var(--space-3);
+        }
+
+        .panel-topbar .flex-start {
+            min-width: 0;
+            flex-wrap: wrap;
+            gap: var(--space-2);
+        }
+
+        .panel-topbar .text-heading {
+            font-size: var(--font-size-base) !important;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .panel-topbar .btn-secondary .fa-sign-out-alt {
+            margin-right: 0;
+        }
+
+        .panel-body {
+            padding: var(--space-4) var(--space-3);
+        }
     }
 </style>
 

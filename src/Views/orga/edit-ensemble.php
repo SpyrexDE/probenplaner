@@ -278,6 +278,23 @@ include __DIR__ . '/../components/panel-shell.php';
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
+
+    @media (max-width: 600px) {
+        .invite-link-bar {
+            flex-direction: column;
+            align-items: stretch;
+            gap: var(--space-2);
+        }
+
+        .invite-link-bar .flex-end {
+            justify-content: flex-start;
+        }
+
+        .conductor-row {
+            flex-wrap: wrap;
+            gap: var(--space-2);
+        }
+    }
 </style>
 
 <script>

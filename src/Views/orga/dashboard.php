@@ -290,6 +290,42 @@ $orgSlug = htmlspecialchars($org['slug'] ?? '');
     .btn-success:hover {
         background: var(--color-success-dark);
     }
+
+    @media (max-width: 600px) {
+        .ensemble-card .flex-between {
+            flex-direction: column;
+            align-items: stretch !important;
+            gap: var(--space-3);
+        }
+
+        .ensemble-card .flex-end {
+            justify-content: flex-start;
+        }
+
+        .link-row {
+            flex-direction: column;
+            align-items: stretch;
+            gap: var(--space-1);
+        }
+
+        .link-label {
+            width: auto;
+        }
+
+        .invite-link-bar {
+            flex-wrap: wrap;
+            gap: var(--space-1);
+        }
+
+        .invite-link-url {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .link-expiry {
+            margin-left: 0 !important;
+        }
+    }
 </style>
 
 <script>
