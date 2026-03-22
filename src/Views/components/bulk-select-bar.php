@@ -83,7 +83,7 @@
     /* Grid: 1fr forces chips column to a hard bounded width so overflow-x can scroll */
     .bulk-filter-wrap {
         display: grid;
-        grid-template-columns: 1fr auto;
+        grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
         gap: var(--space-2);
         min-width: 0;

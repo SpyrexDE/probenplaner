@@ -16,6 +16,7 @@ $hScrollClass = $hScrollClass ?? '';
 <style>
 .h-scroll-wrap {
     position: relative;
+    min-width: 0;
 }
 
 .h-scroll {
