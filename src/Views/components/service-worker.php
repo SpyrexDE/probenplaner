@@ -27,6 +27,9 @@
                 function checkForUpdates() {
                     registration.update().then(() => {
                         console.log('Service Worker update check completed');
+                    }).catch(error => {
+                        // Transient server errors during SW update checks must not surface as modals
+                        console.warn('Service Worker update check failed (silent):', error);
                     });
                 }
 
@@ -157,11 +160,8 @@
                 });
 
             }).catch(function(error) {
-                console.error('Service Worker registration failed:', error);
-                // In development, this is expected and okay
-                if (window.APP_ENV === 'development') {
-                    console.log('Service Worker registration failed in development - this is normal');
-                }
+                // SW installation errors (e.g. transient server errors) must not surface to users
+                console.warn('Service Worker registration failed (silent):', error);
             });
 
             // Listen for service worker controller changes (when SW takes control)
