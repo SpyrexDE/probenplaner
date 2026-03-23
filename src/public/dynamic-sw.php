@@ -2,22 +2,21 @@
 
 /**
  * Dynamic Service Worker Generator
- * Generates service worker with proper versioning and environment handling
+ * Generates service worker with proper versioning and environment handling.
+ * Must NOT use bootstrap.php — it opens a DB connection which causes SW install
+ * failures on transient DB errors.
  */
 
-// Include bootstrap to get access to configuration and version info
-require_once '../bootstrap.php';
+require_once '../config/config.php';
 
-use App\Core\Version;
-
-// Set proper content type for JavaScript
 header('Content-Type: application/javascript');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 header('Pragma: no-cache');
 header('Expires: 0');
 
-// Get current version information (use tag for PWA stability)
-$appVersion = Version::getTag();
+// Read version from env var set at Docker build time, no DB needed
+$rawVersion = $_ENV['GIT_VERSION'] ?? $_SERVER['GIT_VERSION'] ?? getenv('GIT_VERSION') ?? 'N/A';
+$appVersion = preg_match('/^(v\d+\.\d+\.\d+)/', $rawVersion, $m) ? $m[1] : $rawVersion;
 $isDevelopment = (APP_ENV === 'development');
 
 // Generate cache name with version
