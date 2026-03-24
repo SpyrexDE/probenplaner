@@ -774,6 +774,9 @@ foreach ($rehearsals ?? [] as $rehearsal) {
         line-height: 1;
         position: relative;
         text-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+        /* Force own compositing layer to avoid invisible-until-tap bug on old iOS */
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
     }
 
     .weekday-letter::after {

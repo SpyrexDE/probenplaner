@@ -37,6 +37,7 @@
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.6s ease-out, visibility 0.6s ease-out;
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.1);
 }

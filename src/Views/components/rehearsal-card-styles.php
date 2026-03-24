@@ -37,6 +37,9 @@
         margin-right: var(--space-3);
         transition: font-size 0.25s ease, min-width 0.25s ease;
         flex-shrink: 0;
+        /* Force own compositing layer to avoid invisible-until-tap bug on old iOS */
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
     }
     .rehearsal-weekday::after {
         content: '';

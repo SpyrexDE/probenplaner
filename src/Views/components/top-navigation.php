@@ -88,6 +88,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Force own compositing layer to avoid invisible-until-tap bug on old iOS */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 
 .top-nav-actions {

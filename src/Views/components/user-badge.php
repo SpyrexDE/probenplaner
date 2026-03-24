@@ -70,6 +70,9 @@
     background-clip: text;
     position: relative;
     z-index: 1;
+    /* Force own compositing layer to avoid invisible-until-tap bug on old iOS */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
 }
 </style>
 

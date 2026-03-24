@@ -323,6 +323,7 @@
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         position: relative;
         z-index: 1;
+        -webkit-backdrop-filter: blur(10px);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.2);
     }
