@@ -139,6 +139,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
         _expanded: null,
         _activePopover: null,
         _backdrop: null,
+        _saveControllers: new Map(),
 
         _guard(e) {
             const card = e.target.closest('.ie-card');
@@ -225,24 +226,43 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
 
         _card(el) { return el.closest('[data-rehearsal-id]'); },
 
-        _save(card, field, value) {
-            if (!card.dataset.apiUrl) return Promise.resolve();
-            return fetch(card.dataset.apiUrl, {
+        _fetchWithAbort(url, body, abortKey) {
+            this._saveControllers.get(abortKey)?.abort();
+            const ctrl = new AbortController();
+            this._saveControllers.set(abortKey, ctrl);
+            return fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ field, value }),
+                body: JSON.stringify(body),
+                signal: ctrl.signal,
             })
-            .then(r => r.json());
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) {
+                    window.notifyError?.(data.error || 'Änderung konnte nicht gespeichert werden');
+                }
+                return data;
+            })
+            .catch(err => {
+                if (err.name === 'AbortError') return;
+                window.notifyError?.('Netzwerkfehler – Änderung nicht gespeichert');
+            })
+            .finally(() => this._saveControllers.delete(abortKey));
+        },
+
+        _save(card, field, value) {
+            if (!card.dataset.apiUrl) return Promise.resolve();
+            return this._fetchWithAbort(
+                card.dataset.apiUrl,
+                { field, value },
+                `${card.dataset.rehearsalId}:${field}`
+            );
         },
 
         _saveFields(card, fields) {
             if (!card.dataset.apiUrl) return Promise.resolve();
-            return fetch(card.dataset.apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fields }),
-            })
-            .then(r => r.json());
+            const key = `${card.dataset.rehearsalId}:${Object.keys(fields).join('+')}}`;
+            return this._fetchWithAbort(card.dataset.apiUrl, { fields }, key);
         },
 
         _formatDate(dateStr) {
