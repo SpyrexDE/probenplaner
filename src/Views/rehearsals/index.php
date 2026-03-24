@@ -177,6 +177,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
 
         _collapse(card) {
             this._closePopover();
+            document.querySelectorAll('.ie-time-popover').forEach(p => p.remove());
             // Rebuild datetime display from current values
             const dtField = card.querySelector('[data-ie-field="datetime"]');
             if (dtField && dtField.dataset.ieDtBound) {
@@ -481,8 +482,8 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                 const d = new Date(dt.replace(' ', 'T'));
                 return isNaN(d) ? null : d;
             };
-            const fmtDate = (d) => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-            const fmtTime = (d) => String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+            const fmtDate = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            const fmtTime = (d) => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
 
             const sD = parse(card.dataset.start);
             const eD = parse(card.dataset.end);
@@ -497,6 +498,9 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
 
             el._dtOriginal = { date: dateEl.innerHTML, time: timeEl.innerHTML };
 
+            // Detect Firefox for custom time input fallback
+            const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+
             // opacity:0 keeps layout + pointer events but hides native widget chrome (Firefox-safe)
             const overlayStyle = 'position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:1;border:0;padding:0;margin:0;-webkit-appearance:none;-moz-appearance:none;appearance:none;background:transparent;color:transparent;font-size:16px;';
             const spanStyle = 'display:inline-block;position:relative;cursor:pointer;text-decoration:underline dashed var(--color-primary-200);text-underline-offset:2px;text-decoration-thickness:2px;';
@@ -504,20 +508,8 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             // Firefox-compatible: showPicker() is not supported everywhere
             const tryShowPicker = (inp) => {
                 if (typeof inp.showPicker === 'function') {
-                    try { inp.showPicker(); } catch(_) {}
+                    try { inp.showPicker(); } catch (_) { }
                 }
-            };
-
-            // Span shows custom-formatted text; invisible input sits on top and opens the native picker
-            const mkOverlay = (parent, type, val) => {
-                const inp = document.createElement('input');
-                inp.type = type;
-                inp.value = val;
-                inp.style.cssText = overlayStyle;
-                inp.addEventListener('click', () => tryShowPicker(inp));
-                parent.style.cssText += spanStyle;
-                parent.appendChild(inp);
-                return inp;
             };
 
             // Date inputs
@@ -533,25 +525,61 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             endDateInp.style.cssText = overlayStyle;
             endDateInp.addEventListener('click', () => tryShowPicker(endDateInp));
 
-            // Time: two spans with overlay inputs
+            // Time: two spans — overlay input (non-Firefox) or click-to-popover (Firefox)
             timeEl.innerHTML = '';
-            const mkTimeSpan = (label, val) => {
+            const mkTimeSpan = (label, val, onCommit) => {
                 const span = document.createElement('span');
                 span.style.cssText = spanStyle;
                 span.textContent = label;
+
+                // Hidden input stores the canonical HH:MM value in both branches
                 const inp = document.createElement('input');
                 inp.type = 'time';
                 inp.value = val;
-                inp.style.cssText = overlayStyle;
-                inp.addEventListener('click', () => tryShowPicker(inp));
-                span.appendChild(inp);
+
+                if (isFirefox) {
+                    inp.style.cssText = 'position:absolute;width:0;height:0;opacity:0;pointer-events:none;';
+                    span.appendChild(inp);
+                    span.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this._showTimePicker(span, inp, onCommit);
+                    });
+                } else {
+                    inp.style.cssText = overlayStyle;
+                    inp.addEventListener('click', () => tryShowPicker(inp));
+                    span.appendChild(inp);
+                }
+
                 return { span, inp };
             };
 
-            const startT = mkTimeSpan(this._formatTime(card.dataset.start), fmtTime(sD));
+            const save = () => {
+                const d = dateInp.value;
+                const st = startT.inp.value;
+                const ed = multiDay ? endDateInp.value : d;
+                const et = endT.inp.value;
+                if (!d || !st || !et) return;
+
+                const newStart = d + ' ' + st + ':00';
+                const newEnd = ed + ' ' + et + ':00';
+                card.dataset.start = newStart;
+                card.dataset.end = newEnd;
+
+                updateDateDisplay();
+                startT.span.firstChild.textContent = this._formatTime(newStart);
+                endT.span.firstChild.textContent = this._formatTime(newEnd);
+
+                const sDate = new Date(newStart.replace(' ', 'T'));
+                const weekdayEl = card.querySelector('[data-ie-weekday]');
+                if (weekdayEl && !isNaN(sDate)) weekdayEl.textContent = WEEKDAYS[sDate.getDay()].toUpperCase();
+
+                this._saveFields(card, { start: newStart, end: newEnd });
+            };
+
+            const startT = mkTimeSpan(this._formatTime(card.dataset.start), fmtTime(sD), save);
             const dashSpan = document.createElement('span');
             dashSpan.textContent = ' – ';
-            const endT = mkTimeSpan(this._formatTime(card.dataset.end), fmtTime(eD));
+            const endT = mkTimeSpan(this._formatTime(card.dataset.end), fmtTime(eD), save);
 
             timeEl.append(startT.span, dashSpan, endT.span);
 
@@ -602,29 +630,6 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             });
 
             updateDateDisplay();
-
-            const save = () => {
-                const d  = dateInp.value;
-                const st = startT.inp.value;
-                const ed = multiDay ? endDateInp.value : d;
-                const et = endT.inp.value;
-                if (!d || !st || !et) return;
-
-                const newStart = d + ' ' + st + ':00';
-                const newEnd   = ed + ' ' + et + ':00';
-                card.dataset.start = newStart;
-                card.dataset.end   = newEnd;
-
-                updateDateDisplay();
-                startT.span.firstChild.textContent = this._formatTime(newStart);
-                endT.span.firstChild.textContent   = this._formatTime(newEnd);
-
-                const sDate = new Date(newStart.replace(' ', 'T'));
-                const weekdayEl = card.querySelector('[data-ie-weekday]');
-                if (weekdayEl && !isNaN(sDate)) weekdayEl.textContent = WEEKDAYS[sDate.getDay()].toUpperCase();
-
-                this._saveFields(card, { start: newStart, end: newEnd });
-            };
 
             dateInp.addEventListener('change', save);
             endDateInp.addEventListener('change', () => { updateDateDisplay(); save(); });
@@ -1094,6 +1099,78 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                 addBox.classList.remove('loading');
                 addBox.innerHTML = '<i class="fas fa-plus"></i> <span>Neue Probe</span>';
             });
+        },
+
+        // ── FIREFOX TIME PICKER ──
+        _showTimePicker(span, inp, onCommit) {
+            document.querySelectorAll('.ie-time-popover').forEach(p => p.remove());
+
+            const [curH, curM] = inp.value ? inp.value.split(':').map(Number) : [0, 0];
+            let selH = curH, selM = curM;
+
+            const pop = document.createElement('div');
+            pop.className = 'ie-time-popover';
+
+            const hourCol = document.createElement('div');
+            hourCol.className = 'ie-time-popover-col';
+            const minCol = document.createElement('div');
+            minCol.className = 'ie-time-popover-col';
+
+            const commit = () => {
+                const hh = String(selH).padStart(2, '0');
+                const mm = String(selM).padStart(2, '0');
+                inp.value = `${hh}:${mm}`;
+                span.firstChild.textContent = `${hh}:${mm}`;
+                pop.remove();
+                document.removeEventListener('click', onOutside, true);
+                onCommit();
+            };
+
+            for (let h = 0; h < 24; h++) {
+                const item = document.createElement('div');
+                item.className = 'ie-time-popover-item' + (h === curH ? ' ie-time-selected' : '');
+                item.textContent = String(h).padStart(2, '0');
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selH = h;
+                    hourCol.querySelectorAll('.ie-time-popover-item').forEach(i => i.classList.remove('ie-time-selected'));
+                    item.classList.add('ie-time-selected');
+                });
+                hourCol.appendChild(item);
+            }
+
+            for (let m = 0; m < 60; m += 5) {
+                const item = document.createElement('div');
+                item.className = 'ie-time-popover-item' + (m === curM ? ' ie-time-selected' : '');
+                item.textContent = String(m).padStart(2, '0');
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selM = m;
+                    minCol.querySelectorAll('.ie-time-popover-item').forEach(i => i.classList.remove('ie-time-selected'));
+                    item.classList.add('ie-time-selected');
+                    commit();
+                });
+                minCol.appendChild(item);
+            }
+
+            pop.append(hourCol, minCol);
+
+            const rect = span.getBoundingClientRect();
+            pop.style.top = (rect.bottom + 4) + 'px';
+            pop.style.left = rect.left + 'px';
+            document.body.appendChild(pop);
+            requestAnimationFrame(() => {
+                hourCol.children[curH]?.scrollIntoView({ block: 'center' });
+                minCol.children[Math.round(curM / 5)]?.scrollIntoView({ block: 'center' });
+            });
+
+            const onOutside = (e) => {
+                if (!pop.contains(e.target) && e.target !== span) {
+                    pop.remove();
+                    document.removeEventListener('click', onOutside, true);
+                }
+            };
+            document.addEventListener('click', onOutside, true);
         },
     };
 

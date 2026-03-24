@@ -431,5 +431,47 @@
         .ie-expanded .ie-editable { padding: 8px 12px !important; font-size: 13px !important; min-height: 36px; }
         .ie-expanded .rehearsal-weekday { font-size: 26px; min-width: 42px; }
     }
+
+    /* ── Firefox custom time popover ── */
+    .ie-time-popover {
+        position: fixed;
+        z-index: 100;
+        background: var(--color-bg-primary);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-lg);
+        display: flex;
+        gap: 0;
+        overflow: hidden;
+        animation: ie-fade-in 0.12s ease;
+    }
+    .ie-time-popover-col {
+        display: flex;
+        flex-direction: column;
+        max-height: 220px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--color-border) transparent;
+    }
+    .ie-time-popover-col:not(:last-child) {
+        border-right: 1px solid var(--color-border);
+    }
+    .ie-time-popover-item {
+        padding: 8px 16px;
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+        color: var(--color-text-primary);
+        cursor: pointer;
+        transition: background 0.1s ease;
+        text-align: center;
+        white-space: nowrap;
+    }
+    .ie-time-popover-item:hover { background: var(--color-bg-secondary); }
+    .ie-time-popover-item.ie-time-selected {
+        background: var(--color-primary-50);
+        color: var(--color-primary);
+        font-weight: var(--font-weight-semibold);
+    }
 </style>
 <?php endif; ?>
