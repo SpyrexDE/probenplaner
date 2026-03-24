@@ -910,8 +910,10 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                     } catch { this._tagsCache = []; }
                 }
 
+                // Capture locally so renderFiltered is safe even if _tagsCache is invalidated mid-session
+                const tags = this._tagsCache;
                 const existing = [...card.querySelectorAll('.ie-tag')].map(t => t.dataset.tag);
-                const available = this._tagsCache.filter(t => !existing.includes(t));
+                const available = tags.filter(t => !existing.includes(t));
                 if (!available.length) return;
 
                 this._closePopover();
@@ -922,7 +924,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                 const renderFiltered = (query) => {
                     pop.innerHTML = '';
                     const current = [...card.querySelectorAll('.ie-tag')].map(t => t.dataset.tag);
-                    const filtered = this._tagsCache.filter(t =>
+                    const filtered = tags.filter(t =>
                         !current.includes(t) && t.toLowerCase().includes(query.toLowerCase())
                     );
                     if (!filtered.length) { this._closePopover(); return; }

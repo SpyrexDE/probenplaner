@@ -39,6 +39,7 @@
     // ── Save ──────────────────────────────────────────────────────
 
     let pendingSaves = new Map();
+    let pendingControllers = new Map();
 
     function saveField(el) {
         const field = el.dataset.field;
@@ -54,7 +55,7 @@
             value = el.value;
         }
 
-        // Skip if value unchanged
+        // Skip if value unchanged and already saved
         const prevKey = `${entity}:${entityId}:${field}`;
         if (pendingSaves.get(prevKey) === value && el._settingsLastSaved === value) return;
         pendingSaves.set(prevKey, value);
@@ -69,6 +70,11 @@
         clearFieldError(el);
         showSaveState('saving');
 
+        // Cancel any previous in-flight request for this field
+        pendingControllers.get(prevKey)?.abort();
+        const controller = new AbortController();
+        pendingControllers.set(prevKey, controller);
+
         const orchestraId = el.dataset.orchestraId
             || document.querySelector('[data-orchestra-id]')?.dataset.orchestraId
             || window.ORCHESTRA_ID
@@ -78,13 +84,13 @@
 
         fetch(url, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ field, value }),
+            signal: controller.signal,
         })
             .then(r => r.json())
             .then(data => {
+                pendingControllers.delete(prevKey);
                 if (data.success) {
                     el._settingsLastSaved = value;
                     showSaveState('success');
@@ -93,11 +99,14 @@
                     showFieldError(el, msg);
                     showSaveState('error');
                     if (window.notifyError) {
-                        window.notifyError(data.error || 'Fehler beim Speichern');
+                        window.notifyError(msg);
                     }
                 }
             })
             .catch(err => {
+                // Ignore intentionally aborted requests
+                if (err.name === 'AbortError') return;
+                pendingControllers.delete(prevKey);
                 showSaveState('error');
                 if (window.notifyError) {
                     window.notifyError('Netzwerkfehler: ' + (err.message || 'Verbindung fehlgeschlagen'));
