@@ -329,6 +329,7 @@ class AttendanceController extends Controller
                 'date'     => $start->format('d.m'),
                 'dateFull' => $start->format('Y-m-d'),
                 'weekday'  => ['So','Mo','Di','Mi','Do','Fr','Sa'][$start->format('w')],
+                'color'    => $r['color'] ?? null,
             ];
         }, $pastRehearsals);
 

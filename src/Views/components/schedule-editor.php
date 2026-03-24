@@ -273,10 +273,11 @@ $editorId = $editorId ?? ('schedule-editor-' . uniqid());
                         window.notifyError(data.error || 'Fehler beim Speichern des Ablaufs');
                     }
                 })
-                .catch(err => {
+                .catch(() => {
                     if (window.SettingsEngine && window.SettingsEngine.showSaveState) {
                         window.SettingsEngine.showSaveState('error');
                     }
+                    window.notifyError?.('Netzwerkfehler – Ablauf nicht gespeichert');
                 });
         }
 

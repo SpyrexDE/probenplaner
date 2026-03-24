@@ -1006,7 +1006,10 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                 })
                 .then(r => r.json())
                 .then(data => {
-                    if (!data.success) return;
+                    if (!data.success) {
+                        window.notifyError?.(data.error || 'Termin konnte nicht gelöscht werden');
+                        return;
+                    }
                     const card = document.querySelector(`[data-rehearsal-id="${rehearsalId}"]`);
                     if (!card) return;
                     card.style.transition = 'opacity 0.3s ease, max-height 0.3s ease, margin 0.3s ease, padding 0.3s ease';
@@ -1016,7 +1019,8 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                     card.style.padding = '0';
                     card.style.overflow = 'hidden';
                     setTimeout(() => card.remove(), 350);
-                });
+                })
+                .catch(() => window.notifyError?.('Netzwerkfehler – Termin nicht gelöscht'));
             });
         },
 
@@ -1069,7 +1073,10 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                 fetch(`${BASE}/rehearsals/duplicate/${rehearsalId}`, { method: 'POST', body: fd })
                 .then(r => r.json())
                 .then(data => {
-                    if (!data.success || !data.html) return;
+                    if (!data.success || !data.html) {
+                        window.notifyError?.(data.error || 'Termin konnte nicht dupliziert werden');
+                        return;
+                    }
                     const tmp = document.createElement('div');
                     tmp.innerHTML = data.html;
                     const newCard = tmp.querySelector('.ie-card');
@@ -1084,7 +1091,8 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                         this._expand(newCard);
                         newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     });
-                });
+                })
+                .catch(() => window.notifyError?.('Netzwerkfehler – Termin nicht dupliziert'));
             });
         },
 
@@ -1099,7 +1107,10 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             .then(data => {
                 addBox.classList.remove('loading');
                 addBox.innerHTML = '<i class="fas fa-plus"></i> <span>Neue Probe</span>';
-                if (!data.success || !data.html) return;
+                if (!data.success || !data.html) {
+                    window.notifyError?.(data.error || 'Termin konnte nicht erstellt werden');
+                    return;
+                }
                 const list = document.getElementById('rehearsalsList') || addBox.parentElement;
                 const tmp = document.createElement('div');
                 tmp.innerHTML = data.html;
@@ -1120,6 +1131,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             .catch(() => {
                 addBox.classList.remove('loading');
                 addBox.innerHTML = '<i class="fas fa-plus"></i> <span>Neue Probe</span>';
+                window.notifyError?.('Netzwerkfehler – Termin nicht erstellt');
             });
         },
 
@@ -1593,12 +1605,16 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                     pop.querySelector('#bulkDeleteConfirm').addEventListener('click', async () => {
                         this._closePopover();
                         const orchestraBase = document.querySelector('[data-api-url]')?.dataset.apiUrl?.match(/^\/([^/]+\/[^/]+)/)?.[1];
+                        let failed = 0;
                         await Promise.all(ids.map(id =>
                             fetch(`/${orchestraBase}/rehearsals/delete/${id}`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                                 body: 'id=' + id,
                             })
+                            .then(r => r.json())
+                            .then(data => { if (!data.success) failed++; })
+                            .catch(() => { failed++; })
                         ));
                         ids.forEach(id => {
                             const card = document.querySelector(`[data-rehearsal-id="${id}"]`);
@@ -1612,7 +1628,11 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                         });
                         this.deselectAll();
                         if (this.active) this.toggle();
-                        window.notifySuccess?.(ids.length + ' Termine gelöscht');
+                        if (failed > 0) {
+                            window.notifyError?.(`${failed} Termin${failed > 1 ? 'e' : ''} konnten nicht gelöscht werden`);
+                        } else {
+                            window.notifySuccess?.(ids.length + ' Termine gelöscht');
+                        }
                     });
                     break;
 
@@ -1649,7 +1669,9 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                                         created++;
                                     }
                                 }
-                            } catch (_) {}
+                            } catch (_) {
+                                window.notifyError?.('Ein Termin konnte nicht dupliziert werden');
+                            }
                         }
                         this.deselectAll();
                         if (this.active) this.toggle();
@@ -1731,7 +1753,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                 });
                 window.notifySuccess?.(data.updated + ' Termine aktualisiert');
             })
-            .catch(() => window.notifyError?.('Fehler beim Speichern'));
+            .catch(() => window.notifyError?.('Netzwerkfehler – Änderungen nicht gespeichert'));
         },
 
         _applyTimeAction() {
@@ -1929,7 +1951,10 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             .then(r => r.json())
             .then(data => {
                 btn.classList.remove('loading');
-                if (!data.success || !data.html) return;
+                if (!data.success || !data.html) {
+                    window.notifyError?.(data.error || 'Termin konnte nicht erstellt werden');
+                    return;
+                }
                 const list = document.getElementById('rehearsalsList') || document.querySelector('.rehearsal-add-box')?.parentElement;
                 if (!list) return;
                 const tmp = document.createElement('div');
@@ -1947,7 +1972,10 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                     newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 });
             })
-            .catch(() => { btn.classList.remove('loading'); });
+            .catch(() => {
+                btn.classList.remove('loading');
+                window.notifyError?.('Netzwerkfehler – Termin nicht erstellt');
+            });
         });
     });
 
@@ -2208,6 +2236,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             .catch(() => {
                 submit.disabled = false;
                 submit.textContent = 'Erstellen';
+                window.notifyError?.('Netzwerkfehler – Termine nicht erstellt');
             });
         });
     }

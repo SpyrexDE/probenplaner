@@ -606,6 +606,10 @@ foreach ($members as $member) {
     background: var(--color-gray-200);
 }
 
+.att-section-row .att-col-total {
+    text-align: center;
+}
+
 .att-cell-present {
     background: var(--color-success-100);
     color: var(--color-success-dark);
@@ -742,9 +746,194 @@ thead .att-col-total {
         max-width: 100%;
     }
 }
+
+/* === PRINT === */
+.att-print-only {
+    display: none;
+}
+
+@media print {
+    .att-print-only {
+        display: block !important;
+    }
+
+    .top-nav,
+    nav,
+    header,
+    .sidebar,
+    #sidebar-wrapper,
+    .sidebar-overlay,
+    .btn,
+    button,
+    .fab,
+    .att-table-filters,
+    .att-title-row,
+    .att-actions,
+    .att-timeline-wrap,
+    #att-member-list,
+    .att-legend,
+    .page-header,
+    .breadcrumbs,
+    .alert,
+    .toast,
+    .modal,
+    .dropdown {
+        display: none !important;
+    }
+
+    * {
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+
+    body,
+    html {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif !important;
+        font-size: 10pt !important;
+        line-height: 1.3 !important;
+        color: #000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    #wrapper,
+    #page-content-wrapper {
+        display: block !important;
+        position: static !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .page-content-inner,
+    .max-w-7xl {
+        display: block !important;
+        margin: 0 !important;
+        padding: 0 20px !important;
+        max-width: none !important;
+    }
+
+    .att-page {
+        max-width: none !important;
+        padding: 0 !important;
+    }
+
+    /* Print header */
+    .att-print-header {
+        margin-bottom: 20px !important;
+        padding-bottom: 14px !important;
+        border-bottom: 2px solid #e5e7eb !important;
+    }
+
+    .att-print-header-main {
+        text-align: center !important;
+        margin-bottom: 10px !important;
+    }
+
+    .att-print-title {
+        font-size: 18pt !important;
+        font-weight: bold !important;
+        margin: 0 0 4px 0 !important;
+        color: #111827 !important;
+    }
+
+    .att-print-subtitle {
+        font-size: 11pt !important;
+        color: #6b7280 !important;
+        margin: 0 !important;
+    }
+
+    .att-print-info {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        font-size: 9pt !important;
+        color: #9ca3af !important;
+    }
+
+    /* Table */
+    .att-table-wrap {
+        overflow: visible !important;
+        border: 1px solid #e5e7eb !important;
+        border-radius: 6px !important;
+        background: white !important;
+    }
+
+    .att-table-scroll {
+        overflow: visible !important;
+    }
+
+    .att-dense-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        font-size: 9pt !important;
+    }
+
+    .att-dense-table th,
+    .att-dense-table td {
+        padding: 6px 8px !important;
+        border: 1px solid #e5e7eb !important;
+        color: #111827 !important;
+    }
+
+    .att-dense-table thead th {
+        background: #f3f4f6 !important;
+        font-weight: 600 !important;
+        color: #374151 !important;
+        position: static !important;
+    }
+
+    .att-dense-table .att-name-col {
+        position: static !important;
+        text-align: left !important;
+    }
+
+    .att-section-row td {
+        background: #e5e7eb !important;
+    }
+
+    .att-cell-present { background: #d1fae5 !important; }
+    .att-cell-absent { background: #fee2e2 !important; }
+    .att-cell-deviation { background: #fde68a !important; }
+    .att-cell-positive-dev { background: #d1fae5 !important; }
+
+    .att-dense-table td.att-cell-present { color: #065f46 !important; }
+    .att-dense-table td.att-cell-absent { color: #991b1b !important; }
+    .att-dense-table td.att-cell-deviation { color: #991b1b !important; }
+    .att-dense-table td.att-cell-positive-dev { color: #92400e !important; }
+    .att-dense-table td.att-cell-unset { color: #9ca3af !important; }
+    .att-col-total { background: #f3f4f6 !important; position: static !important; }
+
+    @page {
+        margin: 1.2cm !important;
+        size: A4 landscape !important;
+    }
+
+    .att-dense-table thead {
+        display: table-header-group !important;
+    }
+
+    .att-dense-table tfoot {
+        display: table-row-group !important;
+    }
+}
 </style>
 
 <div class="att-page">
+
+    <!-- Print Header (table view only) -->
+    <div class="att-print-only att-print-header" id="att-print-header">
+        <div class="att-print-header-main">
+            <div class="att-print-title">Anwesenheiten</div>
+            <div class="att-print-subtitle"><?= htmlspecialchars($_SESSION['current_orchestra_name'] ?? 'Orchester') ?></div>
+        </div>
+        <div class="att-print-info">
+            <div>Stand: <?= date('d.m.Y, H:i') ?> Uhr</div>
+            <div id="att-print-range"></div>
+        </div>
+    </div>
 
     <!-- Header -->
     <div class="att-header">
@@ -901,6 +1090,16 @@ thead .att-col-total {
     <div id="att-table-view" style="display: none;"></div>
 
 </div>
+
+<?php
+// Print FAB (shown only in table mode via JS)
+$renderComponent = true;
+$icon = 'print';
+$onclick = 'window.print()';
+$title = 'Drucken';
+$id = 'att-print-btn';
+include __DIR__ . '/../components/fab.php';
+?>
 
 <!-- Save Indicator -->
 <div class="att-save-indicator" id="att-save-indicator"></div>
@@ -1317,6 +1516,10 @@ thead .att-col-total {
     let tableMode = false;
     let tableDataCache = null;
 
+    // Hide print FAB until table mode is active
+    const printFabInit = document.getElementById('att-print-btn');
+    if (printFabInit) printFabInit.style.display = 'none';
+
     function invalidateTableCache() {
         tableDataCache = null;
     }
@@ -1325,7 +1528,12 @@ thead .att-col-total {
 
     viewToggle.addEventListener('click', function() {
         tableMode = !tableMode;
+        this.blur();
         const icon = this.querySelector('i');
+
+        const printBtn = document.getElementById('att-print-btn');
+
+        const attPage = document.querySelector('.att-page');
 
         if (tableMode) {
             icon.className = 'fas fa-list';
@@ -1336,6 +1544,8 @@ thead .att-col-total {
             actionsBar.style.display = 'none';
             tableContainer.style.display = '';
             tableFilters.style.display = '';
+            if (printBtn) printBtn.style.display = '';
+            if (attPage) attPage.style.paddingBottom = '80px';
 
             if (!tableDataCache) {
                 loadTableData();
@@ -1349,6 +1559,8 @@ thead .att-col-total {
             actionsBar.style.display = '';
             tableContainer.style.display = 'none';
             tableFilters.style.display = 'none';
+            if (printBtn) printBtn.style.display = 'none';
+            if (attPage) attPage.style.paddingBottom = '';
         }
     });
 
@@ -1452,7 +1664,8 @@ thead .att-col-total {
         let html = '<div class="att-table-wrap"><div class="att-table-scroll"><table class="att-dense-table"><thead><tr>';
         html += '<th class="att-name-col">Name</th>';
         rehearsals.forEach(r => {
-            html += '<th title="' + r.weekday + ', ' + r.date + '">' + r.weekday + '<br>' + r.date + '</th>';
+            const thStyle = r.color ? ' style="background:' + r.color + '26;border-bottom:2px solid ' + r.color + '40;"' : '';
+            html += '<th title="' + r.weekday + ', ' + r.date + '"' + thStyle + '>' + r.weekday + '<br>' + r.date + '</th>';
         });
         html += '<th class="att-col-total">Fehlzeiten</th>';
         html += '</tr></thead><tbody>';
@@ -1471,9 +1684,8 @@ thead .att-col-total {
 
             if (!filteredMembers.length) return;
 
-            if (section.label) {
-                html += '<tr class="att-section-row"><td class="att-name-col" colspan="' + colCount + '">' + escapeHtml(section.label) + '</td></tr>';
-            }
+            let sectionMissed = 0;
+            let memberRowsHtml = '';
 
             filteredMembers.forEach(m => {
                 const uid = String(m.id);
@@ -1481,7 +1693,7 @@ thead .att-col-total {
                 const userProm = promises[uid] || {};
                 let missed = 0;
 
-                html += '<tr><td class="att-name-col" title="' + escapeHtml(m.name) + '">' + escapeHtml(m.name) + '</td>';
+                memberRowsHtml += '<tr><td class="att-name-col" title="' + escapeHtml(m.name) + '">' + escapeHtml(m.name) + '</td>';
 
                 rehearsals.forEach((r, ci) => {
                     const rid = String(r.id);
@@ -1515,13 +1727,24 @@ thead .att-col-total {
                         icon = '–';
                     }
 
-                    html += '<td class="' + cls + '">' + icon + '</td>';
+                    memberRowsHtml += '<td class="' + cls + '">' + icon + '</td>';
                 });
 
                 totalAbsences += missed;
-                html += '<td class="att-col-total">' + (missed > 0 ? missed : '–') + '</td>';
-                html += '</tr>';
+                sectionMissed += missed;
+                memberRowsHtml += '<td class="att-col-total">' + (missed > 0 ? missed : '–') + '</td>';
+                memberRowsHtml += '</tr>';
             });
+
+            if (section.label) {
+                html += '<tr class="att-section-row">';
+                html += '<td class="att-name-col">' + escapeHtml(section.label) + '</td>';
+                rehearsals.forEach(() => { html += '<td></td>'; });
+                html += '<td class="att-col-total">' + (sectionMissed > 0 ? sectionMissed : '–') + '</td>';
+                html += '</tr>';
+            }
+
+            html += memberRowsHtml;
         });
 
         html += '</tbody><tfoot><tr><td class="att-name-col" style="background:var(--color-gray-200);font-weight:var(--font-weight-semibold)">Gesamt</td>';
@@ -1539,6 +1762,14 @@ thead .att-col-total {
         html += '<span class="att-legend-item"><span class="att-legend-swatch att-cell-unset">–</span> Nicht erfasst</span>';
         html += '</div>';
         tableContainer.innerHTML = html;
+
+        // Update print range label
+        const rangeEl = document.getElementById('att-print-range');
+        if (rangeEl && rehearsals.length) {
+            const from = rehearsals[0].weekday + ' ' + rehearsals[0].date;
+            const to = rehearsals[rehearsals.length - 1].weekday + ' ' + rehearsals[rehearsals.length - 1].date;
+            rangeEl.textContent = from === to ? from : from + ' – ' + to;
+        }
     }
 
     function escapeHtml(str) {

@@ -931,8 +931,12 @@ $editorId          = 'section-config-editor';
                 .then(r => r.json())
                 .then(data => {
                     showSaveState(data.success ? 'success' : 'error');
+                    if (!data.success) window.notifyError?.(data.error || 'Registerstruktur konnte nicht gespeichert werden');
                 })
-                .catch(() => showSaveState('error'));
+                .catch(() => {
+                    showSaveState('error');
+                    window.notifyError?.('Netzwerkfehler – Registerstruktur nicht gespeichert');
+                });
         }
 
         function resetToDefault() {
@@ -956,9 +960,13 @@ $editorId          = 'section-config-editor';
                         setTimeout(() => location.reload(), 500);
                     } else {
                         showSaveState('error');
+                        window.notifyError?.(data.error || 'Zurücksetzen fehlgeschlagen');
                     }
                 })
-                .catch(() => showSaveState('error'));
+                .catch(() => {
+                    showSaveState('error');
+                    window.notifyError?.('Netzwerkfehler – Zurücksetzen fehlgeschlagen');
+                });
         }
 
         function showSaveState(state) {

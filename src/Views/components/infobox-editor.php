@@ -299,6 +299,7 @@ $editorId = $editorId ?? ('infobox-editor-' . uniqid());
                     if (window.SettingsEngine && window.SettingsEngine.showSaveState) {
                         window.SettingsEngine.showSaveState('error');
                     }
+                    window.notifyError?.('Netzwerkfehler – Hinweise nicht gespeichert');
                 });
         }
 
