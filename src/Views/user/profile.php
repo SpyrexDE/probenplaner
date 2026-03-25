@@ -70,19 +70,19 @@ include __DIR__ . '/../components/theme-selector.php';
                 </div>
             </div>
             <div class="modern-card-body">
-                <label for="email" class="form-label-modern">
-                    <?= icon('envelope', 'form-label-icon') ?> E-Mail
-                </label>
-                <input type="email" class="form-input-modern" id="email" name="email"
-                    placeholder="Deine E-Mail-Adresse"
-                    value="<?= htmlspecialchars($user['email'] ?? '') ?>" required>
-
-                <label for="display_name" class="form-label-modern" style="margin-top: 1rem;">
+                <label for="display_name" class="form-label-modern">
                     <?= icon('user', 'form-label-icon') ?> Anzeigename
                 </label>
                 <input type="text" class="form-input-modern" id="display_name" name="display_name"
                     placeholder="Dein Anzeigename" minlength="2" maxlength="100"
                     value="<?= htmlspecialchars($user['display_name'] ?? '') ?>" required>
+
+                <label for="email" class="form-label-modern" style="margin-top: 1rem;">
+                    <?= icon('envelope', 'form-label-icon') ?> E-Mail
+                </label>
+                <input type="email" class="form-input-modern" id="email" name="email"
+                    placeholder="Deine E-Mail-Adresse"
+                    value="<?= htmlspecialchars($user['email'] ?? '') ?>" required>
             </div>
         </div>
 

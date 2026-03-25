@@ -291,6 +291,13 @@ class Validator
                     $errors[] = "{$label} hat ein ungültiges Format";
                 }
             }
+
+            if ($rule === 'email' && is_string($value) && $value !== '') {
+                $emailValidation = self::validateEmail($value);
+                if (!$emailValidation['valid']) {
+                    $errors = array_merge($errors, $emailValidation['errors']);
+                }
+            }
         }
 
         return ['valid' => empty($errors), 'errors' => $errors];

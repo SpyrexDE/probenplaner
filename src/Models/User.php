@@ -483,8 +483,19 @@ class User extends Model
     {
         $keycloakId = $keycloakUserInfo['sub'] ?? null;
         $email = $keycloakUserInfo['email'] ?? null;
-        $displayName = trim(($keycloakUserInfo['given_name'] ?? '') . ' ' . ($keycloakUserInfo['family_name'] ?? ''))
-            ?: ($keycloakUserInfo['preferred_username'] ?? $email);
+        $displayName = trim($keycloakUserInfo['name'] ?? '');
+        if (empty($displayName)) {
+            $displayName = trim(($keycloakUserInfo['given_name'] ?? '') . ' ' . ($keycloakUserInfo['family_name'] ?? ''));
+        }
+        if (empty($displayName) || filter_var($displayName, FILTER_VALIDATE_EMAIL)) {
+            $pref = trim($keycloakUserInfo['preferred_username'] ?? '');
+            if (!empty($pref) && !filter_var($pref, FILTER_VALIDATE_EMAIL)) {
+                $displayName = $pref;
+            }
+        }
+        if (empty($displayName)) {
+            $displayName = $email;
+        }
 
         if (!$keycloakId) {
             return ['error' => true, 'message' => 'Keycloak ID fehlt'];
@@ -492,16 +503,26 @@ class User extends Model
 
         $existingUser = $this->findByKeycloakId($keycloakId);
         if ($existingUser) {
+            // Silently update display_name if it was an email and we now have a real name
+            if (filter_var($existingUser['display_name'] ?? '', FILTER_VALIDATE_EMAIL) && !filter_var($displayName, FILTER_VALIDATE_EMAIL)) {
+                $this->update($existingUser['id'], ['display_name' => $displayName]);
+                $existingUser['display_name'] = $displayName;
+            }
             return $existingUser;
         }
 
         if ($email) {
             $existingUser = $this->findByEmail($email);
             if ($existingUser) {
-                $this->update($existingUser['id'], [
+                $updateData = [
                     'keycloak_id' => $keycloakId,
                     'auth_provider' => 'keycloak',
-                ]);
+                ];
+                if (filter_var($existingUser['display_name'] ?? '', FILTER_VALIDATE_EMAIL) && !filter_var($displayName, FILTER_VALIDATE_EMAIL)) {
+                    $updateData['display_name'] = $displayName;
+                    $existingUser['display_name'] = $displayName;
+                }
+                $this->update($existingUser['id'], $updateData);
                 return $existingUser;
             }
         }

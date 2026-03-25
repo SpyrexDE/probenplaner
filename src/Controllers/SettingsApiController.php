@@ -142,7 +142,7 @@ class SettingsApiController extends Controller
 
         // Persist
         $saved = $this->persistUpdate($entity, $entityId, $fieldsToUpdate, $context);
-        if ($saved) {
+        if ($saved === true) {
             // Sync session on email/display_name change
             if ($entity === 'user' && isset($fieldsToUpdate['email'])) {
                 $_SESSION['email'] = $fieldsToUpdate['email'];
@@ -173,6 +173,8 @@ class SettingsApiController extends Controller
             }
 
             $this->json($response);
+        } elseif (is_array($saved) && isset($saved['error'])) {
+            $this->json(['success' => false, 'error' => $saved['message'] ?? 'Speichern fehlgeschlagen'], 422);
         } else {
             $this->json(['success' => false, 'error' => 'Speichern fehlgeschlagen'], 500);
         }
@@ -236,7 +238,7 @@ class SettingsApiController extends Controller
         }
     }
 
-    private function persistUpdate(string $entity, int $entityId, array $data, array $context): bool
+    private function persistUpdate(string $entity, int $entityId, array $data, array $context)
     {
         switch ($entity) {
             case 'orchestra':
@@ -307,6 +309,9 @@ class SettingsApiController extends Controller
 
                 if (empty($data)) return true;
                 $result = $model->updateProfile($entityId, $data);
+                if (is_array($result) && !empty($result['error'])) {
+                    return $result;
+                }
                 return $result === true || (is_bool($result) && $result);
 
             case 'rehearsal':
