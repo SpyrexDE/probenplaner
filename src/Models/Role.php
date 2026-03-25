@@ -15,7 +15,6 @@ class Role extends Model
 
     /** Fixed permission set for the immutable conductor role */
     private const CONDUCTOR_PERMISSIONS = [
-        'can_attend_rehearsals',
         'can_view_schedule',
         'can_view_own_section_stats',
         'can_view_parent_section_stats',
