@@ -265,6 +265,25 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             return this._fetchWithAbort(card.dataset.apiUrl, { fields }, key);
         },
 
+        _sortRehearsals(container) {
+            if (!container) return;
+            const cards = Array.from(container.querySelectorAll('.ie-card[data-rehearsal-id]'));
+            if (cards.length < 2) return;
+            cards.sort((a, b) => {
+                const sA = a.dataset.start || '';
+                const sB = b.dataset.start || '';
+                return sA.localeCompare(sB);
+            });
+            const lazySection = container.querySelector('[data-lazy-section]');
+            cards.forEach(c => {
+                if (lazySection) {
+                    container.insertBefore(c, lazySection);
+                } else {
+                    container.appendChild(c);
+                }
+            });
+        },
+
         _formatDate(dateStr) {
             const d = new Date(dateStr.replace(' ', 'T'));
             if (isNaN(d)) return dateStr;
@@ -594,6 +613,10 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                 if (weekdayEl && !isNaN(sDate)) weekdayEl.textContent = WEEKDAYS[sDate.getDay()].toUpperCase();
 
                 this._saveFields(card, { start: newStart, end: newEnd });
+                
+                const container = card.closest('#rehearsalsList') || card.parentElement;
+                this._sortRehearsals(container);
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
             };
 
             const startT = mkTimeSpan(this._formatTime(card.dataset.start), fmtTime(sD), save);
@@ -1089,6 +1112,8 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                     this._activateScripts(newCard);
                     requestAnimationFrame(() => {
                         this._expand(newCard);
+                        const container = newCard.closest('#rehearsalsList') || newCard.parentElement;
+                        this._sortRehearsals(container);
                         newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     });
                 })
@@ -1125,6 +1150,8 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                 document.querySelector('.empty-state')?.closest('.flex')?.remove();
                 requestAnimationFrame(() => {
                     this._expand(newCard);
+                    const container = newCard.closest('#rehearsalsList') || newCard.parentElement;
+                    this._sortRehearsals(container);
                     newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 });
             })
