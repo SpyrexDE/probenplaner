@@ -52,8 +52,8 @@ class PromiseController extends Controller
     {
         $this->validateOrchestraContext($params);
 
-        // Conductors don't give promises — redirect to admin view
-        if (!empty($_SESSION['current_permissions']['can_manage_ensemble'])) {
+        // Redirect to admin view only if they cannot attend rehearsals themselves
+        if (empty($_SESSION['current_permissions']['can_attend_rehearsals']) && !empty($_SESSION['current_permissions']['can_manage_ensemble'])) {
             $this->redirect($this->orchestraUrl('/promises/admin'));
             return;
         }
