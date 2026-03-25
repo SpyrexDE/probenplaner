@@ -666,6 +666,11 @@ class SmartGroupDisplay
         }
 
         $originalScore = $this->calculateCompressionScore($this->generateSimpleList($selectedGroups));
+        error_log("Original Description: " . $this->generateSimpleList($selectedGroups));
+        error_log("Original Score: " . $originalScore);
+        foreach ($candidates as $k => $v) {
+            error_log("Candidate " . $v['strategy'] . ": " . $v['description'] . " (Score: " . $v['score'] . ")");
+        }
 
         // Sort candidates by multiple criteria:
         // 1. Strongly prefer single root exclusions over complex patterns
@@ -695,6 +700,14 @@ class SmartGroupDisplay
                 }
             }
 
+            // If the score difference is significant, use score instead of strategy.
+            // This ensures that simple, clean section lists (like "Blechbläser") win
+            // over complex exclusions (like "Bläser ohne Holzbläser") when the clean list is simpler.
+            $scoreDiff = $a['score'] - $b['score'];
+            if (abs($scoreDiff) > 10) {
+                return $scoreDiff <=> 0;
+            }
+
             // Strategy preference
             $strategyOrder = [
                 'single_root' => 10,  // Much higher priority for single root exclusions
@@ -717,13 +730,6 @@ class SmartGroupDisplay
         // Return the best candidate that's better than the original
         foreach ($candidates as $candidate) {
             if ($candidate['score'] < $originalScore) {
-                return $candidate['description'];
-            }
-        }
-
-        // If no candidate is better, but we have compressed sections with exclusions, use that
-        foreach ($candidates as $candidate) {
-            if ($candidate['strategy'] === 'compressed_sections_with_exclusions') {
                 return $candidate['description'];
             }
         }
@@ -1850,7 +1856,8 @@ class SmartGroupDisplay
 
         // Penalty for complexity
         if (strpos($description, $this->language['without']) !== false) {
-            $score += 10; // "without" adds some complexity but can be worth it
+            // "without" adds significant complexity, offset by section exclusion bonus later
+            $score += 45; 
         }
 
         // Count commas as complexity
@@ -1865,11 +1872,27 @@ class SmartGroupDisplay
             $score -= 3; // Small bonus for compositional expressions
         }
 
-        // Heavy penalty for very broad exclusions from large groups
+        // Handling exclusions from the root group (e.g. "Tutti")
         $rootGroup = $this->getRootGroup();
-        $rootDisplayName = $rootGroup ? $rootGroup['display_name'] : $this->getDynamicRootId();
+        $rootDisplayName = $rootGroup ? ($rootGroup['display_name'] ?? $rootGroup['id']) : 'Tutti';
+        
         if (strpos($description, $rootDisplayName) === 0 && strpos($description, $this->language['without']) !== false) {
-            $score += 50; // Heavy penalty for starting with root group exclusions - prefer specific sections
+            // We want "Tutti ohne Bläser" to win over "Streicher, Schlagwerk und Harfe"
+            // But we DON'T want "Tutti ohne Trompete und Violine 1" to win over listing a few sections.
+            // If it's a simple exclusion (just one or two terms), it's good!
+            $ohneCount = substr_count($description, $this->language['without']);
+            $commaCount = substr_count($description, ',');
+            $undCount = substr_count($description, ' und ');
+            
+            $excludedItemsCount = $commaCount + $undCount + 1; // Roughly the number of items excluded
+            
+            if ($ohneCount === 1 && $excludedItemsCount <= 2) {
+                // Good, simple exclusion like "Tutti ohne Bläser"
+                $score -= 40; // Bonus to make it win against long raw lists
+            } else {
+                // Complex exclusion, penalize it
+                $score += 30;
+            }
         }
 
         // Handle multiple exclusion patterns
