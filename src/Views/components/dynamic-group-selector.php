@@ -161,7 +161,12 @@ function initializeHierarchicalCheckboxes(container) {
           
           const checkbox = item.querySelector('input[type="checkbox"]');
           if (checkbox) {
-            checkbox.checked = !checkbox.checked;
+            if (checkbox.indeterminate) {
+              checkbox.checked = true;
+              checkbox.indeterminate = false;
+            } else {
+              checkbox.checked = !checkbox.checked;
+            }
             checkbox.dispatchEvent(new Event('change', { bubbles: true }));
           }
         });
@@ -169,6 +174,7 @@ function initializeHierarchicalCheckboxes(container) {
     },
         
         handleCheckboxChange: function(checkbox) {
+            checkbox.indeterminate = false;
             if (checkbox.checked) {
                 this.checkChildren(checkbox);
                 this.updateParentStates(checkbox);

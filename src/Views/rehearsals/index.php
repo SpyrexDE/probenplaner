@@ -1390,6 +1390,17 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                 if (key === 'color' && (card.dataset.color || '') !== val) return false;
                 if (key === 'tags' && !(card.dataset.tags || '').toLowerCase().includes(val.toLowerCase())) return false;
                 if (key === 'roles' && !(card.dataset.roles || '').toLowerCase().includes(val.toLowerCase())) return false;
+                if (key === 'groups') {
+                    try {
+                        const groups = JSON.parse(card.dataset.groups || '[]');
+                        if (Array.isArray(val) && val.length > 0) {
+                            if (groups.length === 0) return false;
+                            if (!groups.every(g => val.includes(g))) return false;
+                        } else {
+                            if (!groups.includes(val)) return false;
+                        }
+                    } catch(e) { return false; }
+                }
                 if (key === 'dateRange') {
                     const start = card.dataset.start?.split(' ')[0] || '';
                     if (val.from && start < val.from) return false;
@@ -1403,6 +1414,26 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
         openFilter(chip) {
             this._closePopover();
             const filterType = chip.dataset.filter;
+
+            if (filterType === 'groups') {
+                this._filterGroupsMode = true;
+                this._filterGroupsChip = chip;
+                const modal = document.getElementById('ieGroupsModal');
+                const body = document.getElementById('ieGroupsBody');
+                if (modal && body) {
+                    body.querySelectorAll('input[name="groups[]"]').forEach(cb => { cb.checked = false; cb.indeterminate = false; });
+                    const currentFilters = this._activeFilters['groups'] || [];
+                    if (Array.isArray(currentFilters)) {
+                        currentFilters.forEach(g => {
+                            const cb = body.querySelector(`input[name="groups[]"][value="${g}"]`);
+                            if (cb) cb.checked = true;
+                        });
+                    }
+                    if (typeof recalculateHierarchyStates === 'function') recalculateHierarchyStates(body);
+                    modal.showModal();
+                }
+                return;
+            }
 
             // Force-load all lazy batches before building filter options
             if (!this._lazyLoaded && document.querySelector('[data-lazy-section]')) {
@@ -1496,6 +1527,13 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                 }
                 else if (filterType === 'roles') {
                     (card.dataset.roles || '').split(',').forEach(r => { if (r.trim()) set.add(r.trim()); });
+                    return;
+                }
+                else if (filterType === 'groups') {
+                    try {
+                        const groups = JSON.parse(card.dataset.groups || '[]');
+                        groups.forEach(g => { if (g.trim()) set.add(g.trim()); });
+                    } catch(e) {}
                     return;
                 }
                 if (v?.trim()) set.add(v.trim());
@@ -2036,6 +2074,18 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                 BulkMgr._bulkGroupsMode = false;
                 if (checked.length > 0) {
                     BulkMgr._applyBulk({ groups: JSON.stringify(checked) });
+                }
+                return;
+            }
+            if (BulkMgr._filterGroupsMode) {
+                const body = document.getElementById('ieGroupsBody');
+                const checked = [...body.querySelectorAll('input[name="groups[]"]:checked')].map(cb => cb.value);
+                document.getElementById('ieGroupsModal')?.close();
+                BulkMgr._filterGroupsMode = false;
+                if (checked.length > 0) {
+                    BulkMgr._setFilter('groups', checked, BulkMgr._filterGroupsChip);
+                } else {
+                    BulkMgr._clearFilter('groups', BulkMgr._filterGroupsChip);
                 }
                 return;
             }
