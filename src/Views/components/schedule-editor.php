@@ -204,6 +204,12 @@ $editorId = $editorId ?? ('schedule-editor-' . uniqid());
             items = [];
         }
 
+        function sortByTime() {
+            items.sort((a, b) => a.time.localeCompare(b.time));
+        }
+
+        sortByTime();
+
         function render() {
             let html = '';
             items.forEach((item, i) => {
@@ -298,6 +304,20 @@ $editorId = $editorId ?? ('schedule-editor-' . uniqid());
             if (autoSave) debouncedSave();
         });
 
+        container.addEventListener('keydown', function(e) {
+            if (e.key !== 'Enter') return;
+            const field = e.target.dataset.field;
+            if (field === 'time' || field === 'label') e.target.blur();
+        });
+
+        // Sort when focus leaves the editor entirely (not between fields)
+        container.addEventListener('focusout', function(e) {
+            if (container.contains(e.relatedTarget)) return;
+            sortByTime();
+            render();
+            if (autoSave) triggerAutoSave();
+        });
+
         container.addEventListener('click', function(e) {
             // Remove button
             const removeBtn = e.target.closest('.schedule-editor-remove');
@@ -323,6 +343,7 @@ $editorId = $editorId ?? ('schedule-editor-' . uniqid());
                     time: newH + ':' + newM,
                     label: ''
                 });
+                sortByTime();
                 render();
 
                 // Focus the new label input

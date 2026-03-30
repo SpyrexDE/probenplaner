@@ -201,9 +201,15 @@ class SmartGroupDisplay
 
         // Handle single root group
         if (count($selectedGroups) === 1) {
-            $singleGroup = $selectedGroups[0];
-            $displayName = $this->groupManager->getDisplayName($singleGroup);
-            return $displayName;
+            return $this->groupManager->getDisplayName($selectedGroups[0]);
+        }
+
+        // If every selected item is an instrument (leaf node) whose immediate parent
+        // section is the same, always express as "Section ohne X" – conductors never
+        // enumerate a subset of a section without naming the section.
+        $sameSection = $this->tryDescribeAsSameSectionExclusion($selectedGroups);
+        if ($sameSection !== null) {
+            return $sameSection;
         }
 
         // Find the most concise representation using tree compression
@@ -212,8 +218,56 @@ class SmartGroupDisplay
             return $compressedDescription;
         }
 
-        // Fallback to simple list if no compression was found
         return $this->generateSimpleList($selectedGroups);
+    }
+
+    /**
+     * If every selected group resolves to instruments that all share the same immediate
+     * parent section, return "Section ohne [missing]". Returns null otherwise.
+     */
+    private function tryDescribeAsSameSectionExclusion(array $selectedGroups): ?string
+    {
+        $allInstruments = [];
+        foreach ($selectedGroups as $groupId) {
+            $instruments = $this->getAllInstrumentsInGroup($groupId);
+            if (empty($instruments)) return null;
+            $allInstruments = array_merge($allInstruments, $instruments);
+        }
+        $allInstruments = array_unique($allInstruments);
+
+        $sharedParent = null;
+        foreach ($allInstruments as $instrumentId) {
+            $parent = $this->groupManager->getParent($instrumentId);
+            if (!$parent) return null;
+            $parentId = $parent['id'];
+            if ($sharedParent === null) {
+                $sharedParent = $parentId;
+            } elseif ($sharedParent !== $parentId) {
+                return null;
+            }
+        }
+
+        if ($sharedParent === null) return null;
+
+        // Skip the root group – it has too many possible missing items and results
+        // in verbose "Tutti ohne ..." strings for small cross-section combos.
+        $rootGroup = $this->getRootGroup();
+        if ($rootGroup && $sharedParent === $rootGroup['id']) {
+            return null;
+        }
+
+        $parentInstruments = $this->getAllInstrumentsInGroup($sharedParent);
+        $missingInstruments = array_diff($parentInstruments, $allInstruments);
+
+        if (empty($missingInstruments)) {
+            return $this->groupManager->getDisplayName($sharedParent);
+        }
+
+        $missingGroups = $this->findGroupsForInstruments($missingInstruments, $sharedParent);
+        if (empty($missingGroups)) return null;
+
+        $sectionName = $this->groupManager->getDisplayName($sharedParent);
+        return $sectionName . ' ' . $this->language['without'] . ' ' . $this->generateSimpleList($missingGroups);
     }
 
     /**
@@ -600,19 +654,23 @@ class SmartGroupDisplay
      */
     private function compressTreeRepresentation(array $selectedGroups): ?string
     {
-        // Check for simple root-level exclusions first
-        // For cases like "Tutti ohne Klarinette und Fagott", prefer this over complex nested patterns
+        // Try different compression strategies and pick the best one
+        $candidates = [];
+
+
+        // Strategy 0: Simple root-level exclusion (e.g. "Tutti ohne Bläser")
+        // Competes fairly against other strategies so a shorter raw list can still win.
         $rootGroup = $this->getRootGroup();
         if ($rootGroup) {
             $simpleRootExclusion = $this->trySimpleRootExclusion($selectedGroups, $rootGroup['id']);
             if ($simpleRootExclusion) {
-                return $simpleRootExclusion;
+                $candidates[] = [
+                    'description' => $simpleRootExclusion,
+                    'strategy'    => 'single_root',
+                    'score'       => $this->calculateCompressionScore($simpleRootExclusion),
+                ];
             }
         }
-
-        // Try different compression strategies and pick the best one
-        $candidates = [];
-
         // Strategy 1: Find single root with exclusions (e.g., "Tutti ohne Oboe")
         $singleRootCandidate = $this->findSingleRootWithExclusions($selectedGroups);
         if ($singleRootCandidate) {
@@ -1767,11 +1825,30 @@ class SmartGroupDisplay
     private function shouldCompressSection(string $sectionId, array $selectedChildren, array $missingChildren): bool
     {
         $group = $this->groupManager->getGroup($sectionId);
-        if (!$group) {
+        if (!$group || empty($this->groupManager->getChildren($sectionId))) {
             return false;
         }
-        $children = $this->groupManager->getChildren($sectionId);
-        return !empty($children);
+
+        // If exactly one direct child section covers everything selected, that child's
+        // name alone is always cleaner than "parent ohne sibling".
+        // E.g. [Blechbläser] should stay 'Blechbläser', not become 'Bläser ohne Holzbläser'.
+        if (count($selectedChildren) === 1) {
+            $onlyChild = reset($selectedChildren);
+            $childGroup = $this->groupManager->getGroup($onlyChild);
+            if ($childGroup && ($childGroup['type'] ?? '') === 'section') {
+                return false;
+            }
+        }
+
+        // Only compress when more than half the children are selected.
+        // E.g. 2/4 Tutti children (Schlagwerk+Harfe) → "Tutti ohne A und B" is never
+        // better than the direct list "Schlagwerk und Harfe".
+        $allChildren = $this->groupManager->getChildren($sectionId);
+        if (count($selectedChildren) <= count($allChildren) / 2) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -1907,12 +1984,68 @@ class SmartGroupDisplay
             }
         }
 
-        // MAJOR bonus for compressed sections with clean exclusions
-        // Prefer "Holzbläser ohne Klarinette" over "Flöte, Oboe, Fagott"
+        // Bonus for compressed sections with clean exclusions.
+        // Prefer "Holzbläser ohne Klarinette" over "Flöte, Oboe, Fagott" even when
+        // only 2 instruments remain (bonus must exceed the +45 ohne penalty).
+        // Exclude the root group – it has its own scoring block above.
+        // Never reward parent+child double-exclusion patterns ("Bläser ohne Blechbläser
+        // und Blechbläser ohne Posaune") which are always worse than the single-level form.
         $specificSections = $this->getSpecificSections();
+        $rootDisplayNames = [];
+        $rootGroup = $this->getRootGroup();
+        if ($rootGroup) {
+            $rootDisplayNames[] = $rootGroup['display_name'] ?? $rootGroup['id'];
+        }
+        $sectionsWithOhne = [];
         foreach ($specificSections as $section) {
+            if (in_array($section, $rootDisplayNames, true)) continue;
             if (strpos($description, $section . ' ' . $this->language['without']) !== false) {
-                $score -= 50; // Major bonus for section-level exclusions
+                $sectionsWithOhne[] = $section;
+            }
+        }
+
+        if (!empty($sectionsWithOhne)) {
+            $hasParentChildPair = false;
+            foreach ($sectionsWithOhne as $sectionA) {
+                foreach ($sectionsWithOhne as $sectionB) {
+                    if ($sectionA === $sectionB) continue;
+                    $ancestorNamesOfB = array_column($this->groupManager->getAncestors($sectionB), 'display_name');
+                    if (in_array($sectionA, $ancestorNamesOfB, true)) {
+                        $hasParentChildPair = true;
+                        break 2;
+                    }
+                }
+            }
+
+            // If the excluded portion contains a whole named section (e.g. "Bläser ohne Holzbläser")
+            // the reader would simply name the included section ("Blechbläser").
+            // Do not award the bonus in that case.
+            $withoutWord = $this->language['without'];
+            $excludesWholeSectionName = false;
+            $withoutPos = strpos($description, ' ' . $withoutWord . ' ');
+            if ($withoutPos !== false) {
+                $exclusionText = substr($description, $withoutPos + strlen(' ' . $withoutWord . ' '));
+                foreach ($specificSections as $s) {
+                    if (in_array($s, $rootDisplayNames, true)) continue;
+                    if (
+                        $exclusionText === $s ||
+                        str_starts_with($exclusionText, $s . ' ') ||
+                        str_starts_with($exclusionText, $s . ',') ||
+                        str_ends_with($exclusionText, ' ' . $s) ||
+                        str_contains($exclusionText, ', ' . $s) ||
+                        str_contains($exclusionText, ' ' . $s . ',')
+                    ) {
+                        $excludesWholeSectionName = true;
+                        break;
+                    }
+                }
+            }
+
+            // Parent+child redundant or whole-section exclusion → penalty; clean instrument exclusion → bonus
+            if ($hasParentChildPair || $excludesWholeSectionName) {
+                $score += 80;
+            } else {
+                $score -= 60;
             }
         }
 
