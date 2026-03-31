@@ -539,6 +539,28 @@ $isAdmin = $canManage || !empty($canManagePermissions);
         $message = 'Es gibt noch keine Mitglieder in diesem Ensemble.';
         include __DIR__ . '/../components/empty-state.php';
         ?>
+        <?php if ($canManage && $inviteLink): ?>
+            <div style="max-width: 320px; margin: var(--space-4) auto 0;">
+                <div class="admin-section">
+                    <div class="admin-section-header"><i class="fas fa-link" style="margin-right: var(--space-1);"></i> Einladen</div>
+                    <div class="admin-section-body">
+                        <?php $linkUrl = rtrim($_SERVER['HTTP_HOST'] ?? '', '/') . '/invite/' . $inviteLink['token']; ?>
+                        <div class="invite-link-box"><?= htmlspecialchars('https://' . $linkUrl) ?></div>
+                        <button class="btn-base btn-sm btn-primary" style="width: 100%;" onclick="copyInviteLink()"><i class="fas fa-copy" style="margin-right: var(--space-1);"></i> Link kopieren</button>
+                    </div>
+                </div>
+            </div>
+        <?php elseif ($canManage): ?>
+            <div style="max-width: 320px; margin: var(--space-4) auto 0;">
+                <div class="admin-section">
+                    <div class="admin-section-header"><i class="fas fa-link" style="margin-right: var(--space-1);"></i> Einladen</div>
+                    <div class="admin-section-body">
+                        <p style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin-bottom: var(--space-2);">Noch kein Link vorhanden.</p>
+                        <button class="admin-btn-new" onclick="regenerateLink()"><i class="fas fa-plus"></i> Link erstellen</button>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
     <?php else: ?>
         <div class="members-layout<?= $isAdmin ? ' has-sidebar' : '' ?>">
             <!-- ═══ ROSTER ═══ -->

@@ -52,6 +52,9 @@ class InviteLink extends Model
                 $data['default_role_id'] = $conductorRole['id'];
             }
             $data['expires_at'] = date('Y-m-d H:i:s', strtotime('+' . self::CONDUCTOR_EXPIRY_DAYS . ' days'));
+        } else {
+            // Member links never expire
+            $data['expires_at'] = null;
         }
 
         $this->insert($data);
@@ -103,24 +106,11 @@ class InviteLink extends Model
     }
 
     /**
-     * Mark a single-use invite link as used. Conductor links stay active (multi-use).
+     * No-op — all links are multi-use and stay active until explicitly regenerated.
      */
     public function redeem(int $linkId): bool
     {
-        $link = $this->findById($linkId);
-        if (!$link) return false;
-
-        // Conductor links are multi-use
-        if (!empty($link['default_role_id'])) {
-            return true;
-        }
-
-        $sql = "UPDATE invite_links SET used_at = NOW() WHERE id = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bind_param('i', $linkId);
-        $result = $stmt->execute();
-        $stmt->close();
-        return $result;
+        return true;
     }
 
     /**
