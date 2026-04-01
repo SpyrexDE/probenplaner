@@ -41,11 +41,11 @@ func CheckDocker() {
 }
 
 // GetWebContainer finds the running web container name
-
-// GetWebContainer finds the running web container name
 func GetWebContainer() (string, error) {
-	// Logic from shell script: docker compose ps --services --filter "status=running" | grep web ...
-	out, err := RunCommandCapture("docker", "compose", "ps", "--services", "--filter", "status=running")
+	env := GetEnv()
+	composeFiles := GetComposeFile(env)
+	args := append(append([]string{"compose"}, composeFiles...), "ps", "--services", "--filter", "status=running")
+	out, err := RunCommandCapture("docker", args...)
 	if err != nil {
 		return "", err
 	}
@@ -53,8 +53,8 @@ func GetWebContainer() (string, error) {
 	lines := strings.Split(strings.TrimSpace(out), "\n")
 	for _, line := range lines {
 		if strings.Contains(line, "web") {
-			// Now get the actual container name
-			name, err := RunCommandCapture("docker", "compose", "ps", line, "--format", "{{.Name}}")
+			nameArgs := append(append([]string{"compose"}, composeFiles...), "ps", line, "--format", "{{.Name}}")
+			name, err := RunCommandCapture("docker", nameArgs...)
 			if err != nil {
 				return "", err
 			}

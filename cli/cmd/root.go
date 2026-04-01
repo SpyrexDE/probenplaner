@@ -273,16 +273,16 @@ func GetEnv() string {
 	return env
 }
 
-// GetComposeFile returns the docker-compose file(s) for the current env
+// GetComposeFile returns the docker-compose file for the current env.
+// Each env file is standalone — never merged with the base to avoid
+// dev-only config (e.g. ports, phpmyadmin) leaking into prod/test.
 func GetComposeFile(env string) []string {
-	base := []string{"-f", "docker-compose.yml"}
-
 	switch env {
 	case EnvProd:
-		return append(base, "-f", "docker-compose.prod.yml")
+		return []string{"-f", "docker-compose.prod.yml"}
 	case EnvTest:
-		return append(base, "-f", "docker-compose.test.yml")
+		return []string{"-f", "docker-compose.test.yml"}
 	default:
-		return base
+		return []string{"-f", "docker-compose.yml"}
 	}
 }

@@ -538,11 +538,12 @@ var backupRestoreCmd = &cobra.Command{
 				// Rebuild containers
 				log.Info("Rebuilding containers for new version...")
 				err = RunSpinner("Rebuilding and restarting containers...", func() error {
-					downErr := RunCommandCaptureSilent("docker", "compose", "down")
-					if downErr != nil {
+					cf := GetComposeFile(GetEnv())
+					downArgs := append(append([]string{"compose"}, cf...), "down")
+					if downErr := RunCommandCaptureSilent("docker", downArgs...); downErr != nil {
 						return downErr
 					}
-					upArgs := append(append([]string{"compose"}, GetComposeFile(GetEnv())...), "up", "-d", "--build")
+					upArgs := append(append([]string{"compose"}, cf...), "up", "-d", "--build")
 					return RunCommandCaptureSilent("docker", upArgs...)
 				})
 				if err != nil {
