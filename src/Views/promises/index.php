@@ -208,7 +208,7 @@ include __DIR__ . '/../components/save-indicator.php';
                                     'z-index': '',
                                     'position': ''
                                 });
-                            }, 3000);
+                            }, 1500);
                         }, 300);
                         return true;
                     }
