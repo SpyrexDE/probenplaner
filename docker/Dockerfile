@@ -47,7 +47,7 @@ COPY src/composer.json src/composer.lock* /var/www/html/
 RUN composer install --no-dev --no-interaction --optimize-autoloader
 
 # Copy application code
-COPY src/ ./src/
+COPY src/ ./
 COPY database/ ./database/
 
 # Create startup script
