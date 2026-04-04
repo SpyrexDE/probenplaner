@@ -34,16 +34,9 @@ class AuthBackend extends AbstractBasic
             return false;
         }
         if (empty($user['caldav_token'])) {
-            file_put_contents($logFile, "AUTH FAIL: User has no caldav_token for username $username\n", FILE_APPEND);
             return false;
         }
         
-        $match = hash_equals($user['caldav_token'], $password);
-        if (!$match) {
-            file_put_contents($logFile, "AUTH FAIL: Token mismatch. Expected '{$user['caldav_token']}', got '$password'\n", FILE_APPEND);
-        } else {
-            file_put_contents($logFile, "AUTH SUCCESS for username $username\n", FILE_APPEND);
-        }
-        return $match;
+        return hash_equals($user['caldav_token'], $password);
     }
 }
