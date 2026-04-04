@@ -35,7 +35,16 @@ class CalendarController extends Controller
         $this->protectCSRF();
 
         $userId = (int)$_SESSION['user_id'];
-        $tokens = $this->userModel->generateCalendarTokens($userId);
+        $user = $this->userModel->findById($userId);
+        
+        if (empty($user['ical_token']) || empty($user['caldav_token'])) {
+            $tokens = $this->userModel->generateCalendarTokens($userId);
+        } else {
+            $tokens = [
+                'ical_token' => $user['ical_token'],
+                'caldav_token' => $user['caldav_token']
+            ];
+        }
 
         $base      = $this->appBaseUrl();
         $icalUrl   = $base . '/ical/' . $tokens['ical_token'];
