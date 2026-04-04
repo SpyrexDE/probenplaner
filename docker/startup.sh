@@ -3,6 +3,12 @@
 # Create necessary directories
 mkdir -p /var/www/html/database/migrations
 
+# Install Composer dependencies if vendor/ was wiped by a dev volume mount
+if [ ! -f /var/www/html/vendor/autoload.php ]; then
+    echo "Installing Composer dependencies..."
+    cd /var/www/html && composer install --no-dev --no-interaction --optimize-autoloader --quiet
+fi
+
 # Check SSL certificates only for test and production
 if [ "${APP_ENV}" = "test" ] || [ "${APP_ENV}" = "production" ]; then
     if [ ! -f /etc/apache2/ssl/crt.pem ] || [ ! -f /etc/apache2/ssl/key.pem ]; then

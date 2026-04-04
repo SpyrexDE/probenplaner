@@ -88,6 +88,12 @@ try {
 // Get the requested URI
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
+// CalDAV Auto-Discovery (FrankenPHP/.htaccess fallback)
+if ($uri === '/.well-known/caldav' || $uri === '/.well-known/carddav') {
+    header('Location: /caldav/', true, 301);
+    exit;
+}
+
 // Simple router
 $router = new \App\Core\Router();
 
@@ -138,6 +144,12 @@ $router->addRoute('/orga/ensembles/{ensemble_slug}/remove-conductor', 'OrgaPanel
 // Invite routes
 $router->addRoute('/invite/{token}', 'InviteController', 'landing');
 $router->addRoute('/invite/join', 'InviteController', 'join', 'POST');
+
+// Calendar / iCal routes (no orchestra context required)
+$router->addRoute('/calendar/tokens/generate', 'CalendarController', 'generateTokens', 'POST');
+$router->addRoute('/calendar/tokens/revoke',   'CalendarController', 'revokeTokens',   'POST');
+$router->addRoute('/calendar/tokens/status',   'CalendarController', 'tokenStatus',    'GET');
+$router->addRoute('/ical/{token}',             'CalendarController', 'serveIcal',      null);
 
 // Onboarding route
 $router->addRoute('/onboarding', 'UserController', 'onboarding', 'GET');

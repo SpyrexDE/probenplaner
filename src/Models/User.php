@@ -542,4 +542,58 @@ class User extends Model
         $userId = $this->insert($userData);
         return $userId ? $this->findById($userId) : ['error' => true, 'message' => 'Benutzer konnte nicht erstellt werden'];
     }
+
+    /**
+     * Generate or regenerate iCal and CalDAV tokens for a user.
+     *
+     * @return array{ical_token: string, caldav_token: string}
+     */
+    public function generateCalendarTokens(int $userId): array
+    {
+        $icalToken   = bin2hex(random_bytes(32));
+        $caldavToken = bin2hex(random_bytes(32));
+
+        $this->update($userId, [
+            'ical_token'   => $icalToken,
+            'caldav_token' => $caldavToken,
+        ]);
+
+        return ['ical_token' => $icalToken, 'caldav_token' => $caldavToken];
+    }
+
+    /**
+     * @return array|null User row matching the iCal feed token
+     */
+    public function findByIcalToken(string $token): ?array
+    {
+        $sql  = "SELECT * FROM {$this->table} WHERE ical_token = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param('s', $token);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        return $row ?: null;
+    }
+
+    /**
+     * @return array|null User row matching the CalDAV auth token
+     */
+    public function findByCaldavToken(string $token): ?array
+    {
+        $sql  = "SELECT * FROM {$this->table} WHERE caldav_token = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param('s', $token);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        return $row ?: null;
+    }
+
+    /**
+     * Invalidate all calendar tokens for a user (forces re-generation).
+     */
+    public function revokeCalendarTokens(int $userId): void
+    {
+        $this->update($userId, ['ical_token' => null, 'caldav_token' => null]);
+    }
 }

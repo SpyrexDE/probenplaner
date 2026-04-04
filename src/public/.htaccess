@@ -1,8 +1,26 @@
 # Enable URL rewriting
 RewriteEngine On
 
+# Configure strict Basic Auth passthrough for Apple Calendar (SabreDAV)
+CGIPassAuth On
+
 # Set the base directory
 RewriteBase /
+
+# CalDAV Autodiscovery (Required for Apple Calendar and iOS)
+RewriteCond %{HTTP:X-Forwarded-Proto} =https [OR]
+RewriteCond %{HTTPS} =on
+RewriteRule ^\.well-known/caldav(.*)$ https://%{HTTP_HOST}/caldav/ [R=301,L]
+
+RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+RewriteCond %{HTTPS} !=on
+RewriteRule ^\.well-known/caldav(.*)$ http://%{HTTP_HOST}/caldav/ [R=301,L]
+
+# Pass Authorization header explicitly as fallback
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+
+# CalDAV endpoint - route everything to caldav/index.php
+RewriteRule ^caldav(?:/.*)?$ caldav/index.php [E=HTTP_AUTHORIZATION:%{HTTP:Authorization},L,QSA]
 
 # Redirect to index.php if the requested file or directory doesn't exist
 RewriteCond %{REQUEST_FILENAME} !-f

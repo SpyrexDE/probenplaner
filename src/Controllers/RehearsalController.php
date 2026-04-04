@@ -189,7 +189,8 @@ class RehearsalController extends Controller
         $result = $this->rehearsalModel->create($data, $rootGroups);
 
         if (!$result || is_array($result)) {
-            echo json_encode(['success' => false, 'message' => 'Probe konnte nicht erstellt werden']);
+            $msg = (is_array($result) && !empty($result['message'])) ? $result['message'] : 'Probe konnte nicht erstellt werden';
+            echo json_encode(['success' => false, 'message' => $msg]);
             exit;
         }
 
@@ -247,6 +248,7 @@ class RehearsalController extends Controller
         }
 
         $created = 0;
+        $lastError = null;
         foreach ($dates as $date) {
             if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) continue;
 
@@ -260,7 +262,12 @@ class RehearsalController extends Controller
             ];
 
             $rehearsalId = $this->rehearsalModel->create($data, $groups);
-            if (!$rehearsalId || is_array($rehearsalId)) continue;
+            if (!$rehearsalId || is_array($rehearsalId)) {
+                if (is_array($rehearsalId) && !empty($rehearsalId['message'])) {
+                    $lastError = $rehearsalId['message'];
+                }
+                continue;
+            }
 
             if (!empty($tags)) {
                 $this->rehearsalModel->saveTags($rehearsalId, $orchestraId, $tags);
@@ -277,7 +284,11 @@ class RehearsalController extends Controller
             $created++;
         }
 
-        echo json_encode(['success' => true, 'count' => $created]);
+        if ($created === 0 && $lastError) {
+            echo json_encode(['success' => false, 'message' => $lastError]);
+        } else {
+            echo json_encode(['success' => true, 'count' => $created]);
+        }
         exit;
     }
 

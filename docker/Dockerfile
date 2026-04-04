@@ -1,5 +1,8 @@
 FROM php:8.0-apache
 
+# Composer binary from official image
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
 # Add build arguments
 ARG DOMAIN
 ARG GIT_VERSION
@@ -37,6 +40,11 @@ RUN echo "Setting GIT_VERSION to: $GIT_VERSION"
 # Copy Apache configuration
 COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
 COPY docker/apache-ssl.conf /etc/apache2/sites-available/default-ssl.conf
+
+# Install PHP dependencies (cached layer — only re-runs when composer.json/lock changes)
+# composer.json lives in src/ so it's available via both COPY src/ and the dev volume mount
+COPY src/composer.json src/composer.lock* /var/www/html/
+RUN composer install --no-dev --no-interaction --optimize-autoloader
 
 # Copy application code
 COPY src/ ./src/

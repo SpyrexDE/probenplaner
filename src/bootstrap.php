@@ -4,6 +4,9 @@
  * Initializes the application environment
  */
 
+// Composer autoloader (sabre/dav et al.)
+require_once __DIR__ . '/vendor/autoload.php';
+
 // Define the application root directory
 define('APP_ROOT', __DIR__);
 

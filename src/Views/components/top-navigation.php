@@ -287,10 +287,12 @@ $classString = implode(' ', $classes);
         <?php foreach ($actions as $action): ?>
             <?php if (isset($action['onclick'])): ?>
                 <i onclick="<?= htmlspecialchars($action['onclick']) ?>" 
-                   class="<?= htmlspecialchars($action['icon'] ?? 'fas fa-question') ?> top-nav-icon"></i>
+                   class="<?= htmlspecialchars($action['icon'] ?? 'fas fa-question') ?> top-nav-icon <?= htmlspecialchars($action['class'] ?? '') ?>"
+                   <?= isset($action['title']) ? 'title="' . htmlspecialchars($action['title']) . '"' : '' ?>></i>
             <?php else: ?>
                 <a href="<?= htmlspecialchars($action['href'] ?? '#') ?>" 
-                   class="<?= htmlspecialchars($action['icon'] ?? 'fas fa-question') ?> top-nav-icon"></a>
+                   class="<?= htmlspecialchars($action['icon'] ?? 'fas fa-question') ?> top-nav-icon <?= htmlspecialchars($action['class'] ?? '') ?>"
+                   <?= isset($action['title']) ? 'title="' . htmlspecialchars($action['title']) . '"' : '' ?>></a>
             <?php endif; ?>
         <?php endforeach; ?>
     </div>

@@ -52,7 +52,7 @@ class UserPromise extends Model
         $placeholders = implode(',', array_fill(0, count($rehearsalIds), '?'));
         $types = str_repeat('i', count($rehearsalIds)) . 'i';
 
-        $sql = "SELECT rehearsal_id, status, note
+        $sql = "SELECT rehearsal_id, status, note, updated_at, created_at
                 FROM {$this->table}
                 WHERE rehearsal_id IN ({$placeholders}) AND user_id = ?";
 
@@ -67,6 +67,7 @@ class UserPromise extends Model
             $promises[(int)$row['rehearsal_id']] = [
                 'attending' => $row['status'] === 'yes',
                 'note' => $row['note'] ?? '',
+                'updated_at' => $row['updated_at'] ?? $row['created_at'] ?? 'now',
             ];
         }
         $stmt->close();

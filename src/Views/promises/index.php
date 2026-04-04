@@ -160,6 +160,8 @@ $icon = 'spinner';
 include __DIR__ . '/../components/save-indicator.php';
 ?>
 
+<?php include __DIR__ . '/../components/calendar-integration-modal.php'; ?>
+
 <script>
     $(document).ready(function() {
         // Configuration

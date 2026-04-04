@@ -14,13 +14,12 @@ Thumbs.db
 .env.test
 .env.production
 
-# Vendor directories
-vendor/
+# Vendor directories (Composer installs into src/vendor/)
+src/vendor/
 node_modules/
 
 # Composer
 composer.phar
-composer.lock
 
 # PHPUnit
 phpunit.xml
@@ -32,6 +31,11 @@ phpunit.xml
 # Logs
 /logs/
 *.log
+src/*.log
+
+# CalDAV debug artifacts
+*.ics
+*.sqlite
 
 # Docker volumes
 /docker/volumes/
