@@ -397,7 +397,6 @@ $calendarCsrfToken = $calendarCsrfToken ?? \App\Core\CSRF::getToken();
                 <div style="flex:1;min-width:0;">
                     <div class="calsync-option-header">
                         <span class="calsync-option-label">Vollständig einbinden</span>
-                        <span class="calsync-recommended-badge"><i class="fa-solid fa-star" style="font-size:8px;"></i> Empfohlen</span>
                     </div>
                     <div class="calsync-option-desc"><strong>Alle deine Orchester</strong> &mdash; Termine sehen <em>und</em> Zu-/Absagen direkt im Kalender</div>
                 </div>
