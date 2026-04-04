@@ -172,11 +172,7 @@ class CalendarController extends Controller
                     'DESCRIPTION' => str_replace("\\n", "\n", $this->buildDescription($r))
                 ]);
 
-                // Apple Calendar NEEDS an ORGANIZER to allow RSVP replies from attendees
-                $vevent->add('ORGANIZER', 'mailto:no-reply@' . $host, [
-                    'CN' => 'Probenplaner',
-                    'SCHEDULE-AGENT' => 'SERVER'
-                ]);
+                
                 
                 $updatedAt = new \DateTime($r['updated_at'] ?? $r['created_at'] ?? 'now', new \DateTimeZone('Europe/Berlin'));
                 $createdAt = new \DateTime($r['created_at'] ?? 'now', new \DateTimeZone('Europe/Berlin'));
@@ -191,8 +187,10 @@ class CalendarController extends Controller
                 $vevent->add('SEQUENCE', $updatedAt->getTimestamp());
 
                 // Direct backlink to the app
-                $appUrl = rtrim($_ENV['APP_URL'] ?? 'http://127.0.0.1:8080', '/');
-                $vevent->add('URL', $appUrl . '/orchestra/' . $orchId . '/rehearsals/' . $r['id']);
+                $appUrl = rtrim($this->appBaseUrl(), '/');
+                $slug = $orch['orchestra_slug'] ?? $orchId;
+                $typeSlug = $relation['type'] ? mb_strtolower($relation['type']) : 'member';
+                $vevent->add('URL', $appUrl . '/' . $slug . '/' . $typeSlug . '/promises#rehearsal-' . $r['id']);
 
                 if (!empty($r['location'])) {
                     $vevent->add('LOCATION', $r['location']);
@@ -212,27 +210,7 @@ class CalendarController extends Controller
                     $vevent->add('CATEGORIES', $categories);
                 }
 
-                $host = isset($_SERVER['HTTP_HOST']) ? preg_replace('/:\d+$/', '', $_SERVER['HTTP_HOST']) : 'probenplaner.app';
-                $email = $user['id'] . '@' . $host;
-                $name  = $user['display_name'] ?? ($user['email'] ?? $email);
-                $comment = $promise['note'] ?? '';
-
-                $attendee = $vevent->add('ATTENDEE', 'mailto:' . $email);
-                $attendee->add('CN', $name);
-                $attendee->add('PARTSTAT', $partstat);
-                $attendee->add('ROLE', 'REQ-PARTICIPANT');
-                if ($partstat === 'NEEDS-ACTION') {
-                $attendee->add('RSVP', 'TRUE');
-            } else {
-                $attendee->add('RSVP', 'FALSE');
-            }
                 
-                if ($comment) {
-                    $attendee->add('X-COMMENT', $comment);
-                    if ($partstat === 'DECLINED') {
-                        $vevent->add('COMMENT', $comment);
-                    }
-                }
             }
         }
 
