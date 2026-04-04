@@ -213,15 +213,6 @@ $hideNavbar = $isAuthPage || $isStandalone;
                 || (strpos($currentUri, '/rehearsals/') === 0);
             $actions = [];
 
-            if (isset($currentPage) && $currentPage === 'promises' && strpos($currentUri, '/promises/leader') === false && strpos($currentUri, '/promises/admin') === false) {
-                $actions[] = [
-                    'icon' => 'fa-solid fa-arrows-rotate', 
-                    'onclick' => 'openCalendarModal()',
-                    'class' => 'cal-top-sync-btn',
-                    'title' => 'Kalender-Anbindung'
-                ];
-            }
-
             if ($showHelpButton) {
                 $actions[] = ['icon' => 'fas fa-question-circle', 'onclick' => 'showHelp()'];
             }

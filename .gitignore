@@ -31,11 +31,6 @@ phpunit.xml
 # Logs
 /logs/
 *.log
-src/*.log
-
-# CalDAV debug artifacts
-*.ics
-*.sqlite
 
 # Docker volumes
 /docker/volumes/
