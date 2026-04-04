@@ -20,9 +20,10 @@ class UserOrchestra extends Model
     {
         $activeClause = $activeOnly ? "AND uo.is_active = 1" : "";
 
-        $sql = "SELECT uo.*, o.name as orchestra_name, o.slug as orchestra_slug
+        $sql = "SELECT uo.*, o.name as orchestra_name, o.slug as orchestra_slug, org.slug as org_slug
                 FROM {$this->table} uo
                 JOIN orchestras o ON uo.orchestra_id = o.id
+                LEFT JOIN organizations org ON o.organization_id = org.id
                 WHERE uo.user_id = ? {$activeClause}
                 ORDER BY uo.joined_at DESC";
 

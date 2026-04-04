@@ -339,7 +339,8 @@ class CalendarBackend extends AbstractBackend
         $host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
         $appUrl = rtrim($scheme . '://' . $host, '/');
         
-        $orch = (new \App\Models\Orchestra())->findById($rehearsal['orchestra_id']);
+        $orch = (new \App\Models\Orchestra())->findByIdWithOrg($rehearsal['orchestra_id']);
+        $orgSlug = $orch['org_slug'] ?? 'default';
         $slug = $orch['slug'] ?? $rehearsal['orchestra_id'];
         
         $userTypeSlug = 'member';
@@ -350,7 +351,7 @@ class CalendarBackend extends AbstractBackend
              }
         }
         
-        $vevent->add('URL', $appUrl . '/' . $slug . '/' . $userTypeSlug . '/promises#rehearsal-' . $rehearsal['id']);
+        $vevent->add('URL', $appUrl . '/' . $orgSlug . '/' . $slug . '/promises#rehearsal-' . $rehearsal['id']);
 
         $rehearsalUpdated = strtotime($rehearsal['updated_at'] ?? $rehearsal['created_at'] ?? 'now');
         $promiseUpdated = 0;

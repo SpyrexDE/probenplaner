@@ -37,6 +37,25 @@ class Orchestra extends Model
         $stmt->close();
         return $row ?: null;
     }
+    /**
+     * Find orchestra by ID, including its organization's slug.
+     */
+    public function findByIdWithOrg(int $id): ?array
+    {
+        $sql = "SELECT o.*, org.slug AS org_slug
+                FROM {$this->table} o
+                LEFT JOIN organizations org ON org.id = o.organization_id
+                WHERE o.id = ?
+                LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        $stmt->close();
+        return $row ?: null;
+    }
+
 
     /**
      * @return int|false Orchestra ID or false on failure

@@ -188,9 +188,36 @@ class CalendarController extends Controller
 
                 // Direct backlink to the app
                 $appUrl = rtrim($this->appBaseUrl(), '/');
+                $orgSlug = $orch['org_slug'] ?? 'default';
                 $slug = $orch['orchestra_slug'] ?? $orchId;
-                $typeSlug = $relation['type'] ? mb_strtolower($relation['type']) : 'member';
-                $vevent->add('URL', $appUrl . '/' . $slug . '/' . $typeSlug . '/promises#rehearsal-' . $r['id']);
+                $vevent->add('URL', $appUrl . '/' . $orgSlug . '/' . $slug . '/promises#rehearsal-' . $r['id']);
+                
+                $host = isset($_SERVER['HTTP_HOST']) ? preg_replace('/:\d+$/', '', $_SERVER['HTTP_HOST']) : 'probenplaner.app';
+                $email = $user['id'] . '@' . $host;
+                $name  = $user['display_name'] ?? ($user['email'] ?? $email);
+                $comment = $promise['note'] ?? '';
+
+                // ORGANIZER is required for Apple Calendar to render ATTENDEE dots. 
+                // A clean email without SCHEDULE-AGENT forces it to display the CN ("Probenplaner").
+                $vevent->add('ORGANIZER', 'mailto:noreply@probenplaner.app', [
+                    'CN' => 'Probenplaner'
+                ]);
+
+                $attendee = $vevent->add('ATTENDEE', 'mailto:' . $email);
+                $attendee->add('CN', $name);
+                $attendee->add('PARTSTAT', $partstat);
+                $attendee->add('ROLE', 'REQ-PARTICIPANT');
+                
+                // Do NOT add RSVP or ORGANIZER here. Webcal is one-way read-only.
+                // Adding an ORGANIZER and RSVP=TRUE forces clients like Apple Calendar to generate reply-emails to dummy addresses.
+                // ATTENDEE with PARTSTAT alone is sufficient for visual acceptance dots.
+
+                if ($comment) {
+                    $attendee->add('X-COMMENT', $comment);
+                    if ($partstat === 'DECLINED') {
+                        $vevent->add('COMMENT', $comment);
+                    }
+                }
 
                 if (!empty($r['location'])) {
                     $vevent->add('LOCATION', $r['location']);
