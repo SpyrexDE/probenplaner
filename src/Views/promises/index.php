@@ -180,6 +180,57 @@ include __DIR__ . '/../components/save-indicator.php';
             }
         });
 
+        // Auto-scroll and highlight target from URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetId = urlParams.get('rehearsal');
+        if (targetId) {
+            const tryHighlighting = function() {
+                const targetBtn = $('#' + targetId + '.checkBtn, #' + targetId + '.action-btn');
+                if (targetBtn.length > 0) {
+                    const card = targetBtn.closest('.rehearsal-card');
+                    if (card.length > 0 && !card.data('highlighted')) {
+                        card.data('highlighted', true); // Prevent duplicate triggers
+                        setTimeout(() => {
+                            card[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            card.css({
+                                'box-shadow': '0 0 0 3px var(--color-primary), 0 4px 15px rgba(var(--color-primary-rgb, 71, 140, 244), 0.3)',
+                                'transition': 'all 0.4s ease',
+                                'transform': 'scale(1.02)',
+                                'z-index': '10',
+                                'position': 'relative'
+                            });
+                            
+                            // Remove glow after a few seconds
+                            setTimeout(() => {
+                                card.css({
+                                    'box-shadow': '',
+                                    'transform': '',
+                                    'z-index': '',
+                                    'position': ''
+                                });
+                            }, 3000);
+                        }, 300);
+                        return true;
+                    }
+                }
+                return false;
+            };
+
+            if (!tryHighlighting()) {
+                // If it's a past rehearsal, trigger the load-past explicitly
+                if (typeof loadPastViaLazySection === 'function' && document.getElementById('loadPastButton')) {
+                    loadPastViaLazySection();
+                }
+
+                const observer = new MutationObserver(function(mutations, obs) {
+                    if (tryHighlighting()) {
+                        obs.disconnect();
+                    }
+                });
+                observer.observe(document.body, { childList: true, subtree: true });
+            }
+        }
+
         // Initialize note tags
         $('.rehearsal-card input[id^="note"]').each(function() {
             var noteInput = $(this);

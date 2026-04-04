@@ -138,10 +138,21 @@ class CalendarController extends Controller
                 $orchName = $orch['name'] ?? '';
 
                 $isAttending = false;
+                $hasResponded = false;
                 if ($promise) {
+                    $hasResponded = true;
                     $isAttending = isset($promise['status']) ? ($promise['status'] === 'yes') : ($promise['attending'] ?? false);
                 }
-                $partstat = $isAttending ? 'ACCEPTED' : 'DECLINED';
+                $partstat = $hasResponded ? ($isAttending ? 'ACCEPTED' : 'DECLINED') : 'NEEDS-ACTION';
+                
+                $statusEmoji = '';
+                if ($partstat === 'ACCEPTED') {
+                    $statusEmoji = '✅ ';
+                } elseif ($partstat === 'DECLINED') {
+                    $statusEmoji = '❌ ';
+                } else {
+                    $statusEmoji = '❓ ';
+                }
 
                 $dtstart = new \DateTime($r['start'] ?? 'now', new \DateTimeZone('Europe/Berlin'));
                 $dtend = new \DateTime($r['end'] ?? 'now', new \DateTimeZone('Europe/Berlin'));
@@ -161,7 +172,7 @@ class CalendarController extends Controller
                 $typeLabel = !empty($r['type']) ? $r['type'] : 'Probe';
                 $titleMain = !empty($r['name']) ? $typeLabel . ' - ' . $r['name'] : $typeLabel;
                 
-                $summary = $groupStr ? $titleMain . ' [' . $groupStr . ']' : $titleMain;
+                $summary = $statusEmoji . ($groupStr ? $titleMain . ' [' . $groupStr . ']' : $titleMain);
 
                 $host = isset($_SERVER['HTTP_HOST']) ? preg_replace('/:\d+$/', '', $_SERVER['HTTP_HOST']) : (getenv('DOMAIN') ?: 'localhost');
                 $vevent = $vcalendar->add('VEVENT', [
@@ -190,34 +201,8 @@ class CalendarController extends Controller
                 $appUrl = rtrim($this->appBaseUrl(), '/');
                 $orgSlug = $orch['org_slug'] ?? 'default';
                 $slug = $orch['orchestra_slug'] ?? $orchId;
-                $vevent->add('URL', $appUrl . '/' . $orgSlug . '/' . $slug . '/promises#rehearsal-' . $r['id']);
-                
-                $host = isset($_SERVER['HTTP_HOST']) ? preg_replace('/:\d+$/', '', $_SERVER['HTTP_HOST']) : 'probenplaner.app';
-                $email = $user['id'] . '@' . $host;
-                $name  = $user['display_name'] ?? ($user['email'] ?? $email);
-                $comment = $promise['note'] ?? '';
+                $vevent->add('URL', $appUrl . '/' . $orgSlug . '/' . $slug . '/promises?rehearsal=' . $r['id']);
 
-                // ORGANIZER is required for Apple Calendar to render ATTENDEE dots. 
-                // A clean email without SCHEDULE-AGENT forces it to display the CN ("Probenplaner").
-                $vevent->add('ORGANIZER', 'mailto:noreply@probenplaner.app', [
-                    'CN' => 'Probenplaner'
-                ]);
-
-                $attendee = $vevent->add('ATTENDEE', 'mailto:' . $email);
-                $attendee->add('CN', $name);
-                $attendee->add('PARTSTAT', $partstat);
-                $attendee->add('ROLE', 'REQ-PARTICIPANT');
-                
-                // Do NOT add RSVP or ORGANIZER here. Webcal is one-way read-only.
-                // Adding an ORGANIZER and RSVP=TRUE forces clients like Apple Calendar to generate reply-emails to dummy addresses.
-                // ATTENDEE with PARTSTAT alone is sufficient for visual acceptance dots.
-
-                if ($comment) {
-                    $attendee->add('X-COMMENT', $comment);
-                    if ($partstat === 'DECLINED') {
-                        $vevent->add('COMMENT', $comment);
-                    }
-                }
 
                 if (!empty($r['location'])) {
                     $vevent->add('LOCATION', $r['location']);
