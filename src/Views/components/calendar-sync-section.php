@@ -428,6 +428,13 @@ $calendarCsrfToken = $calendarCsrfToken ?? \App\Core\CSRF::getToken();
                 Kalender-Link
             </div>
 
+            <div class="calsync-compat-hints">
+                <span class="calsync-compat-hint">
+                    <img src="/assets/icons/brands/google-calendar.svg" style="width:12px;height:12px;object-fit:contain;" alt="Google">
+                    <span><strong>Google Kalender:</strong> Sync dauert bis zu 24h.</span>
+                </span>
+            </div>
+
             <div id="calsync-sub-placeholder" class="calsync-generate-row">
                 <span class="calsync-generate-hint">Erstelle deinen persönlichen Kalender-Link.</span>
                 <button type="button" class="calsync-btn calsync-btn-primary" onclick="calsyncGenerate()">

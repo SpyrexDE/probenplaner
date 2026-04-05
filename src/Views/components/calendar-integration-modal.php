@@ -456,7 +456,7 @@ $calendarCsrfToken = $calendarCsrfToken ?? \App\Core\CSRF::getToken();
                     </table>
                 </div>
                 <p class="cal-section-desc">
-                    Für <strong>Google Kalender</strong>: Proben werden angezeigt, aber Ab-/Zusagen funktionieren nur direkt im Probenplaner — Google erlaubt das leider nicht von außen.
+                    Für <strong>Google Kalender</strong>: Sync dauert bis zu 24h. Ab-/Zusagen nur direkt im Probenplaner.
                     <br>Für <strong>Android</strong>: Installiere <a href="https://play.google.com/store/apps/details?id=at.bitfire.davdroid" target="_blank" rel="noopener" style="color:var(--color-primary)">DAVx⁵</a>, dann klappt alles genauso wie auf Apple. Alternativ gibt es auch kostenlose Open-Source Sync-Apps (z.B. über F-Droid).
                     <br>Für <strong>Outlook Desktop</strong>: Um Ab- und Zusagen in Outlook zu machen, installiere das kostenlose Plugin <a href="https://caldavsynchronizer.org" target="_blank" rel="noopener" style="color:var(--color-primary)">CalDavSynchronizer</a>.
                 </p>
