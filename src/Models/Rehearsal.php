@@ -259,14 +259,11 @@ class Rehearsal extends Model
      */
     public function create(array $data, ?array $groups)
     {
-        // Strict Data Validation (Prevents negative duration and empty titles system-wide)
+        // Strict Data Validation (Prevents negative duration)
         $start = $data['start'] ?? 'now';
         $end = $data['end'] ?? 'now';
         if (strtotime($end) < strtotime($start)) {
             return ['error' => true, 'message' => 'Die Endzeit darf nicht vor der Startzeit liegen.'];
-        }
-        if (empty(trim($data['name'] ?? '')) && empty(trim($data['type'] ?? ''))) {
-            return ['error' => true, 'message' => 'Bitte gib einen Typ oder Namen für die Probe ein.'];
         }
 
         // Start transaction
@@ -354,9 +351,6 @@ class Rehearsal extends Model
         $end = $data['end'] ?? 'now';
         if (strtotime($end) < strtotime($start)) {
             return ['error' => true, 'message' => 'Die Endzeit darf nicht vor der Startzeit liegen.'];
-        }
-        if (empty(trim($data['name'] ?? '')) && empty(trim($data['type'] ?? ''))) {
-            return ['error' => true, 'message' => 'Bitte gib einen Typ oder Namen für die Probe ein.'];
         }
 
         // Start transaction
