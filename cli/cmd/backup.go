@@ -108,7 +108,7 @@ var backupCreateCmd = &cobra.Command{
 
 		// Prepare Docker Compose Command
 		composeArgs := append(append([]string{"compose"}, composeFiles...), "exec", "-T", "db", "sh", "-c",
-			"mysqldump -u \\\"$MYSQL_USER\\\" -p\\\"$MYSQL_PASSWORD\\\" \\\"$MYSQL_DATABASE\\\"")
+			"mysqldump -u \"$MYSQL_USER\" -p\"$MYSQL_PASSWORD\" \"$MYSQL_DATABASE\"")
 		dumpCmd := exec.Command("docker", composeArgs...)
 
 		// Pipe stdout to gzip writer
