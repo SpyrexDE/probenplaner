@@ -36,8 +36,9 @@ Hier sind die existierenden Daten des Orchesters. Bitte verwende **bevorzugt** d
    - Alle Proben können in den weiteren Tags einen Hinweis auf das Projekt (z.B. `"Beethoven"`), den Dirigenten etc. bekommen.
 
 5. **Ablauf (`schedule_items`) vs. Notizen (`infos`):**
-   - **`schedule_items`** darf **nur** befüllt werden, wenn im Dokument explizit **unterschiedliche Uhrzeiten** pro Programmpunkt (z.B. ein bestimmtes Stück um eine bestimmte Uhrzeit) angegeben sind. Es ist ein strikter zeitlicher Ablauf und **kein** Freitextfeld für Zusatzinfos oder Stücktitel ohne Zeitbezug!
-   - **`infos`**: Fehlt eine explizite eigene Uhrzeit für einen Eintrag (z.B. es wird einfach nur ein Stück erwähnt, das in der Probe gespielt wird), gehört diese Information komplett in `infos` — *nicht* in `schedule_items`. Auch alle allgemeinen Bemerkungen (z.B. "Bitte Pult mitbringen") kommen ausschließlich hierhin.
+   - **Zwingende Übernahme von `schedule_items`:** Wenn im Dokument explizit unterschiedliche Uhrzeiten pro Programmpunkt stehen (z.B. ein detaillierter Ablauf), **MUSST du diese zwingend** in das `schedule_items` Array übernehmen. Lass solche zeitgebundenen Ablaufpläne unter keinen Umständen weg! Beachte dabei: Es ist ein strikter zeitlicher Ablauf und **kein** Freitextfeld für Zusatzinfos ohne Zeitbezug.
+   - **`infos`**: Fehlt eine explizite eigene Uhrzeit für einen Eintrag (z.B. es wird nur ein Stück erwähnt), gehört diese Information komplett in `infos` — *nicht* in `schedule_items`. Auch alle allgemeinen Bemerkungen (z.B. "Bitte Pult mitbringen") kommen ausschließlich hierhin.
+   - **Aussagekräftige Emojis in `infos`:** Wähle für jeden Info-Eintrag **zwingend ein passendes, inhaltliches Emoji** aus!
    - **Allgemeines Auffangbecken:** Wenn im Probenplan noch weitere wichtige Informationen zu einem Termin stehen, für die es kein anderes perfektes Feld im JSON gibt (z.B. Besonderheiten, Mitbringsel, Orga-Notizen), füge diese einfach als zusätzliche Einträge in das `infos` Array ein. Wichtige Termin-bezogene Details dürfen nicht verloren gehen!
    - **Vermeide Redundanz (Tutti):** Wenn im Probenplan z.B. "Tutti" steht, übernimm dieses Wort **niemals** in das `infos` oder `schedule_items` Array! Die Information "Tutti" wird ausschließlich dadurch kommuniziert, dass du das `groups` Array strikt leer lässt. Redundanzen sind verboten.
 
@@ -89,7 +90,8 @@ Bitte weise das folgende Schema strikt auf alle extrahierten Proben an:
         {"time": "HH:MM", "label": "Beschreibung was geprobt wird"}
       ],
       "infos": [
-        {"emoji": "ℹ️", "text": "Wichtige Anmerkung"}
+        {"emoji": "📍", "text": "Treffpunkt am Hintereingang"},
+        {"emoji": "👔", "text": "Mit Konzertkleidung"}
       ]
     }
   ]
