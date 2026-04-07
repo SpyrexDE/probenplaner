@@ -37,7 +37,7 @@ class UserController extends Controller
     {
         $this->validateOrchestraContext($params);
 
-        if (!empty($_SESSION['current_permissions']['can_manage_ensemble'])) {
+        if ($this->isConductor()) {
             $this->redirect($this->orchestraUrl('/conductor/profile'));
             return;
         }
@@ -109,7 +109,7 @@ class UserController extends Controller
     {
         $this->validateOrchestraContext($params);
 
-        $this->requirePermission('can_manage_ensemble');
+        $this->requireConductorRole();
 
         $user = $this->userModel->findById((int)$_SESSION['user_id']);
 

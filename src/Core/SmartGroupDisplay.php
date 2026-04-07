@@ -1427,16 +1427,11 @@ class SmartGroupDisplay
         // Find instruments outside the root
         $instrumentsOutsideRoot = array_diff($selectedInstruments, $rootInstruments);
 
-        // Calculate coverage - what percentage of the selection is within this root
-        if (empty($selectedInstruments)) {
-            return null;
-        }
-        $rootCoverage = count(array_intersect($selectedInstruments, $rootInstruments)) / count($selectedInstruments);
-
-        // Only proceed if this root covers most of the selection (at least 70%)
-        if ($rootCoverage < 0.7) {
-            return null; // This root doesn't represent most of the selection
-        }
+        // We no longer arbitrarily kill candidate roots based on an arbitrary coverage percentage.
+        // If a root (e.g. "Bläser") is used alongside other groups (e.g. "Streicher"), 
+        // it might make up only 40% of the selection, but STILL be the shortest way 
+        // to describe those 40% (e.g., "Streicher und Bläser ohne Oboe").
+        // The calculateCompressionScore (which relies on `strlen`) will naturally filter out bad roots.
 
         // Only proceed if we're missing a reasonable number of instruments
         if (count($missingInstruments) === 0) {
@@ -1928,128 +1923,20 @@ class SmartGroupDisplay
      */
     private function calculateCompressionScore(string $description): int
     {
-        // Base score is character length
+        // As requested: The primary goal is simply the SHORTEST string. 
+        // We throw away all over-engineered penalties and bonuses that distorted this reality.
         $score = strlen($description);
 
-        // Penalty for complexity
-        if (strpos($description, $this->language['without']) !== false) {
-            // "without" adds significant complexity, offset by section exclusion bonus later
-            $score += 45; 
-        }
-
-        // Count commas as complexity
-        $score += substr_count($description, ',') * 5;
-
-        // Bonus for compositional descriptions (instrument + section combinations)
-        if (
-            strpos($description, $this->language['and']) !== false &&
-            strpos($description, $this->language['without']) !== false
-        ) {
-            // This is a "X und Y ohne Z" pattern - favor it slightly
-            $score -= 3; // Small bonus for compositional expressions
-        }
-
-        // Handling exclusions from the root group (e.g. "Tutti")
-        $rootGroup = $this->getRootGroup();
-        $rootDisplayName = $rootGroup ? ($rootGroup['display_name'] ?? $rootGroup['id']) : 'Tutti';
+        // We only add a microscopic tie-breaker penalty for structural complexity
+        // so that if two expressions are exactly the same length, the one without "ohne" 
+        // or without many commas wins. But it will never override a legitimately shorter string.
+        $score += substr_count($description, ',') * 1; 
         
-        if (strpos($description, $rootDisplayName) === 0 && strpos($description, $this->language['without']) !== false) {
-            // We want "Tutti ohne Bläser" to win over "Streicher, Schlagwerk und Harfe"
-            // But we DON'T want "Tutti ohne Trompete und Violine 1" to win over listing a few sections.
-            // If it's a simple exclusion (just one or two terms), it's good!
-            $ohneCount = substr_count($description, $this->language['without']);
-            $commaCount = substr_count($description, ',');
-            $undCount = substr_count($description, ' und ');
-            
-            $excludedItemsCount = $commaCount + $undCount + 1; // Roughly the number of items excluded
-            
-            if ($ohneCount === 1 && $excludedItemsCount <= 2) {
-                // Good, simple exclusion like "Tutti ohne Bläser"
-                $score -= 40; // Bonus to make it win against long raw lists
-            } else {
-                // Complex exclusion, penalize it
-                $score += 30;
-            }
+        if (strpos($description, $this->language['without']) !== false) {
+            $score += 2; 
         }
 
-        // Handle multiple exclusion patterns
-        $ohneCount = substr_count($description, $this->language['without']);
-        if ($ohneCount > 1) {
-            // Check if these are meaningful multiple exclusions (like "Holzbläser ohne Flöte und Blechbläser ohne Horn")
-            $meaningfulMultipleExclusions = $this->isMeaningfulMultipleExclusions($description);
-            if ($meaningfulMultipleExclusions) {
-                $score -= 10; // Bonus for meaningful multiple exclusions
-            } else {
-                $score += 15; // Penalty for overly complex descriptions
-            }
-        }
-
-        // Bonus for compressed sections with clean exclusions.
-        // Prefer "Holzbläser ohne Klarinette" over "Flöte, Oboe, Fagott" even when
-        // only 2 instruments remain (bonus must exceed the +45 ohne penalty).
-        // Exclude the root group – it has its own scoring block above.
-        // Never reward parent+child double-exclusion patterns ("Bläser ohne Blechbläser
-        // und Blechbläser ohne Posaune") which are always worse than the single-level form.
-        $specificSections = $this->getSpecificSections();
-        $rootDisplayNames = [];
-        $rootGroup = $this->getRootGroup();
-        if ($rootGroup) {
-            $rootDisplayNames[] = $rootGroup['display_name'] ?? $rootGroup['id'];
-        }
-        $sectionsWithOhne = [];
-        foreach ($specificSections as $section) {
-            if (in_array($section, $rootDisplayNames, true)) continue;
-            if (strpos($description, $section . ' ' . $this->language['without']) !== false) {
-                $sectionsWithOhne[] = $section;
-            }
-        }
-
-        if (!empty($sectionsWithOhne)) {
-            $hasParentChildPair = false;
-            foreach ($sectionsWithOhne as $sectionA) {
-                foreach ($sectionsWithOhne as $sectionB) {
-                    if ($sectionA === $sectionB) continue;
-                    $ancestorNamesOfB = array_column($this->groupManager->getAncestors($sectionB), 'display_name');
-                    if (in_array($sectionA, $ancestorNamesOfB, true)) {
-                        $hasParentChildPair = true;
-                        break 2;
-                    }
-                }
-            }
-
-            // If the excluded portion contains a whole named section (e.g. "Bläser ohne Holzbläser")
-            // the reader would simply name the included section ("Blechbläser").
-            // Do not award the bonus in that case.
-            $withoutWord = $this->language['without'];
-            $excludesWholeSectionName = false;
-            $withoutPos = strpos($description, ' ' . $withoutWord . ' ');
-            if ($withoutPos !== false) {
-                $exclusionText = substr($description, $withoutPos + strlen(' ' . $withoutWord . ' '));
-                foreach ($specificSections as $s) {
-                    if (in_array($s, $rootDisplayNames, true)) continue;
-                    if (
-                        $exclusionText === $s ||
-                        str_starts_with($exclusionText, $s . ' ') ||
-                        str_starts_with($exclusionText, $s . ',') ||
-                        str_ends_with($exclusionText, ' ' . $s) ||
-                        str_contains($exclusionText, ', ' . $s) ||
-                        str_contains($exclusionText, ' ' . $s . ',')
-                    ) {
-                        $excludesWholeSectionName = true;
-                        break;
-                    }
-                }
-            }
-
-            // Parent+child redundant or whole-section exclusion → penalty; clean instrument exclusion → bonus
-            if ($hasParentChildPair || $excludesWholeSectionName) {
-                $score += 80;
-            } else {
-                $score -= 60;
-            }
-        }
-
-        return $score;
+        return (int) $score;
     }
 
     /**

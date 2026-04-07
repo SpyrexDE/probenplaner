@@ -130,8 +130,16 @@
             $menu[] = ['label' => 'Ensemble wechseln', 'href' => '/orchestras/select', 'icon' => 'fas fa-exchange-alt'];
         }
 
-        $profileRoute = !empty($permissions['can_manage_ensemble']) ? "{$basePath}/conductor/profile" : "{$basePath}/profile";
-        $profilePage = !empty($permissions['can_manage_ensemble']) ? 'conductor_profile' : 'profile';
+        $isConductor = false;
+        foreach ($_SESSION['current_roles'] ?? [] as $role) {
+            if (!empty($role['is_system'])) {
+                $isConductor = true;
+                break;
+            }
+        }
+
+        $profileRoute = $isConductor ? "{$basePath}/conductor/profile" : "{$basePath}/profile";
+        $profilePage = $isConductor ? 'conductor_profile' : 'profile';
         $menu[] = ['label' => 'Profil', 'href' => $profileRoute, 'page' => $profilePage, 'icon' => 'fas fa-user'];
         $menu[] = ['label' => 'Logout', 'href' => '/logout', 'icon' => 'fas fa-sign-out-alt'];
 
