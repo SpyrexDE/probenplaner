@@ -61,32 +61,33 @@ class CalendarBackend extends AbstractBackend
 
         $userId      = (int)$user['id'];
         $memberships = $this->userOrchestraModel->getUserOrchestras($userId);
-        $calendars   = [];
+        $calendars   = [];        foreach ($memberships as $row) {
+            $orchId = (int)$row['orchestra_id'];
+            $calId  = "orchestra_{$orchId}_user_{$userId}";
 
-        foreach ($memberships as $row) {
-            $orchId    = (int)$row['orchestra_id'];
-            $calId     = "orchestra_{$orchId}_user_{$userId}";
+            [$roleIds, $isConductor, $canRsvp] = $this->resolveRoleFlags($userId, $orchId);
 
-            $this->calendarMeta[$calId] = ['user_id' => $userId, 'orchestra_id' => $orchId, 'user_type' => $row['type'] ?? ''];
+            $this->calendarMeta[$calId] = [
+                'user_id'      => $userId,
+                'orchestra_id' => $orchId,
+                'user_type'    => $row['type'] ?? '',
+                'is_conductor' => $isConductor,
+                'can_rsvp'     => $canRsvp,
+            ];
 
-            // Calculate a stable ctag based on the latest rehearsal update
-            $userRoleIds = $this->getUserRoleIds($userId, $orchId);
-            $rehearsals = $this->rehearsalModel->getForUser($row['type'] ?? '', $orchId, true, $userRoleIds);
-            
+            $rehearsals = $this->rehearsalModel->getForUser($row['type'] ?? '', $orchId, true, $roleIds);
+
             $maxUpdatedAt = 0;
             foreach ($rehearsals as $rehearsal) {
                 $upd = strtotime($rehearsal['updated_at'] ?? $rehearsal['created_at'] ?? 'now');
-                if ($upd > $maxUpdatedAt) {
-                    $maxUpdatedAt = $upd;
-                }
+                if ($upd > $maxUpdatedAt) $maxUpdatedAt = $upd;
             }
-            // Include user promises updates to ctag
-            $promises = $this->getPromisesIndexed($userId, array_column($rehearsals, 'id'));
-            foreach ($promises as $promise) {
-                if (!empty($promise['updated_at'])) {
-                    $upd = strtotime($promise['updated_at']);
-                    if ($upd > $maxUpdatedAt) {
-                        $maxUpdatedAt = $upd;
+            if ($canRsvp) {
+                $promises = $this->getPromisesIndexed($userId, array_column($rehearsals, 'id'));
+                foreach ($promises as $promise) {
+                    if (!empty($promise['updated_at'])) {
+                        $upd = strtotime($promise['updated_at']);
+                        if ($upd > $maxUpdatedAt) $maxUpdatedAt = $upd;
                     }
                 }
             }
@@ -131,11 +132,11 @@ class CalendarBackend extends AbstractBackend
         $rehearsals = $this->rehearsalModel->getForUser(
             $meta['user_type'],
             $meta['orchestra_id'],
-            true, // include past
+            true,
             $this->getUserRoleIds($meta['user_id'], $meta['orchestra_id'])
         );
 
-        $promises = $this->getPromisesIndexed($meta['user_id'], array_column($rehearsals, 'id'));
+        $promises = $meta['can_rsvp'] ? $this->getPromisesIndexed($meta['user_id'], array_column($rehearsals, 'id')) : [];
 
         $objects = [];
         foreach ($rehearsals as $rehearsal) {
@@ -148,7 +149,7 @@ class CalendarBackend extends AbstractBackend
             }
             $latestUpdateTimestamp = max($rehearsalUpdated, $promiseUpdated);
 
-            $icsData     = $this->buildVEvent($rehearsal, $meta['user_id'], $promise);
+            $icsData     = $this->buildVEvent($rehearsal, $meta['user_id'], $promise, !$meta['can_rsvp']);
             $objects[]   = [
                 'id'           => $rehearsal['id'],
                 'uri'          => $uri,
@@ -173,7 +174,7 @@ class CalendarBackend extends AbstractBackend
         $rehearsal = $this->rehearsalModel->findById($rehearsalId);
         if (!$rehearsal) return false;
 
-        $promise = $this->promiseModel->findByUserAndRehearsal($meta['user_id'], $rehearsalId);
+        $promise = $meta['can_rsvp'] ? $this->promiseModel->findByUserAndRehearsal($meta['user_id'], $rehearsalId) : null;
 
         $rehearsalUpdated = strtotime($rehearsal['updated_at'] ?? $rehearsal['created_at'] ?? 'now');
         $promiseUpdated = 0;
@@ -182,7 +183,7 @@ class CalendarBackend extends AbstractBackend
         }
         $latestUpdateTimestamp = max($rehearsalUpdated, $promiseUpdated);
 
-        $icsData = $this->buildVEvent($rehearsal, $meta['user_id'], $promise);
+        $icsData = $this->buildVEvent($rehearsal, $meta['user_id'], $promise, !$meta['can_rsvp']);
 
         return [
             'id'           => $rehearsalId,
@@ -211,10 +212,12 @@ class CalendarBackend extends AbstractBackend
         }
 
         if ($rehearsalId) {
-            $this->processRSVPUpdate($calendarData, $meta, $rehearsalId);
-            $rehearsal  = $this->rehearsalModel->findById($rehearsalId);
-            $promise    = $this->promiseModel->findByUserAndRehearsal($meta['user_id'], $rehearsalId);
-            return '"' . md5($this->buildVEvent($rehearsal, $meta['user_id'], $promise)) . '"';
+            if ($meta['can_rsvp']) {
+                $this->processRSVPUpdate($calendarData, $meta, $rehearsalId);
+            }
+            $rehearsal = $this->rehearsalModel->findById($rehearsalId);
+            $promise   = $meta['can_rsvp'] ? $this->promiseModel->findByUserAndRehearsal($meta['user_id'], $rehearsalId) : null;
+            return '"' . md5($this->buildVEvent($rehearsal, $meta['user_id'], $promise, !$meta['can_rsvp'])) . '"';
         }
 
         return '"' . md5($calendarData) . '"';
@@ -311,7 +314,7 @@ class CalendarBackend extends AbstractBackend
     // Helpers
     // -------------------------------------------------------------------------
 
-    public function buildVEvent(array $rehearsal, int $userId, ?array $promise): string
+    public function buildVEvent(array $rehearsal, int $userId, ?array $promise, bool $skipRsvp = false): string
     {
         $vcal  = new VCalendar();
         $vevent = $vcal->createComponent('VEVENT');
@@ -325,8 +328,7 @@ class CalendarBackend extends AbstractBackend
         }
         
         $typeLabel = !empty($rehearsal['type']) ? $rehearsal['type'] : 'Probe';
-        $titleMain = !empty($rehearsal['name']) ? $typeLabel . ' - ' . $rehearsal['name'] : $typeLabel;
-        $vevent->SUMMARY = $groupStr ? $titleMain . ' [' . $groupStr . ']' : $titleMain;
+        $vevent->SUMMARY = $groupStr ? $typeLabel . ' [' . $groupStr . ']' : $typeLabel;
 
         $vevent->DTSTART = new \DateTime($rehearsal['start'] ?? 'now');
         $vevent->DTEND   = new \DateTime($rehearsal['end'] ?? 'now');
@@ -400,35 +402,38 @@ class CalendarBackend extends AbstractBackend
         $email = $this->getCaldavEmail($userId); // Fake email for auto-discovery
         $name  = $user['display_name'] ?? ($user['email'] ?? $email);
 
-        $partstat = 'NEEDS-ACTION';
-        $comment  = '';
-        if ($promise) {
-            $isAttending = isset($promise['status']) ? ($promise['status'] === 'yes') : ($promise['attending'] ?? false);
-            $partstat = $isAttending ? 'ACCEPTED' : 'DECLINED';
-            $comment  = $promise['note'] ?? '';
-        }
+        // Skip ATTENDEE/PARTSTAT for users without RSVP access (conductors or restricted roles)
+        if (!$skipRsvp) {
+            // Apple Calendar NEEDS an ORGANIZER to allow RSVP replies from attendees
+            $host = isset($_SERVER['HTTP_HOST']) ? preg_replace('/:\d+$/', '', $_SERVER['HTTP_HOST']) : (getenv('DOMAIN') ?: 'localhost');
+            $vevent->add('ORGANIZER', 'mailto:no-reply@' . $host, [
+                'CN' => 'Probenplaner'
+            ]);
 
-        // Apple Calendar NEEDS an ORGANIZER to allow RSVP replies from attendees
-        $host = isset($_SERVER['HTTP_HOST']) ? preg_replace('/:\d+$/', '', $_SERVER['HTTP_HOST']) : (getenv('DOMAIN') ?: 'localhost');
-        $vevent->add('ORGANIZER', 'mailto:no-reply@' . $host, [
-            'CN' => 'Probenplaner'
-        ]);
+            $partstat = 'NEEDS-ACTION';
+            $comment  = '';
+            if ($promise) {
+                $isAttending = isset($promise['status']) ? ($promise['status'] === 'yes') : ($promise['attending'] ?? false);
+                $partstat = $isAttending ? 'ACCEPTED' : 'DECLINED';
+                $comment  = $promise['note'] ?? '';
+            }
 
-        $attendeeValue = 'mailto:' . $email;
-        $attendee = $vcal->createProperty('ATTENDEE', $attendeeValue);
-        $attendee->add('PARTSTAT', $partstat);
-        $attendee->add('CN', $name);
-        $attendee->add('ROLE', 'REQ-PARTICIPANT');
-        $attendee->add('SCHEDULE-AGENT', 'SERVER'); // Crucial to prevent email popup!
-        $attendee->add('RSVP', 'TRUE');
+            $attendeeValue = 'mailto:' . $email;
+            $attendee = $vcal->createProperty('ATTENDEE', $attendeeValue);
+            $attendee->add('PARTSTAT', $partstat);
+            $attendee->add('CN', $name);
+            $attendee->add('ROLE', 'REQ-PARTICIPANT');
+            $attendee->add('SCHEDULE-AGENT', 'SERVER');
+            $attendee->add('RSVP', 'TRUE');
 
-        if ($comment) {
-            $attendee->add('X-COMMENT', $comment);
-        }
-        $vevent->add($attendee);
+            if ($comment) {
+                $attendee->add('X-COMMENT', $comment);
+            }
+            $vevent->add($attendee);
 
-        if ($comment && $partstat === 'DECLINED') {
-            $vevent->COMMENT = $comment;
+            if ($comment && $partstat === 'DECLINED') {
+                $vevent->COMMENT = $comment;
+            }
         }
 
         $vcal->add($vevent);
@@ -484,14 +489,16 @@ class CalendarBackend extends AbstractBackend
         if (preg_match('/^orchestra_(\d+)_user_(\d+)$/', $calendarId, $m)) {
             $orchId = (int)$m[1];
             $userId = (int)$m[2];
-            $user   = $this->userModel->findById($userId);
 
             $relation = $this->userOrchestraModel->getUserOrchestraRelation($userId, $orchId, true);
+            [, $isConductor, $canRsvp] = $this->resolveRoleFlags($userId, $orchId);
 
             $meta = [
                 'user_id'      => $userId,
                 'orchestra_id' => $orchId,
                 'user_type'    => $relation['type'] ?? '',
+                'is_conductor' => $isConductor,
+                'can_rsvp'     => $canRsvp,
             ];
             $this->calendarMeta[$calendarId] = $meta;
             return $meta;
@@ -514,10 +521,42 @@ class CalendarBackend extends AbstractBackend
         return urldecode(str_replace('principals/', '', $principalUri));
     }
 
+    /**
+     * Returns [roleIds, isConductor, canRsvp] derived from a single getUserRoles() call.
+     *
+     * @return array{0: int[], 1: bool, 2: bool}
+     */
+    private function resolveRoleFlags(int $userId, int $orchestraId): array
+    {
+        $roles       = $this->userOrchestraModel->getUserRoles($userId, $orchestraId);
+        $roleIds     = array_column($roles, 'id');
+        $isConductor = false;
+        $allPerms    = [];
+
+        foreach ($roles as $role) {
+            if (!empty($role['is_system']) && ($role['name'] ?? '') === 'Leitung') {
+                $isConductor = true;
+            }
+            $perms = !empty($role['is_system'])
+                ? \App\Models\Role::getConductorPermissions()
+                : (json_decode($role['permissions'] ?? '[]', true) ?: []);
+            $allPerms = array_merge($allPerms, $perms);
+        }
+
+        // Conductors are never expected to RSVP, even though their role technically grants the permission
+        $canRsvp = !$isConductor && in_array('can_attend_rehearsals', $allPerms, true);
+
+        return [$roleIds, $isConductor, $canRsvp];
+    }
+
     private function getUserRoleIds(int $userId, int $orchestraId): array
     {
-        $roles = $this->userOrchestraModel->getUserRoles($userId, $orchestraId);
-        return array_column($roles, 'id');
+        return $this->resolveRoleFlags($userId, $orchestraId)[0];
+    }
+
+    private function checkIsConductor(int $userId, int $orchestraId): bool
+    {
+        return $this->resolveRoleFlags($userId, $orchestraId)[1];
     }
 
     private function getPromisesIndexed(int $userId, array $rehearsalIds): array

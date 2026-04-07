@@ -9,9 +9,11 @@
  *
  * Usage:
  *   $calendarCsrfToken = \App\Core\CSRF::getToken();
+ *   $conductorMode     = true; // optional — omits RSVP wording for conductors
  *   include __DIR__ . '/calendar-sync-section.php';
  */
 $calendarCsrfToken = $calendarCsrfToken ?? \App\Core\CSRF::getToken();
+$conductorMode     = $conductorMode ?? false;
 ?>
 
 <style>
@@ -360,7 +362,11 @@ $calendarCsrfToken = $calendarCsrfToken ?? \App\Core\CSRF::getToken();
                 </div>
                 <div style="flex:1;min-width:0;">
                     <div class="calsync-option-label">Nur Termine sehen</div>
+                    <?php if ($conductorMode): ?>
+                    <div class="calsync-option-desc">Proben <strong>dieses Orchesters</strong> im Kalender anzeigen</div>
+                    <?php else: ?>
                     <div class="calsync-option-desc">Proben <strong>dieses Orchesters</strong> im Kalender anzeigen &mdash; Zu-/Absagen nur in der App</div>
+                    <?php endif; ?>
                 </div>
             </div>
             <div class="calsync-platforms">
@@ -398,7 +404,11 @@ $calendarCsrfToken = $calendarCsrfToken ?? \App\Core\CSRF::getToken();
                     <div class="calsync-option-header">
                         <span class="calsync-option-label">Vollständig einbinden</span>
                     </div>
+                    <?php if ($conductorMode): ?>
+                    <div class="calsync-option-desc">Proben <strong>aller deiner Orchester</strong> im Kalender anzeigen</div>
+                    <?php else: ?>
                     <div class="calsync-option-desc"><strong>Alle deine Orchester</strong> &mdash; Termine sehen <em>und</em> Zu-/Absagen direkt im Kalender</div>
+                    <?php endif; ?>
                 </div>
             </div>
             <div class="calsync-platforms">

@@ -60,6 +60,15 @@ $server->on('beforeMethod:POST', function ($request, $response) {
         if (!preg_match('/principals\/(\d+)/', $path, $m)) return true;
 
         $userId   = (int)$m[1];
+
+        // Conductors have no RSVPs
+        $userOrchestraModel = new \App\Models\UserOrchestra();
+        $rehearsal = (new \App\Models\Rehearsal())->findById($rehearsalId);
+        if ($rehearsal) {
+            $roles = $userOrchestraModel->getUserRoles($userId, (int)$rehearsal['orchestra_id']);
+            $isConductor = !empty(array_filter($roles, fn($r) => !empty($r['is_system']) && ($r['name'] ?? '') === 'Leitung'));
+            if ($isConductor) return true;
+        }
         $partstat = 'NEEDS-ACTION';
         $comment  = '';
 
@@ -130,14 +139,21 @@ $server->on('beforeMethod:PUT', function ($request, $response) {
         }
         if (!$rehearsalId) return true;
 
-        if (!preg_match('/orchestra_\d+_user_(\d+)/', $path, $m)) return true;
-        $userId = (int)$m[1];
+        if (!preg_match('/orchestra_(\d+)_user_(\d+)/', $path, $m)) return true;
+        $orchId = (int)$m[1];
+        $userId = (int)$m[2];
+
+        // Conductors have no RSVPs
+        $userOrchestraModel = new \App\Models\UserOrchestra();
+        $roles = $userOrchestraModel->getUserRoles($userId, $orchId);
+        $isConductor = !empty(array_filter($roles, fn($r) => !empty($r['is_system']) && ($r['name'] ?? '') === 'Leitung'));
+        if ($isConductor) return true;
 
         (new \App\Models\User())->updatePromise($userId, $rehearsalId, $partstat === 'ACCEPTED', $comment);
 
-        $rehearsal  = (new \App\Models\Rehearsal())->findById($rehearsalId);
-        $promise    = (new \App\Models\UserPromise())->findByUserAndRehearsal($userId, $rehearsalId);
-        $newIcs     = (new CalendarBackend())->buildVEvent($rehearsal, $userId, $promise);
+        $rehearsal = (new \App\Models\Rehearsal())->findById($rehearsalId);
+        $promise   = (new \App\Models\UserPromise())->findByUserAndRehearsal($userId, $rehearsalId);
+        $newIcs    = (new CalendarBackend())->buildVEvent($rehearsal, $userId, $promise, false);
 
         $response->setStatus(204);
         $response->setHeader('ETag', '"' . md5($newIcs) . '"');

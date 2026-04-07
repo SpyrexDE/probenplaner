@@ -134,33 +134,43 @@ class CalendarController extends Controller
             $relation = $userOrchestraModel->getUserOrchestraRelation($userId, $orchId, true);
             if (!$relation) continue;
 
-            $roleIds    = array_column($userOrchestraModel->getUserRoles($userId, $orchId), 'id');
+            $roles       = $userOrchestraModel->getUserRoles($userId, $orchId);
+            $roleIds     = array_column($roles, 'id');
+            $isConductor = false;
+            $allPerms    = [];
+            foreach ($roles as $role) {
+                if (!empty($role['is_system']) && ($role['name'] ?? '') === 'Leitung') $isConductor = true;
+                $perms = !empty($role['is_system'])
+                    ? \App\Models\Role::getConductorPermissions()
+                    : (json_decode($role['permissions'] ?? '[]', true) ?: []);
+                $allPerms = array_merge($allPerms, $perms);
+            }
+            $canRsvp = !$isConductor && in_array('can_attend_rehearsals', $allPerms, true);
+
             $rehearsals = $rehearsalModel->getForUser($relation['type'], $orchId, true, $roleIds);
 
             if (empty($rehearsals)) continue;
 
             $rehearsalIds = array_column($rehearsals, 'id');
-            $promises     = $promiseModel->findPromisesForRehearsalsAndUser($rehearsalIds, $userId);
+            $promises     = $canRsvp ? $promiseModel->findPromisesForRehearsalsAndUser($rehearsalIds, $userId) : [];
 
             foreach ($rehearsals as $r) {
-                $promise = $promises[$r['id']] ?? null;
+                $promise  = $promises[$r['id']] ?? null;
                 $orchName = $orch['name'] ?? '';
 
-                $isAttending = false;
-                $hasResponded = false;
-                if ($promise) {
-                    $hasResponded = true;
-                    $isAttending = isset($promise['status']) ? ($promise['status'] === 'yes') : ($promise['attending'] ?? false);
-                }
-                $partstat = $hasResponded ? ($isAttending ? 'ACCEPTED' : 'DECLINED') : 'NEEDS-ACTION';
-                
                 $statusEmoji = '';
-                if ($partstat === 'ACCEPTED') {
-                    $statusEmoji = '✅ ';
-                } elseif ($partstat === 'DECLINED') {
-                    $statusEmoji = '❌ ';
-                } else {
-                    $statusEmoji = '❓ ';
+                if ($canRsvp) {
+                    $isAttending  = false;
+                    $hasResponded = false;
+                    if ($promise) {
+                        $hasResponded = true;
+                        $isAttending  = isset($promise['status']) ? ($promise['status'] === 'yes') : ($promise['attending'] ?? false);
+                    }
+                    $partstat = $hasResponded ? ($isAttending ? 'ACCEPTED' : 'DECLINED') : 'NEEDS-ACTION';
+
+                    if ($partstat === 'ACCEPTED')      { $statusEmoji = '✅ '; }
+                    elseif ($partstat === 'DECLINED')  { $statusEmoji = '❌ '; }
+                    else                               { $statusEmoji = '❓ '; }
                 }
 
                 $dtstart = new \DateTime($r['start'] ?? 'now', new \DateTimeZone('Europe/Berlin'));
@@ -179,9 +189,7 @@ class CalendarController extends Controller
                 }
                 
                 $typeLabel = !empty($r['type']) ? $r['type'] : 'Probe';
-                $titleMain = !empty($r['name']) ? $typeLabel . ' - ' . $r['name'] : $typeLabel;
-                
-                $summary = $statusEmoji . ($groupStr ? $titleMain . ' [' . $groupStr . ']' : $titleMain);
+                $summary = $statusEmoji . ($groupStr ? $typeLabel . ' [' . $groupStr . ']' : $typeLabel);
 
                 $host = isset($_SERVER['HTTP_HOST']) ? preg_replace('/:\d+$/', '', $_SERVER['HTTP_HOST']) : (getenv('DOMAIN') ?: 'localhost');
                 $vevent = $vcalendar->add('VEVENT', [

@@ -86,7 +86,24 @@ include __DIR__ . '/../components/theme-selector.php';
             </div>
         </div>
 
-
+        <!-- Calendar Sync -->
+        <div class="modern-card mb-6">
+            <div class="modern-card-header">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                        <?= icon('calendar-days', 'text-blue-600 text-sm') ?>
+                    </div>
+                    <h2 class="text-xl font-semibold text-gray-900">Kalender-Sync</h2>
+                </div>
+            </div>
+            <div class="modern-card-body">
+                <?php
+                $calendarCsrfToken = \App\Core\CSRF::getToken();
+                $conductorMode     = true;
+                include __DIR__ . '/../components/calendar-sync-section.php';
+                ?>
+            </div>
+        </div>
 
         <!-- Password -->
         <?php
