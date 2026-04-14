@@ -267,7 +267,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
 
         _sortRehearsals(container) {
             if (!container) return;
-            const cards = Array.from(container.querySelectorAll('.ie-card[data-rehearsal-id]'));
+            const cards = Array.from(container.querySelectorAll('.ie-card[data-rehearsal-id]:not([data-rehearsal-id="recurring"])'));
             if (cards.length < 2) return;
             cards.sort((a, b) => {
                 const sA = a.dataset.start || '';
@@ -1270,7 +1270,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             const btn = document.getElementById('bulkSelectToggle');
             btn?.classList.toggle('active', this.active);
 
-            document.querySelectorAll('.ie-card').forEach(c => {
+            document.querySelectorAll('.ie-card:not([data-rehearsal-id="recurring"])').forEach(c => {
                 if (this.active) {
                     c.classList.add('bulk-selectable');
                 } else {
@@ -1296,7 +1296,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             const willSelect = !isSelected;
 
             if (e.shiftKey && this._lastClickedCard) {
-                const allVisibleCards = [...document.querySelectorAll('.ie-card')].filter(c => c.style.display !== 'none');
+                const allVisibleCards = [...document.querySelectorAll('.ie-card:not([data-rehearsal-id="recurring"])')].filter(c => c.style.display !== 'none');
                 const startIdx = allVisibleCards.indexOf(this._lastClickedCard);
                 const endIdx = allVisibleCards.indexOf(card);
 
@@ -1358,7 +1358,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             }
             const q = query.toLowerCase().trim();
             let visible = 0;
-            document.querySelectorAll('.ie-card[data-rehearsal-id]').forEach(card => {
+            document.querySelectorAll('.ie-card[data-rehearsal-id]:not([data-rehearsal-id="recurring"])').forEach(card => {
                 const haystack = [
                     card.dataset.type || '',
                     card.dataset.location || '',
@@ -1517,7 +1517,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
 
         _collectValues(filterType) {
             const set = new Set();
-            document.querySelectorAll('.ie-card[data-rehearsal-id]').forEach(card => {
+            document.querySelectorAll('.ie-card[data-rehearsal-id]:not([data-rehearsal-id="recurring"])').forEach(card => {
                 let v;
                 if (filterType === 'type') v = card.dataset.type;
                 else if (filterType === 'location') v = card.dataset.location;
@@ -2260,7 +2260,21 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             const dates = computeDates();
             if (dates.length === 0) return;
 
-            const ieCard = recCard.querySelector('.ie-card');
+            let ieCard = recCard.querySelector('.ie-card');
+            if (!ieCard) {
+                const liveRecCard = document.getElementById('recurringCard');
+                if (liveRecCard) ieCard = liveRecCard.querySelector('.ie-card');
+            }
+            
+            if (!ieCard) {
+                window.notifyError?.('Konnte Proben-Details nicht abrufen. Bitte laden Sie die Seite neu.');
+                const submit = document.getElementById('recurringSubmit');
+                if (submit) {
+                    submit.disabled = false;
+                    submit.textContent = 'Erstellen';
+                }
+                return;
+            }
             
             // Extract tags from DOM elements (managed by IEM addTagInput/removeTag)
             const tags = Array.from(recCard.querySelectorAll('#recurringTagsContainer .ie-tag'))

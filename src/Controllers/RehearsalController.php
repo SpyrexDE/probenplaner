@@ -419,6 +419,15 @@ class RehearsalController extends Controller
             }
         }
 
+        $allTags = $this->rehearsalModel->getOrchestraTags($orchestraId);
+        $maxImportId = 0;
+        foreach ($allTags as $t) {
+            if (preg_match('/^Importiert-(\d+)$/i', $t, $m)) {
+                $maxImportId = max($maxImportId, (int)$m[1]);
+            }
+        }
+        $importTag = 'Importiert-' . ($maxImportId + 1);
+
         $createdCount = 0;
 
         foreach ($rehearsals as $i => $r) {
@@ -463,7 +472,7 @@ class RehearsalController extends Controller
             // Handle tags
             $tags = $r['tags'] ?? [];
             if (!is_array($tags)) $tags = [];
-            $tags[] = 'importiert';
+            $tags[] = $importTag;
             $this->rehearsalModel->saveTags($rehearsalId, $orchestraId, array_unique($tags));
 
             // Handle schedule

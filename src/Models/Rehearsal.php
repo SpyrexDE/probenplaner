@@ -259,6 +259,13 @@ class Rehearsal extends Model
      */
     public function create(array $data, ?array $groups)
     {
+        if (isset($data['type'])) {
+            $data['type'] = mb_strtoupper(trim($data['type']), 'UTF-8');
+        }
+        if (isset($data['location'])) {
+            $data['location'] = mb_strtoupper(trim($data['location']), 'UTF-8');
+        }
+
         // Strict Data Validation (Prevents negative duration)
         $start = $data['start'] ?? 'now';
         $end = $data['end'] ?? 'now';
@@ -346,6 +353,13 @@ class Rehearsal extends Model
      */
     public function updateRehearsal(int $id, array $data, ?array $groups)
     {
+        if (isset($data['type'])) {
+            $data['type'] = mb_strtoupper(trim($data['type']), 'UTF-8');
+        }
+        if (isset($data['location'])) {
+            $data['location'] = mb_strtoupper(trim($data['location']), 'UTF-8');
+        }
+
         // Strict Data Validation
         $start = $data['start'] ?? 'now';
         $end = $data['end'] ?? 'now';
