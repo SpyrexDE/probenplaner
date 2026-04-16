@@ -113,6 +113,18 @@
                                 <input type="date" id="recurringStart" value="<?= date('Y-m-d', strtotime('next monday')) ?>" style="display:block;position:absolute;inset:0;width:100%;height:100%;opacity:0.01;cursor:pointer;z-index:1;border:0;padding:0;margin:0;-webkit-appearance:none;background:transparent;color:transparent;font-size:16px;" onchange="document.getElementById('recurringStartSpan').firstChild.textContent = this.value; window.updatePreview?.()" onclick="try { this.showPicker(); } catch(e) {}">
                             </span>
                         </div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span style="font-size: 10px; font-weight: var(--font-weight-semibold); text-transform: uppercase; letter-spacing: 0.5px; color: var(--color-text-secondary); width: 30px;">Zeit</span>
+                            <span style="display:inline-block;position:relative;cursor:pointer;text-decoration:underline dashed var(--color-primary-200);text-underline-offset:2px;text-decoration-thickness:2px; font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); color: var(--color-text-primary);" id="recurringTimeStartSpan">
+                                18:00
+                                <input type="time" id="recurringTimeStart" value="18:00" style="display:block;position:absolute;inset:0;width:100%;height:100%;opacity:0.01;cursor:pointer;z-index:1;border:0;padding:0;margin:0;-webkit-appearance:none;background:transparent;color:transparent;font-size:16px;" onchange="document.getElementById('recurringTimeStartSpan').firstChild.textContent = this.value;" onclick="try { this.showPicker(); } catch(e) {}">
+                            </span>
+                            <span style="font-size: var(--font-size-sm); color: var(--color-text-secondary); margin: 0 2px;">–</span>
+                            <span style="display:inline-block;position:relative;cursor:pointer;text-decoration:underline dashed var(--color-primary-200);text-underline-offset:2px;text-decoration-thickness:2px; font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); color: var(--color-text-primary);" id="recurringTimeEndSpan">
+                                20:00
+                                <input type="time" id="recurringTimeEnd" value="20:00" style="display:block;position:absolute;inset:0;width:100%;height:100%;opacity:0.01;cursor:pointer;z-index:1;border:0;padding:0;margin:0;-webkit-appearance:none;background:transparent;color:transparent;font-size:16px;" onchange="document.getElementById('recurringTimeEndSpan').firstChild.textContent = this.value;" onclick="try { this.showPicker(); } catch(e) {}">
+                            </span>
+                        </div>
                         <div class="flex items-center gap-2">
                             <span style="font-size: 10px; font-weight: var(--font-weight-semibold); text-transform: uppercase; letter-spacing: 0.5px; color: var(--color-text-secondary); width: 30px;">Bis</span>
                             <span style="display:inline-block;position:relative;cursor:pointer;text-decoration:underline dashed var(--color-primary-200);text-underline-offset:2px;text-decoration-thickness:2px; font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); color: var(--color-text-primary);" id="recurringEndSpan">

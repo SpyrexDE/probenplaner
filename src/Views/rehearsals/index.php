@@ -2291,10 +2291,16 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                 if (infoInput && infoInput.value) infos = JSON.parse(infoInput.value);
             } catch (e) { console.error('Error parsing embedded editors', e); }
 
+            const stInput = document.getElementById('recurringTimeStart');
+            const etInput = document.getElementById('recurringTimeEnd');
+            const startTimeStr = stInput && stInput.value ? stInput.value : (ieCard.dataset.start ? ieCard.dataset.start.split(' ')[1] : '18:00:00');
+            const endTimeStr = etInput && etInput.value ? etInput.value : (ieCard.dataset.end ? ieCard.dataset.end.split(' ')[1] : '20:00:00');
+            const formatTime = (t) => t.length === 5 ? t + ':00' : t;
+
             const payload = {
                 dates,
-                start_time: ieCard.dataset.start ? ieCard.dataset.start.split(' ')[1] : '18:00:00',
-                end_time: ieCard.dataset.end ? ieCard.dataset.end.split(' ')[1] : '20:00:00',
+                start_time: formatTime(startTimeStr),
+                end_time: formatTime(endTimeStr),
                 type: ieCard.dataset.type || '',
                 location: ieCard.dataset.location || 'Probenraum',
                 color: ieCard.dataset.color || '#e5e7eb',
