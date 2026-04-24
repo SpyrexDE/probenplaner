@@ -318,6 +318,43 @@ $editorId = $editorId ?? ('schedule-editor-' . uniqid());
             if (autoSave) triggerAutoSave();
         });
 
+        // Sort immediately when a time is changed (e.g. user typed a new time and tabbed away)
+        container.addEventListener('change', function(e) {
+            if (e.target.dataset.field === 'time') {
+                const idx = parseInt(e.target.dataset.index);
+                if (isNaN(idx) || !items[idx]) return;
+                
+                // Allow browser to complete focus transfer (e.g. when pressing Tab)
+                setTimeout(() => {
+                    const active = document.activeElement;
+                    let targetField = null;
+                    let targetItem = null;
+                    
+                    // Identify where focus landed
+                    if (active && active.dataset && active.dataset.index) {
+                        targetField = active.dataset.field;
+                        targetItem = items[parseInt(active.dataset.index)];
+                    } else if (active === e.target) {
+                        targetField = 'time';
+                        targetItem = items[idx];
+                    }
+
+                    sortByTime();
+                    render();
+                    if (autoSave) triggerAutoSave();
+
+                    // Restore focus
+                    if (targetItem && targetField) {
+                        const newIdx = items.indexOf(targetItem);
+                        if (newIdx !== -1) {
+                            const newEl = container.querySelector(`[data-index="${newIdx}"][data-field="${targetField}"]`);
+                            if (newEl) newEl.focus();
+                        }
+                    }
+                }, 10);
+            }
+        });
+
         container.addEventListener('click', function(e) {
             // Remove button
             const removeBtn = e.target.closest('.schedule-editor-remove');
@@ -339,15 +376,17 @@ $editorId = $editorId ?? ('schedule-editor-' . uniqid());
                 const totalMin = h * 60 + m + 15;
                 const newH = String(Math.floor(totalMin / 60) % 24).padStart(2, '0');
                 const newM = String(totalMin % 60).padStart(2, '0');
-                items.push({
+                const newItem = {
                     time: newH + ':' + newM,
                     label: ''
-                });
+                };
+                items.push(newItem);
                 sortByTime();
                 render();
 
                 // Focus the new label input
-                const newLabel = container.querySelector(`[data-index="${items.length - 1}"][data-field="label"]`);
+                const newIndex = items.indexOf(newItem);
+                const newLabel = container.querySelector(`[data-index="${newIndex}"][data-field="label"]`);
                 if (newLabel) newLabel.focus();
             }
         });

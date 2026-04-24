@@ -527,7 +527,7 @@ class GroupManager
             if (!is_array($node) || !isset($node['id'])) continue;
 
             if (empty($node['children'])) {
-                $key = $parentId ?? '';
+                $key = $parentId ?? $node['id'];
                 $groups[$key][] = $node['id'];
                 continue;
             }
