@@ -147,7 +147,12 @@ class CalendarController extends Controller
             }
             $canRsvp = !$isConductor && in_array('can_attend_rehearsals', $allPerms, true);
 
-            $rehearsals = $rehearsalModel->getForUser($relation['type'], $orchId, true, $roleIds);
+            $hasManagePerm = in_array('can_manage_rehearsals', $allPerms, true) || $isConductor;
+            if ($hasManagePerm) {
+                $rehearsals = $rehearsalModel->getUpcoming($orchId, true);
+            } else {
+                $rehearsals = $rehearsalModel->getForUser($relation['type'], $orchId, true, $roleIds);
+            }
 
             if (empty($rehearsals)) continue;
 
