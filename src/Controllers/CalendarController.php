@@ -190,7 +190,7 @@ class CalendarController extends Controller
                 $smartDisplay = new \App\Core\SmartGroupDisplay();
                 $groupStr = '';
                 if (!empty($r['groups']) && is_array($r['groups'])) {
-                    $groupStr = $smartDisplay->generateBaseDescription($r['groups']);
+                    $groupStr = $smartDisplay->generateDescription($r['groups']);
                 }
                 
                 $typeLabel = !empty($r['type']) ? $r['type'] : 'Probe';
