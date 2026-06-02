@@ -392,10 +392,25 @@ class GroupManager
             return true;
         }
 
+        // Check instrument descendants first (common case)
         $instruments = $this->getInstrumentsByGroup($groupId);
-        $result = in_array($userType, $instruments);
-        $this->membershipCache[$cacheKey] = $result;
-        return $result;
+        if (in_array($userType, $instruments)) {
+            $this->membershipCache[$cacheKey] = true;
+            return true;
+        }
+
+        // Also check non-instrument leaf sections (e.g. Schlagwerk, Harfe — configured as
+        // 'section' type but with no children, acting as leaf nodes)
+        $descendants = $this->getDescendants($groupId);
+        foreach ($descendants as $desc) {
+            if (($desc['id'] ?? null) === $userType) {
+                $this->membershipCache[$cacheKey] = true;
+                return true;
+            }
+        }
+
+        $this->membershipCache[$cacheKey] = false;
+        return false;
     }
 
     /**

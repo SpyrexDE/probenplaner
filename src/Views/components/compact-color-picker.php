@@ -24,12 +24,13 @@ use App\Core\Constants;
   grid-template-columns: repeat(6, 1fr);
   gap: var(--space-3);
   width: 100%;
-  max-width: 320px;
+  max-width: min(320px, 100%);
 }
 
 .compact-color-option {
-  width: 40px;
-  height: 40px;
+  width: 100%;
+  aspect-ratio: 1;
+  min-height: 32px;
   border-radius: var(--radius-base);
   border: 2px solid var(--color-border);
   cursor: pointer;
@@ -134,27 +135,13 @@ use App\Core\Constants;
 /* Responsive design */
 @media (max-width: 640px) {
   .compact-color-picker-grid {
-    grid-template-columns: repeat(6, 1fr);
-    max-width: 280px;
     gap: var(--space-2);
-  }
-  
-  .compact-color-option {
-    width: 36px;
-    height: 36px;
   }
 }
 
 @media (max-width: 480px) {
   .compact-color-picker-grid {
     grid-template-columns: repeat(4, 1fr);
-    max-width: 200px;
-    gap: var(--space-2);
-  }
-  
-  .compact-color-option {
-    width: 38px;
-    height: 38px;
   }
 }
 </style>

@@ -2256,6 +2256,19 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
         });
         document.getElementById('recurringClose').addEventListener('click', () => recCard.classList.remove('open'));
 
+        document.addEventListener('click', (e) => {
+            if (!recCard.classList.contains('open')) return;
+            const openBtn = document.getElementById('recurringOpen');
+            if (!recCard.contains(e.target) && !openBtn?.contains(e.target)) {
+                recCard.classList.remove('open');
+            }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && recCard.classList.contains('open')) {
+                recCard.classList.remove('open');
+            }
+        });
+
         document.getElementById('recurringSubmit').addEventListener('click', () => {
             const dates = computeDates();
             if (dates.length === 0) return;
