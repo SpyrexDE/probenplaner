@@ -16,6 +16,11 @@ use App\Models\UserOrchestra;
  */
 class OrgaPanelController extends Controller
 {
+    /** Allowed ensemble slug characters (underscore needed for JOinJMD orchestra IDs). */
+    private const SLUG_PATTERN = '/^[a-z0-9_-]+$/';
+    private const SLUG_MAX_LENGTH = 100; // orchestras.slug is VARCHAR(100)
+    private const SLUG_ERROR = 'Kürzel darf nur Kleinbuchstaben, Zahlen, Binde- und Unterstriche enthalten.';
+
     private Organization $orgModel;
     private Orchestra $orchestraModel;
     private User $userModel;
@@ -92,21 +97,27 @@ class OrgaPanelController extends Controller
 
         // Auto-generate slug from name if not provided
         if ($slug === '') {
-            $slug = preg_replace('/[^a-z0-9-]/', '', str_replace(' ', '-', strtolower($name)));
-            $slug = trim($slug, '-') ?: 'ensemble';
+            $slug = $this->slugify($name);
         }
 
-        if (!preg_match('/^[a-z0-9-]+$/', $slug)) {
-            $this->setFlash('error', 'Kürzel darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten.');
+        if (!preg_match(self::SLUG_PATTERN, $slug)) {
+            $this->setFlash('error', self::SLUG_ERROR);
             $this->redirect('/orga/ensembles/create');
             return;
         }
 
-        // Ensure unique slug
+        if (strlen($slug) > self::SLUG_MAX_LENGTH) {
+            $this->setFlash('error', 'Kürzel darf höchstens ' . self::SLUG_MAX_LENGTH . ' Zeichen lang sein.');
+            $this->redirect('/orga/ensembles/create');
+            return;
+        }
+
+        // Ensure unique slug (suffix keeps the result within the column length)
         $baseSlug = $slug;
         $i = 1;
         while ($this->orchestraModel->findBySlug($slug)) {
-            $slug = $baseSlug . '-' . $i++;
+            $suffix = '-' . $i++;
+            $slug = substr($baseSlug, 0, self::SLUG_MAX_LENGTH - strlen($suffix)) . $suffix;
         }
 
         try {
@@ -181,8 +192,12 @@ class OrgaPanelController extends Controller
         }
 
         if ($field === 'slug') {
-            if (!preg_match('/^[a-z0-9-]+$/', $value)) {
-                $this->jsonError('Kürzel darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten.', 400);
+            if (!preg_match(self::SLUG_PATTERN, $value)) {
+                $this->jsonError(self::SLUG_ERROR, 400);
+                return;
+            }
+            if (strlen($value) > self::SLUG_MAX_LENGTH) {
+                $this->jsonError('Kürzel darf höchstens ' . self::SLUG_MAX_LENGTH . ' Zeichen lang sein.', 400);
                 return;
             }
             $existing = $this->orchestraModel->findBySlug($value);
@@ -192,9 +207,33 @@ class OrgaPanelController extends Controller
             }
         }
 
-        $this->orchestraModel->updateSettings((int)$ensemble['id'], [$field => $value]);
+        if (!$this->orchestraModel->updateSettings((int)$ensemble['id'], [$field => $value])) {
+            $this->jsonError('Speichern fehlgeschlagen.', 500);
+            return;
+        }
+
+        $response = ['success' => true];
+        if ($field === 'slug') {
+            // The client needs the new slug to build follow-up URLs (/orga/ensembles/{slug}/...)
+            $response['slug'] = $value;
+        }
         header('Content-Type: application/json');
-        echo json_encode(['success' => true]);
+        echo json_encode($response);
+    }
+
+    /**
+     * Build a URL slug from an ensemble name.
+     * Mirrors the client-side auto-slug in Views/orga/create-ensemble.php.
+     */
+    private function slugify(string $name): string
+    {
+        $slug = mb_strtolower($name, 'UTF-8');
+        $slug = strtr($slug, ['ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue', 'ß' => 'ss']);
+        $slug = preg_replace('/\s+/u', '-', $slug);
+        $slug = preg_replace('/[^a-z0-9_-]/', '', $slug);
+        $slug = preg_replace('/-+/', '-', $slug);
+        $slug = trim(substr($slug, 0, self::SLUG_MAX_LENGTH), '-');
+        return $slug !== '' ? $slug : 'ensemble';
     }
 
     /**

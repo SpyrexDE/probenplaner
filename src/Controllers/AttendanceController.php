@@ -14,9 +14,16 @@ use App\Models\UserPromise;
  *   - can_manage_attendance_all: sees all members
  *   - can_manage_attendance_parent_section: sees parent section (e.g. all woodwinds)
  *   - can_manage_attendance_own_section: sees only own instrument group
+ *
+ * Every endpoint is scoped to the orchestra from the URL ($ctx['orchestra_id']):
+ * rehearsal IDs from the request must belong to that orchestra, and member data
+ * (attendance, promises, comments) is only returned/written for members inside
+ * the caller's attendance scope.
  */
 class AttendanceController extends Controller
 {
+    private const ALLOWED_ACTIONS = ['toggle', 'delete', 'comment'];
+
     private Attendance $attendanceModel;
     private Rehearsal $rehearsalModel;
 
@@ -46,11 +53,12 @@ class AttendanceController extends Controller
         $rehearsals = $this->rehearsalModel->getUpcoming($orchestraId, true);
 
         // Members scoped by permission
-        $members = $this->loadScopedMembers($orchestraId, $scope);
+        $members = $this->loadScopedMembers($orchestraId, $scope, $this->leaderType($ctx));
+        $memberIds = $this->memberIdSet($members);
 
-        // Batch-load promises
+        // Batch-load promises (only for members in scope — the map is embedded in the page)
         $promiseModel = new UserPromise();
-        $allPromises = $promiseModel->getAllForOrchestra($orchestraId);
+        $allPromises = array_intersect_key($promiseModel->getAllForOrchestra($orchestraId), $memberIds);
 
         // Which rehearsals already have attendance documented
         $documentedIds = $this->attendanceModel->getDocumentedRehearsalIds($orchestraId);
@@ -61,7 +69,10 @@ class AttendanceController extends Controller
         // Load attendance for initial rehearsal
         $attendanceRecords = [];
         if ($initialRehearsalId) {
-            $attendanceRecords = $this->attendanceModel->getForRehearsal($initialRehearsalId);
+            $attendanceRecords = array_intersect_key(
+                $this->attendanceModel->getForRehearsal($initialRehearsalId),
+                $memberIds
+            );
         }
 
         $this->render('attendance/index', [
@@ -98,40 +109,80 @@ class AttendanceController extends Controller
         header('Content-Type: application/json');
 
         if (!$rehearsalId || !$userId) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Fehlende Parameter']);
+            $this->jsonError(400, 'Fehlende Parameter');
             return;
         }
 
-        // Permission scope check for own-section-only users
-        if ($this->getAttendanceScope() === 'own_section') {
-            if (!$this->isUserInScope($userId, $ctx['orchestra_id'])) {
-                http_response_code(403);
-                echo json_encode(['success' => false, 'error' => 'Keine Berechtigung für dieses Mitglied']);
-                return;
-            }
+        if (!is_string($action) || !in_array($action, self::ALLOWED_ACTIONS, true)) {
+            $this->jsonError(400, 'Unbekannte Aktion');
+            return;
+        }
+
+        $orchestraId = $ctx['orchestra_id'];
+
+        // The rehearsal must belong to the orchestra from the URL
+        if (!$this->attendanceModel->rehearsalBelongsToOrchestra($rehearsalId, $orchestraId)) {
+            $this->jsonError(404, 'Probe nicht gefunden');
+            return;
+        }
+
+        // The target must be an active member of this orchestra inside the caller's
+        // scope (all / parent section / own section) — same set the UI renders.
+        if (!$this->isUserInScope($userId, $orchestraId, $this->leaderType($ctx))) {
+            $this->jsonError(403, 'Keine Berechtigung für dieses Mitglied');
+            return;
         }
 
         $recordedBy = (int)$_SESSION['user_id'];
 
         if ($action === 'delete') {
-            $this->attendanceModel->deleteRecord($rehearsalId, $userId);
+            if (!$this->attendanceModel->deleteRecord($rehearsalId, $userId)) {
+                $this->jsonError(500, 'Speichern fehlgeschlagen');
+                return;
+            }
             echo json_encode(['success' => true, 'status' => 'unset']);
             return;
         }
 
         if ($action === 'comment') {
-            $comment = trim($_POST['comment'] ?? '');
+            $comment = is_string($_POST['comment'] ?? null) ? trim($_POST['comment']) : '';
             $existing = $this->attendanceModel->getForRehearsalAndUser($rehearsalId, $userId);
-            // Allow comments even without existing attendance record
             $present = $existing ? (bool)$existing['present'] : null;
-            $this->attendanceModel->upsert(
+
+            // `present` is NOT NULL in the schema, so without a record the note is saved
+            // together with the status the client chose. An existing status is never
+            // overwritten by this action.
+            if ($present === null) {
+                $requested = $_POST['status'] ?? '';
+                if ($requested === 'present') {
+                    $present = true;
+                } elseif ($requested === 'absent') {
+                    $present = false;
+                }
+            }
+
+            if ($present === null && $comment === '') {
+                // Nothing stored and nothing to store
+                echo json_encode(['success' => true, 'comment' => '', 'status' => 'unset']);
+                return;
+            }
+
+            if ($present === null) {
+                $this->jsonError(422, 'Noch keine Anwesenheit erfasst – bitte Status wählen.', ['needs_status' => true]);
+                return;
+            }
+
+            $saved = $this->attendanceModel->upsert(
                 $rehearsalId, $userId,
                 $present,
-                $comment ?: null,
+                $comment !== '' ? $comment : null,
                 $recordedBy
             );
-            echo json_encode(['success' => true, 'comment' => $comment, 'status' => $present === null ? 'unset' : ($present ? 'present' : 'absent')]);
+            if (!$saved) {
+                $this->jsonError(500, 'Speichern fehlgeschlagen');
+                return;
+            }
+            echo json_encode(['success' => true, 'comment' => $comment, 'status' => $present ? 'present' : 'absent']);
             return;
         }
 
@@ -140,20 +191,26 @@ class AttendanceController extends Controller
 
         if (!$existing) {
             // No record → set present
-            $this->attendanceModel->upsert($rehearsalId, $userId, true, null, $recordedBy);
-            echo json_encode(['success' => true, 'status' => 'present']);
+            $ok = $this->attendanceModel->upsert($rehearsalId, $userId, true, null, $recordedBy);
+            $status = 'present';
         } elseif ($existing['present']) {
             // Present → absent
-            $this->attendanceModel->upsert(
+            $ok = $this->attendanceModel->upsert(
                 $rehearsalId, $userId, false,
                 $existing['comment'], $recordedBy
             );
-            echo json_encode(['success' => true, 'status' => 'absent']);
+            $status = 'absent';
         } else {
             // Absent → delete (back to undocumented)
-            $this->attendanceModel->deleteRecord($rehearsalId, $userId);
-            echo json_encode(['success' => true, 'status' => 'unset']);
+            $ok = $this->attendanceModel->deleteRecord($rehearsalId, $userId);
+            $status = 'unset';
         }
+
+        if (!$ok) {
+            $this->jsonError(500, 'Speichern fehlgeschlagen');
+            return;
+        }
+        echo json_encode(['success' => true, 'status' => $status]);
     }
 
     /**
@@ -174,14 +231,19 @@ class AttendanceController extends Controller
         header('Content-Type: application/json');
 
         if (!$rehearsalId) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Fehlende Probe-ID']);
+            $this->jsonError(400, 'Fehlende Probe-ID');
             return;
         }
 
         $orchestraId = $ctx['orchestra_id'];
+
+        if (!$this->attendanceModel->rehearsalBelongsToOrchestra($rehearsalId, $orchestraId)) {
+            $this->jsonError(404, 'Probe nicht gefunden');
+            return;
+        }
+
         $scope = $this->getAttendanceScope();
-        $members = $this->loadScopedMembers($orchestraId, $scope);
+        $members = $this->loadScopedMembers($orchestraId, $scope, $this->leaderType($ctx));
 
         $promiseModel = new UserPromise();
         $allPromises = $promiseModel->getAllForOrchestra($orchestraId);
@@ -197,13 +259,16 @@ class AttendanceController extends Controller
         $recordedBy = (int)$_SESSION['user_id'];
         $count = $this->attendanceModel->bulkConfirm($rehearsalId, $members, $promisesByUser, $recordedBy);
 
-        // Return updated records
-        $records = $this->attendanceModel->getForRehearsal($rehearsalId);
+        // Return updated records (only members in scope)
+        $records = array_intersect_key(
+            $this->attendanceModel->getForRehearsal($rehearsalId),
+            $this->memberIdSet($members)
+        );
 
         echo json_encode([
             'success' => true,
             'confirmed' => $count,
-            'records' => $records,
+            'records' => (object)$records,
         ]);
     }
 
@@ -223,13 +288,24 @@ class AttendanceController extends Controller
         header('Content-Type: application/json');
 
         if (!$rehearsalId) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Fehlende Probe-ID']);
+            $this->jsonError(400, 'Fehlende Probe-ID');
             return;
         }
 
-        $records = $this->attendanceModel->getForRehearsal($rehearsalId);
-        echo json_encode(['success' => true, 'records' => $records]);
+        $orchestraId = $ctx['orchestra_id'];
+
+        if (!$this->attendanceModel->rehearsalBelongsToOrchestra($rehearsalId, $orchestraId)) {
+            $this->jsonError(404, 'Probe nicht gefunden');
+            return;
+        }
+
+        // Only records (incl. notes) of members the caller may see
+        $members = $this->loadScopedMembers($orchestraId, $this->getAttendanceScope(), $this->leaderType($ctx));
+        $records = array_intersect_key(
+            $this->attendanceModel->getForRehearsal($rehearsalId),
+            $this->memberIdSet($members)
+        );
+        echo json_encode(['success' => true, 'records' => (object)$records]);
     }
 
     /**
@@ -257,11 +333,13 @@ class AttendanceController extends Controller
             strtotime($a['start'] ?? $a['date'] ?? '') - strtotime($b['start'] ?? $b['date'] ?? '')
         );
 
-        $members = $this->loadScopedMembers($orchestraId, $scope);
+        $members = $this->loadScopedMembers($orchestraId, $scope, $this->leaderType($ctx));
+        $memberIds = $this->memberIdSet($members);
 
-        $allAttendance = $this->attendanceModel->getAllForOrchestra($orchestraId);
+        // Only data of members in scope is sent to the client
+        $allAttendance = array_intersect_key($this->attendanceModel->getAllForOrchestra($orchestraId), $memberIds);
         $promiseModel = new UserPromise();
-        $allPromises = $promiseModel->getAllForOrchestra($orchestraId);
+        $allPromises = array_intersect_key($promiseModel->getAllForOrchestra($orchestraId), $memberIds);
 
         $groupManager = \App\Core\GroupManager::getInstance();
 
@@ -321,22 +399,29 @@ class AttendanceController extends Controller
             $sections = array_values($byType);
         }
 
-        // Rehearsal list with full date for filtering
+        // Rehearsal list with full date for filtering and the range picker
         $rehearsalList = array_map(function ($r) {
             $start = new \DateTime($r['start'] ?? $r['date'] ?? '');
             return [
                 'id'       => (int)$r['id'],
                 'date'     => $start->format('d.m'),
                 'dateFull' => $start->format('Y-m-d'),
+                'time'     => $start->format('H:i'),
                 'weekday'  => ['So','Mo','Di','Mi','Do','Fr','Sa'][$start->format('w')],
                 'color'    => $r['color'] ?? null,
+                'type'     => (string)($r['type'] ?? ''),
+                'location' => (string)($r['location'] ?? ''),
             ];
         }, $pastRehearsals);
+
+        // Only past rehearsals are rendered as columns
+        $pastIds = array_fill_keys(array_column($rehearsalList, 'id'), true);
 
         // Attendance map
         $attMap = [];
         foreach ($allAttendance as $uid => $byRehearsal) {
             foreach ($byRehearsal as $rid => $rec) {
+                if (!isset($pastIds[$rid])) continue;
                 $attMap[$uid][$rid] = (int)(bool)$rec['present'];
             }
         }
@@ -345,6 +430,7 @@ class AttendanceController extends Controller
         $promMap = [];
         foreach ($allPromises as $uid => $byRehearsal) {
             foreach ($byRehearsal as $rid => $rec) {
+                if (!isset($pastIds[$rid])) continue;
                 $promMap[$uid][$rid] = $rec['status'];
             }
         }
@@ -354,14 +440,11 @@ class AttendanceController extends Controller
             'success'    => true,
             'rehearsals' => $rehearsalList,
             'sections'   => $sections,
-            'attendance' => $attMap,
-            'promises'   => $promMap,
+            'attendance' => (object)$attMap,
+            'promises'   => (object)$promMap,
         ]);
     }
 
-    /**
-     * Load members scoped by permission level.
-     */
     /**
      * @return string 'all', 'parent_section', or 'own_section'
      */
@@ -372,7 +455,26 @@ class AttendanceController extends Controller
         return 'own_section';
     }
 
-    private function loadScopedMembers(int $orchestraId, string $scope): array
+    /**
+     * Instrument type of the current user in THIS orchestra.
+     *
+     * Only taken from the membership row validateOrchestraContext() just loaded from
+     * the DB — never from $_SESSION['current_type'], which can be stale or even belong
+     * to another user (e.g. after an admin edited someone else's group). An empty type
+     * simply scopes a section leader to members without a type.
+     */
+    private function leaderType(array $ctx): string
+    {
+        return (string)($ctx['user_type'] ?? '');
+    }
+
+    /**
+     * Load members scoped by permission level.
+     *
+     * Only active members of the orchestra (getOrchestraUsers is active-only) who may
+     * attend rehearsals. Section scopes use the same rules as the promise dashboard.
+     */
+    private function loadScopedMembers(int $orchestraId, string $scope, string $leaderType): array
     {
         $userOrchestraModel = new \App\Models\UserOrchestra();
         $allMembers = $userOrchestraModel->getOrchestraUsers($orchestraId);
@@ -381,12 +483,14 @@ class AttendanceController extends Controller
             $members = $allMembers;
         } else {
             $groupManager = \App\Core\GroupManager::getInstance();
-            $resolvedType = $groupManager->resolveAlias($_SESSION['current_type']);
+            $resolvedType = $groupManager->resolveAlias($leaderType);
 
             if ($scope === 'parent_section') {
+                // Parent section = nearest "section" ancestor of the leader's instrument
+                // (e.g. all woodwinds). Without one, fall back to the own instrument.
                 $leaderSection = $groupManager->getSectionForInstrument($resolvedType);
                 $members = array_filter($allMembers, function ($m) use ($groupManager, $resolvedType, $leaderSection) {
-                    $memberType = $groupManager->resolveAlias($m['type']);
+                    $memberType = $groupManager->resolveAlias((string)($m['type'] ?? ''));
                     if ($leaderSection) {
                         return $groupManager->getSectionForInstrument($memberType) === $leaderSection;
                     }
@@ -395,7 +499,7 @@ class AttendanceController extends Controller
             } else {
                 // own_section: exact instrument type match
                 $members = array_filter($allMembers, function ($m) use ($groupManager, $resolvedType) {
-                    return $groupManager->resolveAlias($m['type']) === $resolvedType;
+                    return $groupManager->resolveAlias((string)($m['type'] ?? '')) === $resolvedType;
                 });
             }
             $members = array_values($members);
@@ -405,15 +509,32 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Check if a target user is within the current user's section scope.
+     * @return array<int, true> user_id => true for the given member rows
      */
-    private function isUserInScope(int $targetUserId, int $orchestraId): bool
+    private function memberIdSet(array $members): array
     {
-        $scopedMembers = $this->loadScopedMembers($orchestraId, $this->getAttendanceScope());
-        foreach ($scopedMembers as $m) {
-            if ((int)($m['user_id'] ?? $m['id']) === $targetUserId) return true;
+        $ids = [];
+        foreach ($members as $m) {
+            $ids[(int)($m['user_id'] ?? $m['id'])] = true;
         }
-        return false;
+        return $ids;
+    }
+
+    /**
+     * Check if a target user is an active member of the orchestra within the
+     * current user's attendance scope (applies to all three scopes).
+     */
+    private function isUserInScope(int $targetUserId, int $orchestraId, string $leaderType): bool
+    {
+        $scopedMembers = $this->loadScopedMembers($orchestraId, $this->getAttendanceScope(), $leaderType);
+        return isset($this->memberIdSet($scopedMembers)[$targetUserId]);
+    }
+
+    private function jsonError(int $status, string $message, array $extra = []): void
+    {
+        http_response_code($status);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => $message] + $extra);
     }
 
     /**

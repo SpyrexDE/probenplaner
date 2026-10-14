@@ -257,7 +257,18 @@ include __DIR__ . '/../components/theme-selector.php';
                             Swal.showLoading();
                         }
                     });
-                    window.location.href = '/' + orchestraSlug + '/conductor/profile/delete';
+                    // Destructive: POST with CSRF token (server rejects GET)
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/' + orchestraSlug + '/conductor/profile/delete';
+                    form.style.display = 'none';
+                    const tokenInput = document.createElement('input');
+                    tokenInput.type = 'hidden';
+                    tokenInput.name = 'csrf_token';
+                    tokenInput.value = csrfToken;
+                    form.appendChild(tokenInput);
+                    document.body.appendChild(form);
+                    form.submit();
                 }
             });
         });

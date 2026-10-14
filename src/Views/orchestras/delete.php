@@ -8,6 +8,7 @@
             </div>
             <div class="p-6">
                 <form action="/<?= ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '') ?>/orchestras/delete" method="post">
+                    <?php include __DIR__ . '/../components/csrf-input.php'; ?>
                     <input type="hidden" name="confirm_delete" value="yes">
 
                     <div class="space-y-3">
@@ -29,7 +30,7 @@
         Swal.fire({
             title: 'Orchester löschen?',
             html: `<div class="text-left">
-            <p><i class=" text-warning"><?= icon('exclamation-triangle', 'text-gray-600') ?>></i> <strong>Warnung:</strong> Sie sind dabei, das Orchester <strong><?= $this->e($orchestra['name']) ?></strong> zu löschen.</p>
+            <p><i class=" text-warning"><?= icon('exclamation-triangle', 'text-gray-600') ?>></i> <strong>Warnung:</strong> Sie sind dabei, das Orchester <strong><?= str_replace(['\\', '`', '$'], ['&#92;', '&#96;', '&#36;'], e($orchestra['name'])) ?></strong> zu löschen.</p>
             <p>Diese Aktion kann nicht rückgängig gemacht werden.</p>
             <p><strong>Folgende Daten werden gelöscht:</strong></p>
             <ul class="text-left list-disc pl-5">

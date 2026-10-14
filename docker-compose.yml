@@ -20,6 +20,10 @@ services:
       - DB_NAME=${DB_NAME}
       - ADMIN_PW=${ADMIN_PW}
       - GIT_VERSION=${GIT_VERSION}
+      - PARTNER_API_TOKEN=${PARTNER_API_TOKEN}
+      - PARTNER_API_ORG=${PARTNER_API_ORG}
+      - JMD_PUSH_URL=${JMD_PUSH_URL}
+      - JMD_PUSH_TOKEN=${JMD_PUSH_TOKEN}
     networks:
       - app_net
 

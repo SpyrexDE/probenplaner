@@ -46,6 +46,7 @@
             </div>
 
             <form action="/<?= ($_SESSION['current_org_slug'] ?? '') . '/' . $_SESSION['current_orchestra_slug'] ?>/rehearsals/delete" method="post" class="confirmation-form">
+                <?= \App\Core\CSRF::getTokenField() ?>
                 <input type="hidden" name="id" value="<?= htmlspecialchars($rehearsal['id']) ?>">
                 <div class="form-actions">
                     <button type="submit" class="btn-danger" onclick="return confirmDelete(event)">

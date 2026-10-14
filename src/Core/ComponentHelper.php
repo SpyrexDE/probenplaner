@@ -71,7 +71,11 @@ class ComponentHelper {
         }
         
         $html .= ">";
-        
+
+        if (strtoupper($method) !== 'GET') {
+            $html .= CSRF::getTokenField();
+        }
+
         foreach ($fields as $field) {
             $html .= self::renderFormField($field);
         }

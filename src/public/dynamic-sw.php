@@ -196,8 +196,8 @@ console.log('Service Worker: Push message received:', event);
 
 const options = {
 body: event.data ? event.data.text() : 'Neue Nachricht vom Probenplaner',
-icon: '/assets/icons/apple/Probenplaner-iOS-Default-1024x1024@1x.png',
-badge: '/assets/icons/apple/Probenplaner-iOS-Default-1024x1024@1x.png',
+icon: '/assets/icons/pwa/icon-192.png',
+badge: '/assets/icons/pwa/badge-96.png',
 vibrate: [100, 50, 100],
 data: {
 dateOfArrival: Date.now(),
@@ -207,7 +207,7 @@ actions: [
 {
 action: 'open',
 title: 'Öffnen',
-icon: '/assets/icons/apple/Probenplaner-iOS-Default-1024x1024@1x.png'
+icon: '/assets/icons/pwa/icon-192.png'
 }
 ]
 };

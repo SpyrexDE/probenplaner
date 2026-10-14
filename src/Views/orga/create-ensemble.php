@@ -14,14 +14,15 @@ $orgSlug = htmlspecialchars($org['slug'] ?? '');
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
 
     <div class="form-group-modern">
-        <label class="form-label-modern">Name</label>
+        <label class="form-label-modern" for="ensembleName">Name</label>
         <input type="text" name="name" id="ensembleName" required autofocus class="form-input-modern" placeholder="z.B. JSO Bremen">
     </div>
 
     <div class="form-group-modern">
-        <label class="form-label-modern">Kürzel (URL)</label>
+        <label class="form-label-modern" for="ensembleSlug">Kürzel (URL)</label>
         <input type="text" name="slug" id="ensembleSlug" class="form-input-modern" placeholder="z.B. jso-bremen"
-            pattern="[a-z0-9\-]+" title="Nur Kleinbuchstaben, Zahlen und Bindestriche">
+            pattern="[a-z0-9_\-]+" maxlength="100" autocomplete="off" autocapitalize="none" spellcheck="false"
+            title="Nur Kleinbuchstaben, Zahlen, Binde- und Unterstriche">
         <div class="slug-preview text-subtle" style="font-size: var(--font-size-xs); margin-top: var(--space-1);">
             → <span id="slugPreviewUrl">/<?= $orgSlug ?>/...</span>
         </div>
@@ -48,7 +49,8 @@ $orgSlug = htmlspecialchars($org['slug'] ?? '');
             if (!userEdited) {
                 var slug = nameInput.value.toLowerCase()
                     .replace(/[äÄ]/g, 'ae').replace(/[öÖ]/g, 'oe').replace(/[üÜ]/g, 'ue').replace(/ß/g, 'ss')
-                    .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '');
+                    .replace(/\s+/g, '-').replace(/[^a-z0-9_-]/g, '').replace(/-+/g, '-')
+                    .slice(0, 100).replace(/^-|-$/g, '');
                 slugInput.value = slug;
             }
             updatePreview();
@@ -70,7 +72,7 @@ include __DIR__ . '/../components/panel-section.php';
 
 <?php
 $panelContent = ob_get_clean();
-$panelTitle = htmlspecialchars($org['name'] ?? 'Organisation');
+$panelTitle = $org['name'] ?? 'Organisation'; // panel-shell escapes it
 $panelBadge = 'Orga';
 $panelVariant = 'orga';
 $panelMaxWidth = '600px';

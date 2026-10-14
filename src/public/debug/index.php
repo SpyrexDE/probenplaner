@@ -8,16 +8,7 @@
 // Include bootstrap for database access
 require_once '../../bootstrap.php';
 
-// Security check - only allow in development environment
-$devEnvironments = ['development', 'local', 'dev', 'test'];
-$isDevEnvironment = defined('APP_ENV') && in_array(strtolower(APP_ENV), $devEnvironments);
-
-// Also allow local access regardless of environment setting
-$isLocalAccess = in_array($_SERVER['REMOTE_ADDR'], ['127.0.0.1', '::1', 'localhost', '172.28.0.1', '172.17.0.1']);
-
-if (!$isDevEnvironment && !$isLocalAccess) {
-    die("<h1>Access Denied</h1><p>The debug dashboard is only available in development environments or from local access.</p>");
-}
+require_once __DIR__ . '/includes/guard.php';
 
 // Initialize database connection
 $dbConnection = false;

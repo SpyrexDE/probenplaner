@@ -96,20 +96,21 @@ $renderComponent = true;
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
 
         <div class="form-group-modern">
-            <label class="form-label-modern">Name</label>
-            <input type="text" name="name" required autofocus class="form-input-modern"
+            <label class="form-label-modern" for="orgName">Name</label>
+            <input type="text" name="name" id="orgName" required autofocus class="form-input-modern"
                 placeholder="z.B. Jeunesses Musicales Deutschland">
         </div>
 
         <div class="form-group-modern">
-            <label class="form-label-modern">Slug</label>
-            <input type="text" name="slug" required class="form-input-modern"
-                placeholder="z.B. jmd" pattern="[a-z0-9-]+"
-                title="Nur Kleinbuchstaben, Zahlen und Bindestriche">
+            <label class="form-label-modern" for="orgSlug">Slug</label>
+            <input type="text" name="slug" id="orgSlug" required class="form-input-modern"
+                placeholder="z.B. jmd" pattern="[a-z0-9_\-]+" maxlength="58"
+                autocomplete="off" autocapitalize="none" spellcheck="false"
+                title="Nur Kleinbuchstaben, Zahlen, Binde- und Unterstriche">
         </div>
 
         <div class="form-help-text mb-4">
-            Ein Orga-Account wird automatisch erstellt (Benutzername: {slug}-admin).
+            Höchstens 58 Zeichen. Ein Orga-Account wird automatisch erstellt (Benutzername: {slug}-admin).
         </div>
 
         <button type="submit" class="btn-base btn-md btn-primary" style="width: 100%;">Erstellen</button>

@@ -101,8 +101,9 @@
         }
     }
 
-    /* ── Edit toggle button ── */
-    .ie-edit-toggle {
+    /* ── Edit toggle button, and other round icon actions on cards (card-head-action) ── */
+    .ie-edit-toggle,
+    .card-head-action {
         display: flex;
         align-items: center;
         justify-content: center;
@@ -119,7 +120,8 @@
         padding: 0;
     }
     @media (hover: hover) {
-        .ie-edit-toggle:hover {
+        .ie-edit-toggle:hover,
+        .card-head-action:hover {
             color: var(--color-primary);
             background: rgba(71, 140, 244, 0.08);
         }

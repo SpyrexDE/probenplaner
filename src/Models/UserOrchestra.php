@@ -47,7 +47,8 @@ class UserOrchestra extends Model
     {
         $activeClause = $activeOnly ? "AND uo.is_active = 1" : "";
 
-        $sql = "SELECT uo.*, u.email, u.display_name, uo.display_name as orchestra_display_name, u.created_at as user_created_at
+        $sql = "SELECT uo.*, u.email, u.display_name, uo.display_name as orchestra_display_name, u.created_at as user_created_at,
+                       u.keycloak_id, u.last_login_at
                 FROM {$this->table} uo
                 JOIN users u ON uo.user_id = u.id
                 WHERE uo.orchestra_id = ? {$activeClause}
@@ -111,6 +112,7 @@ class UserOrchestra extends Model
 
                 $result = $this->update($existing['id'], [
                     'type' => $type,
+                    'section_confirmed' => 1,
                     'is_active' => 1,
                     'joined_at' => date('Y-m-d H:i:s'),
                     'updated_at' => date('Y-m-d H:i:s'),
@@ -322,6 +324,9 @@ class UserOrchestra extends Model
 
     // ── Type helpers ────────────────────────────────────────────
 
+    /**
+     * Section chosen deliberately (member, leader): also ends a pending section confirmation.
+     */
     public function updateUserType(int $userId, int $orchestraId, string $type): bool
     {
         $relation = $this->getUserOrchestraRelation($userId, $orchestraId, true);
@@ -329,6 +334,7 @@ class UserOrchestra extends Model
 
         return $this->update($relation['id'], [
             'type' => $type,
+            'section_confirmed' => 1,
             'updated_at' => date('Y-m-d H:i:s'),
         ]);
     }
@@ -453,5 +459,31 @@ class UserOrchestra extends Model
         $result = $stmt->get_result()->fetch_assoc();
         $stmt->close();
         return (int)($result['cnt'] ?? 0);
+    }
+
+    /**
+     * Add one role to a membership, keeping its other roles.
+     *
+     * @return bool True if the membership did not have the role yet
+     */
+    public function addRoleToRelation(int $userOrchestraId, int $roleId): bool
+    {
+        $stmt = $this->db->prepare("INSERT IGNORE INTO user_orchestra_roles (user_orchestra_id, role_id) VALUES (?, ?)");
+        $stmt->bind_param('ii', $userOrchestraId, $roleId);
+        $stmt->execute();
+        $added = $stmt->affected_rows > 0;
+        $stmt->close();
+        return $added;
+    }
+
+    /**
+     * Remove one role from a membership.
+     */
+    public function removeRoleFromRelation(int $userOrchestraId, int $roleId): void
+    {
+        $stmt = $this->db->prepare("DELETE FROM user_orchestra_roles WHERE user_orchestra_id = ? AND role_id = ?");
+        $stmt->bind_param('ii', $userOrchestraId, $roleId);
+        $stmt->execute();
+        $stmt->close();
     }
 }

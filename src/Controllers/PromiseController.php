@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Controller;
 use App\Core\Validator;
 use App\Core\ErrorHandler;
+use App\Core\JmdPush;
 use App\Models\User;
 use App\Models\Rehearsal;
 use App\Models\UserPromise;
@@ -101,9 +102,16 @@ class PromiseController extends Controller
 
         $hasPastRehearsals = $this->rehearsalModel->hasPastRehearsals($_SESSION['current_orchestra_id']);
 
+        // Deep link (?rehearsal=ID, e.g. from a push): render at least up to that rehearsal
+        $initialCount = self::INITIAL_LIMIT;
+        $targetIndex = array_search((int)($_GET['rehearsal'] ?? 0), array_map('intval', array_column($rehearsals, 'id')), true);
+        if ($targetIndex !== false) {
+            $initialCount = max($initialCount, $targetIndex + 1);
+        }
+
         $totalRehearsals = count($rehearsals);
-        $hasMore = $totalRehearsals > self::INITIAL_LIMIT;
-        $rehearsalsSliced = $hasMore ? array_slice($rehearsals, 0, self::INITIAL_LIMIT) : $rehearsals;
+        $hasMore = $totalRehearsals > $initialCount;
+        $rehearsalsSliced = $hasMore ? array_slice($rehearsals, 0, $initialCount) : $rehearsals;
 
         $this->render('promises/index', [
             'currentPage' => $currentPage,
@@ -315,31 +323,7 @@ class PromiseController extends Controller
         $canViewAllSections = !empty($_SESSION['current_permissions']['can_view_all_section_stats']);
         $viewAllSections = $canViewAllSections && isset($_GET['viewAll']) && $_GET['viewAll'] === '1';
 
-        $userOrchestraModel = new \App\Models\UserOrchestra();
-        if ($viewAllSections) {
-            $members = $userOrchestraModel->getOrchestraUsers($_SESSION['current_orchestra_id']);
-        } else {
-            $groupManager = \App\Core\GroupManager::getInstance();
-            $resolvedType = $groupManager->resolveAlias($userType);
-            $canViewParent = !empty($_SESSION['current_permissions']['can_view_parent_section_stats']);
-
-            if ($canViewParent) {
-                $leaderSection = $groupManager->getSectionForInstrument($resolvedType);
-                $allMembers = $userOrchestraModel->getOrchestraUsers($_SESSION['current_orchestra_id']);
-                $members = array_filter($allMembers, function ($m) use ($groupManager, $resolvedType, $leaderSection) {
-                    $memberType = $groupManager->resolveAlias($m['type']);
-                    if ($leaderSection) {
-                        return $groupManager->getSectionForInstrument($memberType) === $leaderSection;
-                    }
-                    return $memberType === $resolvedType;
-                });
-            } else {
-                $allMembers = $userOrchestraModel->getOrchestraUsers($_SESSION['current_orchestra_id']);
-                $members = array_filter($allMembers, function ($m) use ($groupManager, $resolvedType) {
-                    return $groupManager->resolveAlias($m['type']) === $resolvedType;
-                });
-            }
-        }
+        $members = $this->leaderScopedMembers($viewAllSections, $userType, (int)$_SESSION['current_orchestra_id']);
 
         if (!is_array($members)) {
             $members = [];
@@ -452,7 +436,8 @@ class PromiseController extends Controller
                         'note' => $note,
                         'permissions' => $member['permissions'] ?? [],
                         'id' => $member['user_id'],
-                        'roles' => $member['roles'] ?? []
+                        'roles' => $member['roles'] ?? [],
+                        'push_sub' => self::pushSub($member)
                     ];
 
                     $membersBySection[$rehearsalId]['all'][] = $memberInfo;
@@ -553,33 +538,10 @@ class PromiseController extends Controller
         $canViewAllSections = !empty($_SESSION['current_permissions']['can_view_all_section_stats']);
         $viewAllSections = $canViewAllSections && isset($_GET['viewAll']) && $_GET['viewAll'] === '1';
 
-        $userOrchestraModel = new \App\Models\UserOrchestra();
-        if ($viewAllSections) {
-            $members = $userOrchestraModel->getOrchestraUsers($orchestraId);
-        } else {
-            $groupManager = \App\Core\GroupManager::getInstance();
-            $resolvedType = $groupManager->resolveAlias($userType);
-            $canViewParent = !empty($_SESSION['current_permissions']['can_view_parent_section_stats']);
+        $groupManager = \App\Core\GroupManager::getInstance();
+        $members = $this->leaderScopedMembers($viewAllSections, $userType, (int)$orchestraId);
 
-            if ($canViewParent) {
-                $leaderSection = $groupManager->getSectionForInstrument($resolvedType);
-                $allMembers = $userOrchestraModel->getOrchestraUsers($orchestraId);
-                $members = array_filter($allMembers, function ($m) use ($groupManager, $resolvedType, $leaderSection) {
-                    $memberType = $groupManager->resolveAlias($m['type']);
-                    if ($leaderSection) {
-                        return $groupManager->getSectionForInstrument($memberType) === $leaderSection;
-                    }
-                    return $memberType === $resolvedType;
-                });
-            } else {
-                $allMembers = $userOrchestraModel->getOrchestraUsers($orchestraId);
-                $members = array_filter($allMembers, function ($m) use ($groupManager, $resolvedType) {
-                    return $groupManager->resolveAlias($m['type']) === $resolvedType;
-                });
-            }
-        }
-
-        [$stats, $membersBySection, $memberPromises, $leaderSectionId, $leaderResolvedType, $leaderSectionNames] = 
+        [$stats, $membersBySection, $memberPromises, $leaderSectionId, $leaderResolvedType, $leaderSectionNames] =
             $this->buildLeaderRehearsalData($rehearsals, $viewAllSections, $members, $userType, $orchestraId);
 
         $orchestraModel = new \App\Models\Orchestra();
@@ -633,7 +595,7 @@ class PromiseController extends Controller
             5
         );
 
-        $rehearsals = $result['rows'];
+        $rehearsals = array_reverse($result['rows']);
         if (empty($rehearsals)) {
             echo '';
             return;
@@ -642,33 +604,10 @@ class PromiseController extends Controller
         $canViewAllSections = !empty($_SESSION['current_permissions']['can_view_all_section_stats']);
         $viewAllSections = $canViewAllSections && isset($_GET['viewAll']) && $_GET['viewAll'] === '1';
 
-        $userOrchestraModel = new \App\Models\UserOrchestra();
-        if ($viewAllSections) {
-            $members = $userOrchestraModel->getOrchestraUsers($orchestraId);
-        } else {
-            $groupManager = \App\Core\GroupManager::getInstance();
-            $resolvedType = $groupManager->resolveAlias($userType);
-            $canViewParent = !empty($_SESSION['current_permissions']['can_view_parent_section_stats']);
+        $groupManager = \App\Core\GroupManager::getInstance();
+        $members = $this->leaderScopedMembers($viewAllSections, $userType, (int)$orchestraId);
 
-            if ($canViewParent) {
-                $leaderSection = $groupManager->getSectionForInstrument($resolvedType);
-                $allMembers = $userOrchestraModel->getOrchestraUsers($orchestraId);
-                $members = array_filter($allMembers, function ($m) use ($groupManager, $resolvedType, $leaderSection) {
-                    $memberType = $groupManager->resolveAlias($m['type']);
-                    if ($leaderSection) {
-                        return $groupManager->getSectionForInstrument($memberType) === $leaderSection;
-                    }
-                    return $memberType === $resolvedType;
-                });
-            } else {
-                $allMembers = $userOrchestraModel->getOrchestraUsers($orchestraId);
-                $members = array_filter($allMembers, function ($m) use ($groupManager, $resolvedType) {
-                    return $groupManager->resolveAlias($m['type']) === $resolvedType;
-                });
-            }
-        }
-
-        [$stats, $membersBySection, $memberPromises, $leaderSectionId, $leaderResolvedType, $leaderSectionNames] = 
+        [$stats, $membersBySection, $memberPromises, $leaderSectionId, $leaderResolvedType, $leaderSectionNames] =
             $this->buildLeaderRehearsalData($rehearsals, $viewAllSections, $members, $userType, $orchestraId);
 
         $orchestraModel = new \App\Models\Orchestra();
@@ -701,6 +640,46 @@ class PromiseController extends Controller
             $nextUrl = htmlspecialchars($base . '/promises/leader-past?offset=' . $nextOffset . ($viewAllSections ? '&viewAll=1' : ''));
             echo '<div data-lazy-next-url="' . $nextUrl . '" style="display:none"></div>';
         }
+    }
+
+    /**
+     * Members the leader dashboard covers: the whole orchestra (viewAll), the leader's
+     * parent section (can_view_parent_section_stats) or the leader's own section.
+     */
+    private function leaderScopedMembers(bool $viewAllSections, string $userType, int $orchestraId): array
+    {
+        $userOrchestraModel = new \App\Models\UserOrchestra();
+        $allMembers = $userOrchestraModel->getOrchestraUsers($orchestraId);
+        if ($viewAllSections) {
+            return $allMembers;
+        }
+
+        $groupManager = \App\Core\GroupManager::getInstance();
+        $resolvedType = $groupManager->resolveAlias($userType);
+
+        if (!empty($_SESSION['current_permissions']['can_view_parent_section_stats'])) {
+            $leaderSection = $groupManager->getSectionForInstrument($resolvedType);
+            return array_filter($allMembers, function ($m) use ($groupManager, $resolvedType, $leaderSection) {
+                $memberType = $groupManager->resolveAlias($m['type']);
+                if ($leaderSection) {
+                    return $groupManager->getSectionForInstrument($memberType) === $leaderSection;
+                }
+                return $memberType === $resolvedType;
+            });
+        }
+
+        return array_filter($allMembers, function ($m) use ($groupManager, $resolvedType) {
+            return $groupManager->resolveAlias($m['type']) === $resolvedType;
+        });
+    }
+
+    /**
+     * Keycloak ID of a member who can get a JOinJMD push, or null. Members who never
+     * opened the Probenplaner (last_login_at NULL) are not reminded.
+     */
+    private static function pushSub(array $member): ?string
+    {
+        return !empty($member['keycloak_id']) && !empty($member['last_login_at']) ? (string)$member['keycloak_id'] : null;
     }
 
     /**
@@ -792,7 +771,8 @@ class PromiseController extends Controller
                         'note' => $note,
                         'permissions' => $member['permissions'] ?? [],
                         'id' => $member['user_id'],
-                        'roles' => $member['roles'] ?? []
+                        'roles' => $member['roles'] ?? [],
+                        'push_sub' => self::pushSub($member)
                     ];
 
                     $membersBySection[$rehearsalId]['all'][] = $memberInfo;
@@ -838,13 +818,16 @@ class PromiseController extends Controller
      * 
      * @return void
      */
-    public function update()
+    public function update($params = [])
     {
         if (!$this->isLoggedIn()) {
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'Nicht eingeloggt', 'details' => 'Bitte melden Sie sich erneut an.']);
             return;
         }
+
+        // Orchestra + permissions from the URL, not from whatever was opened last in the session
+        $ctx = $this->validateOrchestraContext($params);
 
         if (empty($_SESSION['current_permissions']['can_attend_rehearsals'])) {
             header('Content-Type: application/json');
@@ -855,6 +838,10 @@ class PromiseController extends Controller
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'Ungültige Anfrage', 'details' => 'Diese Aktion ist nur über AJAX erlaubt.']);
+            return;
+        }
+
+        if ($this->rejectInvalidCsrfToken()) {
             return;
         }
 
@@ -875,6 +862,12 @@ class PromiseController extends Controller
             return;
         }
 
+        $rehearsal = $this->findRehearsalInContext($rehearsalId, $ctx);
+        if (!$rehearsal) {
+            $this->respondRehearsalNotFound();
+            return;
+        }
+
         $user = $this->userModel->findById((int)$_SESSION['user_id']);
 
         if (!$user) {
@@ -884,7 +877,7 @@ class PromiseController extends Controller
         }
 
         $orchestraModel = new \App\Models\Orchestra();
-        $orchestra = $orchestraModel->findById($_SESSION['current_orchestra_id']);
+        $orchestra = $orchestraModel->findById((int)$ctx['orchestra_id']);
 
         // Check for force decline reason setting
         if ($status === false && empty($note)) {
@@ -898,9 +891,7 @@ class PromiseController extends Controller
         // Block edits for past rehearsals when disabled
         $allowPastEdit = !isset($orchestra['allow_past_edit']) || !empty($orchestra['allow_past_edit']);
         if (!$allowPastEdit) {
-            $rehearsalModel = new \App\Models\Rehearsal();
-            $rehearsal = $rehearsalModel->findById($rehearsalId);
-            if ($rehearsal && $rehearsal['date'] < date('Y-m-d')) {
+            if ($rehearsal['date'] < date('Y-m-d')) {
                 header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'message' => 'Nicht erlaubt', 'details' => 'Nachträgliche Änderungen für vergangene Proben sind nicht erlaubt.']);
                 return;
@@ -933,13 +924,16 @@ class PromiseController extends Controller
      * 
      * @return void
      */
-    public function note()
+    public function note($params = [])
     {
         if (!$this->isLoggedIn()) {
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'Nicht eingeloggt', 'details' => 'Bitte melden Sie sich erneut an.']);
             return;
         }
+
+        // Orchestra + permissions from the URL, not from whatever was opened last in the session
+        $ctx = $this->validateOrchestraContext($params);
 
         if (empty($_SESSION['current_permissions']['can_attend_rehearsals'])) {
             header('Content-Type: application/json');
@@ -953,12 +947,21 @@ class PromiseController extends Controller
             return;
         }
 
+        if ($this->rejectInvalidCsrfToken()) {
+            return;
+        }
+
         $rehearsalId = isset($_POST['id']) ? intval($_POST['id']) : 0;
         $note = Validator::sanitizeUtf8($_POST['note'] ?? '');
 
         if ($rehearsalId <= 0) {
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'Ungültige Proben-ID', 'details' => 'Die angegebene Proben-ID ist ungültig.']);
+            return;
+        }
+
+        if (!$this->findRehearsalInContext($rehearsalId, $ctx)) {
+            $this->respondRehearsalNotFound();
             return;
         }
 
@@ -994,6 +997,143 @@ class PromiseController extends Controller
                 'debug_message' => 'Promise note update returned false or unexpected result'
             ]);
         }
+    }
+
+    /**
+     * JOinJMD push to the members a dashboard card lists without response, limited to
+     * members with a Keycloak ID who have opened the Probenplaner before.
+     * view=admin: admin dashboard (whole orchestra); otherwise the leader dashboard scope
+     * (own/parent section, whole orchestra with view_all=1).
+     */
+    public function remind($params = [])
+    {
+        $ctx = $this->validateOrchestraContext($params);
+        $isAdminView = ($_POST['view'] ?? '') === 'admin';
+        $allowed = $isAdminView
+            ? $this->requirePermission('can_manage_rehearsals')
+            : $this->requireAnyPermission('can_view_own_section_stats', 'can_view_parent_section_stats', 'can_view_all_section_stats');
+        if (!$allowed) {
+            return;
+        }
+
+        header('Content-Type: application/json');
+        if (!JmdPush::isEnabled()) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'error' => 'Push-Benachrichtigungen sind nicht eingerichtet']);
+            return;
+        }
+
+        $orchestraId = (int)$ctx['orchestra_id'];
+        $rehearsalId = (int)($_POST['rehearsal_id'] ?? 0);
+        $rehearsal = $isAdminView
+            ? ($rehearsalId > 0 ? $this->rehearsalModel->findById($rehearsalId) : null)
+            : $this->findRehearsalInContext($rehearsalId, $ctx);
+        if (!$rehearsal || (int)$rehearsal['orchestra_id'] !== $orchestraId || strtotime($rehearsal['start']) <= time()) {
+            echo json_encode(['success' => false, 'error' => 'Probe nicht gefunden']);
+            return;
+        }
+
+        if ($isAdminView) {
+            [, $membersBySection] = $this->buildAdminRehearsalData([$rehearsal]);
+        } else {
+            $userType = (string)($_SESSION['current_type'] ?? '');
+            $viewAll = !empty($_SESSION['current_permissions']['can_view_all_section_stats']) && ($_POST['view_all'] ?? '') === '1';
+            [, $membersBySection] = $this->buildLeaderRehearsalData(
+                [$rehearsal], $viewAll, $this->leaderScopedMembers($viewAll, $userType, $orchestraId), $userType, $orchestraId
+            );
+        }
+
+        $subs = [];
+        foreach ($membersBySection[$rehearsal['id']]['all'] ?? [] as $member) {
+            if ($member['status'] === 'no_response' && !empty($member['push_sub'])) {
+                $subs[] = $member['push_sub'];
+            }
+        }
+        $subs = array_values(array_unique($subs));
+
+        if (empty($subs)) {
+            echo json_encode(['success' => true, 'sent' => 0]);
+            return;
+        }
+
+        $orchestra = $ctx['orchestra'];
+        $text = JmdPush::missingResponseText($rehearsal, (string)$orchestra['name']);
+        // The JOinJMD app adds jmd_accesstoken
+        $link = JmdPush::link('/' . rawurlencode((string)$orchestra['org_slug']) . '/' . rawurlencode((string)$orchestra['slug'])
+            . '/promises?rehearsal=' . (int)$rehearsal['id']);
+
+        if (!JmdPush::send($subs, $text['title'], $text['body'], $link)) {
+            echo json_encode(['success' => false, 'error' => 'Erinnerung konnte nicht gesendet werden']);
+            return;
+        }
+
+        echo json_encode(['success' => true, 'sent' => count($subs)]);
+    }
+
+    /**
+     * Load a rehearsal only if it belongs to the orchestra from the URL context and
+     * is one the current user is invited to, using the same group + role targeting as
+     * the promise list (Rehearsal::getForUser with the session's type and the user's
+     * roles in this orchestra). Anything else is treated exactly like a missing rehearsal.
+     *
+     * @param array $ctx Result of validateOrchestraContext()
+     */
+    private function findRehearsalInContext(int $rehearsalId, array $ctx): ?array
+    {
+        $rehearsal = $rehearsalId > 0 ? $this->rehearsalModel->findById($rehearsalId) : null;
+        $orchestraId = (int)$ctx['orchestra_id'];
+        if (!$rehearsal || (int)($rehearsal['orchestra_id'] ?? 0) !== $orchestraId) {
+            return null;
+        }
+
+        $userType = (string)($_SESSION['current_type'] ?? ($ctx['user_type'] ?? ''));
+        $userOrchestraModel = new \App\Models\UserOrchestra();
+        $userRoleIds = array_map(
+            fn($r) => (int)$r['id'],
+            $userOrchestraModel->getUserRoles((int)$_SESSION['user_id'], $orchestraId)
+        );
+
+        $isInvited = $this->rehearsalModel->isUserInRehearsalGroup(
+            $userType,
+            $this->rehearsalModel->getGroupsAsAssoc($rehearsalId),
+            $this->rehearsalModel->getRehearsalRoleIds($rehearsalId),
+            $userRoleIds
+        );
+
+        return $isInvited ? $rehearsal : null;
+    }
+
+    /**
+     * Same JSON shape as the other promise errors (the client handles success:false;
+     * a deleted rehearsal must not look like a network error).
+     */
+    private function respondRehearsalNotFound(): void
+    {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => 'Probe nicht gefunden', 'details' => 'Die Probe existiert nicht (mehr) oder ist nicht für Sie vorgesehen.']);
+    }
+
+    /**
+     * Writes need the session's CSRF token (csrf_token field or X-CSRF-Token header).
+     * On failure the answer uses this file's JSON style (success:false, readable 'error')
+     * so the client shows the hint instead of a generic network error.
+     *
+     * @return bool True when the request was rejected (response already sent)
+     */
+    private function rejectInvalidCsrfToken(): bool
+    {
+        if (\App\Core\CSRF::validateRequest()) {
+            return false;
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => false,
+            'message' => 'Sicherheitsprüfung fehlgeschlagen',
+            'details' => 'Bitte laden Sie die Seite neu und versuchen Sie es erneut.',
+            'error'   => 'Sicherheitsprüfung fehlgeschlagen. Bitte laden Sie die Seite neu.'
+        ]);
+        return true;
     }
 
     /**
@@ -1123,7 +1263,7 @@ class PromiseController extends Controller
             5
         );
 
-        $rehearsals = $result['rows'];
+        $rehearsals = array_reverse($result['rows']);
         if (empty($rehearsals)) {
             echo '';
             return;
@@ -1228,7 +1368,8 @@ class PromiseController extends Controller
                     'note' => $note,
                     'permissions' => $user['permissions'] ?? [],
                     'id' => $user['user_id'],
-                    'roles' => $user['roles'] ?? []
+                    'roles' => $user['roles'] ?? [],
+                    'push_sub' => self::pushSub($user)
                 ];
 
                 $membersBySection[$rehearsalId]['all'][] = $memberInfo;
@@ -1334,13 +1475,17 @@ class PromiseController extends Controller
             ]);
             exit;
         } catch (\Exception $e) {
+            error_log('Loading past rehearsals failed: ' . $e->getMessage());
             header('Content-Type: application/json');
             http_response_code(500);
-            echo json_encode([
+            $response = [
                 'success' => false,
                 'message' => 'Fehler beim Laden der Termine',
-                'debug_message' => $e->getMessage()
-            ]);
+            ];
+            if (defined('APP_ENV') && APP_ENV === 'development') {
+                $response['debug_message'] = $e->getMessage();
+            }
+            echo json_encode($response);
             exit;
         }
     }

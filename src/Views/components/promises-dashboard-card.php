@@ -1,75 +1,45 @@
 <?php use App\Core\DashboardConstants; ?>
                 <div class="rehearsal-compact" data-rehearsal-id="<?= $rehearsalId ?>">
-                    <!-- Compact Rehearsal Header -->
                     <div class="rehearsal-compact-header <?= ($rehearsalColor) ? 'has-color' : '' ?>"
                         <?= ($rehearsalColor) ? 'style="--rehearsal-color: ' . $rehearsalColor . '"' : '' ?>>
-                        <div class="rehearsal-modern-title">
-                            <?php
-                            $germanWeekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-                            $dayOfWeek = date('w', strtotime($rehearsalDate));
-                            $weekdayShort = $germanWeekdays[$dayOfWeek];
-                            ?>
-                            <div class="rehearsal-date-display">
-                                <div class="weekday-letter"><?= strtoupper($weekdayShort) ?></div>
-                                <div class="date-info">
-                                    <div class="date-text"><?= date('d.m.Y', strtotime($rehearsalDate)) ?></div>
-                                    <div class="date-subtitle">
-                                        <?= htmlspecialchars($rehearsal['type'] ?? \App\Core\RehearsalTypeManager::TYPE_REHEARSAL) ?>
-                                    </div>
+                        <?php
+                        $isInlineEdit = false;
+                        include __DIR__ . '/rehearsal-card-head.php';
+                        ?>
+
+                        <div class="rehearsal-stats-container">
+                            <div class="rehearsal-stats-numbers">
+                                <div class="rehearsal-stats-item">
+                                    <div class="rehearsal-stats-dot attending"></div>
+                                    <span><?= $attendingCount ?></span>
                                 </div>
+                                <div class="rehearsal-stats-item">
+                                    <div class="rehearsal-stats-dot not-attending"></div>
+                                    <span><?= $notAttendingCount ?></span>
+                                </div>
+                                <div class="rehearsal-stats-item">
+                                    <div class="rehearsal-stats-dot no-response"></div>
+                                    <span><?= $noResponseCount ?></span>
+                                </div>
+                            </div>
+                            <div class="rehearsal-stats-bar">
+                                <?php if ($totalCount > 0): ?>
+                                    <div class="rehearsal-stats-segment attending" style="width: <?= ($attendingCount / $totalCount) * 100 ?>%"></div>
+                                    <div class="rehearsal-stats-segment not-attending" style="width: <?= ($notAttendingCount / $totalCount) * 100 ?>%"></div>
+                                    <div class="rehearsal-stats-segment no-response" style="width: <?= ($noResponseCount / $totalCount) * 100 ?>%"></div>
+                                <?php endif; ?>
                             </div>
                         </div>
 
-                        <div class="rehearsal-compact-right">
-                            <div class="rehearsal-compact-meta">
-                                <span><i class="fas fa-clock"></i> <?= $rehearsalStartTime ? substr($rehearsalStartTime, 0, DashboardConstants::TIME_SUBSTRING_LENGTH) : '??:??' ?> - <?= $rehearsalEndTime ? substr($rehearsalEndTime, 0, DashboardConstants::TIME_SUBSTRING_LENGTH) : '??:??' ?></span>
-                                <?php if (!empty($rehearsal['location'])): ?>
-                                    <span><i class="fas fa-map-marker-alt"></i> <?= htmlspecialchars($rehearsal['location']) ?></span>
-                                <?php endif; ?>
-                                <span>
-                                    <i class="fas fa-users"></i>
-                                    <?php
-                                    echo htmlspecialchars($smartDisplay->generateDescription($rehearsal['groups'] ?? [], $rehearsal, false));
-                                    ?>
-                                </span>
-                                <?php if (!empty($rehearsal['roles']) || !empty($rehearsal['infos'])): ?>
-                                    <div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center;">
-                                        <?php foreach ($rehearsal['roles'] ?? [] as $role): ?>
-                                            <?= \App\Core\Utilities::renderRoleTag($role) ?>
-                                        <?php endforeach; ?>
-                                        <?php foreach ($rehearsal['infos'] ?? [] as $info): ?>
-                                            <span style="font-size: 11px; padding: 2px 6px; border-radius: var(--radius-sm); display: inline-flex; align-items: center; justify-content: center; background-color: transparent; border: 1px solid var(--color-border); color: var(--color-text-primary);">
-                                                <?= htmlspecialchars($info['emoji']) ?>
-                                            </span>
-                                        <?php endforeach; ?>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-
-                            <div class="rehearsal-stats-container">
-                                <div class="rehearsal-stats-numbers">
-                                    <div class="rehearsal-stats-item">
-                                        <div class="rehearsal-stats-dot attending"></div>
-                                        <span><?= $attendingCount ?></span>
-                                    </div>
-                                    <div class="rehearsal-stats-item">
-                                        <div class="rehearsal-stats-dot not-attending"></div>
-                                        <span><?= $notAttendingCount ?></span>
-                                    </div>
-                                    <div class="rehearsal-stats-item">
-                                        <div class="rehearsal-stats-dot no-response"></div>
-                                        <span><?= $noResponseCount ?></span>
-                                    </div>
-                                </div>
-                                <div class="rehearsal-stats-bar">
-                                    <?php if ($totalCount > 0): ?>
-                                        <div class="rehearsal-stats-segment attending" style="width: <?= ($attendingCount / $totalCount) * 100 ?>%"></div>
-                                        <div class="rehearsal-stats-segment not-attending" style="width: <?= ($notAttendingCount / $totalCount) * 100 ?>%"></div>
-                                        <div class="rehearsal-stats-segment no-response" style="width: <?= ($noResponseCount / $totalCount) * 100 ?>%"></div>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </div>
+                        <?php if (($remindCount ?? 0) > 0): ?>
+                            <?php // "Erinnern": push to members without response (JOinJMD), see promises-shared.js ?>
+                            <button type="button" class="card-head-action promises-remind-btn" title="Erinnern" aria-label="Erinnern"
+                                data-url="<?= htmlspecialchars('/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '') . '/promises/remind') ?>"
+                                data-rehearsal-id="<?= (int)$rehearsalId ?>"
+                                data-count="<?= (int)$remindCount ?>"
+                                data-view="<?= ($isAdmin ?? false) ? 'admin' : 'leader' ?>"
+                                data-view-all="<?= ($currentlyViewingAll ?? false) ? '1' : '0' ?>"><i class="fas fa-bell" aria-hidden="true"></i></button>
+                        <?php endif; ?>
                     </div>
 
                     <?php

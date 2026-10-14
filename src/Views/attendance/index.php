@@ -505,24 +505,139 @@ foreach ($members as $member) {
     cursor: default;
 }
 
-.att-range-date {
-    padding: var(--space-1) var(--space-2);
-    font-size: var(--font-size-sm);
-    color: var(--color-text-primary);
-    font-weight: var(--font-weight-medium);
-    border-left: 1px solid var(--color-border);
-    border-right: 1px solid var(--color-border);
-    white-space: nowrap;
-    min-width: 70px;
-    text-align: center;
-}
-
 .att-range-sep {
     color: var(--color-text-muted);
     font-size: var(--font-size-sm);
 }
 
+/* Keyboard focus (global focus-removal.css strips outlines → use background) */
+.att-range-stepper button:focus-visible {
+    background: var(--color-primary-100);
+    color: var(--color-primary);
+}
 
+/* Date as text with a transparent native date input on top that opens the picker
+   (same pattern as the inline edit on rehearsal cards) */
+.att-range-date-field {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: stretch;
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-primary);
+    border-left: 1px solid var(--color-border);
+    border-right: 1px solid var(--color-border);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.att-range-date-field input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    font-size: 16px; /* no zoom on focus in iOS */
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.att-range-date-field:hover,
+.att-range-date-field:focus-within {
+    background: var(--color-primary-50);
+}
+
+.att-range-date-field.is-disabled {
+    opacity: 0.5;
+    background: transparent;
+    cursor: default;
+}
+
+.att-range-date-field.is-disabled input {
+    cursor: default;
+}
+
+.att-range-stepper .att-range-num-input {
+    width: 3.5em;
+    align-self: stretch;
+    border: none;
+    border-left: 1px solid var(--color-border);
+    border-right: 1px solid var(--color-border);
+    border-radius: 0;
+    background: transparent;
+    padding: var(--space-1) 0;
+    font: inherit;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    color: var(--color-text-primary);
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.att-range-num-input::-webkit-outer-spin-button,
+.att-range-num-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.att-range-stepper .att-range-num-input:focus {
+    outline: none;
+    background: var(--color-primary-50);
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .att-range-stepper .att-range-num-input {
+        font-size: 16px; /* no zoom on focus in iOS */
+    }
+}
+
+.att-range-count {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-full);
+    padding: 2px var(--space-2);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 640px) {
+    /* Larger touch targets, one full-width row per bound */
+    .att-table-filters {
+        gap: var(--space-2) var(--space-3);
+    }
+    .att-range-group.att-range-bound {
+        width: 100%;
+    }
+    .att-range-bound .att-range-group-label {
+        width: 2.5em;
+        flex-shrink: 0;
+    }
+    .att-range-bound .att-range-stepper {
+        flex: 1;
+    }
+    .att-range-bound .att-range-stepper button {
+        width: 44px;
+        min-height: 40px;
+    }
+    .att-range-bound .att-range-stepper .att-range-date-field {
+        flex: 1;
+    }
+    .att-range-sep {
+        display: none;
+    }
+}
 
 .att-table-wrap {
     overflow: hidden;
@@ -1058,32 +1173,34 @@ thead .att-col-total {
 
     <!-- Table View Filters (hidden by default) -->
     <div id="att-table-filters" class="att-table-filters" style="display: none;">
-        <div class="att-range-group">
-            <span class="att-range-group-label">Von</span>
+        <div class="att-range-group att-range-bound">
+            <label class="att-range-group-label" for="att-from-date">Von</label>
             <div class="att-range-stepper">
-                <button type="button" id="att-from-minus"><i class="fas fa-chevron-left"></i></button>
-                <span class="att-range-date" id="att-from-label">–</span>
-                <button type="button" id="att-from-plus"><i class="fas fa-chevron-right"></i></button>
+                <button type="button" id="att-from-minus" aria-label="Start eine Probe früher"><i class="fas fa-chevron-left" aria-hidden="true"></i></button>
+                <span class="att-range-date-field is-disabled"><span id="att-from-text">–</span><input type="date" id="att-from-date" disabled></span>
+                <button type="button" id="att-from-plus" aria-label="Start eine Probe später"><i class="fas fa-chevron-right" aria-hidden="true"></i></button>
             </div>
         </div>
-        <span class="att-range-sep">–</span>
-        <div class="att-range-group">
-            <span class="att-range-group-label">Bis</span>
+        <span class="att-range-sep" aria-hidden="true">–</span>
+        <div class="att-range-group att-range-bound">
+            <label class="att-range-group-label" for="att-to-date">Bis</label>
             <div class="att-range-stepper">
-                <button type="button" id="att-to-minus"><i class="fas fa-chevron-left"></i></button>
-                <span class="att-range-date" id="att-to-label">–</span>
-                <button type="button" id="att-to-plus"><i class="fas fa-chevron-right"></i></button>
+                <button type="button" id="att-to-minus" aria-label="Ende eine Probe früher"><i class="fas fa-chevron-left" aria-hidden="true"></i></button>
+                <span class="att-range-date-field is-disabled"><span id="att-to-text">–</span><input type="date" id="att-to-date" disabled></span>
+                <button type="button" id="att-to-plus" aria-label="Ende eine Probe später"><i class="fas fa-chevron-right" aria-hidden="true"></i></button>
             </div>
         </div>
+        <span class="att-range-count" id="att-range-count" hidden></span>
         <div class="att-range-group">
-            <span class="att-range-group-label">Mind.</span>
+            <label class="att-range-group-label" for="att-abs-input">Mind.</label>
             <div class="att-range-stepper">
-                <button type="button" id="att-abs-minus"><i class="fas fa-chevron-left"></i></button>
-                <span class="att-range-date" id="att-abs-label">0</span>
-                <button type="button" id="att-abs-plus"><i class="fas fa-chevron-right"></i></button>
+                <button type="button" id="att-abs-minus" aria-label="Mindestanzahl Fehlzeiten verringern"><i class="fas fa-chevron-left" aria-hidden="true"></i></button>
+                <input type="number" class="att-range-num-input" id="att-abs-input" min="0" step="1" inputmode="numeric" value="0">
+                <button type="button" id="att-abs-plus" aria-label="Mindestanzahl Fehlzeiten erhöhen"><i class="fas fa-chevron-right" aria-hidden="true"></i></button>
             </div>
             <span class="att-range-group-label">Fehlzeiten</span>
         </div>
+        <div class="sr-only" id="att-range-live" aria-live="polite" aria-atomic="true"></div>
     </div>
 
     <!-- Dense Table View (hidden by default) -->
@@ -1102,7 +1219,7 @@ include __DIR__ . '/../components/fab.php';
 ?>
 
 <!-- Save Indicator -->
-<div class="att-save-indicator" id="att-save-indicator"></div>
+<div class="att-save-indicator" id="att-save-indicator" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script>
 (function() {
@@ -1207,51 +1324,93 @@ include __DIR__ . '/../components/fab.php';
 
     // ── Comment Input ──
     function handleCommentClick(row) {
+        const existing = row.querySelector('.att-comment-text');
+        openNoteDialog(row, existing ? existing.textContent : '', '');
+    }
+
+    // `present` is NOT NULL in the DB: without a recorded status the note is saved
+    // together with a status, so the dialog then offers "Anwesend" / "Abwesend".
+    // If saving fails, the dialog reopens with the typed text and the error inside it.
+    function openNoteDialog(row, text, errorMessage) {
+        if (typeof Swal === 'undefined') return;
         const indicator = row.querySelector('.att-indicator');
         const userId = indicator.dataset.userId;
+        const rehearsalId = currentRehearsalId;
+        const needsStatus = row.dataset.attStatus === 'unset';
+        let draft = text;
+        const keepDraft = () => {
+            const input = Swal.getInput();
+            if (input) draft = input.value;
+        };
 
-        const existing = row.querySelector('.att-comment-text');
-        const currentComment = existing ? existing.textContent : '';
-
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                title: 'Anwesenheitsnotiz',
-                input: 'textarea',
-                inputValue: currentComment,
-                inputPlaceholder: 'z.B. "30 Min. verspätet"',
-                showCancelButton: true,
-                confirmButtonText: 'Speichern',
-                cancelButtonText: 'Abbrechen',
-                customClass: {
-                    popup: 'swal2-popup-modern',
-                }
-            }).then(result => {
-                if (result.isConfirmed) {
-                    const comment = result.value || '';
-                    ajaxPost('/attendance/update', {
-                        rehearsal_id: currentRehearsalId,
-                        user_id: userId,
-                        action: 'comment',
-                        comment: comment
-                    }).then(res => {
-                        if (!res.success) return;
-                        // Update comment display
-                        let adminComment = row.querySelector('.att-comment-admin');
-                        if (comment) {
-                            if (!adminComment) {
-                                adminComment = document.createElement('div');
-                                adminComment.className = 'att-comment att-comment-admin';
-                                adminComment.innerHTML = '<i class="fa-solid fa-pen att-comment-icon"></i><span class="att-comment-text" data-user-id="' + userId + '"></span>';
-                                row.querySelector('.att-member-info').appendChild(adminComment);
-                            }
-                            adminComment.querySelector('.att-comment-text').textContent = comment;
-                        } else if (adminComment) {
-                            adminComment.remove();
-                        }
-                    });
-                }
+        const options = {
+            title: 'Anwesenheitsnotiz',
+            input: 'textarea',
+            inputValue: text,
+            inputPlaceholder: 'z.B. "30 Min. verspätet"',
+            showCancelButton: true,
+            confirmButtonText: 'Speichern',
+            cancelButtonText: 'Abbrechen',
+            customClass: {
+                popup: 'swal2-popup-modern',
+            },
+            preConfirm: keepDraft,
+            didOpen: () => {
+                const input = Swal.getInput();
+                if (input) input.addEventListener('input', keepDraft);
+                // showValidationMessage renders HTML → escape
+                if (errorMessage) Swal.showValidationMessage(escapeHtml(errorMessage));
+            }
+        };
+        if (needsStatus) {
+            Object.assign(options, {
+                text: 'Noch keine Anwesenheit erfasst – die Notiz wird zusammen mit dem gewählten Status gespeichert.',
+                showDenyButton: true,
+                confirmButtonText: '<i class="fas fa-check" aria-hidden="true"></i> Anwesend',
+                denyButtonText: '<i class="fas fa-times" aria-hidden="true"></i> Abwesend',
+                preDeny: keepDraft,
             });
         }
+
+        Swal.fire(options).then(result => {
+            if (!result.isConfirmed && !result.isDenied) return;
+            const comment = draft;
+            const data = {
+                rehearsal_id: rehearsalId,
+                user_id: userId,
+                action: 'comment',
+                comment: comment
+            };
+            if (needsStatus) data.status = result.isDenied ? 'absent' : 'present';
+
+            ajaxPost('/attendance/update', data).then(res => {
+                if (rehearsalId !== currentRehearsalId) return; // another rehearsal is shown now
+                if (!res.success) {
+                    // Server has no record (e.g. reset meanwhile) → ask for a status
+                    if (res.needs_status) updateRowStatus(row, indicator, 'unset');
+                    openNoteDialog(row, comment, res.error || 'Speichern fehlgeschlagen – bitte erneut versuchen.');
+                    return;
+                }
+                if (res.status && res.status !== row.dataset.attStatus) {
+                    updateRowStatus(row, indicator, res.status);
+                }
+                // Update comment display (server-trimmed text)
+                const saved = typeof res.comment === 'string' ? res.comment : comment;
+                let adminComment = row.querySelector('.att-comment-admin');
+                if (saved) {
+                    if (!adminComment) {
+                        adminComment = document.createElement('div');
+                        adminComment.className = 'att-comment att-comment-admin';
+                        adminComment.innerHTML = '<i class="fa-solid fa-pen att-comment-icon"></i><span class="att-comment-text"></span>';
+                        adminComment.querySelector('.att-comment-text').dataset.userId = userId;
+                        row.querySelector('.att-member-info').appendChild(adminComment);
+                    }
+                    adminComment.querySelector('.att-comment-text').textContent = saved;
+                } else if (adminComment) {
+                    adminComment.remove();
+                }
+            });
+        });
     }
 
     // ── Bulk Confirm ──
@@ -1565,6 +1724,7 @@ include __DIR__ . '/../components/fab.php';
     });
 
     function loadTableData() {
+        updateRangeUI();
         tableContainer.innerHTML = '<div style="text-align:center; padding:var(--space-6); color:var(--color-text-muted)"><i class="fas fa-spinner fa-spin"></i> Laden…</div>';
         fetch(BASE_URL + '/attendance/table-data', {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
@@ -1585,68 +1745,225 @@ include __DIR__ . '/../components/fab.php';
         });
     }
 
-    // Dual-range stepper
+    // ── Range (Von / Bis) ──
+    // The table only contains rehearsals that have already started (see
+    // AttendanceController::tableData). By default the LAST 10 are shown.
+    // Von/Bis are date fields; the arrows step to the previous/next rehearsal.
+    const DEFAULT_VISIBLE = 10;
+    const WEEKDAYS_LONG = { So: 'Sonntag', Mo: 'Montag', Di: 'Dienstag', Mi: 'Mittwoch', Do: 'Donnerstag', Fr: 'Freitag', Sa: 'Samstag' };
+
     const fromMinus = document.getElementById('att-from-minus');
     const fromPlus = document.getElementById('att-from-plus');
     const toMinus = document.getElementById('att-to-minus');
     const toPlus = document.getElementById('att-to-plus');
-    const fromLabel = document.getElementById('att-from-label');
-    const toLabel = document.getElementById('att-to-label');
-    let startIdx = 0;
-    let endIdx = -1; // -1 = last item (set properly on data load)
+    const fromInput = document.getElementById('att-from-date');
+    const toInput = document.getElementById('att-to-date');
+    const fromText = document.getElementById('att-from-text');
+    const toText = document.getElementById('att-to-text');
+    const rangeCountEl = document.getElementById('att-range-count');
+    const rangeLive = document.getElementById('att-range-live');
+    let fromDate = ''; // Y-m-d
+    let toDate = '';
+    let startIdx = 0;  // first/last rehearsal within [fromDate, toDate]
+    let endIdx = -1;
+    let rangeAnchor = null; // user-chosen {from, to}; survives table reloads
+
+    // Pure helpers (no DOM access) ----------------------------------------
+    function defaultRange(list) {
+        if (!list.length) return { from: '', to: '' };
+        return { from: list[Math.max(0, list.length - DEFAULT_VISIBLE)].dateFull, to: list[list.length - 1].dateFull };
+    }
+
+    // The list is sorted by date; several rehearsals can share one date.
+    function rehearsalDateBefore(list, date) {
+        for (let i = list.length - 1; i >= 0; i--) {
+            if (list[i].dateFull < date) return list[i].dateFull;
+        }
+        return null;
+    }
+
+    function rehearsalDateAfter(list, date) {
+        for (let i = 0; i < list.length; i++) {
+            if (list[i].dateFull > date) return list[i].dateFull;
+        }
+        return null;
+    }
+
+    function dateParts(r) {
+        const p = String(r.dateFull || '').split('-');
+        return p.length === 3 ? { y: p[0], m: p[1], d: p[2] } : null;
+    }
+
+    function shortDate(date) { // Sa 22.08.26
+        const p = String(date).split('-');
+        if (p.length !== 3) return '–';
+        const weekday = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][new Date(+p[0], +p[1] - 1, +p[2]).getDay()];
+        return weekday + ' ' + p[2] + '.' + p[1] + '.' + p[0].slice(-2);
+    }
+
+    function longDate(r) { // 13.10.2025
+        const p = dateParts(r);
+        return p ? p.d + '.' + p.m + '.' + p.y : r.date;
+    }
+
+    function spokenDate(r) { // Montag, 13.10.2025, 19:00 Uhr
+        return (WEEKDAYS_LONG[r.weekday] || r.weekday) + ', ' + longDate(r) + (r.time ? ', ' + r.time + ' Uhr' : '');
+    }
+
+    function safeColor(c) {
+        return (typeof c === 'string' && /^#[0-9a-f]{3,8}$/i.test(c)) ? c : null;
+    }
+
+    function rehearsalCount(n) {
+        return n === 1 ? '1 Probe' : n + ' Proben';
+    }
+
+    // Range state ----------------------------------------------------------
+    function applyDates(list, from, to) {
+        fromDate = from;
+        toDate = to;
+        startIdx = list.findIndex(r => r.dateFull >= from);
+        if (startIdx === -1) startIdx = list.length;
+        endIdx = -1;
+        for (let i = list.length - 1; i >= 0; i--) {
+            if (list[i].dateFull <= to) { endIdx = i; break; }
+        }
+    }
 
     function resetRange() {
-        const total = tableDataCache ? tableDataCache.rehearsals.length : 0;
-        startIdx = 0;
-        endIdx = total - 1;
+        const list = tableDataCache ? tableDataCache.rehearsals : [];
+        const r = rangeAnchor || defaultRange(list);
+        applyDates(list, r.from, r.to);
+    }
+
+    function setRange(from, to, opts) {
+        const list = tableDataCache ? tableDataCache.rehearsals : [];
+        if (!list.length) return;
+        rangeAnchor = { from: from, to: to };
+        applyDates(list, from, to);
+        updateRangeUI();
+        renderTable();
+        if (opts && opts.announce) announceRange();
+    }
+
+    function announceRange() {
+        rangeLive.textContent = 'Zeitraum ' + longDate({ dateFull: fromDate }) + ' bis ' + longDate({ dateFull: toDate }) +
+            ', ' + rehearsalCount(Math.max(0, endIdx - startIdx + 1));
     }
 
     function updateRangeUI() {
-        if (!tableDataCache) return;
-        const r = tableDataCache.rehearsals;
-        const total = r.length;
-        fromLabel.textContent = total ? (r[startIdx].weekday + ' ' + r[startIdx].date) : '–';
-        toLabel.textContent = total ? (r[endIdx].weekday + ' ' + r[endIdx].date) : '–';
-        fromMinus.disabled = (startIdx <= 0);
-        fromPlus.disabled = (startIdx >= endIdx);
-        toMinus.disabled = (endIdx <= startIdx);
-        toPlus.disabled = (endIdx >= total - 1);
+        const list = tableDataCache ? tableDataCache.rehearsals : [];
+        const total = list.length;
+        const has = total > 0 && fromDate !== '' && toDate !== '';
+        const empty = endIdx < startIdx;
+
+        fromInput.disabled = !has;
+        toInput.disabled = !has;
+        fromInput.parentElement.classList.toggle('is-disabled', !has);
+        toInput.parentElement.classList.toggle('is-disabled', !has);
+        if (fromInput.value !== fromDate) fromInput.value = fromDate;
+        if (toInput.value !== toDate) toInput.value = toDate;
+        fromText.textContent = has ? shortDate(fromDate) : '–';
+        toText.textContent = has ? shortDate(toDate) : '–';
+        if (has) {
+            fromInput.min = list[0].dateFull;
+            fromInput.max = toDate;
+            toInput.min = fromDate;
+            toInput.max = list[total - 1].dateFull;
+        }
+
+        const afterFirst = has && !empty ? rehearsalDateAfter(list, list[startIdx].dateFull) : null;
+        const beforeLast = has && !empty ? rehearsalDateBefore(list, list[endIdx].dateFull) : null;
+        fromMinus.disabled = !has || rehearsalDateBefore(list, fromDate) === null;
+        fromPlus.disabled = afterFirst === null || afterFirst > toDate;
+        toMinus.disabled = beforeLast === null || beforeLast < fromDate;
+        toPlus.disabled = !has || rehearsalDateAfter(list, toDate) === null;
+
+        if (has) {
+            const n = Math.max(0, endIdx - startIdx + 1);
+            rangeCountEl.textContent = (n === total && total > 1) ? 'Alle ' + total + ' Proben' : n + ' von ' + rehearsalCount(total);
+            rangeCountEl.title = 'Fehlzeiten zählen nur im gewählten Zeitraum';
+            rangeCountEl.hidden = false;
+        } else {
+            rangeCountEl.hidden = true;
+        }
     }
 
-    fromMinus.addEventListener('click', () => {
-        if (startIdx > 0) { startIdx--; updateRangeUI(); renderTable(); }
-    });
-    fromPlus.addEventListener('click', () => {
-        if (startIdx < endIdx) { startIdx++; updateRangeUI(); renderTable(); }
-    });
-    toMinus.addEventListener('click', () => {
-        if (endIdx > startIdx) { endIdx--; updateRangeUI(); renderTable(); }
-    });
-    toPlus.addEventListener('click', () => {
-        const total = tableDataCache ? tableDataCache.rehearsals.length : 0;
-        if (endIdx < total - 1) { endIdx++; updateRangeUI(); renderTable(); }
+    function stepRange(bound, delta) {
+        if (!tableDataCache) return;
+        const list = tableDataCache.rehearsals;
+        let next;
+        if (bound === 'from') {
+            next = delta < 0 ? rehearsalDateBefore(list, fromDate) : rehearsalDateAfter(list, list[startIdx].dateFull);
+            if (next !== null && next <= toDate) setRange(next, toDate, { announce: true });
+        } else {
+            next = delta > 0 ? rehearsalDateAfter(list, toDate) : rehearsalDateBefore(list, list[endIdx].dateFull);
+            if (next !== null && next >= fromDate) setRange(fromDate, next, { announce: true });
+        }
+    }
+
+    fromMinus.addEventListener('click', () => stepRange('from', -1));
+    fromPlus.addEventListener('click', () => stepRange('from', 1));
+    toMinus.addEventListener('click', () => stepRange('to', -1));
+    toPlus.addEventListener('click', () => stepRange('to', 1));
+
+    // Typing fires change for half-typed years (0002, 0020 …): only complete dates within
+    // min/max are applied; leaving the field restores the current range.
+    function onDateChange(input) {
+        const v = input.value;
+        if (!v || (input.min && v < input.min) || (input.max && v > input.max)) return;
+        if (input === fromInput) setRange(v, toDate); else setRange(fromDate, v);
+    }
+
+    [fromInput, toInput].forEach(input => {
+        // Clicking the text part of a date input does not open the picker in every browser
+        input.addEventListener('click', () => {
+            if (typeof input.showPicker === 'function') {
+                try { input.showPicker(); } catch (_) { }
+            }
+        });
+        input.addEventListener('change', () => onDateChange(input));
+        input.addEventListener('blur', updateRangeUI);
     });
 
     // Min-absences filter stepper
     const absMinus = document.getElementById('att-abs-minus');
     const absPlus = document.getElementById('att-abs-plus');
-    const absLabel = document.getElementById('att-abs-label');
+    const absInput = document.getElementById('att-abs-input');
     let minAbsences = 0;
 
     function updateAbsUI() {
-        absLabel.textContent = minAbsences;
+        if (absInput.value !== String(minAbsences)) absInput.value = minAbsences;
         absMinus.disabled = (minAbsences <= 0);
     }
 
+    function setMinAbsences(n) {
+        minAbsences = n;
+        updateAbsUI();
+        if (tableDataCache) renderTable();
+    }
+
     absMinus.addEventListener('click', () => {
-        if (minAbsences > 0) { minAbsences--; updateAbsUI(); if (tableDataCache) renderTable(); }
+        if (minAbsences > 0) setMinAbsences(minAbsences - 1);
     });
-    absPlus.addEventListener('click', () => {
-        minAbsences++; updateAbsUI(); if (tableDataCache) renderTable();
+    absPlus.addEventListener('click', () => setMinAbsences(minAbsences + 1));
+    // Typed values apply right away; leaving the field restores the last valid number
+    absInput.addEventListener('input', () => {
+        const n = parseInt(absInput.value, 10);
+        if (String(n) !== absInput.value.trim() || n < 0) return;
+        minAbsences = n;
+        absMinus.disabled = (n <= 0);
+        if (tableDataCache) renderTable();
     });
+    absInput.addEventListener('blur', updateAbsUI);
+    absInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') absInput.blur();
+    });
+    updateAbsUI();
 
     function renderTable() {
         const data = tableDataCache;
+        if (!data) return;
         const { sections, attendance, promises } = data;
 
         const rehearsals = data.rehearsals.slice(startIdx, endIdx + 1);
@@ -1664,10 +1981,11 @@ include __DIR__ . '/../components/fab.php';
         let html = '<div class="att-table-wrap"><div class="att-table-scroll"><table class="att-dense-table"><thead><tr>';
         html += '<th class="att-name-col">Name</th>';
         rehearsals.forEach(r => {
-            const thStyle = r.color ? ' style="background:' + r.color + '26;border-bottom:2px solid ' + r.color + '40;"' : '';
-            html += '<th title="' + r.weekday + ', ' + r.date + '"' + thStyle + '>' + r.weekday + '<br>' + r.date + '</th>';
+            const color = safeColor(r.color);
+            const thStyle = color ? ' style="background:' + color + '26;border-bottom:2px solid ' + color + '40;"' : '';
+            html += '<th title="' + escapeHtml(spokenDate(r)) + '"' + thStyle + '>' + r.weekday + '<br>' + r.date + '</th>';
         });
-        html += '<th class="att-col-total">Fehlzeiten</th>';
+        html += '<th class="att-col-total" title="Fehlzeiten im gewählten Zeitraum">Fehlzeiten</th>';
         html += '</tr></thead><tbody>';
 
         sections.forEach(section => {
@@ -1766,16 +2084,22 @@ include __DIR__ . '/../components/fab.php';
         // Update print range label
         const rangeEl = document.getElementById('att-print-range');
         if (rangeEl && rehearsals.length) {
-            const from = rehearsals[0].weekday + ' ' + rehearsals[0].date;
-            const to = rehearsals[rehearsals.length - 1].weekday + ' ' + rehearsals[rehearsals.length - 1].date;
+            const first = rehearsals[0];
+            const last = rehearsals[rehearsals.length - 1];
+            const from = first.weekday + ' ' + longDate(first);
+            const to = last.weekday + ' ' + longDate(last);
             rangeEl.textContent = from === to ? from : from + ' – ' + to;
         }
     }
 
+    // Safe for text AND attribute values (quotes are escaped too — names are free text)
     function escapeHtml(str) {
-        const el = document.createElement('span');
-        el.textContent = str;
-        return el.innerHTML;
+        return String(str == null ? '' : str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 })();
 </script>

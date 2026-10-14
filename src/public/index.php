@@ -155,6 +155,16 @@ $router->addRoute('/ical/{token}',             'CalendarController', 'serveIcal'
 $router->addRoute('/onboarding', 'UserController', 'onboarding', 'GET');
 $router->addRoute('/onboarding/save', 'UserController', 'saveOnboarding', 'POST');
 
+// JOinJMD partner API (bearer token, JSON). Before the /{org_slug}/... routes; paths below
+// /api/v1 only match these routes, the rest gets a JSON 404/405 from the fallback.
+$router->addRoute('/api/v1/orchestras/{id}', 'PartnerApiController', 'putOrchestra', 'PUT');
+$router->addRoute('/api/v1/orchestras/{id}', 'PartnerApiController', 'deleteOrchestra', 'DELETE');
+$router->addRoute('/api/v1/orchestras/{id}/leaders/{sub}', 'PartnerApiController', 'putLeader', 'PUT');
+$router->addRoute('/api/v1/orchestras/{id}/leaders/{sub}', 'PartnerApiController', 'deleteLeader', 'DELETE');
+$router->addRoute('/api/v1/orchestras/{id}/members/{sub}', 'PartnerApiController', 'putMember', 'PUT');
+$router->addRoute('/api/v1/orchestras/{id}/members/{sub}', 'PartnerApiController', 'deleteMember', 'DELETE');
+$router->addFallback('/api/v1', 'PartnerApiController', 'unmatched');
+
 // Orchestra-specific routes (with org_slug/orchestra_id context)
 // Promises routes
 $router->addRoute('/{org_slug}/{orchestra_id}/promises', 'PromiseController', 'index');
@@ -168,6 +178,7 @@ $router->addRoute('/{org_slug}/{orchestra_id}/promises/index-lazy', 'PromiseCont
 $router->addRoute('/{org_slug}/{orchestra_id}/promises/index-past', 'PromiseController', 'indexPast');
 $router->addRoute('/{org_slug}/{orchestra_id}/promises/leader-lazy', 'PromiseController', 'leaderLazy');
 $router->addRoute('/{org_slug}/{orchestra_id}/promises/leader-past', 'PromiseController', 'leaderPast');
+$router->addRoute('/{org_slug}/{orchestra_id}/promises/remind', 'PromiseController', 'remind', 'POST');
 
 // Attendance routes
 $router->addRoute('/{org_slug}/{orchestra_id}/attendance', 'AttendanceController', 'index');
@@ -190,6 +201,7 @@ $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/duplicate/{id}', 'Rehea
 $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/batch-create', 'RehearsalController', 'batchCreateAjax', 'POST');
 $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/ai-import-prompt', 'RehearsalController', 'getAiImportPrompt');
 $router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/ai-import', 'RehearsalController', 'processAiImport', 'POST');
+$router->addRoute('/{org_slug}/{orchestra_id}/rehearsals/ai-import/preview', 'RehearsalController', 'previewAiImport', 'POST');
 
 // Probenplan route
 $router->addRoute('/{org_slug}/{orchestra_id}/probenplan', 'ProbenplanController', 'index');
@@ -203,6 +215,7 @@ $router->addRoute('/{org_slug}/{orchestra_id}/profile/leave', 'UserController', 
 $router->addRoute('/{org_slug}/{orchestra_id}/conductor/profile', 'UserController', 'conductorProfile');
 $router->addRoute('/{org_slug}/{orchestra_id}/conductor/profile/delete', 'UserController', 'delete');
 $router->addRoute('/{org_slug}/{orchestra_id}/conductor/profile/leave', 'UserController', 'leaveOrchestra');
+$router->addRoute('/{org_slug}/{orchestra_id}/section/confirm', 'UserController', 'confirmSection', 'POST');
 
 // Member routes
 $router->addRoute('/{org_slug}/{orchestra_id}/members', 'MemberController', 'index');
@@ -243,7 +256,10 @@ $router->addRoute('/{org_slug}/{orchestra_id}/api/rehearsals/bulk-update', 'Sett
 
 
 
-// Process the request
+// JOinJMD deep link (?jmd_accesstoken=... on any page but / and /login): log in, reload without the token
+\App\Core\JmdTokenLogin::handleDeepLink((string)$uri);
+
+// Process the request (the router checks the CSRF token of everything but GET/HEAD/OPTIONS, see CSRF::enforce)
 try {
     $router->dispatch($uri);
 } catch (\Exception $e) {

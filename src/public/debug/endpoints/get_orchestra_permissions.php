@@ -1,5 +1,6 @@
 <?php
 require_once '../../../bootstrap.php';
+require_once __DIR__ . '/../includes/guard.php';
 
 header('Content-Type: text/html; charset=utf-8');
 

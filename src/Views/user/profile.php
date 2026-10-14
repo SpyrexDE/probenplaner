@@ -361,6 +361,21 @@ include __DIR__ . '/../components/theme-selector.php';
             });
         });
 
+        // Leaving / deleting are destructive: submit as POST with CSRF token (server rejects GET)
+        function submitPost(url) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = url;
+            form.style.display = 'none';
+            const tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = 'csrf_token';
+            tokenInput.value = csrfToken;
+            form.appendChild(tokenInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+
         // Leave Orchestra
         document.getElementById('leaveOrchestra').addEventListener('click', function() {
             Swal.fire({
@@ -384,7 +399,7 @@ include __DIR__ . '/../components/theme-selector.php';
                             Swal.showLoading();
                         }
                     });
-                    window.location.href = '/' + orchestraSlug + '/profile/leave';
+                    submitPost('/' + orchestraSlug + '/profile/leave');
                 }
             });
         });
@@ -412,7 +427,7 @@ include __DIR__ . '/../components/theme-selector.php';
                             Swal.showLoading();
                         }
                     });
-                    window.location.href = '/' + orchestraSlug + '/profile/delete';
+                    submitPost('/' + orchestraSlug + '/profile/delete');
                 }
             });
         });

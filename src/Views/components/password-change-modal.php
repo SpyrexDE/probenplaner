@@ -119,6 +119,7 @@ $pwUrl = $passwordChangeUrl ?? ('/' . ($_SESSION['current_org_slug'] ?? '') . '/
                 form.style.display = 'none';
 
                 const fields = {
+                    csrf_token: <?= json_encode(\App\Core\CSRF::getToken()) ?>,
                     current_password: result.value.current_password,
                     new_password: result.value.new_password,
                     confirm_password: result.value.confirm_password,

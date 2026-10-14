@@ -64,7 +64,7 @@ class InviteController extends Controller
                 return;
             }
 
-            if (!empty($link['keycloak_only']) && !$this->isKeycloakUser()) {
+            if ($this->requiresKeycloak($link) && !$this->isKeycloakUser()) {
                 $this->setFlash('error', 'Dieser Einladungslink ist nur für JMD-Accounts.');
                 $this->redirect('/orchestras/select');
                 return;
@@ -83,7 +83,7 @@ class InviteController extends Controller
                     } else {
                         $roleId = $this->inviteLinkModel->getJoinRoleId($link);
                         if ($roleId) {
-                            $this->userOrchestraModel->setRole((int)$_SESSION['user_id'], (int)$orchestra['id'], $roleId);
+                            $this->userOrchestraModel->addRoleToRelation((int)$existing['id'], (int)$roleId);
                         }
                         $this->setFlash('success', 'Du wurdest als Leitung hinzugefügt!');
                     }
@@ -130,7 +130,7 @@ class InviteController extends Controller
             'orchestra' => $orchestra,
             'orgName' => $orgName,
             'linkType' => $linkType,
-            'keycloakOnly' => !empty($link['keycloak_only']),
+            'keycloakOnly' => $this->requiresKeycloak($link),
         ]);
     }
 
@@ -158,7 +158,7 @@ class InviteController extends Controller
             return;
         }
 
-        if (!empty($link['keycloak_only']) && !$this->isKeycloakUser()) {
+        if ($this->requiresKeycloak($link) && !$this->isKeycloakUser()) {
             $this->setFlash('error', 'Dieser Einladungslink ist nur für JMD-Accounts.');
             $this->redirect('/orchestras/select');
             return;
@@ -246,6 +246,14 @@ class InviteController extends Controller
         return !empty($user['keycloak_id']);
     }
 
+    /**
+     * "Nur JMD-Accounts" only applies on instances with Keycloak login.
+     */
+    private function requiresKeycloak(array $link): bool
+    {
+        return KEYCLOAK_ENABLED && !empty($link['keycloak_only']);
+    }
+
     private function isAdminOrOrgAccount(): bool
     {
         return !empty($_SESSION['is_admin']) || !empty($_SESSION['is_org_admin']);
@@ -292,6 +300,13 @@ class InviteController extends Controller
             http_response_code(403);
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'error' => 'Keine Berechtigung']);
+            return;
+        }
+
+        if (!KEYCLOAK_ENABLED) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'JMD-Login ist auf dieser Instanz nicht aktiv']);
             return;
         }
 

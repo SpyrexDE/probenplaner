@@ -696,10 +696,12 @@ $isAdmin = $canManage || !empty($canManagePermissions);
                                     <div class="invite-link-box"><?= htmlspecialchars('https://' . $linkUrl) ?></div>
                                     <div class="invite-meta"><?= (int)($inviteLink['used_count'] ?? 0) ?>× verwendet</div>
                                     <button class="btn-base btn-sm btn-primary" style="width: 100%;" onclick="copyInviteLink()"><i class="fas fa-copy" style="margin-right: var(--space-1);"></i> Link kopieren</button>
+                                    <?php if (KEYCLOAK_ENABLED): ?>
                                     <div class="swal-perm-row" style="margin-top: var(--space-2);">
                                         <input type="checkbox" id="sidebarKeycloak" <?= !empty($inviteLink['keycloak_only']) ? 'checked' : '' ?> onchange="toggleKeycloak()">
                                         <label for="sidebarKeycloak" style="font-size: var(--font-size-xs);">Nur JMD-Accounts</label>
                                     </div>
+                                    <?php endif; ?>
                                 <?php else: ?>
                                     <p style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin-bottom: var(--space-2);">Noch kein Link vorhanden.</p>
                                     <button class="admin-btn-new" onclick="regenerateLink()"><i class="fas fa-plus"></i> Link erstellen</button>
@@ -898,10 +900,12 @@ $isAdmin = $canManage || !empty($canManagePermissions);
                         </p>
                         <div class="invite-link-box" id="swalInviteLink">${linkUrl}</div>
                         <div class="invite-meta">${usedCount}× genutzt</div>
+<?php if (KEYCLOAK_ENABLED): ?>
                         <div class="swal-perm-row" style="margin-top: var(--space-3);">
                             <input type="checkbox" id="swalKeycloak" ${_keycloakOnly ? 'checked' : ''} onchange="toggleKeycloak()">
                             <label for="swalKeycloak">Nur JMD-Accounts erlauben</label>
                         </div>
+<?php endif; ?>
                     </div>
                 `,
                 showCancelButton: true,

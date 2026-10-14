@@ -11,7 +11,7 @@ include __DIR__ . '/../components/table.php';
             <div class="print-header-main">
                 <h1 class="print-title">Probenplan</h1>
                 <div class="print-subtitle">
-                    <?= $_SESSION['current_orchestra_name'] ?? 'Orchester' ?>
+                    <?= htmlspecialchars($_SESSION['current_orchestra_name'] ?? 'Orchester') ?>
                     <?php if ($personalized): ?>
                         <?php
                         $isConductor = !empty($_SESSION['current_permissions']['can_manage_ensemble']);

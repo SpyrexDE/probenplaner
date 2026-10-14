@@ -6,6 +6,10 @@ namespace App\Core;
  * Central registry of all editable field definitions.
  *
  * To add a new setting: add a migration + one array entry here. No controller/view changes needed.
+ *
+ * This list is also the write whitelist of SettingsApiController: only fields defined here
+ * can be changed via /api/settings. 'permission' levels: 'ensemble' (can_manage_ensemble),
+ * 'conductor' (can_manage_rehearsals), 'leader' (can_view_own_section_stats), 'member' (anyone).
  */
 class FieldRegistry
 {
@@ -119,7 +123,7 @@ class FieldRegistry
                 'group'      => 'permissions',
                 'default'    => false,
                 'save'       => 'auto',
-                'permission' => 'conductor',
+                'permission' => 'ensemble',
             ],
             [
                 'name'        => 'allow_attendance_reset',
@@ -129,7 +133,7 @@ class FieldRegistry
                 'group'       => 'permissions',
                 'default'     => true,
                 'save'        => 'auto',
-                'permission'  => 'conductor',
+                'permission'  => 'ensemble',
             ],
             [
                 'name'        => 'allow_past_edit',
@@ -139,7 +143,7 @@ class FieldRegistry
                 'group'       => 'permissions',
                 'default'     => true,
                 'save'        => 'auto',
-                'permission'  => 'conductor',
+                'permission'  => 'ensemble',
             ],
             [
                 'name'       => 'show_rehearsal_insights',
@@ -149,7 +153,7 @@ class FieldRegistry
                 'group'      => 'features',
                 'default'    => false,
                 'save'       => 'auto',
-                'permission' => 'conductor',
+                'permission' => 'ensemble',
             ],
             [
                 'name'        => 'allow_rehearsal_import',
@@ -159,7 +163,7 @@ class FieldRegistry
                 'group'       => 'features',
                 'default'     => true,
                 'save'        => 'auto',
-                'permission'  => 'conductor',
+                'permission'  => 'ensemble',
             ],
             [
                 'name'       => 'section_config',
@@ -168,7 +172,7 @@ class FieldRegistry
                 'description' => 'Passe die Sektionen, Untergruppen und Instrumente deines Ensembles an.',
                 'group'      => 'structure',
                 'save'       => 'manual',
-                'permission' => 'conductor',
+                'permission' => 'ensemble',
             ],
         ];
     }

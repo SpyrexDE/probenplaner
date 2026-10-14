@@ -11,6 +11,11 @@ class Router
      * @var array
      */
     private $routes = [];
+
+    /**
+     * @var array Path prefix => controller/action for requests below it that match no route
+     */
+    private $fallbacks = [];
     
     /**
      * Add a route
@@ -31,6 +36,25 @@ class Router
     }
     
     /**
+     * Send every request below a path prefix that matches no route to one action (e.g. the
+     * 404/405 answers of a JSON API). Requests below the prefix are only matched against
+     * routes below it, so the '/{org_slug}/...' routes never catch them.
+     *
+     * @param string $prefix Path prefix, e.g. '/api/v1'
+     * @param string $controller The controller name
+     * @param string $action Called with ['allow' => methods of the routes that match the
+     *                       path with another method; empty for an unknown path]
+     * @return void
+     */
+    public function addFallback($prefix, $controller, $action)
+    {
+        $this->fallbacks[rtrim($prefix, '/')] = [
+            'controller' => $controller,
+            'action' => $action
+        ];
+    }
+    
+    /**
      * Dispatch the route
      * 
      * @param string $uri The requested URI
@@ -45,6 +69,7 @@ class Router
         if ($uri !== '/' && substr($uri, -1) === '/') {
             $uri = rtrim($uri, '/');
         }
+        $scope = $this->scopeOf($uri);
         
         // Check if route exists
         if (array_key_exists($uri, $this->routes)) {
@@ -57,6 +82,7 @@ class Router
                     
                     // Check if controller exists
                     if (class_exists($controller)) {
+                        CSRF::enforce($uri);
                         $controllerInstance = new $controller();
                         
                         // Check if action exists
@@ -70,6 +96,9 @@ class Router
         } else {
             // Check for routes with parameters
             foreach ($this->routes as $route => $routesData) {
+                if ($this->scopeOf($route) !== $scope) {
+                    continue;
+                }
                 foreach ($routesData as $routeData) {
                     // If method is null (any) or matches the request method
                     if ($routeData['method'] === null || $routeData['method'] === $requestMethod) {
@@ -81,6 +110,7 @@ class Router
                             
                             // Check if controller exists
                             if (class_exists($controller)) {
+                                CSRF::enforce($route);
                                 $controllerInstance = new $controller();
                                 
                                 // Check if action exists
@@ -99,9 +129,55 @@ class Router
             }
         }
         
+        if ($scope !== null) {
+            $controller = '\\App\\Controllers\\' . $this->fallbacks[$scope]['controller'];
+            $action = $this->fallbacks[$scope]['action'];
+            (new $controller())->$action(['allow' => $this->allowedMethods($uri, $scope)]);
+            return;
+        }
+        
         // Route not found, show 404 page
         header("HTTP/1.0 404 Not Found");
         include APP_ROOT . '/Views/errors/404.php';
+    }
+    
+    /**
+     * Fallback prefix the path lies below, or null
+     * 
+     * @param string $path Request URI or route pattern
+     * @return string|null
+     */
+    private function scopeOf($path)
+    {
+        foreach (array_keys($this->fallbacks) as $prefix) {
+            if ($path === $prefix || strncmp($path, $prefix . '/', strlen($prefix) + 1) === 0) {
+                return $prefix;
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * Methods of the routes below the prefix that match the URI
+     * 
+     * @param string $uri The requested URI
+     * @param string $scope Fallback prefix
+     * @return string[]
+     */
+    private function allowedMethods($uri, $scope)
+    {
+        $methods = [];
+        foreach ($this->routes as $route => $routesData) {
+            if ($this->scopeOf($route) !== $scope || !preg_match($this->convertRouteToRegex($route), $uri)) {
+                continue;
+            }
+            foreach ($routesData as $routeData) {
+                if ($routeData['method'] !== null) {
+                    $methods[] = $routeData['method'];
+                }
+            }
+        }
+        return array_values(array_unique($methods));
     }
     
     /**

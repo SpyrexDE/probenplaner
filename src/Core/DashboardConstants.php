@@ -44,7 +44,6 @@ class DashboardConstants
     // Date/time formats
     const DISPLAY_DATE_FORMAT = 'd.m.Y'; // Date format for display
     const DISPLAY_TIME_FORMAT = 'H:i'; // Time format for display (HH:MM)
-    const TIME_SUBSTRING_LENGTH = 5; // Length to substring time (HH:MM)
 
     // Chart colors
     const CHART_ATTENDANCE_COLOR = '#10b981'; // Green for attendance

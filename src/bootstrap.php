@@ -106,9 +106,12 @@ set_exception_handler(function ($e) {
     );
     
     $message = "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.";
-    $details = "Fehler: " . $e->getMessage() . "\n" .
-               "Datei: " . $e->getFile() . " (" . $e->getLine() . ")\n\n" .
-               "Stack Trace:\n" . $e->getTraceAsString();
+    // Paths and stack traces only outside production; the log above always has them
+    $details = (APP_ENV === 'development' || APP_ENV === 'test')
+        ? "Fehler: " . $e->getMessage() . "\n" .
+          "Datei: " . $e->getFile() . " (" . $e->getLine() . ")\n\n" .
+          "Stack Trace:\n" . $e->getTraceAsString()
+        : null;
     
     if ($isJson) {
         // Return JSON response
@@ -135,8 +138,10 @@ set_exception_handler(function ($e) {
         echo '<h1>Uups! Etwas ist schiefgelaufen.</h1>';
         echo '<div class="error-box">';
         echo '<p>' . htmlspecialchars($message) . '</p>';
-        echo '<button onclick="var d=document.getElementById(\'d\');d.style.display=d.style.display===\'block\'?\'none\':\'block\';this.innerText=d.style.display===\'block\'?\'Details ausblenden\':\'Details anzeigen\'">Details anzeigen</button>';
-        echo '<div id="d" class="details"><pre>' . htmlspecialchars($details) . '</pre></div>';
+        if ($details !== null) {
+            echo '<button onclick="var d=document.getElementById(\'d\');d.style.display=d.style.display===\'block\'?\'none\':\'block\';this.innerText=d.style.display===\'block\'?\'Details ausblenden\':\'Details anzeigen\'">Details anzeigen</button>';
+            echo '<div id="d" class="details"><pre>' . htmlspecialchars($details) . '</pre></div>';
+        }
         echo '</div>';
         echo '<p><a href="/">Zurück zur Startseite</a></p>';
         echo '</body></html>';

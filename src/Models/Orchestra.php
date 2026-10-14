@@ -21,6 +21,7 @@ class Orchestra extends Model
 
     /**
      * Find orchestra by slug, including its organization's slug.
+     * Slugs are unique across organizations (idx_orchestras_slug).
      */
     public function findBySlugWithOrg(string $slug): ?array
     {
