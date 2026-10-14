@@ -93,10 +93,6 @@ $panelContent   = $panelContent   ?? '';
     }
 </style>
 
-<?php if (!empty($csrf_token)): ?>
-    <meta name="csrf-token" content="<?= htmlspecialchars($csrf_token) ?>">
-<?php endif; ?>
-
 <div class="panel-shell">
     <div class="panel-topbar">
         <div class="flex-start gap-3">

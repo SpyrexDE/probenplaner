@@ -13,6 +13,19 @@ use App\Models\User;
  */
 class AdminController extends Controller
 {
+    /** Allowed organization slug characters (underscore needed for JOinJMD IDs). */
+    private const SLUG_PATTERN = '/^[a-z0-9_-]+$/';
+    /**
+     * organizations.slug is VARCHAR(100), but the slug also builds the org account's login
+     * e-mail "{slug}-admin@probenplaner.local" (User::createOrgAccount,
+     * Organization::renameOrgAccount). Its local part may have at most 64 characters
+     * (FILTER_VALIDATE_EMAIL), so the slug is limited to 64 - strlen('-admin') = 58.
+     */
+    private const SLUG_MAX_LENGTH = 58;
+    private const SLUG_ERROR = 'Slug darf nur Kleinbuchstaben, Zahlen, Binde- und Unterstriche enthalten.';
+    /** First path segments the router uses itself (/api/v1/...), so no organization may take them */
+    private const RESERVED_SLUGS = ['api'];
+
     private Organization $orgModel;
     private User $userModel;
 
@@ -33,8 +46,13 @@ class AdminController extends Controller
             $orgAccount = $this->orgModel->getOrgAccount((int)$org['id']);
             if (!$orgAccount) {
                 $result = $this->userModel->createOrgAccount((int)$org['id'], $org['slug']);
-                $orgAccount = $result['user'];
-                $orgAccount['generated_password'] = $result['password'];
+                // On a failed insert 'user' is null: leave org_account empty (the card hides it)
+                if (!empty($result['user'])) {
+                    $orgAccount = $result['user'];
+                    $orgAccount['generated_password'] = $result['password'];
+                } else {
+                    error_log('AdminController::dashboard: org account for organization ' . (int)$org['id'] . ' could not be created');
+                }
             }
             $org['org_account'] = $orgAccount;
         }
@@ -70,13 +88,19 @@ class AdminController extends Controller
             return;
         }
 
-        if (!preg_match('/^[a-z0-9-]+$/', $slug)) {
-            $this->setFlash('error', 'Slug darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten.');
+        if (!preg_match(self::SLUG_PATTERN, $slug)) {
+            $this->setFlash('error', self::SLUG_ERROR);
             $this->redirect('/admin/orgs/create');
             return;
         }
 
-        if ($this->orgModel->findBySlug($slug)) {
+        if (strlen($slug) > self::SLUG_MAX_LENGTH) {
+            $this->setFlash('error', 'Slug darf höchstens ' . self::SLUG_MAX_LENGTH . ' Zeichen lang sein.');
+            $this->redirect('/admin/orgs/create');
+            return;
+        }
+
+        if (in_array($slug, self::RESERVED_SLUGS, true) || $this->orgModel->findBySlug($slug)) {
             $this->setFlash('error', 'Dieser Slug ist bereits vergeben.');
             $this->redirect('/admin/orgs/create');
             return;
@@ -94,6 +118,15 @@ class AdminController extends Controller
         }
 
         $result = $this->userModel->createOrgAccount((int)$orgId, $slug);
+
+        if (empty($result['user']) || empty($result['password'])) {
+            // The org exists, but its account insert failed (e.g. e-mail already taken).
+            // The dashboard creates missing org accounts when it is opened.
+            error_log('AdminController::storeOrg: org account for organization ' . (int)$orgId . " ('{$slug}') could not be created");
+            $this->setFlash('error', 'Die Organisation wurde erstellt, aber der Orga-Account konnte nicht angelegt werden.');
+            $this->redirect('/admin/dashboard');
+            return;
+        }
 
         $this->render('admin/create-org', [
             'currentPage' => 'admin_panel',
@@ -146,25 +179,38 @@ class AdminController extends Controller
         }
 
         if ($field === 'slug') {
-            if (!preg_match('/^[a-z0-9-]+$/', $value)) {
-                $this->jsonResponse(['error' => 'Slug darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten.'], 400);
+            if (!preg_match(self::SLUG_PATTERN, $value)) {
+                $this->jsonResponse(['error' => self::SLUG_ERROR], 400);
+                return;
+            }
+            if (strlen($value) > self::SLUG_MAX_LENGTH) {
+                $this->jsonResponse(['error' => 'Slug darf höchstens ' . self::SLUG_MAX_LENGTH . ' Zeichen lang sein.'], 400);
                 return;
             }
             $existing = $this->orgModel->findBySlug($value);
-            if ($existing && (int)$existing['id'] !== $orgId) {
+            if (in_array($value, self::RESERVED_SLUGS, true) || ($existing && (int)$existing['id'] !== $orgId)) {
                 $this->jsonResponse(['error' => 'Dieser Slug ist bereits vergeben.'], 400);
                 return;
             }
         }
 
-        $this->orgModel->update($orgId, [$field => $value]);
-
-        // Cascade slug rename to org account username
-        if ($field === 'slug' && $value !== $org['slug']) {
-            $this->orgModel->renameOrgAccount($orgId, $value);
+        if (!$this->orgModel->update($orgId, [$field => $value])) {
+            $this->jsonResponse(['error' => 'Speichern fehlgeschlagen.'], 500);
+            return;
         }
 
-        $this->jsonResponse(['success' => true]);
+        $response = ['success' => true];
+
+        // Cascade slug rename to org account username
+        if ($field === 'slug') {
+            if ($value !== $org['slug']) {
+                $this->orgModel->renameOrgAccount($orgId, $value);
+            }
+            // The client needs the new slug to build follow-up URLs (/admin/orgs/{slug}/...)
+            $response['slug'] = $value;
+        }
+
+        $this->jsonResponse($response);
     }
 
     public function deleteOrg(array $params): void

@@ -10,12 +10,25 @@
  * @param array $formData['schedule_items']  Existing items (optional)
  * @param bool  $autoSave                   Whether to auto-save (edit page)
  * @param string $apiUrl                    API URL for auto-save (edit page)
+ * @param string|null $scheduleStartSource  Where the rehearsal start time is read from when a new
+ *                                          entry is added (read at click time, so later changes count):
+ *                                          - a CSS selector for a form field, e.g. '#start'
+ *                                            (datetime-local) or '#recurringTimeStart' (time input)
+ *                                          - 'closest:<selector>' for the nearest ancestor carrying a
+ *                                            data-start attribute ("Y-m-d H:i:s"), e.g. 'closest:[data-start]'
+ *                                          Empty/omitted or unreadable → 19:00.
+ *
+ * Default times for new entries: the first entry starts at the rehearsal start,
+ * every further entry at the latest existing time + 30 min (capped at 23:59).
  */
 
 $existingItems = $formData['schedule_items'] ?? [];
 $autoSave = $autoSave ?? false;
 $apiUrl = $apiUrl ?? '';
 $editorId = $editorId ?? ('schedule-editor-' . uniqid());
+$scheduleStartSourceAttr = (string) ($scheduleStartSource ?? '');
+// Includes share the caller's scope: don't let this include's source leak into the next one.
+unset($scheduleStartSource);
 ?>
 
 <?php if (!defined('SCHEDULE_EDITOR_STYLES_LOADED')): define('SCHEDULE_EDITOR_STYLES_LOADED', true); ?>
@@ -181,7 +194,7 @@ $editorId = $editorId ?? ('schedule-editor-' . uniqid());
 <div class="form-section">
     <h3 class="form-section-title">Ablauf</h3>
 
-    <div class="schedule-editor" id="<?= $editorId ?>">
+    <div class="schedule-editor" id="<?= $editorId ?>"<?php if ($scheduleStartSourceAttr !== ''): ?> data-start-source="<?= htmlspecialchars($scheduleStartSourceAttr, ENT_QUOTES) ?>"<?php endif; ?>>
         <!-- Items rendered by JS -->
     </div>
 
@@ -209,6 +222,53 @@ $editorId = $editorId ?? ('schedule-editor-' . uniqid());
         }
 
         sortByTime();
+
+        // ── Default time for a new entry ──
+        // First entry = rehearsal start, then latest valid time + 30 min (never past 23:59).
+        const FALLBACK_START = '19:00';
+        const STEP_MINUTES = 30;
+        const LAST_MINUTE_OF_DAY = 23 * 60 + 59;
+
+        // "19:30", "19:30:00", "2026-10-05T19:30", "2026-10-05 19:30:00" → "19:30"; anything else → null
+        function normalizeTime(value) {
+            if (typeof value !== 'string') return null;
+            const match = value.trim().match(/(?:^|[T\s])(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?$/);
+            if (!match) return null;
+            const h = Number(match[1]);
+            const m = Number(match[2]);
+            if (h > 23 || m > 59) return null;
+            return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+        }
+
+        function nextEntryTime(list, startTime) {
+            let latest = null;
+            list.forEach(item => {
+                const t = normalizeTime(item && item.time);
+                if (t !== null && (latest === null || t > latest)) latest = t;
+            });
+            if (latest === null) return normalizeTime(startTime) || FALLBACK_START;
+
+            const [h, m] = latest.split(':').map(Number);
+            const total = Math.min(h * 60 + m + STEP_MINUTES, LAST_MINUTE_OF_DAY);
+            return String(Math.floor(total / 60)).padStart(2, '0') + ':' + String(total % 60).padStart(2, '0');
+        }
+
+        // Reads the rehearsal start (HH:MM) from the source configured via data-start-source, or null
+        function resolveStartTime() {
+            const source = container.dataset.startSource || '';
+            if (!source) return null;
+            let el = null;
+            try {
+                el = source.indexOf('closest:') === 0 ?
+                    container.closest(source.slice('closest:'.length)) :
+                    document.querySelector(source);
+            } catch (err) {
+                return null; // invalid selector
+            }
+            if (!el) return null;
+            const isField = el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA';
+            return normalizeTime(isField ? el.value : el.getAttribute('data-start'));
+        }
 
         function render() {
             let html = '';
@@ -370,14 +430,8 @@ $editorId = $editorId ?? ('schedule-editor-' . uniqid());
             // Add button
             if (e.target.closest('.schedule-editor-add')) {
                 e.preventDefault();
-                const lastTime = items.length > 0 ? items[items.length - 1].time : '19:00';
-                // Increment last time by 15 min
-                const [h, m] = lastTime.split(':').map(Number);
-                const totalMin = h * 60 + m + 15;
-                const newH = String(Math.floor(totalMin / 60) % 24).padStart(2, '0');
-                const newM = String(totalMin % 60).padStart(2, '0');
                 const newItem = {
-                    time: newH + ':' + newM,
+                    time: nextEntryTime(items, resolveStartTime()),
                     label: ''
                 };
                 items.push(newItem);

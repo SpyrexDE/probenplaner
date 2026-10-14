@@ -96,6 +96,11 @@ $backUrl = '/' . $orchestraBase . '/rehearsals';
             $autoSave = true;
             $apiUrl = '/' . $orchestraBase . '/api/settings/rehearsal/' . $rehearsal['id'];
             include __DIR__ . '/../components/infobox-editor.php';
+
+            // Fresh id: infobox-editor above leaves its own $editorId in scope (would duplicate ids)
+            $editorId = null;
+            // New schedule entries start at the "Anfang" datetime-local field
+            $scheduleStartSource = '#start';
             include __DIR__ . '/../components/schedule-editor.php';
             ?>
 

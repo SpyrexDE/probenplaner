@@ -70,9 +70,47 @@ define('MAX_USERS_PER_ORCHESTRA', 200);
 define('MAX_ORCHESTRA_NAME_LENGTH', 100);
 
 // Keycloak Configuration
-define('KEYCLOAK_ENABLED', getenv('KEYCLOAK_ENABLED') ?: true);
+// KEYCLOAK_ENABLED: unset or empty => enabled (the prod compose file passes
+// KEYCLOAK_ENABLED=${KEYCLOAK_ENABLED}, i.e. an empty string when .env has no value).
+// "false"/"0"/"no"/"off" => disabled (instances with local login only).
+// Unrecognised values keep the previous default (enabled).
+$keycloakEnabledEnv = getenv('KEYCLOAK_ENABLED');
+define(
+    'KEYCLOAK_ENABLED',
+    ($keycloakEnabledEnv === false || trim($keycloakEnabledEnv) === '')
+        ? true
+        : (filter_var(trim($keycloakEnabledEnv), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true)
+);
+unset($keycloakEnabledEnv);
 define('KEYCLOAK_BASE_URL', getenv('KEYCLOAK_BASE_URL') ?: 'https://auth.digil.me');
 define('KEYCLOAK_REALM', getenv('KEYCLOAK_REALM') ?: 'jmd');
 define('KEYCLOAK_CLIENT_ID', getenv('KEYCLOAK_CLIENT_ID') ?: 'starthere-appclient-prod');
 define('KEYCLOAK_CLIENT_SECRET', getenv('KEYCLOAK_CLIENT_SECRET'));
 define('KEYCLOAK_REDIRECT_URI', getenv('KEYCLOAK_REDIRECT_URI') ?: 'http://localhost:8080');
+// KEYCLOAK_LINK_REQUIRE_VERIFIED: a Keycloak/JMD login that matches an existing Probenplaner
+// account only by e-mail (no matching keycloak_id) links that account only if Keycloak reports
+// email_verified === true. Otherwise anyone who can register in the realm with someone else's
+// address would take over that person's account.
+// Unset or empty => true (check on). "false"/"0"/"no"/"off" => link by e-mail without the check
+// (only for realms that verify every e-mail but do not send the email_verified claim).
+// Unrecognised values keep the check on.
+$keycloakLinkVerifiedEnv = getenv('KEYCLOAK_LINK_REQUIRE_VERIFIED');
+define(
+    'KEYCLOAK_LINK_REQUIRE_VERIFIED',
+    ($keycloakLinkVerifiedEnv === false || trim($keycloakLinkVerifiedEnv) === '')
+        ? true
+        : (filter_var(trim($keycloakLinkVerifiedEnv), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true)
+);
+unset($keycloakLinkVerifiedEnv);
+
+// JOinJMD partner API (/api/v1, see docs/partner-api.md)
+// PARTNER_API_TOKEN: shared secret the JOinJMD server sends as "Authorization: Bearer <token>".
+// Unset or empty => the API is off and every /api/v1 route answers 404.
+// PARTNER_API_ORG: slug of the organization new orchestras from the API are created in.
+define('PARTNER_API_TOKEN', (string)(getenv('PARTNER_API_TOKEN') ?: ''));
+define('PARTNER_API_ORG', (string)(getenv('PARTNER_API_ORG') ?: ''));
+
+// JOinJMD push notifications: endpoint and secret of the JOinJMD push API.
+// Unset or empty URL => no push, the reminder action is hidden.
+define('JMD_PUSH_URL', (string)(getenv('JMD_PUSH_URL') ?: ''));
+define('JMD_PUSH_TOKEN', (string)(getenv('JMD_PUSH_TOKEN') ?: ''));

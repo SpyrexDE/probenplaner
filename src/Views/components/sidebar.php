@@ -99,14 +99,27 @@
     min-width: 0;
   }
 
+  /* Name and role tags in one row: the name gets shortened, the tags always stay whole */
   .sidebar-name {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
     color: var(--color-text-primary);
     margin-bottom: var(--space-1);
+    overflow: hidden;
+  }
+
+  .sidebar-name-text {
+    min-width: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .sidebar-name .role-tag {
+    flex-shrink: 0;
   }
 
   .sidebar-details {

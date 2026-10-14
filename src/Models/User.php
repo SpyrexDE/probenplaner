@@ -20,6 +20,19 @@ class User extends Model
     protected $table = 'users';
 
     /**
+     * Error code of createOrLinkKeycloakUser(): an account with this e-mail exists, but
+     * Keycloak did not report the e-mail as verified, so it was not linked.
+     */
+    public const ERROR_KEYCLOAK_EMAIL_NOT_VERIFIED = 'keycloak_email_not_verified';
+
+    /**
+     * Error code of createOrLinkKeycloakUser(): the account found by e-mail has an address that
+     * only matches through the accent-insensitive DB collation (e.g. "tëst" vs "test"), so it was
+     * not linked.
+     */
+    public const ERROR_KEYCLOAK_EMAIL_MISMATCH = 'keycloak_email_mismatch';
+
+    /**
      * Get user orchestras (delegated to UserOrchestra model)
      *
      * @param int $userId
@@ -132,7 +145,7 @@ class User extends Model
                 return ['error' => true, 'message' => implode(', ', $validationErrors)];
             }
 
-            error_log("Updating user profile. ID: $id, Data: " . json_encode($data));
+            error_log("Updating user profile. ID: $id, Fields: " . implode(', ', array_keys($data)));
 
             $result = $this->update($id, $data);
 
@@ -473,11 +486,46 @@ class User extends Model
     }
 
     /**
+     * Whether linking an existing account by e-mail requires email_verified === true
+     * (KEYCLOAK_LINK_REQUIRE_VERIFIED, default on).
+     */
+    private static function keycloakLinkRequiresVerifiedEmail(): bool
+    {
+        return !defined('KEYCLOAK_LINK_REQUIRE_VERIFIED') || KEYCLOAK_LINK_REQUIRE_VERIFIED !== false;
+    }
+
+    /**
+     * Fields that hand an existing local account to a Keycloak identity.
+     * /register never verifies the address, so whoever created this account may not own it:
+     * drop the local password and replace the CalDAV token (it can write promises).
+     * The read-only iCal token stays, so calendar subscriptions keep working.
+     */
+    public static function keycloakLinkData(array $user, string $keycloakId): array
+    {
+        $data = [
+            'keycloak_id' => $keycloakId,
+            'auth_provider' => 'keycloak',
+            'password' => null,
+        ];
+        if (!empty($user['caldav_token'])) {
+            $data['caldav_token'] = bin2hex(random_bytes(32));
+        }
+        return $data;
+    }
+
+    /**
      * Create or link Keycloak user
-     * 
+     *
+     * Match order: keycloak_id (sub) -> existing account by e-mail (only if the stored address is
+     * byte-identical apart from ASCII case and Keycloak reports email_verified === true, see
+     * KEYCLOAK_LINK_REQUIRE_VERIFIED) -> new account.
+     * Linking by e-mail removes the local password and replaces the CalDAV token; the iCal token stays.
+     *
      * @param array $keycloakUserInfo User info from Keycloak
      * @param bool $isJmdToken Whether this is from a JMD token login
-     * @return array User data or error array
+     * @return array User data or error array (['error' => true, 'message' => ..., 'code' => ...?]);
+     *               an existing account that is not linked yields 'code' =>
+     *               self::ERROR_KEYCLOAK_EMAIL_NOT_VERIFIED or self::ERROR_KEYCLOAK_EMAIL_MISMATCH
      */
     public function createOrLinkKeycloakUser(array $keycloakUserInfo, bool $isJmdToken = false): array
     {
@@ -514,16 +562,41 @@ class User extends Model
         if ($email) {
             $existingUser = $this->findByEmail($email);
             if ($existingUser) {
-                $updateData = [
-                    'keycloak_id' => $keycloakId,
-                    'auth_provider' => 'keycloak',
-                ];
+                // Linking by e-mail hands this account to whoever owns the Keycloak identity.
+                // In every refusal below: no link and no insert (users.email is UNIQUE) - the login just fails.
+
+                // findByEmail() matches via utf8mb4_unicode_ci, which ignores accents and width
+                // ('jan@tëst.de' = 'jan@test.de'). Keycloak only verified its own spelling, so the
+                // stored address must be the same string apart from ASCII case.
+                if (strcasecmp((string)($existingUser['email'] ?? ''), (string)$email) !== 0) {
+                    error_log("createOrLinkKeycloakUser: not linking existing user #" . (int)$existingUser['id'] . " by e-mail - address only matches via collation");
+                    return [
+                        'error' => true,
+                        'code' => self::ERROR_KEYCLOAK_EMAIL_MISMATCH,
+                        'message' => 'Für eine ähnlich geschriebene E-Mail-Adresse gibt es schon ein Probenplaner-Konto. Dein JMD-Account kann deshalb nicht automatisch verknüpft werden.',
+                    ];
+                }
+
+                // Only trust the address if Keycloak has verified it; otherwise anyone who can
+                // self-register in the realm with a victim's e-mail would get the victim's account.
+                if (self::keycloakLinkRequiresVerifiedEmail() && ($keycloakUserInfo['email_verified'] ?? null) !== true) {
+                    error_log("createOrLinkKeycloakUser: not linking existing user #" . (int)$existingUser['id'] . " by e-mail - email_verified is not true");
+                    return [
+                        'error' => true,
+                        'code' => self::ERROR_KEYCLOAK_EMAIL_NOT_VERIFIED,
+                        'message' => 'Für diese E-Mail gibt es schon ein Probenplaner-Konto. Bitte bestätige deine E-Mail-Adresse im JMD-Account oder melde dich mit deinem Probenplaner-Passwort an.',
+                    ];
+                }
+
+                $updateData = self::keycloakLinkData($existingUser, $keycloakId);
                 if (filter_var($existingUser['display_name'] ?? '', FILTER_VALIDATE_EMAIL) && !filter_var($displayName, FILTER_VALIDATE_EMAIL)) {
                     $updateData['display_name'] = $displayName;
-                    $existingUser['display_name'] = $displayName;
                 }
-                $this->update($existingUser['id'], $updateData);
-                return $existingUser;
+                if (!$this->update((int)$existingUser['id'], $updateData)) {
+                    error_log("createOrLinkKeycloakUser: linking existing user #" . (int)$existingUser['id'] . " failed");
+                    return ['error' => true, 'message' => 'Benutzerkonto konnte nicht verknüpft werden'];
+                }
+                return array_merge($existingUser, $updateData);
             }
         }
 
@@ -595,5 +668,19 @@ class User extends Model
     public function revokeCalendarTokens(int $userId): void
     {
         $this->update($userId, ['ical_token' => null, 'caldav_token' => null]);
+    }
+
+    /**
+     * Remember the last successful login (NULL = never opened the Probenplaner).
+     */
+    public function recordLogin(int $userId): void
+    {
+        $stmt = $this->db->prepare("UPDATE {$this->table} SET last_login_at = NOW() WHERE id = ?");
+        if (!$stmt) {
+            return;
+        }
+        $stmt->bind_param('i', $userId);
+        $stmt->execute();
+        $stmt->close();
     }
 }

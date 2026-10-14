@@ -66,6 +66,7 @@ Hier sind die existierenden Daten des Orchesters. Bitte verwende **bevorzugt** d
 7. **Allgemeine Feld-Logik:**
    Wenn eine Uhrzeit fehlt, verwende sinnvolle Standardwerte (z.B. Start 19:30, Ende 22:00) oder lasse sie, wenn möglich, auf Standard. Achte akribisch auf das YYYY-MM-DD HH:MM:SS Format für Datumsangaben.
    **WICHTIG (Jahreszahl):** Falls im Probenplan nur Tag und Monat (ohne konkretes Jahr) stehen, wähle immer das Jahr so, dass die Proben **in der Zukunft** (ab dem heutigen Datum) liegen.
+   **Wochentag (`weekday`):** Steht im Probenplan ein Wochentag beim Datum, übernimm ihn **exakt so, wie er dort steht** (z.B. "Sa" oder "Samstag"). Berechne ihn niemals selbst. Steht kein Wochentag im Plan, lass das Feld weg.
 
 8. **Redundanz vermeiden (Feld `type` ist OPTIONAL):**
    Vermeide redundante Informationen zwischen Rollen und dem Probentyp. Wenn allen ohnehin klar ist, dass alle spielen (Tutti), oder wenn du bereits spezifische Rollen für ein Sonderprojekt zugewiesen hast, generiere **keinen** redundanten Probentyp (wie z.B. "TUTTI-PROBE" oder den Namen des Projekts noch einmal als Typ). Lasse das `type` Feld in regulären Fällen lieber leer oder auf Standard. Nutze das `type` Feld **ausschließlich** für echte, besondere Bezeichnungen, die sich von der reinen Besetzung abheben (z.B. "Generalprobe", "Konzert" oder "Aufnahmesession").
@@ -78,6 +79,7 @@ Bitte weise das folgende Schema strikt auf alle extrahierten Proben an:
 {
   "rehearsals": [
     {
+      "weekday": "Sa",
       "start": "YYYY-MM-DD HH:MM:SS",
       "end": "YYYY-MM-DD HH:MM:SS",
       "location": "Name des Ortes (bevorzugt aus Existierenden)",

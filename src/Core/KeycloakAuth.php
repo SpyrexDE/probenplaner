@@ -118,7 +118,8 @@ class KeycloakAuth
             return null;
         }
 
-        error_log("KeycloakAuth: getUserInfo successful: " . json_encode($userInfo));
+        // No payload: userinfo carries e-mail, name and sub (PII)
+        error_log("KeycloakAuth: getUserInfo successful");
         return $userInfo;
     }
 
@@ -267,7 +268,12 @@ class KeycloakAuth
         }
         
         if ($httpCode !== 200) {
-            error_log("Keycloak request failed with HTTP code: " . $httpCode . ", Response: " . $response);
+            // Log only the OAuth error fields, never the raw body
+            $errorBody = is_string($response) ? json_decode($response, true) : null;
+            $errorInfo = is_array($errorBody) && isset($errorBody['error']) && is_string($errorBody['error'])
+                ? $errorBody['error'] . (isset($errorBody['error_description']) && is_string($errorBody['error_description']) ? ' (' . substr($errorBody['error_description'], 0, 200) . ')' : '')
+                : 'no OAuth error in response';
+            error_log("Keycloak request failed with HTTP code: " . $httpCode . ", Error: " . $errorInfo);
             return null;
         }
         

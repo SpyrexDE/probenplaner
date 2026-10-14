@@ -4,6 +4,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     initializeCollapseControls();
     initializeUserClickHandlers();
+    initializeRemindButtons();
     initializeViewToggle();
 });
 
@@ -45,25 +46,57 @@ function initializeCollapseControls() {
     });
 }
 
-// Initialize click handlers for user spans
+// Click on a member opens the edit modal. Delegated, so members of lazy-loaded
+// rehearsals (Weitere/Vergangene Proben laden) work as well.
 function initializeUserClickHandlers() {
-    const userSpans = document.querySelectorAll('.userSpan');
-    userSpans.forEach(span => {
-        if (span) {
-            span.style.cursor = 'pointer';
+    document.addEventListener('click', function (e) {
+        const span = e.target.closest('.userSpan');
+        if (!span) return;
 
-            span.addEventListener('click', function (e) {
-                // Prevent click from affecting parent elements
-                e.stopPropagation();
-
-                const userId = this.getAttribute('data-user-id');
-                if (userId && typeof openEditModal === 'function') {
-                    openEditModal(userId);
-                } else {
-                    console.warn('Member Edit Modal cannot be opened: missing user_id or openEditModal function.');
-                }
-            });
+        const userId = span.getAttribute('data-user-id');
+        if (userId && typeof openEditModal === 'function') {
+            openEditModal(userId);
+        } else {
+            console.warn('Member Edit Modal cannot be opened: missing user_id or openEditModal function.');
         }
+    });
+}
+
+// "Erinnern" on a dashboard card: JOinJMD push to the members without response.
+// Delegated, so lazy-loaded cards work as well.
+function initializeRemindButtons() {
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.promises-remind-btn');
+        if (!btn || btn.disabled) return;
+
+        Swal.fire({
+            title: btn.dataset.count + ' ohne Rückmeldung per Push erinnern?',
+            showCancelButton: true,
+            confirmButtonColor: 'var(--color-primary, #478cf4)',
+            cancelButtonText: 'Abbrechen',
+            confirmButtonText: 'Erinnern'
+        }).then(result => {
+            if (!result.isConfirmed) return;
+            btn.disabled = true;
+
+            const body = new URLSearchParams({
+                rehearsal_id: btn.dataset.rehearsalId,
+                view: btn.dataset.view,
+                view_all: btn.dataset.viewAll
+            });
+            standardApiCall(btn.dataset.url, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body
+            }).then(data => {
+                if (!data.success) throw new Error(data.error || 'Erinnerung konnte nicht gesendet werden');
+                btn.remove();
+                if (data.sent > 0) window.notifySuccess('Erinnerung an ' + data.sent + ' gesendet');
+            }).catch(error => {
+                btn.disabled = false;
+                showErrorToast(error.message);
+            });
+        });
     });
 }
 

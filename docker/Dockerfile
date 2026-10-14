@@ -1,5 +1,20 @@
 FROM php:8.0-apache
 
+# --- STOPGAP: Debian 11 "bullseye" apt sources --------------------------------
+# php:8.0-apache is built on Debian bullseye, which is end-of-life. Packages from
+# bullseye-security are no longer reliably served by deb.debian.org (404s), so
+# uncached image builds (e.g. prod deploys) fail at "apt-get install".
+# Workaround: take bullseye-security from a frozen snapshot.debian.org timestamp.
+# The snapshot's Release file is past its Valid-Until date, so apt must not
+# reject it as expired. The grep makes the build fail loudly if the base image's
+# sources.list no longer has the expected line (instead of silently skipping).
+# TODO: move to a supported base image (PHP >= 8.2 on Debian bookworm/trixie)
+#       and remove this block.
+RUN sed -i 's#^deb http://deb.debian.org/debian-security bullseye-security main$#deb http://snapshot.debian.org/archive/debian-security/20260825T000000Z bullseye-security main#' /etc/apt/sources.list \
+    && grep -q '^deb http://snapshot.debian.org/archive/debian-security/20260825T000000Z bullseye-security main$' /etc/apt/sources.list \
+    && printf 'Acquire::Check-Valid-Until "false";\nAcquire::Retries "3";\n' > /etc/apt/apt.conf.d/99bullseye-snapshot
+# ------------------------------------------------------------------------------
+
 # Composer binary from official image
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 

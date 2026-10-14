@@ -171,6 +171,7 @@ class MemberController extends Controller
 
         if (isset($_POST['type'])) {
             $data['type'] = $_POST['type'];
+            $data['section_confirmed'] = 1;
         }
 
         // Multi-role assignment (requires can_manage_permissions)

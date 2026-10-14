@@ -42,8 +42,8 @@ class AuthController extends Controller
     public function login()
     {
         // Check for JMD access token first (for mobile app integration)
-        $jmdToken = $_GET['jmd_accesstoken'] ?? $_POST['jmd_accesstoken'] ?? null;
-        if ($jmdToken && KEYCLOAK_ENABLED) {
+        $jmdToken = \App\Core\JmdTokenLogin::requestToken();
+        if ($jmdToken !== null) {
             $this->processJmdTokenLogin($jmdToken);
             return;
         }
@@ -125,6 +125,7 @@ class AuthController extends Controller
                 $_SESSION['user_id'] = 0;
                 $_SESSION['is_super_admin'] = true;
                 session_regenerate_id(true);
+                CSRF::generateToken();
                 $this->setFlash('success', 'Admin-Login erfolgreich.');
                 $this->redirect('/admin/dashboard');
                 return;
@@ -155,7 +156,7 @@ class AuthController extends Controller
                 'Diese E-Mail-Adresse wurde nicht gefunden. Bitte überprüfen Sie Ihre E-Mail-Adresse oder registrieren Sie sich, falls Sie noch kein Konto haben.',
                 'error'
             );
-            error_log("Login failed - Email not found: $email");
+            error_log("Login failed - Email not found");
         }
         $this->redirect('/login');
     }
@@ -164,47 +165,40 @@ class AuthController extends Controller
      * Handle successful login
      * 
      * @param array $user User data
+     * @param string|null $orchestraRef Orchestra selected in the JOinJMD app (JMD orchestra ID)
+     * @param bool $keepSession The session is already logged in as this user (JOinJMD tile relaunch)
      * @return void
      */
-    private function processSuccessfulLogin($user)
+    private function processSuccessfulLogin($user, ?string $orchestraRef = null, bool $keepSession = false)
     {
         if (!$user || !isset($user['id']) || !isset($user['email'])) {
-            error_log("processSuccessfulLogin: Invalid user data: " . json_encode($user));
+            error_log("processSuccessfulLogin: Invalid user data (" . (is_array($user) ? 'missing id/email' : gettype($user)) . ")");
             $this->addAlert('Fehler!', 'Benutzerdaten konnten nicht geladen werden.', 'error');
             $this->redirect('/login');
             return;
         }
 
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['email'] = $user['email'];
-        $_SESSION['display_name'] = $user['display_name'] ?? '';
-
-        // Force theme re-fetch from DB on next page load
-        unset($_SESSION['theme']);
-
-        session_regenerate_id(true);
-
-        if (!isset($_SESSION['user_id'])) {
-            error_log("processSuccessfulLogin: Session data lost after regenerate_id. Re-setting...");
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['email'] = $user['email'];
-            $_SESSION['display_name'] = $user['display_name'] ?? '';
-        }
-
-        // Flag to prompt username change if display_name looks like an email
-        if (str_contains($user['display_name'] ?? '', '@')) {
-            $_SESSION['prompt_username_change'] = true;
-        }
-
-        $this->setFlash('success', 'Sie wurden erfolgreich eingeloggt.');
+        \App\Core\LoginSession::start($user, $keepSession);
 
         // Resume pending invite flow
         if (!empty($_SESSION['invite_token'])) {
+            $this->setFlash('success', 'Sie wurden erfolgreich eingeloggt.');
             $token = $_SESSION['invite_token'];
             unset($_SESSION['invite_token']);
             $this->redirect('/invite/' . urlencode($token));
             return;
         }
+
+        // Opened from the JOinJMD tile with the orchestra already chosen there: go straight in
+        $landing = ($orchestraRef && empty($user['is_org_admin']))
+            ? \App\Core\JmdLaunch::landingUrl((int)$user['id'], $orchestraRef)
+            : null;
+        if ($landing) {
+            $this->redirect($landing);
+            return;
+        }
+
+        $this->setFlash('success', 'Sie wurden erfolgreich eingeloggt.');
 
         // Org-admin → orga panel
         if (!empty($user['is_org_admin'])) {
@@ -274,7 +268,7 @@ class AuthController extends Controller
         $password = $_POST['password'] ?? '';
         $passwordConfirm = $_POST['password_confirm'] ?? '';
 
-        error_log("Registration attempt - Email: $email");
+        error_log("Registration attempt");
 
         $requiredValidation = Validator::validateRequired([
             'email' => $email,
@@ -404,9 +398,8 @@ class AuthController extends Controller
         $keycloakAuth = new \App\Core\KeycloakAuth();
         $authUrl = $keycloakAuth->getAuthUrl();
 
-        // Debug logging
-        error_log("Keycloak auth URL: " . $authUrl);
-        error_log("Keycloak config - Client ID: " . KEYCLOAK_CLIENT_ID . ", Redirect URI: " . KEYCLOAK_REDIRECT_URI);
+        // Debug logging (no state/URL: it carries the CSRF state value)
+        error_log("Keycloak login redirect - Client ID: " . KEYCLOAK_CLIENT_ID . ", Redirect URI: " . KEYCLOAK_REDIRECT_URI);
 
         $this->redirect($authUrl);
     }
@@ -427,15 +420,12 @@ class AuthController extends Controller
         $code = $_GET['code'] ?? null;
         $state = $_GET['state'] ?? null;
 
-        // Debug logging
-        error_log("Keycloak callback received. Code: " . ($code ? 'present' : 'missing') . ", State: " . ($state ? 'present' : 'missing'));
-        error_log("GET parameters: " . json_encode($_GET));
-        error_log("Session keycloak_state: " . (isset($_SESSION['keycloak_state']) ? $_SESSION['keycloak_state'] : 'NOT SET'));
-        error_log("Session ID: " . session_id());
+        // Debug logging (presence only - code, state and session id are secrets)
+        error_log("Keycloak callback received. Code: " . ($code ? 'present' : 'missing') . ", State: " . ($state ? 'present' : 'missing') . ", Session state: " . (isset($_SESSION['keycloak_state']) ? 'present' : 'NOT SET'));
 
         // Validate state parameter
         if (!$state || !isset($_SESSION['keycloak_state']) || $state !== $_SESSION['keycloak_state']) {
-            error_log("Keycloak state validation failed. URL state: $state, Session state: " . ($_SESSION['keycloak_state'] ?? 'NOT SET'));
+            error_log("Keycloak state validation failed (" . (!$state ? 'URL state missing' : (!isset($_SESSION['keycloak_state']) ? 'session state missing' : 'state mismatch')) . ")");
             $this->addAlert('Sicherheitsfehler!', 'Ungültiger State-Parameter. Bitte versuchen Sie es erneut.', 'error');
             $this->redirect('/login');
             return;
@@ -452,7 +442,7 @@ class AuthController extends Controller
         // Exchange code for token
         $tokenData = $keycloakAuth->exchangeCodeForToken($code);
         if (!$tokenData || !isset($tokenData['access_token'])) {
-            error_log("Keycloak token exchange failed. Code: $code, Token data: " . json_encode($tokenData));
+            error_log("Keycloak token exchange failed: " . (is_array($tokenData) ? ($tokenData['error'] ?? 'no access_token in response') : 'no response'));
             $this->addAlert('Fehler!', 'Token-Austausch fehlgeschlagen.', 'error');
             $this->redirect('/login');
             return;
@@ -469,7 +459,7 @@ class AuthController extends Controller
         // Create or link user
         $user = $this->userModel->createOrLinkKeycloakUser($userInfo);
         if (isset($user['error'])) {
-            error_log("keycloakCallback: createOrLinkKeycloakUser failed: " . json_encode($user));
+            error_log("keycloakCallback: createOrLinkKeycloakUser failed: " . ($user['message'] ?? 'unknown error'));
             $this->addAlert('Fehler!', $user['message'] ?? 'Benutzerkonto konnte nicht erstellt werden.', 'error');
             $this->redirect('/login');
             return;
@@ -477,7 +467,7 @@ class AuthController extends Controller
 
         // Additional validation: ensure user data is complete
         if (!$user || !isset($user['id']) || !isset($user['email'])) {
-            error_log("keycloakCallback: Invalid user data after createOrLinkKeycloakUser: " . json_encode($user));
+            error_log("keycloakCallback: Invalid user data after createOrLinkKeycloakUser (" . (is_array($user) ? 'missing id/email' : gettype($user)) . ")");
             $this->addAlert('Fehler!', 'Benutzerdaten konnten nicht geladen werden.', 'error');
             $this->redirect('/login');
             return;
@@ -508,6 +498,9 @@ class AuthController extends Controller
             return;
         }
 
+        // Token login is only used by the embedding mobile app (JOinJMD)
+        $_SESSION['embedded_app'] = 'joinjmd';
+
         $keycloakAuth = new \App\Core\KeycloakAuth();
 
         // Process login with token
@@ -531,34 +524,21 @@ class AuthController extends Controller
     }
 
     /**
-     * Process JMD token login (for mobile app integration)
+     * JOinJMD tile entry (/ and /login with ?jmd_accesstoken=...&orchestra=...)
      * 
      * @param string $jmdToken JMD access token
      * @return void
      */
-    private function processJmdTokenLogin(string $jmdToken)
+    public function processJmdTokenLogin(string $jmdToken)
     {
-        error_log("JMD token login attempt with token: " . substr($jmdToken, 0, 20) . "...");
-
-        $keycloakAuth = new \App\Core\KeycloakAuth();
-
-        // Process login with token
-        $userInfo = $keycloakAuth->loginWithToken($jmdToken);
-        if (!$userInfo) {
-            $this->setFlash('error', 'JMD Token ist ungültig oder abgelaufen. Bitte melden Sie sich erneut an.');
-            $this->redirect('/login');
-            return;
-        }
-
-        // Create or link user
-        $user = $this->userModel->createOrLinkKeycloakUser($userInfo, true);
-        if (isset($user['error'])) {
-            $this->setFlash('error', 'Fehler beim Erstellen des Benutzerkontos: ' . $user['message']);
+        $result = \App\Core\JmdTokenLogin::authenticate($jmdToken);
+        if (!is_array($result)) {
+            $this->setFlash('error', $result);
             $this->redirect('/login');
             return;
         }
 
         // Process successful login
-        $this->processSuccessfulLogin($user);
+        $this->processSuccessfulLogin($result['user'], \App\Core\JmdLaunch::requestedOrchestra(), $result['same_user']);
     }
 }

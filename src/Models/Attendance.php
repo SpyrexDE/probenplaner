@@ -52,7 +52,32 @@ class Attendance extends Model
     }
 
     /**
+     * Whether a rehearsal exists and belongs to the given orchestra.
+     * Used to scope every rehearsal_id coming from a request.
+     */
+    public function rehearsalBelongsToOrchestra(int $rehearsalId, int $orchestraId): bool
+    {
+        if ($rehearsalId <= 0 || $orchestraId <= 0) {
+            return false;
+        }
+        $sql = "SELECT 1 FROM rehearsals WHERE id = ? AND orchestra_id = ? LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        if (!$stmt) {
+            return false;
+        }
+        $stmt->bind_param('ii', $rehearsalId, $orchestraId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $exists = $result && $result->num_rows > 0;
+        $stmt->close();
+        return $exists;
+    }
+
+    /**
      * Insert or update a single attendance record.
+     *
+     * Note: `present` is NOT NULL in the schema, so inserting a new record with
+     * $present === null fails and returns false (callers must handle that).
      *
      * @return bool
      */
@@ -66,9 +91,16 @@ class Attendance extends Model
                     recorded_by = VALUES(recorded_by),
                     updated_at = CURRENT_TIMESTAMP";
         $stmt = $this->db->prepare($sql);
+        if (!$stmt) {
+            return false;
+        }
         $presentInt = $present === null ? null : ($present ? 1 : 0);
         $stmt->bind_param('iiisi', $rehearsalId, $userId, $presentInt, $comment, $recordedBy);
-        $success = $stmt->execute();
+        try {
+            $success = $stmt->execute();
+        } catch (\mysqli_sql_exception $e) {
+            $success = false;
+        }
         $stmt->close();
         return $success;
     }
@@ -84,9 +116,13 @@ class Attendance extends Model
         // Only fill undocumented entries — don't overwrite existing records
         $existing = $this->getForRehearsal($rehearsalId);
 
-        $sql = "INSERT INTO {$this->table} (rehearsal_id, user_id, present, recorded_by)
+        // IGNORE: a record created concurrently (unique rehearsal_id+user_id) is left untouched
+        $sql = "INSERT IGNORE INTO {$this->table} (rehearsal_id, user_id, present, recorded_by)
                 VALUES (?, ?, ?, ?)";
         $stmt = $this->db->prepare($sql);
+        if (!$stmt) {
+            return 0;
+        }
 
         $count = 0;
         foreach ($members as $member) {
@@ -98,8 +134,9 @@ class Attendance extends Model
 
             $present = ($promise['status'] === 'yes') ? 1 : 0;
             $stmt->bind_param('iiii', $rehearsalId, $userId, $present, $recordedBy);
-            $stmt->execute();
-            $count++;
+            if ($stmt->execute() && $stmt->affected_rows > 0) {
+                $count++;
+            }
         }
         $stmt->close();
         return $count;

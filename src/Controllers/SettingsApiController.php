@@ -13,6 +13,33 @@ use App\Core\Validator;
  */
 class SettingsApiController extends Controller
 {
+    /**
+     * Fields with special handling per entity (stored in relation tables or
+     * decoded separately) — skipped by the generic Validator.
+     */
+    private const SPECIAL_FIELDS = [
+        'rehearsal' => ['groups', 'schedule_items', 'infos', 'role_ids', 'tags'],
+        'orchestra' => ['section_config'],
+        'user'      => ['group_type', 'role_ids'],
+    ];
+
+    /**
+     * Special fields that are no columns of the entity's own table (persisted via
+     * relation tables in persistUpdate) — never passed to Model::update().
+     */
+    private const RELATION_FIELDS = [
+        'rehearsal' => ['groups', 'schedule_items', 'infos', 'role_ids', 'tags'],
+        'user'      => ['group_type', 'role_ids'],
+    ];
+
+    /** FieldRegistry 'permission' level → session permission key (null = any member). */
+    private const PERMISSION_MAP = [
+        'ensemble'  => 'can_manage_ensemble',
+        'conductor' => 'can_manage_rehearsals',
+        'leader'    => 'can_view_own_section_stats',
+        'member'    => null,
+    ];
+
     public function __construct()
     {
         parent::__construct();
@@ -45,7 +72,8 @@ class SettingsApiController extends Controller
             return;
         }
 
-        // Parse input (support both form-encoded and JSON body)
+        // Parse input (JSON body only — CSRF hardening, exits with 415 otherwise)
+        $this->requireJsonBody();
         $input = $this->parseInput();
         if (empty($input)) {
             $this->json(['success' => false, 'error' => 'Keine Daten empfangen'], 400);
@@ -59,48 +87,8 @@ class SettingsApiController extends Controller
             return;
         }
 
-        // Permission check per field
-        $userRelationFields = ['group_type', 'role_ids'];
-        foreach ($fieldsToUpdate as $fieldName => $value) {
-            // Fields stored in separate tables — handled specially
-            if ($entity === 'rehearsal' && in_array($fieldName, ['groups', 'schedule_items', 'infos', 'role_ids', 'tags'])) {
-                if (empty($_SESSION['current_permissions']['can_manage_rehearsals'])) {
-                    $this->json(['success' => false, 'error' => 'Keine Berechtigung'], 403);
-                    return;
-                }
-                continue;
-            }
-
-            if ($entity === 'orchestra' && $fieldName === 'section_config') {
-                if (empty($_SESSION['current_permissions']['can_manage_ensemble'])) {
-                    $this->json(['success' => false, 'error' => 'Keine Berechtigung'], 403);
-                    return;
-                }
-                continue;
-            }
-
-            if ($entity === 'user' && in_array($fieldName, $userRelationFields)) {
-                continue;
-            }
-
-            $fieldDef = FieldRegistry::getField($entity, $fieldName);
-            if (!$fieldDef) {
-                $this->json(['success' => false, 'error' => "Unbekanntes Feld: {$fieldName}"], 400);
-                return;
-            }
-
-            $required = $fieldDef['permission'] ?? 'member';
-            $permMap = [
-                'conductor' => 'can_manage_rehearsals',
-                'leader' => 'can_view_own_section_stats',
-                'member' => null,
-            ];
-            $perm = $permMap[$required] ?? null;
-            if ($perm && empty($_SESSION['current_permissions'][$perm])) {
-                $this->json(['success' => false, 'error' => 'Keine Berechtigung'], 403);
-                return;
-            }
-        }
+        // Whitelist + permission check per field (exits with JSON on failure)
+        $this->authorizeFields($entity, $fieldsToUpdate);
 
         // Ownership / access check
         if (!$this->canAccessEntity($entity, $entityId, $context)) {
@@ -108,37 +96,8 @@ class SettingsApiController extends Controller
             return;
         }
 
-        // Validate all fields
-        $allErrors = [];
-        foreach ($fieldsToUpdate as $fieldName => $value) {
-            if ($entity === 'rehearsal' && in_array($fieldName, ['groups', 'schedule_items', 'infos', 'role_ids', 'tags'])) continue;
-
-            if ($entity === 'orchestra' && $fieldName === 'section_config') continue;
-
-            if ($entity === 'user' && in_array($fieldName, $userRelationFields)) continue;
-            $result = Validator::validateField($entity, $fieldName, $value);
-            if (!$result['valid']) {
-                $allErrors[$fieldName] = $result['errors'];
-            }
-        }
-
-        if (!empty($allErrors)) {
-            $this->json(['success' => false, 'errors' => $allErrors], 422);
-            return;
-        }
-
-        // Transform toggle values
-        foreach ($fieldsToUpdate as $fieldName => &$value) {
-            $fieldDef = FieldRegistry::getField($entity, $fieldName);
-            if ($fieldDef && $fieldDef['type'] === 'toggle') {
-                $value = filter_var($value, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
-            }
-            // Sanitize strings
-            if (is_string($value)) {
-                $value = Validator::sanitizeUtf8($value);
-            }
-        }
-        unset($value);
+        // Validate, transform toggles, sanitize strings (exits with 422 on failure)
+        $fieldsToUpdate = $this->validateAndNormaliseFields($entity, $fieldsToUpdate);
 
         // Persist
         $saved = $this->persistUpdate($entity, $entityId, $fieldsToUpdate, $context);
@@ -182,16 +141,124 @@ class SettingsApiController extends Controller
 
     // ── Helpers ────────────────────────────────────────────────
 
-    private function parseInput(): array
+    private function isSpecialField(string $entity, string $fieldName): bool
     {
-        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+        return in_array($fieldName, self::SPECIAL_FIELDS[$entity] ?? [], true);
+    }
 
-        if (str_contains($contentType, 'application/json')) {
-            $raw = file_get_contents('php://input');
-            return json_decode($raw, true) ?: [];
+    /**
+     * Reject every field that is not whitelisted for the entity (FieldRegistry
+     * or its special fields) or that the current user may not change.
+     * Responds with JSON and exits on failure.
+     */
+    private function authorizeFields(string $entity, array $fields): void
+    {
+        foreach (array_keys($fields) as $fieldName) {
+            $fieldName = (string) $fieldName;
+
+            // Fields stored in separate tables — handled specially
+            if ($entity === 'rehearsal' && $this->isSpecialField($entity, $fieldName)) {
+                if (empty($_SESSION['current_permissions']['can_manage_rehearsals'])) {
+                    $this->json(['success' => false, 'error' => 'Keine Berechtigung'], 403);
+                }
+                continue;
+            }
+
+            if ($entity === 'orchestra' && $fieldName === 'section_config') {
+                if (empty($_SESSION['current_permissions']['can_manage_ensemble'])) {
+                    $this->json(['success' => false, 'error' => 'Keine Berechtigung'], 403);
+                }
+                continue;
+            }
+
+            if ($entity === 'user' && $this->isSpecialField($entity, $fieldName)) {
+                continue;
+            }
+
+            $fieldDef = FieldRegistry::getField($entity, $fieldName);
+            if (!$fieldDef) {
+                $this->json(['success' => false, 'error' => "Unbekanntes Feld: {$fieldName}"], 400);
+            }
+
+            $required = $fieldDef['permission'] ?? 'member';
+            $perm = self::PERMISSION_MAP[$required] ?? null;
+            if ($perm && empty($_SESSION['current_permissions'][$perm])) {
+                $this->json(['success' => false, 'error' => 'Keine Berechtigung'], 403);
+            }
+        }
+    }
+
+    /**
+     * Validate fields against FieldRegistry rules, cast toggles and sanitize strings.
+     * Responds with 422 JSON and exits on validation errors.
+     */
+    private function validateAndNormaliseFields(string $entity, array $fields): array
+    {
+        $allErrors = [];
+        foreach ($fields as $fieldName => $value) {
+            if ($this->isSpecialField($entity, (string) $fieldName)) continue;
+
+            $result = Validator::validateField($entity, (string) $fieldName, $value);
+            if (!$result['valid']) {
+                $allErrors[$fieldName] = $result['errors'];
+            }
         }
 
-        return $_POST;
+        if (!empty($allErrors)) {
+            $this->json(['success' => false, 'errors' => $allErrors], 422);
+        }
+
+        // Transform toggle values
+        foreach ($fields as $fieldName => &$value) {
+            $fieldDef = FieldRegistry::getField($entity, (string) $fieldName);
+            if ($fieldDef && $fieldDef['type'] === 'toggle') {
+                $value = filter_var($value, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+            }
+            // Sanitize strings
+            if (is_string($value)) {
+                $value = Validator::sanitizeUtf8($value);
+            }
+        }
+        unset($value);
+
+        return $fields;
+    }
+
+    /**
+     * Defense in depth: only FieldRegistry-defined columns may reach Model::update()
+     * (column names are interpolated into the SQL there). Relation fields that were
+     * not consumed by persistUpdate (e.g. sent as null) are dropped as well.
+     */
+    private function onlyRegistryFields(string $entity, array $data): array
+    {
+        $columns = array_diff(
+            FieldRegistry::getAllowedFieldNames($entity),
+            self::RELATION_FIELDS[$entity] ?? []
+        );
+        return array_intersect_key($data, array_flip($columns));
+    }
+
+    /**
+     * CSRF hardening for the state-changing endpoints: only accept a JSON body
+     * (Content-Type essence exactly application/json). Cross-site HTML forms cannot
+     * send this type, and cross-origin fetch() with it needs a CORS preflight, which
+     * this app never grants. All in-app callers send JSON.
+     * Responds with 415 JSON and exits otherwise.
+     */
+    private function requireJsonBody(): void
+    {
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '';
+        $essence = strtolower(trim(explode(';', (string) $contentType, 2)[0]));
+
+        if ($essence !== 'application/json') {
+            $this->json(['success' => false, 'error' => 'Ungültiges Anfrageformat (JSON erwartet)'], 415);
+        }
+    }
+
+    private function parseInput(): array
+    {
+        $data = json_decode(file_get_contents('php://input'), true);
+        return is_array($data) ? $data : [];
     }
 
     /** Normalise { field, value } or { fields: {...} } into flat map. */
@@ -202,7 +269,8 @@ class SettingsApiController extends Controller
         }
 
         if (isset($input['field']) && isset($input['value'])) {
-            return [$input['field'] => $input['value']];
+            // A non-string field name can't be a registry field; let validation reject it
+            return is_string($input['field']) ? [$input['field'] => $input['value']] : [];
         }
 
         // Filter out non-field keys
@@ -258,6 +326,8 @@ class SettingsApiController extends Controller
                     }
                 }
 
+                $data = $this->onlyRegistryFields('orchestra', $data);
+                if (empty($data)) return false;
                 $result = $model->update($entityId, $data);
                 if ($result && isset($data['section_config'])) {
                     \App\Core\GroupManager::resetInstance($entityId);
@@ -307,6 +377,7 @@ class SettingsApiController extends Controller
                     unset($data['role_ids']);
                 }
 
+                $data = $this->onlyRegistryFields('user', $data);
                 if (empty($data)) return true;
                 $result = $model->updateProfile($entityId, $data);
                 if (is_array($result) && !empty($result['error'])) {
@@ -357,6 +428,7 @@ class SettingsApiController extends Controller
                     $model->saveTags($entityId, (int)$context['orchestra_id'], $tags);
                 }
 
+                $data = $this->onlyRegistryFields('rehearsal', $data);
                 if (empty($data)) return true;
                 $data['updated_at'] = date('Y-m-d H:i:s');
                 return $model->update($entityId, $data);
@@ -421,7 +493,8 @@ class SettingsApiController extends Controller
             return;
         }
 
-        $body = json_decode(file_get_contents('php://input'), true) ?: [];
+        $this->requireJsonBody();
+        $body = $this->parseInput();
         $moves = $body['moves'] ?? [];
         if (empty($moves) || !is_array($moves)) {
             $this->json(['success' => false, 'error' => 'Keine Zuweisungen angegeben'], 400);
@@ -464,14 +537,19 @@ class SettingsApiController extends Controller
             return;
         }
 
-        $body = json_decode(file_get_contents('php://input'), true) ?: [];
-        $ids = array_map('intval', $body['ids'] ?? []);
-        $fields = $body['fields'] ?? [];
+        $this->requireJsonBody();
+        $body = $this->parseInput();
+        $ids = is_array($body['ids'] ?? null) ? array_map('intval', $body['ids']) : [];
+        $fields = is_array($body['fields'] ?? null) ? $body['fields'] : [];
 
         if (empty($ids) || empty($fields)) {
             $this->json(['success' => false, 'error' => 'Keine IDs oder Felder angegeben'], 400);
             return;
         }
+
+        // Same whitelist, permission and validation rules as single-field updates
+        $this->authorizeFields('rehearsal', $fields);
+        $fields = $this->validateAndNormaliseFields('rehearsal', $fields);
 
         $orchestraId = (int) $context['orchestra_id'];
         $model = new \App\Models\Rehearsal();

@@ -194,7 +194,7 @@ $editorId = $editorId ?? ('infobox-editor-' . uniqid());
             });
 
             picker.addEventListener('emoji:select', event => {
-                if (currentEmojiTargetIndex >= 0) {
+                if (currentEmojiTargetIndex >= 0 && items[currentEmojiTargetIndex]) {
                     items[currentEmojiTargetIndex].emoji = event.emoji;
                     render();
                     serialize();
@@ -327,6 +327,8 @@ $editorId = $editorId ?? ('infobox-editor-' . uniqid());
                 e.preventDefault();
                 const idx = parseInt(removeBtn.dataset.index);
                 items.splice(idx, 1);
+                // The open picker targets an index that may have shifted or vanished
+                hidePicker();
                 render();
                 if (autoSave) triggerAutoSave();
                 return;

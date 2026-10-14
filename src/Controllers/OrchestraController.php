@@ -345,7 +345,8 @@ class OrchestraController extends Controller
         // Display confirmation form
         $this->render('orchestras/delete', [
             'currentPage' => 'orchestra_settings',
-            'orchestra' => $context['orchestra']
+            'orchestra' => $context['orchestra'],
+            'csrf_token' => $this->getCSRFToken()
         ]);
     }
 
@@ -363,8 +364,17 @@ class OrchestraController extends Controller
 
         if (!$this->requireConductorRole()) return;
 
-        // Check if form submitted with confirmation
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['confirm_delete']) || $_POST['confirm_delete'] !== 'yes') {
+        // Destructive action: POST only
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect($this->orchestraUrl('/orchestras/settings'));
+            return;
+        }
+
+        // CSRF protection (responds/redirects and exits on an invalid token)
+        $this->protectCSRF();
+
+        // Require explicit confirmation from the confirm form
+        if (($_POST['confirm_delete'] ?? '') !== 'yes') {
             $this->redirect($this->orchestraUrl('/orchestras/settings'));
             return;
         }

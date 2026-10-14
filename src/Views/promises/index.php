@@ -183,7 +183,7 @@ include __DIR__ . '/../components/save-indicator.php';
         // Auto-scroll and highlight target from URL parameter
         const urlParams = new URLSearchParams(window.location.search);
         const targetId = urlParams.get('rehearsal');
-        if (targetId) {
+        if (targetId && /^\d+$/.test(targetId)) {
             const tryHighlighting = function() {
                 const targetBtn = $('#' + targetId + '.checkBtn, #' + targetId + '.action-btn');
                 if (targetBtn.length > 0) {
@@ -603,7 +603,7 @@ include __DIR__ . '/../components/save-indicator.php';
                 },
                 error: function(xhr, status, error) {
                     console.error('AJAX Error:', error);
-                    window.notifyError('Verbindungsfehler beim Speichern der Zusage');
+                    window.notifyError((xhr.responseJSON && xhr.responseJSON.error) || 'Verbindungsfehler beim Speichern der Zusage');
 
                     // Re-enable buttons
                     enableRehearsalButtons(id);

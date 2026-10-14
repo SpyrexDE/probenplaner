@@ -17,6 +17,7 @@ $authPages = [
     'orchestra_select',
     'invite_landing',
     'invite_section_picker',
+    'section_confirm',
     'invite_redeem',
     'invite_invalid',
     'join_orchestra',
@@ -35,10 +36,49 @@ $hideNavbar = $isAuthPage || $isStandalone;
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <?php if (isset($_SESSION['user_id'])): ?>
-        <meta name="csrf-token" content="<?= htmlspecialchars(\App\Core\CSRF::getToken()) ?>">
-    <?php endif; ?>
+    <?php // The printable plan is a wide table: it must stay pinch-zoomable ?>
+    <meta name="viewport" content="<?= ($currentPage ?? '') === 'probenplan' ? 'width=device-width, initial-scale=1.0' : 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' ?>">
+    <meta name="csrf-token" content="<?= htmlspecialchars(\App\Core\CSRF::getToken()) ?>">
+    <script>
+        // Same-origin fetch/XHR writes carry the session CSRF token (checked centrally by CSRF::enforce)
+        (function () {
+            var meta = document.querySelector('meta[name="csrf-token"]');
+            var token = function () { return meta ? meta.getAttribute('content') || '' : ''; };
+            var needsToken = function (method, url) {
+                if (/^(GET|HEAD|OPTIONS)$/i.test(method || 'GET')) return false;
+                try { return new URL(url, location.href).origin === location.origin; } catch (e) { return false; }
+            };
+
+            var nativeFetch = window.fetch;
+            if (nativeFetch) {
+                window.fetch = function (input, init) {
+                    var request = (typeof Request !== 'undefined' && input instanceof Request) ? input : null;
+                    var method = (init && init.method) || (request ? request.method : 'GET');
+                    if (needsToken(method, request ? request.url : String(input))) {
+                        var headers = new Headers((init && init.headers) || (request ? request.headers : undefined));
+                        if (!headers.has('X-CSRF-Token')) headers.set('X-CSRF-Token', token());
+                        init = Object.assign({}, init, { headers: headers });
+                    }
+                    return nativeFetch(input, init);
+                };
+            }
+
+            var xhr = XMLHttpRequest.prototype;
+            var nativeOpen = xhr.open, nativeSetHeader = xhr.setRequestHeader, nativeSend = xhr.send;
+            xhr.open = function (method, url) {
+                this._csrf = needsToken(method, url);
+                return nativeOpen.apply(this, arguments);
+            };
+            xhr.setRequestHeader = function (name) {
+                if (String(name).toLowerCase() === 'x-csrf-token') this._csrf = false;
+                return nativeSetHeader.apply(this, arguments);
+            };
+            xhr.send = function () {
+                if (this._csrf) nativeSetHeader.call(this, 'X-CSRF-Token', token());
+                return nativeSend.apply(this, arguments);
+            };
+        })();
+    </script>
     <title>Probenplaner</title>
 
     <!-- PWA Meta Tags -->
@@ -52,14 +92,11 @@ $hideNavbar = $isAuthPage || $isStandalone;
     <meta name="theme-color" content="#ffffff">
 
     <!-- Apple Touch Icons -->
-    <link rel="apple-touch-icon" href="/assets/icons/apple/Probenplaner-iOS-Default-1024x1024@1x.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="/assets/icons/apple/Probenplaner-iOS-Default-1024x1024@1x.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/apple/Probenplaner-iOS-Default-1024x1024@1x.png">
-    <link rel="apple-touch-icon" sizes="167x167" href="/assets/icons/apple/Probenplaner-iOS-Default-1024x1024@1x.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/pwa/apple-touch-icon-180.png">
 
     <!-- Microsoft Tiles -->
     <meta name="msapplication-TileColor" content="#478cf4">
-    <meta name="msapplication-TileImage" content="/assets/icons/apple/Probenplaner-iOS-Default-1024x1024@1x.png">
+    <meta name="msapplication-TileImage" content="/assets/icons/pwa/icon-192.png">
     <meta name="msapplication-config" content="/browserconfig.xml">
 
     <!-- Google Fonts -->
@@ -75,7 +112,10 @@ $hideNavbar = $isAuthPage || $isStandalone;
     // Generate theme CSS link
     echo \App\Core\ThemeManager::generateThemeCssLink($currentUserTheme);
     ?>
-    <?php $assetVersion = \App\Core\Version::getVersion(); ?>
+    <?php
+    // Locally there is no release version ("N/A"), so browsers kept stale CSS/JS: bust on every load
+    $assetVersion = (defined('APP_ENV') && APP_ENV === 'development') ? (string)time() : \App\Core\Version::getVersion();
+    ?>
     <link rel="stylesheet" href="/assets/css/components.css?v=<?= $assetVersion ?>">
     <link rel="stylesheet" href="/assets/css/utilities.css?v=<?= $assetVersion ?>">
     <link rel="stylesheet" href="/assets/css/components/lazy-section.css?v=<?= $assetVersion ?>">

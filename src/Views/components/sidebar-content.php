@@ -17,7 +17,7 @@
         </div>
         <div class="sidebar-info">
             <div class="sidebar-name">
-                <?= htmlspecialchars($displayName) ?>
+                <span class="sidebar-name-text"><?= htmlspecialchars($displayName) ?></span>
                 <?php
                 $currentRoles = $_SESSION['current_roles'] ?? [];
                 if (!empty($currentRoles)):
@@ -156,13 +156,19 @@
 
 <!-- PWA Install Card -->
 <?php
-$renderComponent = true;
-$title = 'App installieren';
-$subtitle = 'Für bessere Performance';
-$icon = 'download';
-$onclick = 'installPWA()';
-$hidden = false;
-include __DIR__ . '/pwa-install-card.php';
+// Never offer the install card inside the JOinJMD app WebView. The flag is only
+// set by the jmd_accesstoken / Keycloak token login (AuthController, HomeController),
+// so instances without Keycloak are unaffected.
+if (empty($_SESSION['embedded_app'])) {
+    $renderComponent = true;
+    $title = 'App installieren';
+    $subtitle = 'Direkt vom Startbildschirm öffnen';
+    $icon = 'download';
+    $onclick = 'installPWA()';
+    // Rendered hidden; service-worker.php reveals it only when installing is possible
+    $hidden = true;
+    include __DIR__ . '/pwa-install-card.php';
+}
 ?>
 
 <!-- Version Footer -->

@@ -30,6 +30,13 @@ class Controller
      */
     protected function render(string $view, array $data = []): void
     {
+        // Section still only guessed from the JOinJMD instrument: ask for it first, on this URL
+        $guessedType = $this->unconfirmedSection();
+        if ($guessedType !== null) {
+            $view = 'orchestras/confirm-section';
+            $data = ['currentPage' => 'section_confirm', 'guessedType' => $guessedType, 'returnUrl' => (string)($_SERVER['REQUEST_URI'] ?? '')];
+        }
+
         // Create a template renderer
         $template = new TemplateRenderer();
 
@@ -38,6 +45,23 @@ class Controller
 
         // Output the content
         echo $content;
+    }
+
+    /**
+     * The guessed section of the logged-in member if a full page of the current ensemble is
+     * requested and the section is not confirmed yet (user_orchestras.section_confirmed = 0).
+     */
+    private function unconfirmedSection(): ?string
+    {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET' || empty($_SESSION['user_id']) || empty($_SESSION['current_orchestra_id'])) {
+            return null;
+        }
+        $prefix = '/' . rawurlencode($_SESSION['current_org_slug'] ?? '') . '/' . rawurlencode($_SESSION['current_orchestra_slug'] ?? '') . '/';
+        if (strpos((string)parse_url((string)($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH), $prefix) !== 0) {
+            return null;
+        }
+        $relation = (new \App\Models\UserOrchestra())->getUserOrchestraRelation((int)$_SESSION['user_id'], (int)$_SESSION['current_orchestra_id']);
+        return ($relation && (int)($relation['section_confirmed'] ?? 1) === 0) ? (string)$relation['type'] : null;
     }
 
     /**

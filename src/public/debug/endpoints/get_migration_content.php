@@ -7,6 +7,7 @@
 
 // Bootstrap for APP_ROOT constant
 require_once __DIR__ . '/../../../bootstrap.php';
+require_once __DIR__ . '/../includes/guard.php';
 
 // Only allow AJAX requests
 if (!isset($_SERVER['HTTP_X_REQUESTED_WITH']) || $_SERVER['HTTP_X_REQUESTED_WITH'] !== 'XMLHttpRequest') {

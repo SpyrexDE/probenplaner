@@ -17,10 +17,10 @@ class HomeController extends Controller
      */
     public function index()
     {
-        // Check for JMD access token first (for mobile app integration)
-        $jmdToken = $_GET['jmd_accesstoken'] ?? $_POST['jmd_accesstoken'] ?? null;
-        if ($jmdToken && KEYCLOAK_ENABLED) {
-            $this->processJmdTokenLogin($jmdToken);
+        // Check for JMD access token first (JOinJMD tile, same login as /login)
+        $jmdToken = \App\Core\JmdTokenLogin::requestToken();
+        if ($jmdToken !== null) {
+            (new AuthController())->processJmdTokenLogin($jmdToken);
             return;
         }
 
@@ -64,65 +64,5 @@ class HomeController extends Controller
 
         // Not logged in, show login page
         $this->redirect('/login');
-    }
-
-    /**
-     * Process JMD token login (for mobile app integration)
-     * 
-     * @param string $jmdToken JMD access token
-     * @return void
-     */
-    private function processJmdTokenLogin(string $jmdToken)
-    {
-        error_log("HomeController: JMD token login attempt with token: " . substr($jmdToken, 0, 20) . "...");
-
-        $keycloakAuth = new \App\Core\KeycloakAuth();
-
-        // Process login with token
-        $userInfo = $keycloakAuth->loginWithToken($jmdToken);
-        if (!$userInfo) {
-            // Set error message and redirect to login
-            $this->setFlash('error', 'JMD Token ist ungültig oder abgelaufen. Bitte melden Sie sich erneut an.');
-            $this->redirect('/login');
-            return;
-        }
-
-        // Create or link user
-        $userModel = new \App\Models\User();
-        $user = $userModel->createOrLinkKeycloakUser($userInfo, true);
-        if (isset($user['error'])) {
-            $this->setFlash('error', 'Fehler beim Erstellen des Benutzerkontos: ' . $user['message']);
-            $this->redirect('/login');
-            return;
-        }
-
-        // Process successful login
-        $this->processSuccessfulLogin($user);
-    }
-
-    /**
-     * Handle successful login
-     * 
-     * @param array $user User data
-     * @return void
-     */
-    private function processSuccessfulLogin($user)
-    {
-        session_regenerate_id(true);
-
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['email'] = $user['email'];
-        $_SESSION['display_name'] = $user['display_name'] ?? '';
-
-        // Force theme re-fetch from DB on next page load
-        unset($_SESSION['theme']);
-
-        if (str_contains($user['display_name'] ?? '', '@')) {
-            $_SESSION['prompt_username_change'] = true;
-        }
-
-        $this->setFlash('success', 'Sie wurden erfolgreich eingeloggt.');
-
-        $this->redirect('/orchestras/select');
     }
 }

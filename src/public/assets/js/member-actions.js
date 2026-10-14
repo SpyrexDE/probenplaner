@@ -350,20 +350,38 @@ function resetPassword(userId, email) {
         icon: 'question'
     }).then((result) => {
         if (result.isConfirmed) {
-            fetch('/' + orchestraBase + '/user/resetPassword?user_id=' + encodeURIComponent(userId), {
+            const body = new URLSearchParams({
+                user_id: String(userId),
+                csrf_token: getCsrfToken(),
+            });
+            fetch('/' + orchestraBase + '/user/resetPassword', {
+                method: 'POST',
                 headers: {
-                    'Accept': 'application/json'
-                }
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: body,
             })
                 .then(async response => {
                     const text = await response.text();
                     let parseJson = null;
                     try { parseJson = JSON.parse(text); } catch (e) { }
                     if (!response.ok) {
-                        const message = (parseJson && (parseJson.error || parseJson.message)) || text;
-                        throw new Error(message);
+                        const serverMessage = parseJson && (parseJson.message || parseJson.error);
+                        const fallback = {
+                            400: 'Ungültige Anfrage.',
+                            403: 'Du hast keine Berechtigung, dieses Passwort zurückzusetzen. Lade die Seite ggf. neu.',
+                            404: 'Mitglied nicht gefunden oder nicht in deinem Verwaltungsbereich.',
+                            405: 'Ungültige Anfrage. Bitte lade die Seite neu.',
+                            409: 'Der Account wird auch in anderen Ensembles verwendet, in denen du nicht dieselben Rechte hast. Das Passwort kann hier nicht zurückgesetzt werden.',
+                            422: 'Das Passwort wird über den JMD-Account verwaltet und kann hier nicht zurückgesetzt werden.',
+                        }[response.status];
+                        throw new Error(serverMessage || fallback || ('Fehler beim Zurücksetzen (HTTP ' + response.status + ')'));
                     }
-                    return parseJson || {};
+                    if (!parseJson || !parseJson.success || !parseJson.password) {
+                        throw new Error((parseJson && parseJson.message) || 'Fehler beim Zurücksetzen');
+                    }
+                    return parseJson;
                 })
                 .then(data => {
                     const password = data.password || '';

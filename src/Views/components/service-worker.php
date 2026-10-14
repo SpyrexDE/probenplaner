@@ -200,58 +200,205 @@
         };
     }
 
-    // PWA Installation Prompt
-    let deferredPrompt;
-    const installCard = document.getElementById('pwa-install-card');
+    // PWA Installation (sidebar card, see components/pwa-install-card.php)
+    // The card is rendered hidden and only revealed when installing is actually possible:
+    //  a) Chrome/Edge/Samsung fired beforeinstallprompt, or
+    //  b) iOS/iPadOS Safari (no prompt API there -> step-by-step guide).
+    // It is not rendered at all inside the JOinJMD app (see sidebar-content.php).
+    (function() {
+        var installCard = document.getElementById('pwa-install-card');
+        var deferredPrompt = null;
+        var STANDALONE_MODES = ['standalone', 'fullscreen', 'minimal-ui', 'window-controls-overlay'];
 
-    window.addEventListener('beforeinstallprompt', function(e) {
-        // Prevent Chrome 67 and earlier from automatically showing the prompt
-        e.preventDefault();
-        // Stash the event so it can be triggered later
-        deferredPrompt = e;
-        // Show the install card
-        if (installCard) {
-            installCard.style.display = 'block';
+        function matchesMedia(query) {
+            try {
+                return !!(window.matchMedia && window.matchMedia(query).matches);
+            } catch (e) {
+                return false;
+            }
         }
-    });
 
-    function installPWA() {
-        if (deferredPrompt) {
-            // Show the install prompt
-            deferredPrompt.prompt();
-            // Wait for the user to respond to the prompt
-            deferredPrompt.userChoice.then(function(choiceResult) {
-                if (choiceResult.outcome === 'accepted') {
-                    console.log('User accepted the install prompt');
-                } else {
-                    console.log('User dismissed the install prompt');
+        function isStandalone() {
+            for (var i = 0; i < STANDALONE_MODES.length; i++) {
+                if (matchesMedia('(display-mode: ' + STANDALONE_MODES[i] + ')')) return true;
+            }
+            // iOS home screen web app
+            return window.navigator.standalone === true;
+        }
+
+        function isIOS() {
+            var ua = navigator.userAgent || '';
+            return /iPad|iPhone|iPod/.test(ua) ||
+                // iPadOS requests the desktop site and reports itself as a Mac
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        }
+
+        function isIOSSafari() {
+            if (!isIOS()) return false;
+            var ua = navigator.userAgent || '';
+            // Real Safari sends "Version/x ... Safari/y". WKWebView-based in-app browsers
+            // (JOinJMD, Instagram, Facebook, ...) usually lack it; other iOS browsers add their own token.
+            if (!/Version\/[\d.]+.*Safari\//.test(ua)) return false;
+            return !/CriOS|FxiOS|EdgiOS|OPiOS|OPT\/|YaBrowser|DuckDuckGo|Ddg\/|GSA\/|FBAN|FBAV|FBIOS|Instagram|Line\/|LinkedInApp|Twitter|Snapchat|Pinterest|MicroMessenger|WhatsApp/i.test(ua);
+        }
+
+        function showCard() {
+            if (!installCard || isStandalone()) return;
+            installCard.classList.remove('hidden');
+        }
+
+        function hideCard() {
+            if (installCard) installCard.classList.add('hidden');
+        }
+
+        function guideStep(iconClass, text, hint) {
+            return '<li class="pwa-guide-step">' +
+                '<span class="pwa-guide-step-icon" aria-hidden="true"><i class="' + iconClass + '"></i></span>' +
+                '<span class="pwa-guide-step-text">' + text +
+                (hint ? '<span class="pwa-guide-hint">' + hint + '</span>' : '') +
+                '</span></li>';
+        }
+
+        function showInstallGuide(kind) {
+            var intro, steps, shortText;
+
+            if (kind === 'ios') {
+                intro = 'Füge den Probenplaner zu deinem Home-Bildschirm hinzu. Er startet dann wie eine App – im Vollbild und ohne Adressleiste.';
+                steps = guideStep('fa-solid fa-arrow-up-from-bracket', 'Tippe in Safari auf <strong>Teilen</strong>',
+                        'Das Quadrat mit Pfeil nach oben – je nach iOS-Version unten in der Leiste, oben rechts oder im Menü „•••“.') +
+                    guideStep('fa-regular fa-square-plus', 'Wähle <strong>Zum Home-Bildschirm</strong>',
+                        'Nicht zu sehen? In der Liste etwas nach unten scrollen.') +
+                    guideStep('fa-solid fa-check', 'Tippe auf <strong>Hinzufügen</strong>',
+                        'Danach findest du den Probenplaner auf deinem Home-Bildschirm.');
+                shortText = 'Tippe in Safari auf „Teilen“ und dann auf „Zum Home-Bildschirm“.';
+            } else {
+                intro = 'Dein Browser bietet die Installation über sein Menü an.';
+                steps = guideStep('fa-solid fa-ellipsis-vertical', 'Öffne das <strong>Browser-Menü</strong>',
+                        'Meist oben rechts (⋮ oder •••).') +
+                    guideStep('fa-solid fa-download', 'Wähle <strong>App installieren</strong>',
+                        'Je nach Browser auch „Zum Startbildschirm hinzufügen“.') +
+                    guideStep('fa-solid fa-check', 'Bestätige mit <strong>Installieren</strong>', '');
+                shortText = 'Öffne das Browser-Menü und wähle „App installieren“.';
+            }
+
+            // window.notifyInfo is NOT a fallback: it calls Swal internally as well.
+            // If SweetAlert2 is missing (CDN blocked/offline) or throws, use a plain alert.
+            var shown = false;
+            if (window.Swal && typeof window.Swal.fire === 'function') {
+                var options = {
+                    title: 'App installieren',
+                    html: '<div class="pwa-guide">' +
+                        '<div class="pwa-guide-app"><img src="/assets/icons/pwa/icon-192.png" alt="" width="64" height="64"></div>' +
+                        '<p class="pwa-guide-intro">' + intro + '</p>' +
+                        '<ol class="pwa-guide-steps">' + steps + '</ol>' +
+                        '</div>',
+                    showCloseButton: true,
+                    closeButtonAriaLabel: 'Schließen',
+                    confirmButtonText: 'Verstanden',
+                    confirmButtonColor: 'var(--color-primary, #478cf4)',
+                    customClass: {
+                        popup: 'pwa-guide-popup'
+                    }
+                };
+                if (matchesMedia('(prefers-reduced-motion: reduce)')) {
+                    options.showClass = {
+                        backdrop: 'swal2-noanimation',
+                        popup: '',
+                        icon: ''
+                    };
+                    options.hideClass = {
+                        popup: ''
+                    };
                 }
-                deferredPrompt = null;
-                if (installCard) {
-                    installCard.style.display = 'none';
+                try {
+                    window.Swal.fire(options);
+                    shown = true;
+                } catch (err) {
+                    console.warn('PWA install guide dialog failed:', err);
                 }
-            });
+            }
+            if (!shown) {
+                window.alert(shortText);
+            }
         }
-    }
 
-    // Hide install card if app is already installed
-    window.addEventListener('appinstalled', function() {
-        console.log('PWA was installed');
-        if (installCard) {
-            installCard.style.display = 'none';
-        }
-        deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', function(e) {
+            // Suppress the browser's mini-infobar; the sidebar card is our entry point
+            e.preventDefault();
+            if (isStandalone()) return;
+            deferredPrompt = e;
+            showCard();
+        });
 
-        // Show success message
-        if (window.notifySuccess) {
-            window.notifySuccess('App erfolgreich installiert!');
-        }
-    });
+        // Called from the card's onclick. Never a silent no-op.
+        window.installPWA = function() {
+            if (!deferredPrompt) {
+                showInstallGuide(isIOSSafari() ? 'ios' : 'browser');
+                return;
+            }
 
-    // Hide install card on mobile if already in standalone mode
-    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-        if (installCard) {
-            installCard.style.display = 'none';
+            // prompt() may only be called once per event
+            var promptEvent = deferredPrompt;
+            deferredPrompt = null;
+
+            var promptResult;
+            try {
+                promptResult = promptEvent.prompt();
+            } catch (err) {
+                console.warn('PWA install prompt failed:', err);
+                showInstallGuide('browser');
+                return;
+            }
+
+            Promise.resolve(promptResult)
+                .then(function() {
+                    return promptEvent.userChoice;
+                })
+                .then(function(choiceResult) {
+                    console.log('PWA install prompt outcome:', choiceResult ? choiceResult.outcome : 'unknown');
+                    // The event is used up; the browser fires a new one once installing is possible again
+                    hideCard();
+                })
+                .catch(function(err) {
+                    console.warn('PWA install prompt failed:', err);
+                    showInstallGuide('browser');
+                });
+        };
+
+        // Hide install card once the app has been installed
+        window.addEventListener('appinstalled', function() {
+            console.log('PWA was installed');
+            deferredPrompt = null;
+            hideCard();
+
+            // notifySuccess needs SweetAlert2; skip the toast if it is unavailable
+            if (window.notifySuccess && window.Swal) {
+                try {
+                    window.notifySuccess('App erfolgreich installiert!');
+                } catch (err) {}
+            }
+        });
+
+        // Hide when the page switches into the installed app window
+        STANDALONE_MODES.forEach(function(mode) {
+            try {
+                var mq = window.matchMedia('(display-mode: ' + mode + ')');
+                var onChange = function(ev) {
+                    if (ev.matches) hideCard();
+                };
+                if (mq.addEventListener) {
+                    mq.addEventListener('change', onChange);
+                } else if (mq.addListener) {
+                    mq.addListener(onChange);
+                }
+            } catch (e) {}
+        });
+
+        if (isStandalone()) {
+            hideCard();
+        } else if (isIOSSafari()) {
+            // No beforeinstallprompt on iOS: offer the manual "Zum Home-Bildschirm" guide
+            showCard();
         }
-    }
+    })();
 </script>

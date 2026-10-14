@@ -24,7 +24,16 @@ services:
       - KEYCLOAK_ENABLED=${KEYCLOAK_ENABLED}
       - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
       - KEYCLOAK_REDIRECT_URI=${KEYCLOAK_REDIRECT_URI}
+      - PARTNER_API_TOKEN=${PARTNER_API_TOKEN}
+      - PARTNER_API_ORG=${PARTNER_API_ORG}
+      - JMD_PUSH_URL=${JMD_PUSH_URL}
+      - JMD_PUSH_TOKEN=${JMD_PUSH_TOKEN}
     restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
     networks:
       - app_net
 

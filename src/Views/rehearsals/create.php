@@ -22,6 +22,7 @@ include __DIR__ . '/../components/checkbox.php';
 
     <div class="form-container">
         <form method="post" action="/<?= ($_SESSION['current_org_slug'] ?? '') . '/' . $_SESSION['current_orchestra_slug'] ?>/rehearsals/create" class="form">
+            <?= \App\Core\CSRF::getTokenField() ?>
             <div class="form-group">
                 <?php
                 $start_value = $formData['start'] ?? '';
@@ -91,6 +92,10 @@ include __DIR__ . '/../components/checkbox.php';
             ?>
 
             <?php
+            // Fresh id: infobox-editor above leaves its own $editorId in scope (would duplicate ids)
+            $editorId = null;
+            // New schedule entries start at the "Anfang" datetime-local field
+            $scheduleStartSource = '#start';
             include __DIR__ . '/../components/schedule-editor.php';
             ?>
 

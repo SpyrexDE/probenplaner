@@ -224,9 +224,6 @@ $prepareCardVars = function (array $rehearsal) use ($stats, $membersBySection, $
 
     return [
         'rehearsalId' => $id,
-        'rehearsalDate' => $rehearsal['date'],
-        'rehearsalStartTime' => $rehearsal['start_time'],
-        'rehearsalEndTime' => $rehearsal['end_time'],
         'attendingCount' => $a,
         'notAttendingCount' => $na,
         'noResponseCount' => $nr,
@@ -234,6 +231,10 @@ $prepareCardVars = function (array $rehearsal) use ($stats, $membersBySection, $
         'rehearsalAttendanceRate' => $total > 0 ? ($a / $total) * 100 : 0,
         'sectionPlayers' => $sectionPlayers,
         'rehearsalColor' => $rehearsal['color'] ?? null,
+        // Members without response who can get a JOinJMD push ("Erinnern")
+        'remindCount' => (\App\Core\JmdPush::isEnabled() && strtotime($rehearsal['start']) > time())
+            ? count(array_filter($membersBySection[$id]['all'] ?? [], fn($m) => $m['status'] === 'no_response' && !empty($m['push_sub'])))
+            : 0,
     ];
 };
 
@@ -363,7 +364,7 @@ $responseTrendValue = 0;
 ?>
 
 <!-- Assets -->
-<link rel="stylesheet" href="<?= '/assets/css/promises-dashboard.css' ?>">
+<link rel="stylesheet" href="/assets/css/promises-dashboard.css?v=<?= \App\Core\Version::getVersion() ?>">
 <?php if (!($isLeader ?? false)): ?>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
 <?php endif; ?>
@@ -750,96 +751,6 @@ foreach ($rehearsals ?? [] as $rehearsal) {
 </script>
 
 <style>
-    /* Modern rehearsal date display */
-    .rehearsal-modern-title {
-        flex: 1;
-        min-width: 35%;
-        max-width: 40%;
-    }
-
-    .rehearsal-date-display {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        padding: 10px 0;
-    }
-
-    .weekday-letter {
-        font-size: 56px;
-        font-weight: 900;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        line-height: 1;
-        position: relative;
-        text-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
-        /* Force own compositing layer to avoid invisible-until-tap bug on old iOS */
-        -webkit-transform: translateZ(0);
-        transform: translateZ(0);
-    }
-
-    .weekday-letter::after {
-        content: '';
-        position: absolute;
-        bottom: -6px;
-        left: 0;
-        width: 100%;
-        height: 3px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 2px;
-        opacity: 0.6;
-    }
-
-    .date-info {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        flex: 1;
-    }
-
-    .date-text {
-        font-size: 24px;
-        font-weight: 700;
-        color: #1f2937;
-        margin: 0;
-        line-height: 1.2;
-    }
-
-    .date-subtitle {
-        font-size: 16px;
-        font-weight: 600;
-        color: #667eea;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin: 0;
-        line-height: 1.2;
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .rehearsal-date-display {
-            gap: 15px;
-        }
-
-        .weekday-letter {
-            font-size: 44px;
-        }
-
-        .date-text {
-            font-size: 20px;
-        }
-
-        .date-subtitle {
-            font-size: 14px;
-        }
-
-        .rehearsal-modern-title {
-            min-width: 40%;
-            max-width: 45%;
-        }
-    }
-
     /* Compact view styles */
     .promises-dashboard.compact-view .sections-grid {
         grid-template-columns: 1fr;

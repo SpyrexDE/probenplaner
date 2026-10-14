@@ -200,17 +200,23 @@
                 </div>
 
                 <!-- Ablauf (Schedule Editor) -->
-                <div class="ie-section" style="display: block; margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-border);">
+                <!-- The editor re-renders on add/remove, so the clicked node is already detached when the
+                     dialog's outside-click handler runs and would close the dialog. Only those clicks are
+                     stopped; all others keep bubbling so other outside-click handlers (e.g. the emoji
+                     picker of the Hinweise editor) still close as usual. -->
+                <div class="ie-section" onclick="if (!event.target.isConnected) event.stopPropagation()" style="display: block; margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-border);">
                     <?php
                     $formData = ['schedule_items' => []];
                     $autoSave = false;
                     $editorId = 'schedule-editor-recurring';
+                    // The card's data-start is only a placeholder here; the "Zeit" input is authoritative
+                    $scheduleStartSource = '#recurringTimeStart';
                     include __DIR__ . '/schedule-editor.php';
                     ?>
                 </div>
 
-                <!-- Hinweise (Infobox Editor) -->
-                <div class="ie-section" style="display: block; margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-border);">
+                <!-- Hinweise (Infobox Editor) — same detached-click guard as above -->
+                <div class="ie-section" onclick="if (!event.target.isConnected) event.stopPropagation()" style="display: block; margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-border);">
                     <?php
                     $formData = ['infos' => []];
                     $autoSave = false;

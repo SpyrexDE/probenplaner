@@ -188,11 +188,11 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                 if (dateEl && s) {
                     const sD = new Date(s.replace(' ', 'T')), eD = new Date(e.replace(' ', 'T'));
                     const sameDay = sD.toDateString() === eD.toDateString();
-                    dateEl.textContent = sameDay ? this._formatDate(s) : this._formatDate(s) + ' – ' + this._formatDate(e);
+                    dateEl.textContent = sameDay ? this._formatCardDate(s) : this._formatCardDate(s) + ' - ' + this._formatCardDate(e);
                     dateEl.style.cssText = dateEl.getAttribute('style')?.replace(/text-decoration[^;]*;?/g, '') || '';
                 }
                 if (timeEl && s) {
-                    timeEl.textContent = this._formatTime(s) + ' – ' + this._formatTime(e);
+                    timeEl.textContent = this._formatTime(s) + ' - ' + this._formatTime(e);
                 }
                 // Remove any dynamically added elements
                 dtField.querySelectorAll('input, .ie-dt-toggle').forEach(x => x.remove());
@@ -288,6 +288,13 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
             const d = new Date(dateStr.replace(' ', 'T'));
             if (isNaN(d)) return dateStr;
             return d.getDate() + '. ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+        },
+
+        // Same format as the server-rendered card head (d.m.Y)
+        _formatCardDate(dateStr) {
+            const d = new Date(dateStr.replace(' ', 'T'));
+            if (isNaN(d)) return dateStr;
+            return String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear();
         },
 
         _formatTime(dateStr) {
@@ -1841,7 +1848,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
 
                 // Update time display
                 const timeEl = card.querySelector('[data-ie-time]');
-                if (timeEl) timeEl.textContent = st + ' – ' + et;
+                if (timeEl) timeEl.textContent = st + ' - ' + et;
             });
             this._closePopover();
             window.notifySuccess?.(this.selected.size + ' Termine aktualisiert');

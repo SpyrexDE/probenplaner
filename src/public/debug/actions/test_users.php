@@ -256,6 +256,7 @@ if ($_POST['action'] === 'generate_full_setup') {
             ['lara.petersen@test.local',       'Lara Petersen',       'Violine_1',  $sinfonieId, ['member', 'project'],                   1],
             ['tobias.jung@test.local',         'Tobias Jung',         'Violine_1',  $sinfonieId, ['member', 'project'],                   1],
             ['elena.winter@test.local',        'Elena Winter',        'Violine_1',  $sinfonieId, ['member'],                               1],
+            ['paula.neu@test.local',           'Paula Neu',           'Violine_1',  $sinfonieId, ['member'],                               1],
             ['simon.kraft@test.local',         'Simon Kraft',         'Violine_1',  $sinfonieId, ['member', 'project'],                   1],
             ['amelie.horn@test.local',         'Amelie Horn',         'Violine_1',  $sinfonieId, ['member'],                               1],
             ['jonathan.vogt@test.local',       'Jonathan Vogt',       'Violine_1',  $sinfonieId, ['member', 'project'],                   1],
@@ -375,14 +376,20 @@ if ($_POST['action'] === 'generate_full_setup') {
             [$email, $displayName, $section, $orchId, $presets, $isActive] = $entry;
 
             $pw = password_hash($email, PASSWORD_DEFAULT);
-            $stmt = $conn->prepare("INSERT INTO users (email, password, display_name) VALUES (?, ?, ?)");
-            $stmt->bind_param('sss', $email, $pw, $displayName);
+            // Active members use JOinJMD (fake Keycloak ID) and have opened the Probenplaner,
+            // so reminders reach them; inactive ones never logged in
+            $keycloakId = $isActive ? 'demo-sub-' . substr(md5($email), 0, 12) : null;
+            $lastLogin = $isActive ? $now : null;
+            $stmt = $conn->prepare("INSERT INTO users (email, password, display_name, keycloak_id, last_login_at) VALUES (?, ?, ?, ?, ?)");
+            $stmt->bind_param('sssss', $email, $pw, $displayName, $keycloakId, $lastLogin);
             $stmt->execute();
             $userId = $conn->insert_id;
             $stmt->close();
 
-            $stmt = $conn->prepare("INSERT INTO user_orchestras (user_id, orchestra_id, type, is_active, joined_at) VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param('iisis', $userId, $orchId, $section, $isActive, $now);
+            // paula.neu: synced from JOinJMD with "Geige", section only guessed -> confirmation prompt
+            $sectionConfirmed = $email === 'paula.neu@test.local' ? 0 : 1;
+            $stmt = $conn->prepare("INSERT INTO user_orchestras (user_id, orchestra_id, type, is_active, joined_at, section_confirmed) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param('iisisi', $userId, $orchId, $section, $isActive, $now, $sectionConfirmed);
             $stmt->execute();
             $uoId = $conn->insert_id;
             $stmt->close();
@@ -835,6 +842,7 @@ if ($_POST['action'] === 'generate_full_setup') {
                     ['email' => 'nina.berg@test.local',              'password' => 'nina.berg@test.local',      'role' => 'Mitglied + IYSO 2026'],
                     ['email' => 'clara.roth@test.local',             'password' => 'clara.roth@test.local',     'role' => 'Mitglied (Cello)'],
                     ['email' => 'kammer.dirigent@test.local',        'password' => 'kammer.dirigent@test.local', 'role' => 'Leitung (Kammer)'],
+                    ['email' => 'paula.neu@test.local',              'password' => 'paula.neu@test.local',      'role' => 'JOinJMD-Neuzugang (Stimme unbestätigt)'],
                 ],
             ]
         ];

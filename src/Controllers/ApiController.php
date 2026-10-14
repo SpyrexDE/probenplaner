@@ -50,18 +50,17 @@ class ApiController extends Controller
                 'total' => 0
             ];
 
+            // The user's roles are the same for every rehearsal, so load them once
+            $userRoleIds = [];
+            if ($userId && $orchestraId) {
+                $userOrchestraModel = new \App\Models\UserOrchestra();
+                $userRoles = $userOrchestraModel->getUserRoles((int)$userId, (int)$orchestraId);
+                $userRoleIds = array_map(fn($r) => (int)$r['id'], $userRoles);
+            }
+
             foreach ($rehearsals as $rehearsal) {
                 // Check if user is relevant for this rehearsal
                 $groups = $this->rehearsalModel->getGroupsAsAssoc($rehearsal['id']);
-
-                $userOrchestraModel = new \App\Models\UserOrchestra();
-                $userId = $_SESSION['user_id'] ?? null;
-                $orchestraId = $_SESSION['current_orchestra_id'] ?? null;
-                $userRoleIds = [];
-                if ($userId && $orchestraId) {
-                    $userRoles = $userOrchestraModel->getUserRoles((int)$userId, (int)$orchestraId);
-                    $userRoleIds = array_map(fn($r) => (int)$r['id'], $userRoles);
-                }
                 $rehearsalRoleIds = $this->rehearsalModel->getRehearsalRoleIds($rehearsal['id']);
 
                 if ($this->rehearsalModel->isUserInRehearsalGroup($_SESSION['current_type'] ?? '', $groups, $rehearsalRoleIds, $userRoleIds)) {
@@ -70,34 +69,24 @@ class ApiController extends Controller
                     // Check user's promise for this rehearsal
                     $promise = $this->userPromiseModel->findByUserAndRehearsal($userId, $rehearsal['id']);
 
-                    // Log retrieval result
-                    error_log("Rehearsal {$rehearsal['id']}: Promise found: " . ($promise ? 'yes' : 'no'));
-                    if ($promise) {
-                        error_log("Promise data: " . json_encode($promise));
-                        error_log("Promise status value: " . ($promise['status'] ?? 'undefined'));
-                    }
-
                     if ($promise && isset($promise['status'])) {
                         if ($promise['status'] === 'yes') {
                             $stats['attending']++;
-                            error_log("Counted as attending (status: yes)");
                         } elseif ($promise['status'] === 'no') {
                             $stats['not_attending']++;
-                            error_log("Counted as not attending (status: no)");
                         } else {
                             // 'maybe' or any other status counts as no response
                             $stats['no_response']++;
-                            error_log("Counted as no response (status: " . $promise['status'] . ")");
                         }
                     } else {
                         $stats['no_response']++;
-                        error_log("Counted as no response (no promise found)");
                     }
                 }
             }
 
             $this->jsonResponse(['success' => true, 'stats' => $stats]);
         } catch (\Exception $e) {
+            error_log('ApiController::getUserStats failed for user ' . (int)$userId . ', orchestra ' . (int)$orchestraId . ': ' . $e->getMessage());
             $this->jsonResponse(['success' => false, 'error' => 'Statistiken konnten nicht geladen werden'], 500);
         }
     }
@@ -144,6 +133,7 @@ class ApiController extends Controller
 
             $this->jsonResponse(['success' => true, 'stats' => $stats]);
         } catch (\Exception $e) {
+            error_log('ApiController::getConductorStats failed for orchestra ' . $orchestraId . ': ' . $e->getMessage());
             $this->jsonResponse(['success' => false, 'error' => 'Dirigenten-Statistiken konnten nicht geladen werden'], 500);
         }
     }

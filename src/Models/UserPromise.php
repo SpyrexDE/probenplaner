@@ -193,10 +193,10 @@ class UserPromise extends Model
             if ($rehearsalModel->isUserInRehearsalGroup($user['type'], $groups, $rehearsalRoleIds, $memberRoleIds)) {
                 $stats['total']++;
 
-                $promise = $allPromises[(int)$user['id']] ?? null;
+                $promise = $allPromises[(int)$user['user_id']] ?? null;
 
                 $userStat = [
-                    'id' => $user['id'],
+                    'id' => $user['user_id'],
                     'display_name' => $user['display_name'] ?? $user['email'] ?? '',
                     'type' => $user['type'],
                     'status' => 'no_response',

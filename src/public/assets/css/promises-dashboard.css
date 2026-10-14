@@ -401,7 +401,7 @@
 }
 
 .rehearsal-compact-header {
-  padding: var(--space-5);
+  padding: var(--space-3) var(--space-4);
   background: linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);
   border-bottom: 1px solid var(--color-border-light);
   position: relative;
@@ -447,35 +447,13 @@
   font-weight: var(--font-weight-semibold);
 }
 
-.rehearsal-compact-right {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  align-items: flex-end;
-  min-width: 300px;
-}
-
-.rehearsal-compact-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  justify-content: flex-end;
-  text-align: right;
-}
-
-.rehearsal-compact-meta i {
-  color: var(--color-primary);
-  margin-right: var(--space-1);
-}
-
 .rehearsal-stats-container {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  width: 100%;
-  max-width: 280px;
+  width: 280px;
+  flex-shrink: 0;
+  align-self: center;
 }
 
 .rehearsal-stats-numbers {
@@ -726,6 +704,10 @@
 
 .rehearsal-tree-view .tree-node-icon.expanded {
   transform: rotate(90deg);
+}
+
+.userSpan {
+  cursor: pointer;
 }
 
 /* Clean user item styling */
@@ -1183,26 +1165,14 @@
   }
 
   .rehearsal-compact-header {
-    padding: var(--space-4);
     flex-direction: column;
     align-items: stretch;
     gap: var(--space-3);
   }
 
-  .rehearsal-compact-right {
-    min-width: auto;
-    align-items: stretch;
-  }
-
-  .rehearsal-compact-meta {
-    justify-content: flex-start;
-    text-align: left;
-    flex-direction: column;
-    gap: var(--space-2);
-  }
-
   .rehearsal-stats-container {
-    max-width: none;
+    width: auto;
+    align-self: stretch;
   }
 
   .rehearsal-compact-title h3 {
@@ -1266,10 +1236,6 @@
   .analytics-trend {
     font-size: var(--font-size-xs);
     padding: var(--space-1) var(--space-2);
-  }
-
-  .rehearsal-compact-header {
-    padding: var(--space-3);
   }
 
   .rehearsal-compact-title {
@@ -1362,4 +1328,30 @@
 
 .animate-fade-in {
   animation: fade-in var(--transition-base) ease-out;
+}
+
+/* "Erinnern": round icon at the top right of the card header, on the date row. Out of the
+   flow, so the stats keep their place; its glyph lines up with the right edge of the stats.
+   With the stats at the bottom (badge row) the header reads as two rows:
+   date ... bell / badges ... legend + bar */
+@media (min-width: 769px) {
+  .rehearsal-compact-header .rehearsal-stats-container {
+    align-self: flex-end;
+  }
+}
+
+.rehearsal-compact-header .promises-remind-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+
+@media (max-width: 768px) {
+  /* Keep long date ranges clear of the icon */
+  .rehearsal-compact-header:has(.promises-remind-btn) > :first-child {
+    padding-right: 28px;
+  }
 }
