@@ -347,8 +347,9 @@ class Validator
                 $dt = new \DateTime($datetime);
                 // Check if it's a valid date (e.g. not 2023-02-30)
                 // strict check is logically tricky with different separators, so rely on DateTime throwing or checking last errors
+                // false since PHP 8.2 when parsing produced no warnings or errors
                 $lastErrors = \DateTime::getLastErrors();
-                if ($lastErrors['warning_count'] > 0 || $lastErrors['error_count'] > 0) {
+                if ($lastErrors !== false && ($lastErrors['warning_count'] > 0 || $lastErrors['error_count'] > 0)) {
                     $errors[] = "Ungültiges Datum oder Zeit";
                 }
             } catch (\Exception $e) {
