@@ -7,7 +7,8 @@ services:
         - DOMAIN=${DOMAIN}
         - GIT_VERSION=${GIT_VERSION}
     ports:
-      - "8080:80"
+      # Host nginx is the only entry point; 0.0.0.0 would let anyone bypass it
+      - "127.0.0.1:8080:80"
     volumes:
       - ${CERT_PATH}:/etc/apache2/ssl:ro
     depends_on:

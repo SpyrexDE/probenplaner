@@ -32,7 +32,10 @@ wait_for_mysql() {
         exit 1
     fi
     
-    while ! mysqladmin ping -h"db" -u"$DB_USER" -p"$DB_PASSWORD" --silent; do
+    # --skip-ssl: the MariaDB client (Debian default-mysql-client) verifies TLS certs
+    # by default and rejects MySQL 8's self-signed one, which would loop here forever.
+    # The ping stays on the internal Docker network, as the app's own connection does.
+    while ! mysqladmin ping -h"db" -u"$DB_USER" -p"$DB_PASSWORD" --silent --skip-ssl; do
         sleep 1
     done
     echo "MySQL is ready!"

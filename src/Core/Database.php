@@ -23,6 +23,9 @@ class Database
                 throw new \Exception("MySQLi extension is not loaded. Please enable it in your PHP configuration.");
             }
 
+            // PHP >= 8.1 defaults to MYSQLI_REPORT_ERROR|STRICT (throw on every failed query).
+            // The error handling here and in the models is written for false returns, as on 8.0.
+            mysqli_report(MYSQLI_REPORT_OFF);
             $this->connection = @mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
 
             if (!$this->connection) {

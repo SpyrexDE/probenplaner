@@ -1,19 +1,8 @@
-FROM php:8.0-apache
-
-# --- STOPGAP: Debian 11 "bullseye" apt sources --------------------------------
-# php:8.0-apache is built on Debian bullseye, which is end-of-life. Packages from
-# bullseye-security are no longer reliably served by deb.debian.org (404s), so
-# uncached image builds (e.g. prod deploys) fail at "apt-get install".
-# Workaround: take bullseye-security from a frozen snapshot.debian.org timestamp.
-# The snapshot's Release file is past its Valid-Until date, so apt must not
-# reject it as expired. The grep makes the build fail loudly if the base image's
-# sources.list no longer has the expected line (instead of silently skipping).
-# TODO: move to a supported base image (PHP >= 8.2 on Debian bookworm/trixie)
-#       and remove this block.
-RUN sed -i 's#^deb http://deb.debian.org/debian-security bullseye-security main$#deb http://snapshot.debian.org/archive/debian-security/20260825T000000Z bullseye-security main#' /etc/apt/sources.list \
-    && grep -q '^deb http://snapshot.debian.org/archive/debian-security/20260825T000000Z bullseye-security main$' /etc/apt/sources.list \
-    && printf 'Acquire::Check-Valid-Until "false";\nAcquire::Retries "3";\n' > /etc/apt/apt.conf.d/99bullseye-snapshot
-# ------------------------------------------------------------------------------
+# Pinned to an exact patch release: `docker compose up --build` reuses a cached
+# base image and never pulls a newer one, so a floating tag like 8.4-apache could
+# silently stay on an old, vulnerable build. 8.4.27 fixes php2shell
+# (CVE-2026-109618, CVE-2026-109619). Bump the version for future PHP security releases.
+FROM php:8.4.27-apache-trixie
 
 # Composer binary from official image
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -26,7 +15,7 @@ ARG GIT_VERSION
 RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
-    libfreetype6-dev \
+    libfreetype-dev \
     zip \
     unzip \
     git \
@@ -34,6 +23,11 @@ RUN apt-get update && apt-get install -y \
     openssl \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd mysqli pdo pdo_mysql
+
+# Upload progress is unused here and was the main php2shell attack path; the PHP
+# advisory recommends keeping it off even on patched versions. expose_php would
+# advertise the exact PHP version in an X-Powered-By header.
+RUN printf 'session.upload_progress.enabled = Off\nexpose_php = Off\n' > "$PHP_INI_DIR/conf.d/zz-hardening.ini"
 
 # Enable Apache modules
 RUN a2enmod rewrite
