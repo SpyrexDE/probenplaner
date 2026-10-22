@@ -2,7 +2,7 @@
 
 /**
  * Stand-in for the JOinJMD push API (JMD_PUSH_URL) for local tests.
- * POST: checks the bearer token and logs the payload. GET: the last 20 entries.
+ * POST: checks the bearer token and input like the real API, logs the payload and answers "sent" for everyone. GET: the last 20 entries.
  */
 
 require_once '../../bootstrap.php';
@@ -23,14 +23,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $payload = json_decode((string)file_get_contents('php://input'), true);
-    if (!is_array($payload)) {
+    $ids = $payload['keycloak_user_ids'] ?? null;
+    if (!is_array($ids) || count($ids) < 1 || count($ids) > 500 || !is_string($payload['title'] ?? null)
+        || mb_strlen($payload['title']) > 200 || !is_string($payload['body'] ?? null) || mb_strlen($payload['body']) > 1000) {
         http_response_code(400);
-        echo json_encode(['error' => 'invalid json']);
+        echo json_encode(['error' => 'invalid input']);
         exit;
     }
 
     file_put_contents($logFile, json_encode(['time' => date('c'), 'payload' => $payload], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND | LOCK_EX);
-    echo json_encode(['ok' => true]);
+    echo json_encode([
+        'success' => true,
+        'results' => array_map(fn($id) => ['keycloak_user_id' => $id, 'status' => 'sent'], $ids),
+    ]);
     exit;
 }
 

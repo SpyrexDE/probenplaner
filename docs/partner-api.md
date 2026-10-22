@@ -122,34 +122,38 @@ Nimmt die Rolle „Leitung“. War die Person nur Leitung, endet die Mitgliedsch
 
 ## 4. Push-Benachrichtigungen
 
-> **Platzhalter:** URL, Authentifizierung und Feldnamen der JOinJMD-Push-API sind vorläufig, bis Ruwens Spezifikation vorliegt. Anpassen in `src/Core/JmdPush.php` (`send()`).
+Schnittstelle von JOinJMD (digil-chat, Spezifikation von Ruwen vom 22.10.2026), Umsetzung in `src/Core/JmdPush.php`.
 
 ### Was der Probenplaner sendet
 
 ```
-POST <JMD_PUSH_URL>
+POST https://oxtutmhbtwtncqzimogb.supabase.co/functions/v1/external-api/push   (JMD_PUSH_URL)
 Content-Type: application/json
 Accept: application/json
-Authorization: Bearer <JMD_PUSH_TOKEN>      (nur wenn gesetzt)
+Authorization: Bearer <JMD_PUSH_TOKEN>      (DIGIL_CHAT_API_KEY)
 ```
 
 ```json
 {
-  "user_ids": ["f3c1…", "9a7e…"],
+  "keycloak_user_ids": ["f3c1…", "9a7e…"],
   "title": "Probe am Sa 17.10. um 10:00",
-  "body": "Kammerensemble: Du hast noch nicht zu- oder abgesagt.",
-  "link": "https://probenplaner.jmd.info/jmd/bjo-herbst/promises?rehearsal=123"
+  "body": "JSO Bremen: Du hast noch nicht zu- oder abgesagt.",
+  "data": { "url": "https://probenplaner.jmd.info/jmd/jso-bremen/promises?rehearsal=123" }
 }
 ```
 
 | Feld | Inhalt |
 |---|---|
-| `user_ids` | Keycloak-IDs der Empfänger, ohne Duplikate |
-| `title` | Probentyp (z. B. „Probe“), Wochentag, Datum, Uhrzeit |
-| `body` | `<Ensemblename>: Du hast noch nicht zu- oder abgesagt.` |
-| `link` | `https://<Domain>/<org_slug>/<orchestra_slug>/promises?rehearsal=<Proben-ID>`; Domain aus `KEYCLOAK_REDIRECT_URI` |
+| `keycloak_user_ids` | Keycloak-IDs (`sub`) der Empfänger, ohne Duplikate; API-Grenze 1–500 |
+| `title` | Probentyp (z. B. „Probe“), Wochentag, Datum, Uhrzeit; API-Grenze 200 Zeichen |
+| `body` | `<Ensemblename>: Du hast noch nicht zu- oder abgesagt.`; API-Grenze 1.000 Zeichen |
+| `data.url` | `https://<Domain>/<org_slug>/<orchestra_slug>/promises?rehearsal=<Proben-ID>`; Domain aus `KEYCLOAK_REDIRECT_URI` |
 
-Jede `2xx`-Antwort gilt als Erfolg, Timeout 5 s. Ein Fehler wird geloggt und der Leitung als Fehlermeldung angezeigt.
+Antwort `{"success": true, "results": [{"keycloak_user_id": "…", "status": "sent"}]}`, Status je Person `sent` (Versand angenommen), `no_device` (kein Push-Gerät registriert) oder `user_not_found` (in der Chat-App unbekannt). Die Leitung sieht „Erinnerung an 5 gesendet“ bzw. „an 5 von 8“, wenn nicht alle `sent` sind; die Verteilung der Status wird dann geloggt.
+
+Fehler (`400`, `401`, `429`, `500`, Timeout 10 s) werden geloggt und der Leitung als Fehlermeldung angezeigt; der Knopf bleibt. Die API ist nicht idempotent, deshalb gibt es keine automatische Wiederholung. Ratenlimit 60 Aufrufe/Minute pro Schlüssel (ein Aufruf pro Klick).
+
+Nicht genutzt: `POST …/external-api/planner-message` (dauerhafte Nachricht im schreibgeschützten Probenplaner-Chat, max. 4.000 Zeichen, gleiche Header und `keycloak_user_ids`, Felder `text` und `sender_name`).
 
 ### Wann
 
