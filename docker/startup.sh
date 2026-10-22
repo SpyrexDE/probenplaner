@@ -59,6 +59,12 @@ fi
 
 echo "Migrations completed successfully!"
 
+# Push reminders before rehearsals (JOinJMD): one pass per minute, runs never overlap
+if [ -n "$JMD_PUSH_URL" ]; then
+    echo "Starting push reminders..."
+    (while true; do php /var/www/html/jobs/push-reminders.php; sleep 60; done) &
+fi
+
 # Start Apache
 echo "Starting Apache..."
 apache2-foreground 

@@ -105,6 +105,22 @@ class JmdPush
         ];
     }
 
+    /**
+     * Title and body of the reminder before a rehearsal the member has accepted,
+     * e.g. "Probe am Sa 17.10. um 10:00" / "Kammerensemble, AULA"
+     *
+     * @return array{title: string, body: string}
+     */
+    public static function acceptedText(array $rehearsal, string $orchestraName): array
+    {
+        $location = trim((string)($rehearsal['location'] ?? ''));
+
+        return [
+            'title' => self::rehearsalTitle($rehearsal),
+            'body' => $orchestraName . ($location !== '' ? ', ' . $location : ''),
+        ];
+    }
+
     /** Rehearsal type, weekday, date and time, e.g. "Probe am Sa 17.10. um 10:00" */
     private static function rehearsalTitle(array $rehearsal): string
     {

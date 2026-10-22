@@ -616,6 +616,15 @@ class Rehearsal extends Model
     }
 
     /**
+     * @param int[] $ids Rehearsal IDs
+     * @return array<int, array<string, int>> rehearsal_id => [group_name => 0]
+     */
+    public function getBatchRehearsalGroupsAssoc(array $ids): array
+    {
+        return $this->batchLoadGroupsAssoc($ids);
+    }
+
+    /**
      * @return array<int, array[]> rehearsal_id => schedule item rows
      */
     private function batchLoadScheduleItems(array $ids): array

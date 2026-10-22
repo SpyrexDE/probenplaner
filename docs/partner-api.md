@@ -161,6 +161,16 @@ Nicht genutzt: `POST …/external-api/planner-message` (dauerhafte Nachricht im 
 - Nur für kommende Proben und nur, wenn Push eingerichtet ist (`KEYCLOAK_ENABLED` und `JMD_PUSH_URL`).
 - Empfänger: Personen ohne Rückmeldung im Bereich, den die Karte zeigt (eigene Stimme, Stimmgruppe oder ganzes Orchester; in der Verwaltung das ganze Orchester), mit Keycloak-ID und **die den Probenplaner schon einmal geöffnet haben** (`last_login_at` nicht NULL). Gibt es keine, erscheint der Knopf nicht.
 
+### Erinnerung vor Proben
+
+Mitglieder mit Keycloak-ID schalten im Profil unter „Push-Erinnerung“ eine Erinnerung ein und wählen, wie lange vorher (00:01 bis 23:59, Std:Min; `users.push_reminder_minutes`, NULL = aus). `PushReminderJob` schickt sie einmal pro Mitglied und Probe:
+
+- für jede Probe, zu der die Person eingeladen ist (gleiche Regel wie im Rückmeldungs-Dashboard) und nicht abgesagt hat;
+- zugesagt: Titel wie oben, Text `<Ensemblename>, <Ort>`; ohne Rückmeldung: Titel und Text wie beim Knopf „Erinnern“;
+- Link wie oben; ein Aufruf pro Probe und Text.
+
+Ist die Probe beim Einschalten schon näher als der Vorlauf, kommt die Erinnerung sofort. Gesendete Erinnerungen stehen in `push_reminders` und werden vor dem Aufruf eingetragen; ein fehlgeschlagener Aufruf wird nicht wiederholt.
+
 ### Was die JOinJMD-App mit dem Link macht
 
 Die App öffnet `link` in der Probenplaner-Kachel und hängt das Access-Token an:
@@ -207,7 +217,13 @@ Meldet an wie oben. `orchestra` wählt unter den eigenen aktiven Mitgliedschafte
 - `users.last_login_at` (NULL = nie angemeldet; bestehende Konten werden mit `created_at` befüllt, wird bei jedem Login gesetzt)
 - `user_orchestras.section_confirmed` (0 = Stimme aus dem JOinJMD-Instrument geraten, Mitglied bestätigt noch)
 
+`database/migrations/20261022_120000_push_reminders.sql`: `users.push_reminder_minutes`, Tabelle `push_reminders`.
+
 Organisations-Slug `api` ist reserviert (Pfad `/api/v1`).
+
+### Erinnerungs-Job
+
+Ist `JMD_PUSH_URL` gesetzt, startet `docker/startup.sh` im web-Container eine Schleife: `php /var/www/html/jobs/push-reminders.php`, danach 60 s Pause. Läufe überschneiden sich nie. Fehler stehen in `docker compose -f docker-compose.prod.yml logs web` (`PushReminders …`, fehlgeschlagene Aufrufe als `JOinJMD push failed …`). Von Hand: `docker compose -f docker-compose.prod.yml exec web php /var/www/html/jobs/push-reminders.php`.
 
 ### Smoke-Test
 

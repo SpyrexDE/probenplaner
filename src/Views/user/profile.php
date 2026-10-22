@@ -169,6 +169,10 @@ include __DIR__ . '/../components/theme-selector.php';
             </div>
         </div>
 
+        <?php if (\App\Core\JmdPush::isEnabled() && !empty($user['keycloak_id'])): ?>
+            <?php include __DIR__ . '/../components/push-reminder-setting.php'; ?>
+        <?php endif; ?>
+
         <!-- Password -->
         <?php
         $passwordChangeUrl = '/' . ($_SESSION['current_org_slug'] ?? '') . '/' . ($_SESSION['current_orchestra_slug'] ?? '') . '/profile';

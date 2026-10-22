@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Core\FieldRegistry;
+use App\Core\JmdPush;
 use App\Core\Validator;
 
 /**
@@ -185,6 +186,10 @@ class SettingsApiController extends Controller
             if ($perm && empty($_SESSION['current_permissions'][$perm])) {
                 $this->json(['success' => false, 'error' => 'Keine Berechtigung'], 403);
             }
+
+            if ($fieldName === 'push_reminder_minutes' && !JmdPush::isEnabled()) {
+                $this->json(['success' => false, 'error' => 'Push-Benachrichtigungen sind nicht eingerichtet'], 404);
+            }
         }
     }
 
@@ -201,6 +206,13 @@ class SettingsApiController extends Controller
             $result = Validator::validateField($entity, (string) $fieldName, $value);
             if (!$result['valid']) {
                 $allErrors[$fieldName] = $result['errors'];
+                continue;
+            }
+
+            // Lead times: '' = off, otherwise 00:01 to 23:59
+            $fieldDef = FieldRegistry::getField($entity, (string) $fieldName);
+            if ($fieldDef['type'] === 'minutes' && $value !== '' && (!is_numeric($value) || (int) $value < 1 || (int) $value > 1439)) {
+                $allErrors[$fieldName] = ["{$fieldDef['label']}: zwischen 00:01 und 23:59"];
             }
         }
 
@@ -213,6 +225,9 @@ class SettingsApiController extends Controller
             $fieldDef = FieldRegistry::getField($entity, (string) $fieldName);
             if ($fieldDef && $fieldDef['type'] === 'toggle') {
                 $value = filter_var($value, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+            }
+            if ($fieldDef && $fieldDef['type'] === 'minutes') {
+                $value = $value === '' ? null : (int) $value;
             }
             // Sanitize strings
             if (is_string($value)) {
