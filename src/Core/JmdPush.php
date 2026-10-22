@@ -10,7 +10,7 @@ namespace App\Core;
  */
 class JmdPush
 {
-    private const TIMEOUT = 5;
+    private const TIMEOUT = 10;
 
     /** Push is only available on JMD instances with a configured endpoint. */
     public static function isEnabled(): bool
@@ -19,21 +19,22 @@ class JmdPush
     }
 
     /**
-     * @param string[] $keycloakSubs Recipients
-     * @return bool True when the push API answered 2xx
+     * @param string[] $keycloakSubs Recipients (at most 500 per call)
+     * @return int|null Recipients the push API accepted (status "sent"; the others have no
+     *                  push device or are unknown to the chat app), null when the call failed
      */
-    public static function send(array $keycloakSubs, string $title, string $body, string $link): bool
+    public static function send(array $keycloakSubs, string $title, string $body, string $link): ?int
     {
         if (!self::isEnabled() || empty($keycloakSubs)) {
-            return false;
+            return null;
         }
 
-        // Request body of the JOinJMD push API (field names follow Ruwen's spec)
+        // POST /functions/v1/external-api/push (Ruwen's spec, 22.10.2026)
         $payload = [
-            'user_ids' => array_values(array_unique(array_map('strval', $keycloakSubs))),
+            'keycloak_user_ids' => array_values(array_unique(array_map('strval', $keycloakSubs))),
             'title' => $title,
             'body' => $body,
-            'link' => $link,
+            'data' => ['url' => $link],
         ];
 
         $headers = ['Content-Type: application/json', 'Accept: application/json'];
@@ -49,17 +50,23 @@ class JmdPush
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::TIMEOUT);
         curl_setopt($ch, CURLOPT_TIMEOUT, self::TIMEOUT);
 
-        curl_exec($ch);
+        $response = curl_exec($ch);
         $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $error = curl_error($ch);
         curl_close($ch);
 
-        if ($error !== '' || $httpCode < 200 || $httpCode >= 300) {
-            error_log('JOinJMD push failed: HTTP ' . $httpCode . ($error !== '' ? ', ' . $error : '') . ', ' . count($payload['user_ids']) . ' recipient(s)');
-            return false;
+        $result = is_string($response) ? json_decode($response, true) : null;
+        if ($error !== '' || $httpCode < 200 || $httpCode >= 300 || empty($result['success'])) {
+            error_log('JOinJMD push failed: HTTP ' . $httpCode . ($error !== '' ? ', ' . $error : '') . ', ' . count($payload['keycloak_user_ids']) . ' recipient(s)');
+            return null;
         }
 
-        return true;
+        $statuses = array_count_values(array_map(fn($r) => (string)($r['status'] ?? ''), $result['results'] ?? []));
+        if (count($statuses) > 1 || !isset($statuses['sent'])) {
+            error_log('JOinJMD push: ' . json_encode($statuses));
+        }
+
+        return $statuses['sent'] ?? 0;
     }
 
     /**
@@ -74,6 +81,17 @@ class JmdPush
     }
 
     /**
+     * Link to a rehearsal on the member's response page.
+     *
+     * @param array $orchestra Orchestra row with org_slug (Orchestra::findByIdWithOrg)
+     */
+    public static function rehearsalLink(array $orchestra, int $rehearsalId): string
+    {
+        return self::link('/' . rawurlencode((string)$orchestra['org_slug']) . '/' . rawurlencode((string)$orchestra['slug'])
+            . '/promises?rehearsal=' . $rehearsalId);
+    }
+
+    /**
      * Title and body of the reminder for members who have not answered yet,
      * e.g. "Probe am Sa 17.10. um 10:00" / "Kammerensemble: Du hast noch nicht zu- oder abgesagt."
      *
@@ -81,15 +99,21 @@ class JmdPush
      */
     public static function missingResponseText(array $rehearsal, string $orchestraName): array
     {
+        return [
+            'title' => self::rehearsalTitle($rehearsal),
+            'body' => $orchestraName . ': Du hast noch nicht zu- oder abgesagt.',
+        ];
+    }
+
+    /** Rehearsal type, weekday, date and time, e.g. "Probe am Sa 17.10. um 10:00" */
+    private static function rehearsalTitle(array $rehearsal): string
+    {
         $weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
         $start = new \DateTime($rehearsal['start']);
         $type = trim((string)($rehearsal['type'] ?? ''));
 
-        return [
-            'title' => ($type !== '' ? $type : RehearsalTypeManager::TYPE_REHEARSAL)
-                . ' am ' . $weekdays[(int)$start->format('w')] . ' ' . $start->format('d.m.')
-                . ' um ' . $start->format('H:i'),
-            'body' => $orchestraName . ': Du hast noch nicht zu- oder abgesagt.',
-        ];
+        return ($type !== '' ? $type : RehearsalTypeManager::TYPE_REHEARSAL)
+            . ' am ' . $weekdays[(int)$start->format('w')] . ' ' . $start->format('d.m.')
+            . ' um ' . $start->format('H:i');
     }
 }

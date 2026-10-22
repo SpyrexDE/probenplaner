@@ -91,7 +91,9 @@ function initializeRemindButtons() {
             }).then(data => {
                 if (!data.success) throw new Error(data.error || 'Erinnerung konnte nicht gesendet werden');
                 btn.remove();
-                if (data.sent > 0) window.notifySuccess('Erinnerung an ' + data.sent + ' gesendet');
+                if (data.total > 0) {
+                    window.notifySuccess('Erinnerung an ' + (data.sent < data.total ? data.sent + ' von ' + data.total : data.sent) + ' gesendet');
+                }
             }).catch(error => {
                 btn.disabled = false;
                 showErrorToast(error.message);

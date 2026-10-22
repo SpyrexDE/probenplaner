@@ -1052,22 +1052,19 @@ class PromiseController extends Controller
         $subs = array_values(array_unique($subs));
 
         if (empty($subs)) {
-            echo json_encode(['success' => true, 'sent' => 0]);
+            echo json_encode(['success' => true, 'sent' => 0, 'total' => 0]);
             return;
         }
 
         $orchestra = $ctx['orchestra'];
         $text = JmdPush::missingResponseText($rehearsal, (string)$orchestra['name']);
-        // The JOinJMD app adds jmd_accesstoken
-        $link = JmdPush::link('/' . rawurlencode((string)$orchestra['org_slug']) . '/' . rawurlencode((string)$orchestra['slug'])
-            . '/promises?rehearsal=' . (int)$rehearsal['id']);
-
-        if (!JmdPush::send($subs, $text['title'], $text['body'], $link)) {
+        $sent = JmdPush::send($subs, $text['title'], $text['body'], JmdPush::rehearsalLink($orchestra, (int)$rehearsal['id']));
+        if ($sent === null) {
             echo json_encode(['success' => false, 'error' => 'Erinnerung konnte nicht gesendet werden']);
             return;
         }
 
-        echo json_encode(['success' => true, 'sent' => count($subs)]);
+        echo json_encode(['success' => true, 'sent' => $sent, 'total' => count($subs)]);
     }
 
     /**
