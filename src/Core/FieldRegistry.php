@@ -228,6 +228,17 @@ class FieldRegistry
                 'save'       => 'auto',
                 'permission' => 'member',
             ],
+            [
+                // Lead time of the push reminder before rehearsals, '' = off (JOinJMD only)
+                'name'       => 'push_reminder_minutes',
+                'type'       => 'minutes',
+                'label'      => 'Push-Erinnerung',
+                'icon'       => 'bell',
+                'group'      => 'notifications',
+                'validation' => ['pattern:/^\d{1,4}$/'],
+                'save'       => 'auto',
+                'permission' => 'member',
+            ],
         ];
     }
 
