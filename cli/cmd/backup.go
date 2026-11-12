@@ -84,46 +84,56 @@ var backupCreateCmd = &cobra.Command{
 
 		// 3. Generate Filename
 		// Format: backup_YYYY-MM-DD_HH-mm_v[VERSION].sql.gz
-		gitVer, _ := RunCommandCapture("git", "describe", "--tags", "--always")
+		gitVer, err := RunCommandCapture("git", "describe", "--tags", "--always")
 		gitVer = strings.TrimSpace(gitVer)
+		if err != nil {
+			// The output is git's error message then, which must not end up in the filename
+			gitVer = "unknown"
+		}
 		timestamp := time.Now().Format("2006-01-02_15-04")
 		filename := fmt.Sprintf("backup_%s_%s.sql.gz", timestamp, gitVer)
-		filepath := filepath.Join(backupDir, filename)
+		backupPath := filepath.Join(backupDir, filename)
 
 		log.Info("Creating backup...", "file", filename)
 
 		// 4. Run mysqldump and pipe to file
-		// docker exec container mysqldump ...
-
-		// Setup output file
-		outFile, err := os.Create(filepath)
+		// The dump goes to a .tmp file first: a failed dump must never look like
+		// a backup, or the cleanup would count it and restore would offer it.
+		tmpPath := backupPath + ".tmp"
+		outFile, err := os.Create(tmpPath)
 		if err != nil {
 			log.Fatal("Failed to create backup file:", err)
 		}
-		defer outFile.Close()
-
-		// Setup Gzip Writer
 		gw := gzip.NewWriter(outFile)
-		defer gw.Close()
 
-		// Prepare Docker Compose Command
+		// --single-transaction: consistent snapshot without locking the tables
+		// --no-tablespaces: the app user lacks PROCESS, mysqldump errors otherwise
 		composeArgs := append(append([]string{"compose"}, composeFiles...), "exec", "-T", "db", "sh", "-c",
-			"mysqldump -u \"$MYSQL_USER\" -p\"$MYSQL_PASSWORD\" \"$MYSQL_DATABASE\"")
+			"mysqldump --single-transaction --no-tablespaces -u \"$MYSQL_USER\" -p\"$MYSQL_PASSWORD\" \"$MYSQL_DATABASE\"")
 		dumpCmd := exec.Command("docker", composeArgs...)
 
 		// Pipe stdout to gzip writer
 		dumpCmd.Stdout = gw
 		dumpCmd.Stderr = os.Stderr
 
-		if err := dumpCmd.Run(); err != nil {
+		err = dumpCmd.Run()
+		if err == nil {
+			err = gw.Close()
+		}
+		if err == nil {
+			err = outFile.Close()
+		}
+		if err == nil {
+			err = os.Rename(tmpPath, backupPath)
+		}
+		if err != nil {
+			outFile.Close()
+			os.Remove(tmpPath)
 			log.Fatal("Backup failed:", err)
 		}
 
-		gw.Close()
-		outFile.Close()
-
 		// Get file size
-		fileInfo, _ := os.Stat(filepath)
+		fileInfo, _ := os.Stat(backupPath)
 		size := fmt.Sprintf("%.2f MB", float64(fileInfo.Size())/1024/1024)
 
 		// Success message with gum style
@@ -157,6 +167,57 @@ var backupCreateCmd = &cobra.Command{
 	},
 }
 
+// Retention: every backup of the last 30 days stays. Older than that, only the
+// first backup of each month stays, for a year. A problem noticed late can
+// still be rolled back to a state from before it happened.
+const (
+	keepAllDays       = 30
+	keepMonthlyMonths = 12
+)
+
+type backupFile struct {
+	name string
+	time time.Time
+}
+
+// backupTime reads the creation time from the filename
+// (backup_YYYY-MM-DD_HH-mm_...). The mtime changes when a backup is copied
+// back onto the server, so it is only the fallback for renamed files.
+func backupTime(name string, modTime time.Time) time.Time {
+	const layout = "backup_2006-01-02_15-04"
+	if len(name) >= len(layout) {
+		if t, err := time.ParseInLocation(layout, name[:len(layout)], time.Local); err == nil {
+			return t
+		}
+	}
+	return modTime
+}
+
+// expiredBackups returns the backups the retention rules no longer cover.
+func expiredBackups(backups []backupFile, now time.Time) []backupFile {
+	sort.Slice(backups, func(i, j int) bool {
+		return backups[i].time.Before(backups[j].time)
+	})
+
+	dailyCutoff := now.AddDate(0, 0, -keepAllDays)
+	monthlyCutoff := now.AddDate(0, -keepMonthlyMonths, 0)
+
+	var expired []backupFile
+	monthKept := map[string]bool{}
+	for _, b := range backups {
+		if !b.time.Before(dailyCutoff) {
+			continue
+		}
+		month := b.time.Format("2006-01")
+		if !b.time.Before(monthlyCutoff) && !monthKept[month] {
+			monthKept[month] = true
+			continue
+		}
+		expired = append(expired, b)
+	}
+	return expired
+}
+
 func cleanupOldBackups() {
 	log.Info("Running backup cleanup...")
 
@@ -166,77 +227,25 @@ func cleanupOldBackups() {
 		return
 	}
 
-	// Get all backup files with their info
-	type backupFile struct {
-		name    string
-		modTime time.Time
-		path    string
-	}
-
 	var backups []backupFile
 	for _, f := range files {
-		if !f.IsDir() && strings.HasSuffix(f.Name(), ".sql.gz") {
-			info, _ := f.Info()
-			backups = append(backups, backupFile{
-				name:    f.Name(),
-				modTime: info.ModTime(),
-				path:    filepath.Join(backupDir, f.Name()),
-			})
+		if f.IsDir() || !strings.HasSuffix(f.Name(), ".sql.gz") {
+			continue
 		}
-	}
-
-	if len(backups) == 0 {
-		return
-	}
-
-	// Sort by modification time (newest first)
-	sort.Slice(backups, func(i, j int) bool {
-		return backups[i].modTime.After(backups[j].modTime)
-	})
-
-	// Rule 1: Delete backups older than 30 days
-	thirtyDaysAgo := time.Now().AddDate(0, 0, -30)
-	deletedCount := 0
-
-	for _, backup := range backups {
-		if backup.modTime.Before(thirtyDaysAgo) {
-			os.Remove(backup.path)
-			log.Info("Deleted old backup", "file", backup.name)
-			deletedCount++
+		info, err := f.Info()
+		if err != nil {
+			continue
 		}
+		backups = append(backups, backupFile{name: f.Name(), time: backupTime(f.Name(), info.ModTime())})
 	}
 
-	// Rule 2: Keep only 3 most recent backups
-	// Re-read after deletion
-	backups = nil
-	files, _ = os.ReadDir(backupDir)
-	for _, f := range files {
-		if !f.IsDir() && strings.HasSuffix(f.Name(), ".sql.gz") {
-			info, _ := f.Info()
-			backups = append(backups, backupFile{
-				name:    f.Name(),
-				modTime: info.ModTime(),
-				path:    filepath.Join(backupDir, f.Name()),
-			})
-		}
+	expired := expiredBackups(backups, time.Now())
+	for _, b := range expired {
+		os.Remove(filepath.Join(backupDir, b.name))
+		log.Info("Deleted expired backup", "file", b.name)
 	}
-
-	// Sort again
-	sort.Slice(backups, func(i, j int) bool {
-		return backups[i].modTime.After(backups[j].modTime)
-	})
-
-	// Delete all except 3 newest
-	if len(backups) > 3 {
-		for i := 3; i < len(backups); i++ {
-			os.Remove(backups[i].path)
-			log.Info("Deleted excess backup", "file", backups[i].name)
-			deletedCount++
-		}
-	}
-
-	if deletedCount > 0 {
-		log.Info("Cleanup complete", "deleted", deletedCount)
+	if len(expired) > 0 {
+		log.Info("Cleanup complete", "deleted", len(expired))
 	}
 }
 
