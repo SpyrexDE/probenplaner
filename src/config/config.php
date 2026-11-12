@@ -28,6 +28,11 @@ ini_set('session.use_only_cookies', 1);          // Only use cookies, not URL pa
 ini_set('session.cookie_samesite', 'Lax');       // Lax allows OAuth/SSO redirects while still protecting against CSRF
 ini_set('session.use_strict_mode', 1);           // Prevent uninitialized session IDs
 
+// A login lasts 30 days per device. PHP's defaults (cookie gone when the browser closes,
+// session file deleted after 24 idle minutes) made people log in again on almost every visit.
+define('SESSION_LIFETIME', 2592000);
+ini_set('session.cookie_lifetime', SESSION_LIFETIME);
+ini_set('session.gc_maxlifetime', SESSION_LIFETIME);
 
 if (APP_ENV !== 'development' && APP_ENV !== 'test') {
     ini_set('session.cookie_secure', 1);         // Only over HTTPS in production
@@ -41,17 +46,12 @@ define('PASSWORD_MIN_LENGTH', 8);
 define('DISPLAY_NAME_MIN_LENGTH', 2);
 define('DISPLAY_NAME_MAX_LENGTH', 100);
 define('TOKEN_MIN_LENGTH', 2);
-define('COOKIE_LIFETIME', 604800); // 7 days in seconds
 
 // Password Requirements
 define('PASSWORD_REQUIRE_UPPERCASE', true);
 define('PASSWORD_REQUIRE_LOWERCASE', true);
 define('PASSWORD_REQUIRE_NUMBERS', true);
 define('PASSWORD_REQUIRE_SPECIAL', false);
-
-// Session Constants
-define('SESSION_LIFETIME', 86400); // 24 hours
-define('SESSION_REGENERATE_INTERVAL', 300); // 5 minutes
 
 // Database Constants
 define('DB_CHARSET_FALLBACK', ['utf8mb4', 'utf8', 'latin1']);

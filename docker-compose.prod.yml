@@ -11,6 +11,8 @@ services:
       - "127.0.0.1:8080:80"
     volumes:
       - ${CERT_PATH}:/etc/apache2/ssl:ro
+      # Logins survive a deploy
+      - php_sessions:/var/lib/php/sessions
     depends_on:
       - db
     environment:
@@ -58,6 +60,7 @@ services:
 
 volumes:
   db_data:
+  php_sessions:
 
 networks:
   app_net:

@@ -41,8 +41,14 @@ spl_autoload_register(function ($class) {
     }
 });
 
-// Start session
-session_start();
+// Start session. CLI runs (the push reminder job, once a minute) have no browser:
+// a session file per run would pile up for SESSION_LIFETIME.
+if (PHP_SAPI === 'cli') {
+    $_SESSION = [];
+} else {
+    session_start();
+    \App\Core\LoginSession::renewCookie();
+}
 
 // Set error reporting based on environment
 if (APP_ENV === 'development' || APP_ENV === 'test') {

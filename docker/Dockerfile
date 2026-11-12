@@ -29,6 +29,14 @@ RUN apt-get update && apt-get install -y \
 # advertise the exact PHP version in an X-Powered-By header.
 RUN printf 'session.upload_progress.enabled = Off\nexpose_php = Off\n' > "$PHP_INI_DIR/conf.d/zz-hardening.ini"
 
+# Sessions in their own directory instead of /tmp, so a volume can keep logins across
+# deploys (docker-compose.prod.yml). Owner and mode are set here because an empty named
+# volume takes them over from the image.
+RUN mkdir -p /var/lib/php/sessions \
+    && chown www-data:www-data /var/lib/php/sessions \
+    && chmod 700 /var/lib/php/sessions \
+    && printf 'session.save_path = /var/lib/php/sessions\n' > "$PHP_INI_DIR/conf.d/zz-sessions.ini"
+
 # Enable Apache modules
 RUN a2enmod rewrite
 RUN a2enmod headers

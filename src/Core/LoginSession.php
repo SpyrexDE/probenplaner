@@ -47,4 +47,26 @@ class LoginSession
 
         (new User())->recordLogin((int)$user['id']);
     }
+
+    /**
+     * Count SESSION_LIFETIME from the last visit instead of from the login: PHP sends the session
+     * cookie only when the session is created, so send it again once a day while logged in.
+     */
+    public static function renewCookie(): void
+    {
+        if (!isset($_SESSION['user_id']) || time() - ($_SESSION['cookie_renewed_at'] ?? 0) < 86400) {
+            return;
+        }
+
+        $params = session_get_cookie_params();
+        setcookie(session_name(), session_id(), [
+            'expires' => time() + SESSION_LIFETIME,
+            'path' => $params['path'],
+            'domain' => $params['domain'],
+            'secure' => $params['secure'],
+            'httponly' => $params['httponly'],
+            'samesite' => $params['samesite'],
+        ]);
+        $_SESSION['cookie_renewed_at'] = time();
+    }
 }
