@@ -99,7 +99,7 @@ class AuthController extends Controller
             $this->protectCSRF();
         } catch (\Exception $e) {
             $this->addAlert('Sicherheitsfehler!', $e->getMessage(), 'error');
-            $this->redirect('/login');
+            $this->redirect(PASSWORD_LOGIN_URL);
             return;
         }
         // Validate input
@@ -114,7 +114,7 @@ class AuthController extends Controller
                 implode(' ', $validation['errors']),
                 'error'
             );
-            $this->redirect('/login');
+            $this->redirect(PASSWORD_LOGIN_URL);
             return;
         }
 
@@ -131,7 +131,7 @@ class AuthController extends Controller
                 return;
             }
             $this->addAlert('Fehler!', 'Das eingegebene Passwort ist falsch.', 'error');
-            $this->redirect('/login');
+            $this->redirect(PASSWORD_LOGIN_URL);
             return;
         }
 
@@ -158,7 +158,7 @@ class AuthController extends Controller
             );
             error_log("Login failed - Email not found");
         }
-        $this->redirect('/login');
+        $this->redirect(PASSWORD_LOGIN_URL);
     }
 
     /**
@@ -331,7 +331,7 @@ class AuthController extends Controller
 
         if (is_int($result) && $result > 0) {
             $this->setFlash('success', 'Ihr Konto wurde erfolgreich erstellt. Sie können sich jetzt anmelden.');
-            $this->redirect('/login');
+            $this->redirect(PASSWORD_LOGIN_URL);
         } else {
             // Handle unexpected non-array, non-integer results
             $this->addAlert(

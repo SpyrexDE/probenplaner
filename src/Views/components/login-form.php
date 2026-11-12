@@ -71,6 +71,12 @@ $registerUrl = $registerUrl ?? '/register';
 ob_start();
 ?>
 
+<?php if (PASSWORD_LOGIN_HIDDEN && !isset($_GET['password'])): ?>
+<div class="login-form">
+    <?php include __DIR__ . '/logo.php'; ?>
+    <?php include __DIR__ . '/jmd-login-button.php'; ?>
+</div>
+<?php else: ?>
 <form method="post" action="<?= htmlspecialchars($action) ?>" class="login-form">
     <?php include __DIR__ . '/csrf-input.php'; ?>
 
@@ -120,6 +126,7 @@ ob_start();
     }
     ?>
 </form>
+<?php endif; ?>
 
 <?php
 $content = ob_get_clean();

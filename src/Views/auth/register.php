@@ -56,7 +56,7 @@ ob_start();
 
     <?php
     $links = [
-        ['url' => '/login', 'text' => 'Bereits registriert? ', 'primary' => 'Einloggen']
+        ['url' => PASSWORD_LOGIN_URL, 'text' => 'Bereits registriert? ', 'primary' => 'Einloggen']
     ];
     include __DIR__ . '/../components/auth-footer.php';
     ?>

@@ -33,16 +33,13 @@ ob_start();
     </div>
 
     <?php if (KEYCLOAK_ENABLED): ?>
-        <a href="/auth/keycloak/login" class="login-button" style="display: flex; align-items: center; justify-content: center; gap: var(--space-2); text-decoration: none;">
-            <img src="/assets/img/Logo.png" alt="JMD" style="width: 24px; height: 24px; object-fit: contain;">
-            Mit JMD-Account anmelden
-        </a>
+        <?php include __DIR__ . '/../components/jmd-login-button.php'; ?>
     <?php endif; ?>
 
     <?php if (empty($keycloakOnly)): ?>
         <?php
         $links = [
-            ['url' => '/login', 'text' => 'Anmelden / ', 'primary' => 'Registrieren']
+            ['url' => PASSWORD_LOGIN_URL, 'text' => 'Anmelden / ', 'primary' => 'Registrieren']
         ];
         include __DIR__ . '/../components/auth-footer.php';
         ?>

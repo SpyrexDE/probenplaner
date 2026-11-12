@@ -82,6 +82,11 @@ define(
         : (filter_var(trim($keycloakEnabledEnv), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true)
 );
 unset($keycloakEnabledEnv);
+// PASSWORD_LOGIN_HIDDEN: /login shows only the JMD button; the e-mail/password form (and the
+// link to registration) appears only under PASSWORD_LOGIN_URL. Opt-in and only with Keycloak,
+// so an instance without a working Keycloak login can never lose its local login.
+define('PASSWORD_LOGIN_HIDDEN', KEYCLOAK_ENABLED && filter_var(getenv('PASSWORD_LOGIN_HIDDEN'), FILTER_VALIDATE_BOOLEAN));
+define('PASSWORD_LOGIN_URL', PASSWORD_LOGIN_HIDDEN ? '/login?password=1' : '/login');
 define('KEYCLOAK_BASE_URL', getenv('KEYCLOAK_BASE_URL') ?: 'https://auth.digil.me');
 define('KEYCLOAK_REALM', getenv('KEYCLOAK_REALM') ?: 'jmd');
 define('KEYCLOAK_CLIENT_ID', getenv('KEYCLOAK_CLIENT_ID') ?: 'starthere-appclient-prod');
