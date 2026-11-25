@@ -22,7 +22,8 @@ foreach ($rehearsals as $r) {
         'dateFull'   => $start->format('d.m.Y'),
         'weekday'    => ['So','Mo','Di','Mi','Do','Fr','Sa'][$start->format('w')],
         'timestamp'  => $start->getTimestamp(),
-        'isPast'     => $start <= new DateTime(),
+        // Today's rehearsals open before they start, so leaders can see who is coming
+        'isOpen'     => $start->format('Y-m-d') <= date('Y-m-d'),
         'documented' => in_array((int)$r['id'], $documentedIds),
     ];
 }
@@ -1081,7 +1082,7 @@ thead .att-col-total {
         $hScrollStep  = 200;
         include __DIR__ . '/../components/h-scroll-begin.php';
         foreach ($rehearsalData as $r): ?>
-            <div class="att-timeline-pill <?= $r['id'] === $initialRehearsalId ? 'active' : '' ?> <?= !$r['isPast'] ? 'future' : '' ?>"
+            <div class="att-timeline-pill <?= $r['id'] === $initialRehearsalId ? 'active' : '' ?> <?= !$r['isOpen'] ? 'future' : '' ?>"
                  data-rehearsal-id="<?= $r['id'] ?>"
                  title="<?= $r['weekday'] ?>, <?= $r['dateFull'] ?>">
                 <span class="pill-weekday"><?= $r['weekday'] ?></span>

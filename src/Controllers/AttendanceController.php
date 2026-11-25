@@ -538,13 +538,17 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Find the most relevant rehearsal to show initially (most recent past or today's).
+     * Find the rehearsal to show initially: the most recent one that has started.
+     * Without any, the first one still to come today (the timeline opens those too).
      */
     private function findInitialRehearsal(array $rehearsals): ?int
     {
         $now = new \DateTime();
+        $today = $now->format('Y-m-d');
         $bestId = null;
         $bestDate = null;
+        $todayId = null;
+        $todayDate = null;
 
         foreach ($rehearsals as $r) {
             $date = new \DateTime($r['start'] ?? $r['date'] ?? '');
@@ -553,9 +557,12 @@ class AttendanceController extends Controller
                     $bestDate = $date;
                     $bestId = (int)$r['id'];
                 }
+            } elseif ($date->format('Y-m-d') === $today && (!$todayDate || $date < $todayDate)) {
+                $todayDate = $date;
+                $todayId = (int)$r['id'];
             }
         }
 
-        return $bestId;
+        return $bestId ?? $todayId;
     }
 }
