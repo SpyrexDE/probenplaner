@@ -130,6 +130,8 @@
         var sentinel = document.createElement('div');
         sentinel.className = 'lazy-batch-sentinel';
         sentinel.style.minHeight = '1px';
+        // Kept for loadAll(), which drains batches without waiting for the observer
+        sentinel.dataset.batchUrl = url;
         var content = el.querySelector('.lazy-section-content');
         var isPrepend = el.getAttribute('data-lazy-prepend') === 'true';
 
@@ -150,6 +152,7 @@
             entries.forEach(function(entry) {
                 if (entry.isIntersecting) {
                     batchObserver.unobserve(entry.target);
+                    delete entry.target.dataset.batchUrl;
                     entry.target.innerHTML = buildSkeleton('cards', 2);
                     fetchBatch(el, url);
                 }
@@ -333,7 +336,7 @@
 
         var url = nextMarker
             ? nextMarker.getAttribute('data-lazy-next-url')
-            : null;
+            : (sentinel && sentinel.dataset.batchUrl) || null;
         if (nextMarker) nextMarker.remove();
         if (sentinel) sentinel.remove();
         if (!url) return Promise.resolve();

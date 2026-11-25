@@ -1107,28 +1107,45 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                         window.notifyError?.(data.error || 'Termin konnte nicht dupliziert werden');
                         return;
                     }
-                    const tmp = document.createElement('div');
-                    tmp.innerHTML = data.html;
-                    const newCard = tmp.querySelector('.ie-card');
-                    if (!newCard) return;
-                    
-                    // Insert all children from tmp after the current card
-                    while (tmp.firstChild) {
-                        card.parentNode.insertBefore(tmp.firstChild, card.nextSibling);
-                    }
-                    this._activateScripts(newCard);
-                    requestAnimationFrame(() => {
-                        this._expand(newCard);
-                        const container = newCard.closest('#rehearsalsList') || newCard.parentElement;
-                        this._sortRehearsals(container);
-                        newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    });
+                    this._insertCreatedCard(data.html);
                 })
                 .catch(() => window.notifyError?.('Netzwerkfehler – Termin nicht dupliziert'));
             });
         },
 
         // ── CREATE ──
+        // Places a new card at its date position, expands it and scrolls to it.
+        // Cards later than everything loaded so far belong behind the lazy section,
+        // so that section is loaded first – otherwise it fills in above the new card
+        // and pushes it out of view.
+        _insertCreatedCard(html) {
+            const list = document.getElementById('rehearsalsList');
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            const newCard = tmp.querySelector('.ie-card');
+            if (!list || !newCard) return;
+
+            const lazy = list.querySelector(':scope > [data-lazy-section]');
+            const lastStart = [...list.querySelectorAll('.ie-card[data-start]:not([data-rehearsal-id="recurring"])')]
+                .map(c => c.dataset.start).sort().pop() || '';
+            const ready = lazy && window.LazySection && newCard.dataset.start > lastStart
+                ? LazySection.loadAll(lazy.dataset.lazyId).catch(() => {})
+                : Promise.resolve();
+
+            ready.then(() => {
+                // The lazy batches already contain the new rehearsal
+                list.querySelectorAll(`[data-rehearsal-id="${newCard.dataset.rehearsalId}"]`).forEach(c => c.remove());
+                while (tmp.firstChild) list.insertBefore(tmp.firstChild, lazy);
+                this._activateScripts(newCard);
+                document.querySelector('.empty-state')?.closest('.flex')?.remove();
+                this._sortRehearsals(list);
+                requestAnimationFrame(() => {
+                    this._expand(newCard);
+                    newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                });
+            });
+        },
+
         createRehearsal(addBox) {
             const url = addBox.dataset.createUrl;
             addBox.classList.add('loading');
@@ -1143,24 +1160,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                     window.notifyError?.(data.error || 'Termin konnte nicht erstellt werden');
                     return;
                 }
-                const list = document.getElementById('rehearsalsList') || addBox.parentElement;
-                const tmp = document.createElement('div');
-                tmp.innerHTML = data.html;
-                const newCard = tmp.querySelector('.ie-card');
-                if (!newCard) return;
-                
-                while (tmp.firstChild) {
-                    list.appendChild(tmp.firstChild);
-                }
-                
-                this._activateScripts(newCard);
-                document.querySelector('.empty-state')?.closest('.flex')?.remove();
-                requestAnimationFrame(() => {
-                    this._expand(newCard);
-                    const container = newCard.closest('#rehearsalsList') || newCard.parentElement;
-                    this._sortRehearsals(container);
-                    newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                });
+                this._insertCreatedCard(data.html);
             })
             .catch(() => {
                 addBox.classList.remove('loading');
@@ -1974,6 +1974,16 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
         btn.addEventListener('click', () => BulkMgr.openAction(btn.dataset.bulk, btn));
     });
 
+    // A card created in this session shifts the server-side offset of the lazy
+    // list, so the next batch can repeat a card that is already shown
+    document.getElementById('rehearsalsList')?.addEventListener('lazy:loaded', e => {
+        const seen = new Set();
+        e.currentTarget.querySelectorAll('.ie-card[data-rehearsal-id]').forEach(c => {
+            if (seen.has(c.dataset.rehearsalId)) c.remove();
+            else seen.add(c.dataset.rehearsalId);
+        });
+    });
+
     // Quick-add rehearsal with date picker
     document.getElementById('bulkQuickAdd')?.addEventListener('click', function() {
         BulkMgr._closePopover();
@@ -2027,22 +2037,7 @@ $germanMonthsJs = json_encode(['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul',
                     window.notifyError?.(data.error || 'Termin konnte nicht erstellt werden');
                     return;
                 }
-                const list = document.getElementById('rehearsalsList') || document.querySelector('.rehearsal-add-box')?.parentElement;
-                if (!list) return;
-                const tmp = document.createElement('div');
-                tmp.innerHTML = data.html;
-                const newCard = tmp.querySelector('.ie-card');
-                if (!newCard) return;
-                // Insert before add-box if present
-                const addBox = list.querySelector('.rehearsal-add-box');
-                if (addBox) list.insertBefore(newCard, addBox);
-                else list.appendChild(newCard);
-                if (window.IEM) window.IEM._activateScripts(newCard);
-                document.querySelector('.empty-state')?.closest('.flex')?.remove();
-                requestAnimationFrame(() => {
-                    if (window.IEM) window.IEM._expand(newCard);
-                    newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                });
+                window.IEM?._insertCreatedCard(data.html);
             })
             .catch(() => {
                 btn.classList.remove('loading');
