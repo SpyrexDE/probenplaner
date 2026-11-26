@@ -1,0 +1,12 @@
+{
+  "name": "Probenplaner",
+  "short_name": "Probenplaner",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#eceff4",
+  "theme_color": "#0073b4",
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

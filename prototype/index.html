@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f7fd">
+  <meta name="color-scheme" content="light dark">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Probenplaner">
+  <meta name="format-detection" content="telephone=no">
+  <title>Probenplaner</title>
+  <script>
+    try {
+      const theme = localStorage.getItem('pp.theme');
+      const dark = theme === 'dark' || (theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    } catch {}
+  </script>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icon.svg">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/theme-dark.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/seating.css">
+  <link rel="stylesheet" href="css/screens.css">
+  <link rel="stylesheet" href="css/screens/proben.css">
+  <link rel="stylesheet" href="css/screens/proben-detail.css">
+  <link rel="stylesheet" href="css/screens/leitung.css">
+  <link rel="stylesheet" href="css/screens/leitung-edit.css">
+  <link rel="stylesheet" href="css/screens/team.css">
+  <link rel="stylesheet" href="css/screens/members.css">
+  <link rel="stylesheet" href="css/screens/plan.css">
+  <link rel="stylesheet" href="css/screens/auth.css">
+  <link rel="stylesheet" href="css/screens/me.css">
+  <link rel="stylesheet" href="css/screens/verwaltung.css">
+  <link rel="stylesheet" href="css/screens/rows.css">
+  <link rel="stylesheet" href="css/screens/proben-tools.css">
+  <link rel="stylesheet" href="css/screens/flows.css">
+  <link rel="stylesheet" href="css/screens/orte.css">
+  <link rel="stylesheet" href="css/shell-variants.css">
+  <link rel="stylesheet" href="css/menu.css">
+  <link rel="stylesheet" href="css/orchester.css">
+  <script src="https://unpkg.com/lucide@1.61.0/dist/umd/lucide.min.js" defer></script>
+  <script src="js/app.js" type="module"></script>
+</head>
+<body>
+  <div class="app">
+    <div class="app-rail" id="appRail"></div>
+    <header class="app-header" id="appHeader"></header>
+    <main class="app-content" id="appContent" tabindex="-1"></main>
+    <nav class="app-tabbar" id="appTabbar" aria-label="Hauptnavigation"></nav>
+    <div class="layer-sheets" id="layerSheets"></div>
+    <div class="layer-toasts" id="layerToasts" role="status" aria-live="polite"></div>
+  </div>
+</body>
+</html>

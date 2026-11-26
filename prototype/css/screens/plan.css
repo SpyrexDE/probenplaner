@@ -1,0 +1,757 @@
+/* Weekday anchor outside the rows mode: same look as the Proben list */
+
+.proben-row__wd {
+  --wd: var(--accent);
+  display: inline-block;
+  padding-bottom: 1px;
+  border-bottom: 2px solid var(--wd);
+  font: 900 var(--pr-wd, 22px)/1.1 var(--font-sans);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--wd);
+  white-space: nowrap;
+}
+
+.proben-row__wd--range {
+  font-size: var(--pr-wd-range, 15px);
+  letter-spacing: 0;
+}
+
+.proben-row__wd.is-tinted {
+  --wd: var(--tag-ink);
+}
+
+:is(.plan-row, .plan-table tr).is-past:not(.is-today) .proben-row__wd {
+  --wd: var(--text-secondary);
+}
+
+:is(.plan-row, .plan-table tr).is-past:not(.is-today) .proben-row__wd.is-tinted {
+  --wd: color-mix(in srgb, var(--tag-ink) 55%, var(--text-secondary));
+}
+
+:is(.plan-row, .plan-table tr).is-cancelled .proben-row__wd {
+  --wd: var(--text-muted);
+  border-bottom-color: var(--border-strong);
+  color: var(--text-muted);
+}
+
+/* Plan — #/plan */
+
+@media (max-width: 839.98px) {
+  html[data-rows="1"] .att-matrix .proben-row__wd {
+    padding-bottom: 0;
+    border-bottom: 0;
+    font: 700 12px/16px var(--font-sans);
+    letter-spacing: 0.02em;
+  }
+
+  .att-matrix tbody tr:nth-child(even) > :not(.att-matrix__cell--yes, .att-matrix__cell--late, .att-matrix__cell--no) {
+    background: var(--surface);
+  }
+
+  html[data-rows="1"] .series-chip {
+    grid-row: 1 / span 4;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    min-width: var(--date-chip-w, 46px);
+    min-height: 56px;
+    padding: 6px 8px;
+    border-radius: var(--radius-inner);
+    background: var(--accent-tint);
+    color: var(--accent);
+
+    .proben-row__wd {
+      padding-bottom: 0;
+      border-bottom: 0;
+      font: 700 13px/16px var(--font-sans);
+      letter-spacing: 0.02em;
+    }
+  }
+}
+
+[data-screen='plan'] {
+  .plan__content {
+    padding-top: var(--space-1);
+  }
+
+  @media (min-width: 840px) {
+    .plan__content {
+      padding-top: 0;
+    }
+  }
+
+  .plan__table,
+  .plan__print {
+    display: none;
+  }
+}
+
+/* Segments: Anstehend | Vergangen, Alle | Meine Stimme */
+
+[data-screen='plan'] .plan__scope--groups {
+  display: grid;
+  gap: var(--space-2);
+
+  .plan__groups {
+    --gutter: 0px;
+    min-width: 0;
+    padding: 0;
+  }
+}
+
+[data-screen='plan'] .plan__scope--pair {
+  display: flex;
+  gap: var(--space-2);
+
+  @media (max-width: 359.98px) {
+    flex-wrap: wrap;
+
+    > .segmented {
+      flex-basis: 100%;
+    }
+  }
+
+  > .segmented {
+    flex: 1 1 auto;
+    grid-auto-columns: auto;
+    min-width: 0;
+  }
+
+  .segmented__btn {
+    padding-inline: 6px;
+    font-size: 14px;
+  }
+
+  .segmented__btn > svg {
+    display: none;
+  }
+}
+
+/* Month heads */
+
+[data-screen='plan'] {
+  .plan-month + .plan-month {
+    margin-top: var(--space-2);
+  }
+
+  .plan-month__head {
+    position: sticky;
+    top: calc(var(--sticky-top, 0px) + var(--sticky-offset, 0px));
+    z-index: calc(var(--z-sticky) - 1);
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-height: 36px;
+    margin: 0;
+    padding: var(--space-2) calc(var(--gutter) + var(--space-4));
+    background: var(--bg);
+    font: 700 17px/20px var(--font-sans);
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+
+  .plan-month__year {
+    font-weight: 400;
+    color: var(--text-muted);
+  }
+}
+
+/* Rows */
+
+[data-screen='plan'] .plan-row {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: var(--space-2);
+  min-height: var(--plan-row-h);
+  padding-inline: var(--space-3);
+  --sep-inset: var(--space-3);
+
+  .plan-row__date {
+    min-width: var(--date-chip-sm-w);
+  }
+
+  .date-chip__day {
+    font-weight: 800;
+  }
+
+  .date-chip--range {
+    width: var(--date-chip-sm-w);
+    min-width: 0;
+    padding: 0;
+
+    .date-chip__wd {
+      font-size: 11px;
+      letter-spacing: -0.02em;
+    }
+
+    .date-chip__day {
+      font: 600 13px/18px var(--font-rounded);
+      letter-spacing: -0.03em;
+    }
+  }
+
+  .list-row__body {
+    gap: 2px;
+    padding-block: var(--space-2);
+  }
+
+  .plan-row__line1,
+  .plan-row__line2 {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 6px;
+    height: 20px;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .badge {
+    height: 20px;
+  }
+
+  .plan-row__time {
+    flex: none;
+    font: 600 15px/20px var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+
+  .plan-row__line1 .badge {
+    flex: 0 1 auto;
+  }
+
+  .plan-row__line2 {
+    gap: var(--space-1);
+  }
+
+  .plan-row__line2 .badge {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .plan-row__line2 .badge + .badge {
+    margin-left: 2px;
+  }
+
+  .plan-row__line2 .meta-location {
+    flex: 0 0 auto;
+    gap: 2px;
+    max-width: 100%;
+    font-size: 13px;
+  }
+
+  .plan-row__line2 .badge ~ .meta-location {
+    max-width: calc(100% - 96px);
+  }
+
+  &.is-cancelled .plan-row__time {
+    text-decoration: line-through;
+    color: var(--text-muted);
+  }
+}
+
+[data-screen='plan'] .plan__list .list-group {
+  --separator: transparent;
+}
+
+[data-screen='plan'] .plan__list .plan-row + .plan-row {
+  margin-top: 2px;
+}
+
+:root[data-density='compact'] [data-screen='plan'] .plan-row {
+  .list-row__body {
+    gap: 2px;
+    padding-block: var(--space-1);
+  }
+}
+
+/* Table (≥ 840) */
+
+[data-screen='plan'] .plan-table {
+  --zebra: color-mix(in srgb, var(--text) 4%, var(--surface));
+  table-layout: fixed;
+
+  .plan-table__col--date { width: 170px; }
+  .plan-table__col--time { width: 175px; }
+  .plan-table__col--type { width: 34%; }
+  .plan-table__col--chevron { width: 48px; }
+
+  tbody tr:not(.plan-table__month) {
+    position: relative;
+  }
+
+  thead {
+    position: sticky;
+    top: var(--plan-head-top, 0px);
+    z-index: 1;
+  }
+
+  th {
+    position: static;
+    background: var(--surface);
+  }
+
+  thead :is(th, td) {
+    height: 44px;
+    background: var(--zebra);
+    font: 600 13px/18px var(--font-sans);
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--text-secondary);
+  }
+
+  .plan-table__month th {
+    position: static;
+    height: auto;
+    padding: var(--space-5) var(--space-4) var(--space-2);
+    background: var(--surface);
+    font: 700 16px/20px var(--font-sans);
+    letter-spacing: -0.01em;
+    text-transform: none;
+    color: var(--text);
+  }
+
+  .plan-month__year {
+    font-weight: 400;
+    color: var(--text-muted);
+  }
+
+  tbody:first-of-type .plan-table__month th {
+    padding-top: var(--space-4);
+  }
+
+  td {
+    height: 52px;
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 0;
+    vertical-align: middle;
+  }
+
+  tbody tr:nth-child(2n + 3) td {
+    background: var(--zebra);
+  }
+
+  :root[data-density='compact'] & td {
+    height: 40px;
+    padding-block: var(--space-1);
+  }
+
+  :root[data-density='compact'] & .plan-table__month th {
+    padding-block: var(--space-3) var(--space-1);
+  }
+
+  td:first-child,
+  th:first-child {
+    padding-left: var(--space-4);
+  }
+
+  .plan-table__link {
+    --pr-wd: 20px;
+    --pr-wd-range: 15px;
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    align-items: center;
+    color: inherit;
+    text-decoration: none;
+    font-weight: 600;
+    white-space: nowrap;
+
+    .proben-row__wd {
+      justify-self: start;
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+    }
+
+    &:focus-visible {
+      outline: none;
+    }
+
+    &:focus-visible::after {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: -2px;
+    }
+  }
+
+  .plan-table__time {
+    font-weight: 600;
+  }
+
+  .plan-table__badges {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) 6px;
+    vertical-align: middle;
+  }
+
+  .role-chips {
+    position: relative;
+    z-index: 1;
+  }
+
+  .plan-table__type,
+  .plan-table__place {
+    white-space: normal;
+  }
+
+  .plan-table__chevron {
+    padding: 0 var(--space-3) 0 0;
+    color: var(--icon-muted);
+
+    svg {
+      display: block;
+      margin-left: auto;
+    }
+  }
+
+  tr.is-today td {
+    background: var(--accent-tint);
+  }
+
+  tr.is-today .plan-table__day {
+    color: var(--accent);
+  }
+
+  tr.is-past:not(.is-today) :is(.plan-table__day, .plan-table__time) {
+    color: var(--text-secondary);
+  }
+
+  tr.is-cancelled :is(.plan-table__day, .plan-table__time) {
+    text-decoration: line-through;
+    color: var(--text-muted);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    tbody tr:not(.plan-table__month):hover td {
+      background: var(--fill-hover);
+    }
+
+    tbody tr.is-today:hover td {
+      background: var(--accent-tint-strong);
+    }
+  }
+
+  tbody tr:not(.plan-table__month):active td {
+    background: var(--fill-pressed);
+  }
+}
+
+@media screen {
+  [data-screen='plan'] .plan-table .plan-table__place .meta-location {
+    display: flex;
+    max-width: 100%;
+  }
+
+  [data-screen='plan'] .plan-table__place {
+    overflow: hidden;
+  }
+}
+
+/* Probe detail */
+
+.probe-detail .pd-head {
+  --pr-wd: 32px;
+  --pr-wd-range: 22px;
+  align-items: center;
+}
+
+.probe-detail .pd-head.is-cancelled .proben-row__wd {
+  --wd: var(--text-muted);
+}
+
+.probe-detail .pd-who__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.probe-detail .pd-who__remind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+  font: 500 14px/20px var(--font-sans);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-secondary);
+}
+
+.probe-detail .pd-who__remind .button {
+  height: 32px;
+  padding: 0 12px;
+}
+
+@media (min-width: 840px) {
+  .desk-frame.probe-detail .proben-row__chevron {
+    visibility: hidden;
+  }
+}
+
+/* Desktop: the toolbar is the header, same frame as Proben */
+
+@media (min-width: 840px) {
+  .desk-bar .plan__groups {
+    flex: 0 1 auto;
+    min-width: 0;
+    margin: 0 0 0 8px;
+    padding: 0;
+  }
+
+  .desk-frame[data-screen='plan'] {
+    --plan-head-top: var(--pr-toolbar, 64px);
+
+    .desk-bar > .segmented + .segmented {
+      width: 260px;
+      margin-left: 0;
+    }
+  }
+
+  [data-screen='plan'] {
+    .plan__list {
+      display: none;
+    }
+
+    .plan__content {
+      padding-top: 0;
+    }
+
+    .plan__table {
+      display: block;
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card), var(--highlight-top);
+      overflow: clip;
+    }
+  }
+}
+
+@media (min-width: 1900px) {
+  :root[data-nav][data-rows] [data-screen='plan'] .plan-table.shell-plan .plan-table__col--place {
+    width: clamp(290px, calc(290px + (100vw - 1900px) * 0.2), 400px);
+  }
+}
+
+/* Print: A4 sheet after the production Probenplan */
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  :root:has([data-screen='plan']) {
+    color-scheme: light;
+
+    &,
+    body {
+      height: auto;
+      overflow: visible;
+      background: white;
+      color: black;
+    }
+
+    .app {
+      display: block;
+      height: auto;
+      padding: 0;
+    }
+
+    :is(.app-header, .app-tabbar, .app-rail, .layer-sheets, .layer-toasts, .large-title) {
+      display: none !important;
+    }
+
+    .app-content {
+      display: block;
+      height: auto;
+      overflow: visible;
+      padding: 0 !important;
+    }
+  }
+
+  [data-screen='plan'] {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+
+    > :not(.plan__print) {
+      display: none !important;
+    }
+
+    .plan__print {
+      display: block !important;
+    }
+  }
+
+  .plan-sheet {
+    --sheet-ink: color-mix(in srgb, var(--slate-500), black 78%);
+    --sheet-head: color-mix(in srgb, var(--slate-500), black 40%);
+    --sheet-sub: var(--slate-500);
+    --sheet-info: var(--slate-400);
+    --sheet-line: color-mix(in srgb, var(--slate-500) 17%, white);
+    --sheet-zebra: color-mix(in srgb, var(--slate-500) 8%, white);
+    --sheet-wd: var(--brand-500);
+    color: var(--sheet-ink);
+    font: 400 10pt/1.3 var(--font-sans);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .plan-sheet__head {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--sheet-line);
+  }
+
+  .plan-sheet__title {
+    margin: 0 0 6px;
+    font: 700 20pt/1.2 var(--font-sans);
+    text-align: center;
+    color: var(--sheet-ink);
+  }
+
+  .plan-sheet__sub {
+    margin: 0 0 12px;
+    font: 400 12pt/1.3 var(--font-sans);
+    text-align: center;
+    color: var(--sheet-sub);
+  }
+
+  .plan-sheet__info {
+    display: flex;
+    justify-content: space-between;
+    margin: 0;
+    font: 400 9pt/1.3 var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    color: var(--sheet-info);
+  }
+
+  .plan-sheet__table {
+    --pr-wd: 10.5pt;
+    --pr-wd-range: 9pt;
+    width: 100%;
+    table-layout: fixed;
+    border: 1px solid var(--sheet-line);
+    border-radius: 8px;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    font: 400 10.5pt/1.3 var(--font-sans);
+    font-variant-numeric: tabular-nums;
+
+    thead {
+      display: table-header-group;
+    }
+
+    tr {
+      break-inside: avoid;
+    }
+
+    th,
+    td {
+      padding: 12px 16px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--sheet-zebra);
+      border-bottom: 2px solid var(--sheet-line);
+      font-weight: 600;
+      color: var(--sheet-head);
+    }
+
+    td {
+      border-bottom: 1px solid var(--sheet-line);
+      color: var(--sheet-ink);
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    tbody tr:nth-child(even) td {
+      background: var(--sheet-zebra);
+    }
+
+    th,
+    td {
+      padding-inline: 12px;
+    }
+
+    .plan-sheet__day { width: 8%; padding-right: 0; }
+    .plan-sheet__date { width: 14%; padding-right: 8px; white-space: nowrap; }
+    .plan-sheet__time { width: 15%; }
+    .plan-sheet__place { width: 25%; }
+    .plan-sheet__type { width: 20%; }
+    .plan-sheet__groups { width: 18%; }
+
+    .proben-row__wd {
+      --wd: var(--sheet-wd);
+      padding-bottom: 0;
+      border-bottom: 2px solid var(--sheet-wd) !important;
+      font: 800 10.5pt/1.2 var(--font-sans);
+      color: var(--sheet-wd) !important;
+    }
+
+    .proben-row__wd--range {
+      font-size: 9pt;
+    }
+
+    .proben-row__wd.is-tinted {
+      --sheet-wd: color-mix(in srgb, var(--tag) 80%, black);
+    }
+
+    tr.is-cancelled .proben-row__wd {
+      opacity: 0.6;
+    }
+
+    tr.is-cancelled :is(.plan-sheet__date, .plan-sheet__time) {
+      text-decoration: line-through;
+      color: var(--sheet-sub);
+    }
+
+    tr.is-cancelled .plan-sheet__type {
+      font-weight: 600;
+      color: var(--red-700);
+    }
+
+    .plan-sheet__voices {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 2px 6px;
+    }
+
+    .plan-sheet__role {
+      padding: 0 7px;
+      border-radius: 999px;
+      background: var(--red-50);
+      font: 700 8pt/16px var(--font-sans);
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--red-600);
+    }
+  }
+}
+
+.plan-table tr.is-open .plan-table__chevron svg {
+  rotate: 90deg;
+}
+
+.plan-table__panel > td {
+  padding: 0;
+}
+
+html[data-rows="1"] .plan-table__panel .proben-expand__inner {
+  padding: 4px var(--pr-pad) 20px;
+}
+
+@media print {
+  .plan-table__panel {
+    display: none;
+  }
+}

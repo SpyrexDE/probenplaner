@@ -1,0 +1,305 @@
+/* Sitzplan: one form for who is coming, from the row slot to the Übersicht */
+
+:root {
+  --seat-ring: var(--status-open-strong);
+  --seat-ghost: rgb(30 58 138 / 0.13);
+  --seat-yes: var(--status-yes-solid);
+  --seat-no: var(--status-no-solid);
+  --plate-bg: #ffffff;
+  --plate-ink: #141c2f;
+  --plate-track: rgb(30 58 138 / 0.12);
+}
+
+:root[data-theme='dark'] {
+  --seat-ghost: oklch(1 0 0 / 0.13);
+  --plate-bg: oklch(0.25 0.01 262);
+  --plate-ink: oklch(0.97 0.003 262);
+  --plate-track: oklch(1 0 0 / 0.16);
+}
+
+.seating {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 360px;
+}
+
+.seating__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.seat {
+  fill: transparent;
+  stroke: transparent;
+  transition: fill 150ms ease-out, stroke 150ms ease-out, opacity 150ms ease-out;
+}
+
+.seat--yes { fill: var(--seat-yes); }
+.seat--no { fill: var(--seat-no); }
+
+.seat--open {
+  stroke: var(--seat-ring);
+  stroke-width: 1.5px;
+  vector-effect: non-scaling-stroke;
+}
+
+.seat--ghost {
+  fill: var(--seat-ghost);
+}
+
+.seat--own {
+  stroke: var(--accent);
+  stroke-width: 2.5px;
+  vector-effect: non-scaling-stroke;
+}
+
+.seat-hit {
+  fill: transparent;
+}
+
+.seating.is-linked .seat-hit {
+  cursor: pointer;
+}
+
+.seating.is-focus .seat:not(.is-lit) {
+  opacity: 0.3;
+}
+
+.seat.is-hot {
+  stroke: var(--text);
+  stroke-width: 2px;
+  vector-effect: non-scaling-stroke;
+}
+
+.seating__num {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  fill: var(--text);
+}
+
+.seating__of {
+  font-weight: 600;
+  letter-spacing: 0;
+  fill: var(--text-muted);
+}
+
+.seating__tip {
+  position: absolute;
+  z-index: 6;
+  display: grid;
+  gap: 2px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--toast-bg);
+  box-shadow: var(--shadow-2);
+  color: var(--toast-fg);
+  font: 500 13px/18px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, calc(-100% - 6px));
+  transition: opacity 120ms ease-out;
+}
+
+.seating__tip.is-on {
+  opacity: 1;
+}
+
+.seating__tip-line {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.seating__tip-line--section {
+  color: color-mix(in srgb, var(--toast-fg) 78%, transparent);
+}
+
+.seating__tip-name {
+  font-weight: 600;
+}
+
+.seating__tip-val {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.seating__tip-note {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: color-mix(in srgb, var(--toast-fg) 72%, transparent);
+}
+
+.seating__mark {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.seating__mark--yes { color: var(--seat-yes); }
+.seating__mark--no { color: var(--seat-no); }
+.seating__mark--open { color: color-mix(in srgb, var(--toast-fg) 60%, transparent); stroke-width: 1.5; }
+
+/* Slot: the same form as a gauge in the fixed trailing slot of a row */
+
+.seat-slot {
+  --gauge-track: color-mix(in srgb, var(--text) 13%, transparent);
+  display: block;
+  flex: none;
+  width: 88px;
+  height: 40px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.gauge {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.gauge__seg {
+  fill: none;
+  stroke-width: 6px;
+  stroke-linecap: butt;
+}
+
+.gauge__seg--yes { stroke: var(--seat-yes); }
+.gauge__seg--no { stroke: var(--seat-no); }
+.gauge__seg--open { stroke: var(--gauge-track); }
+
+.gauge__num {
+  font: 700 15px/1 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  fill: var(--text);
+}
+
+.proben-row.is-today .seat-slot,
+.proben-hero .seat-slot {
+  --gauge-track: var(--plate-track);
+  border-radius: 12px;
+  background: var(--plate-bg);
+  box-shadow: 0 2px 8px rgb(15 23 42 / 0.16);
+}
+
+.proben-row.is-today .seat-slot .gauge__num,
+.proben-hero .seat-slot .gauge__num {
+  fill: var(--plate-ink);
+}
+
+.proben-row.is-today .seat-slot .gauge,
+.proben-hero .seat-slot .gauge {
+  padding: 3px 4px 1px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 839.98px) {
+  .seat-slot {
+    width: 96px;
+    height: 44px;
+  }
+}
+
+.seating--hero {
+  max-width: 560px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seat,
+  .seating__tip {
+    transition: none;
+  }
+}
+
+:root[data-motion='reduced'] :is(.seat, .seating__tip) {
+  transition: none;
+}
+
+.seat.is-dim:not(.seat--ghost) {
+  opacity: 0.28;
+}
+
+/* Ablauf as geometry: one segment per item, length = duration */
+
+.time-line {
+  --tl-track: var(--fill-strong);
+  --tl-fill: var(--accent);
+  --tl-now: var(--accent);
+  position: relative;
+  display: flex;
+  gap: 3px;
+  height: 4px;
+}
+
+.time-line__seg {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 4px;
+  border-radius: 2px;
+  background: var(--tl-track);
+}
+
+.time-line__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--tl-fill);
+}
+
+.time-line__now {
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--tl-now);
+  box-shadow: 0 0 0 2px var(--tl-ring, var(--surface));
+  transform: translate(-50%, -50%);
+}
+
+.time-line--hero,
+html[data-rows="1"] .proben-row.is-today > .time-line--row {
+  --tl-track: color-mix(in srgb, var(--on-accent) 28%, transparent);
+  --tl-fill: var(--on-accent);
+  --tl-now: var(--on-accent);
+  --tl-ring: color-mix(in srgb, var(--brand-600) 80%, transparent);
+}
+
+.time-line--hero {
+  margin-top: 14px;
+}
+
+html[data-rows="1"] .proben-row > .time-line.time-line--row {
+  position: absolute;
+  top: auto;
+  right: var(--pr-edge-r, 44px);
+  bottom: 6px;
+  left: calc(var(--pr-edge-l, 68px) + var(--pr-gap, 16px));
+  z-index: 0;
+  height: 3px;
+  pointer-events: none;
+}
+
+html[data-rows="1"] .proben-row > .time-line--row .time-line__now {
+  width: 8px;
+  height: 8px;
+}
+
+.shell-aside .proben-row > .time-line--row {
+  display: none;
+}

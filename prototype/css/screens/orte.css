@@ -1,0 +1,142 @@
+/* Orte: place list and place sheet */
+
+.orte-title {
+  display: -webkit-box;
+  overflow: hidden;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.orte-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px var(--space-2);
+  white-space: normal;
+}
+
+.orte-tag {
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-inner);
+  background: var(--accent-tint);
+  color: var(--accent);
+  font: 600 12px/16px var(--font-sans);
+  white-space: nowrap;
+}
+
+.orte-address.is-empty {
+  color: var(--text-muted);
+}
+
+.orte-count {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font: 500 13px/18px var(--font-sans);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.orte-count__n {
+  font: 700 24px/28px var(--font-rounded);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.orte-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0 var(--gutter) var(--space-3);
+}
+
+.orte-kpi {
+  --kpi-tint: var(--brand-500);
+  --kpi-mix: 30%;
+  display: grid;
+  align-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+:root[data-theme='dark'] .orte-kpi {
+  --kpi-mix: 44%;
+}
+
+.orte-kpi--warn {
+  --kpi-tint: var(--status-warn-solid);
+}
+
+.orte-kpi__label {
+  font: 600 13px/18px var(--font-sans);
+  color: var(--text);
+}
+
+.orte-kpi__value {
+  overflow: hidden;
+  font: 700 32px/36px var(--font-rounded);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.orte-sheet .field-row__label {
+  min-width: 0;
+}
+
+.orte-sheet .field-row__input {
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 839.98px) {
+  .orte-kpi:last-child {
+    display: none;
+  }
+}
+
+@media (min-width: 840px) {
+  .orte-kpi {
+    padding: 14px var(--space-4) 16px;
+  }
+
+  .orte-kpi__label {
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .orte-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr));
+    gap: var(--space-3) var(--space-4);
+  }
+
+  .orte-kpis {
+    grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr));
+    gap: var(--space-3) var(--space-4);
+    margin: 0 0 var(--space-4);
+  }
+
+  .orte-grid > .orte-row {
+    min-height: 72px;
+    padding-inline: var(--space-4);
+    border-radius: var(--radius-card);
+    background: var(--surface);
+    box-shadow: var(--shadow-card);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .orte-grid > .orte-row:hover {
+      background: var(--surface-raised);
+      box-shadow: var(--shadow-2);
+    }
+  }
+}
